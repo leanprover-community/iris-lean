@@ -1,12 +1,13 @@
 /-
-Copyright (c) 2026 Markus de Medeiros. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Markus de Medeiros
 -/
 module
 
 public import Iris.HeapLang.Notation
-public meta import Lean.Elab.Command
-public meta import Lean.Linter.Util
+public import Lean.Elab.Command
+public import Lean.Linter.Util
 
 public meta section
 namespace Iris.HeapLang.Linter

@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Zongyuan Liu. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
@@ -10,7 +10,6 @@ import Iris.BI.BigOp.BigSepList
 import Iris.BI.DerivedLawsLater
 import Iris.BI.Instances
 import Iris.Std.TC
-meta import Iris.Std.RocqPorting
 
 public section
 
@@ -28,7 +27,7 @@ namespace BigSepS
 @[rocq_alias big_sepS_mono]
 theorem bigSepS_mono {Φ Ψ : A → PROP} {X : S} (h : ∀ {x}, x ∈ X → Φ x ⊢ Ψ x) :
     ([∗set] x ∈ X, Φ x) ⊢ [∗set] x ∈ X, Ψ x :=
-  bigOpS_gen_eqv _ .rfl sep_mono fun hy => h hy
+  bigOpS_gen_proper _ .rfl sep_mono fun hy => h hy
 
 @[rocq_alias big_sepS_ne]
 theorem bigSepS_ne {Φ Ψ : A → PROP} {X : S} {n : Nat} (h : ∀ {x}, x ∈ X → Φ x ≡{n}≡ Ψ x) :
@@ -36,13 +35,13 @@ theorem bigSepS_ne {Φ Ψ : A → PROP} {X : S} {n : Nat} (h : ∀ {x}, x ∈ X 
   bigOpS_dist fun hy => h hy
 
 @[rocq_alias big_sepS_proper]
-theorem bigSepS_proper {Φ Ψ : A → PROP} {X : S} (h : ∀ {x}, x ∈ X → Φ x ≡ Ψ x) :
-    ([∗set] x ∈ X, Φ x) ≡ ([∗set] x ∈ X, Ψ x) :=
-  bigOpS_gen_eqv (· ≡ ·) .rfl MonoidOps.op_proper fun hy => h hy
+theorem bigSepS_eq {Φ Ψ : A → PROP} {X : S} (h : ∀ {x}, x ∈ X → Φ x = Ψ x) :
+    ([∗set] x ∈ X, Φ x) = ([∗set] x ∈ X, Ψ x) :=
+  bigOpS_eq h
 
 theorem bigSepS_eqv {Φ Ψ : A → PROP} {X : S} (h : ∀ {x}, x ∈ X → Φ x ⊣⊢ Ψ x) :
     ([∗set] x ∈ X, Φ x) ⊣⊢ ([∗set] x ∈ X, Ψ x) :=
-  equiv_iff.mp <| bigSepS_proper fun hx => equiv_iff.mpr (h hx)
+  BiEntails.of_eq <| bigOpS_eq fun hx => (BiEntails.to_eq (h hx))
 
 @[rocq_alias big_sepS_mono']
 theorem bigSepS_mono_of_forall {Φ Ψ : A → PROP} {X : S} (h : ∀ x, Φ x ⊢ Ψ x) :
@@ -57,11 +56,11 @@ theorem bigSepS_flip_mono {Φ Ψ : A → PROP} {X : S} (h : ∀ x, Ψ x ⊢ Φ x
 @[rocq_alias big_sepS_elements]
 theorem bigSepS_elements {Φ : A → PROP} {X : S} :
     ([∗set] x ∈ X, Φ x) ⊣⊢ [∗list] x ∈ FiniteSet.toList X, Φ x :=
-  equiv_iff.mp bigOpS_bigOpL
+  BiEntails.of_eq bigOpS_bigOpL
 
 @[simp, rocq_alias big_sepS_empty]
 theorem bigSepS_empty {Φ : A → PROP} : ([∗set] x ∈ (∅ : S), Φ x) ⊣⊢ emp :=
-  equiv_iff.mp <| .of_eq <| bigOpS_empty
+  BiEntails.of_eq <| bigOpS_empty
 
 @[rocq_alias big_sepS_empty']
 theorem bigSepS_empty_intro {P : PROP} [Affine P] {Φ : A → PROP} :
@@ -74,17 +73,17 @@ theorem bigSepS_emp {X : S} : ([∗set] _x ∈ X, (emp : PROP)) ⊣⊢ emp :=
 
 @[rocq_alias big_sepS_singleton]
 theorem bigSepS_singleton {Φ : A → PROP} {x : A} : ([∗set] y ∈ ({x} : S), Φ y) ⊣⊢ Φ x :=
-  equiv_iff.mp bigOpS_singleton
+  BiEntails.of_eq (bigOpS_singleton)
 
 @[rocq_alias big_sepS_insert]
 theorem bigSepS_insert {Φ : A → PROP} {X : S} {x : A} (h : x ∉ X) :
     ([∗set] y ∈ insert x X, Φ y) ⊣⊢ Φ x ∗ [∗set] y ∈ X, Φ y := by
-  rw [insert_union]; exact equiv_iff.mp <| bigOpS_insert h
+  rw [insert_union]; exact BiEntails.of_eq <| bigOpS_insert h
 
 @[rocq_alias big_sepS_union]
 theorem bigSepS_union {Φ : A → PROP} {X Y : S} (h : X ## Y) :
     ([∗set] y ∈ X ∪ Y, Φ y) ⊣⊢ ([∗set] y ∈ X, Φ y) ∗ ([∗set] y ∈ Y, Φ y) :=
-  equiv_iff.mp <| bigOpS_union h
+  BiEntails.of_eq <| bigOpS_union h
 
 @[rocq_alias big_sepS_delete]
 theorem bigSepS_delete {Φ : A → PROP} {X : S} {x : A} (h : x ∈ X) :
@@ -153,9 +152,9 @@ instance bigSepS_timeless_inst [Timeless (emp : PROP)] {Φ : A → PROP} {X : S}
 @[rocq_alias big_sepS_sep]
 theorem bigSepS_sep {Φ Ψ : A → PROP} {X : S} :
     ([∗set] y ∈ X, Φ y ∗ Ψ y) ⊣⊢ ([∗set] y ∈ X, Φ y) ∗ ([∗set] y ∈ X, Ψ y) :=
-  equiv_iff.mp bigOpS_op_eqv
+  BiEntails.of_eq bigOpS_op_eq
 
-@[deprecated "bigSepS_sep.symm" (since := "26/04/07"), rocq_alias big_sepS_sep_2]
+@[rocq_alias big_sepS_sep_2]
 theorem bigSepS_sep_symm {Φ Ψ : A → PROP} {X : S} :
     ([∗set] y ∈ X, Φ y) ∗ ([∗set] y ∈ X, Ψ y) ⊣⊢ [∗set] y ∈ X, Φ y ∗ Ψ y :=
   bigSepS_sep.symm
@@ -250,16 +249,16 @@ theorem bigSepS_elem_of_acc_impl {Φ : A → PROP} {X : S} {x : A} (h : x ∈ X)
 @[rocq_alias big_sepS_persistently]
 theorem bigSepS_persistently [BIAffine PROP] {Φ : A → PROP} {X : S} :
     (<pers> ([∗set] y ∈ X, Φ y)) ⊣⊢ [∗set] y ∈ X, <pers> (Φ y) :=
-  letI := MonoidHomomorphism.ofEquiv persistently_ne
-    (equiv_iff.mpr persistently_sep) (equiv_iff.mpr persistently_emp_affine)
-  equiv_iff.mp <| BigOpS.hom this Φ X
+  letI := MonoidHomomorphism.ofEq persistently_ne
+    (BiEntails.to_eq persistently_sep) (BiEntails.to_eq persistently_emp_affine)
+  BiEntails.of_eq <| BigOpS.hom this Φ X
 
 @[rocq_alias big_sepS_later]
 theorem bigSepS_later [BIAffine PROP] {Φ : A → PROP} {X : S} :
     (▷ [∗set] y ∈ X, Φ y) ⊣⊢ [∗set] y ∈ X, ▷ Φ y :=
-  letI := MonoidHomomorphism.ofEquiv later_ne
-    (equiv_iff.mpr later_sep) (equiv_iff.mpr later_emp)
-  equiv_iff.mp <| BigOpS.hom this Φ X
+  letI := MonoidHomomorphism.ofEq later_ne
+    (BiEntails.to_eq later_sep) (BiEntails.to_eq later_emp)
+  BiEntails.of_eq <| BigOpS.hom this Φ X
 
 @[rocq_alias big_sepS_later_2]
 theorem bigSepS_later_2 {Φ : A → PROP} {X : S} :
@@ -289,33 +288,26 @@ theorem bigSepS_subseteq {Φ : A → PROP} {X Y : S}
 
 @[rocq_alias big_sepS_sepL]
 theorem bigSepS_comm_list {B : Type _} (Φ : A → Nat → B → PROP) (X : S) (l : List B) :
-    ([∗set] x ∈ X, [∗list] k↦y ∈ l, Φ x k y) ⊣⊢
-      ([∗list] k↦y ∈ l, [∗set] x ∈ X, Φ x k y) := by
-  refine bigSepS_elements.trans ?_
-  refine (bigSepL_comm _ (FiniteSet.toList X) l).trans ?_
-  exact equiv_iff.mp <| bigOpL_eqv fun _ => equiv_iff.mpr bigSepS_elements.symm
+    ([∗set] x ∈ X, [∗list] k ↦ y ∈ l, Φ x k y) ⊣⊢ [∗list] k ↦ y ∈ l, [∗set] x ∈ X, Φ x k y :=
+  BiEntails.of_eq <| bigOpS_comm_list Φ X l
 
 @[rocq_alias big_sepS_sepS]
-theorem bigSepS_comm_set {B : Type _} {T : Type _} [LawfulFiniteSet T B]
+theorem bigSepS_comm_set {B T : Type _} [LawfulFiniteSet T B]
     (Φ : A → B → PROP) (X : S) (Y : T) :
-    ([∗set] x ∈ X, [∗set] y ∈ Y, Φ x y) ⊣⊢
-      ([∗set] y ∈ Y, [∗set] x ∈ X, Φ x y) := by
-  refine bigSepS_elements.trans ?_
-  refine (equiv_iff.mp <| bigOpL_eqv fun _ => equiv_iff.mpr bigSepS_elements).trans ?_
-  refine (bigSepL_comm _ (FiniteSet.toList X) (FiniteSet.toList Y)).trans ?_
-  exact (equiv_iff.mp <| bigOpL_eqv fun _ => equiv_iff.mpr bigSepS_elements.symm).trans <|
-    bigSepS_elements.symm
+    ([∗set] x ∈ X, [∗set] y ∈ Y, Φ x y) ⊣⊢ [∗set] y ∈ Y, [∗set] x ∈ X, Φ x y :=
+  BiEntails.of_eq <| bigOpS_comm_set Φ X Y
 
 @[rocq_alias big_sepS_sepM]
-theorem bigSepS_comm_map {B : Type _} {M : Type _ → Type _} {K : Type _}
-    [LawfulFiniteMap M K]
+theorem bigSepS_comm_map {B K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
     (Φ : A → K → B → PROP) (X : S) (m : M B) :
-    ([∗set] x ∈ X, [∗map] k↦y ∈ m, Φ x k y) ⊣⊢
-      ([∗map] k↦y ∈ m, [∗set] x ∈ X, Φ x k y) := by
-  refine bigSepS_elements.trans ?_
-  refine (bigSepL_comm _ (FiniteSet.toList X) (LawfulFiniteMap.toList m)).trans ?_
-  refine (equiv_iff.mp <| bigOpL_eqv fun _ => equiv_iff.mpr bigSepS_elements.symm).trans <|
-    equiv_iff.mp <| bigOpL_eqv fun _ => .rfl
+    ([∗set] x ∈ X, [∗map] k ↦ y ∈ m, Φ x k y) ⊣⊢ [∗map] k ↦ y ∈ m, [∗set] x ∈ X, Φ x k y :=
+  BiEntails.of_eq <| bigOpS_comm_map Φ X m
+
+@[rocq_alias big_sepS_sepMS]
+theorem bigSepS_comm_mset {B MS : Type _} [LawfulFiniteMultiSet MS B]
+    (Φ : A → B → PROP) (X : S) (Y : MS) :
+    ([∗set] x ∈ X, [∗mset] y ∈ Y, Φ x y) ⊣⊢ [∗mset] y ∈ Y, [∗set] x ∈ X, Φ x y :=
+  BiEntails.of_eq <| bigOpS_comm_mset Φ X Y
 
 @[rocq_alias big_sepS_list_to_set]
 theorem bigSepS_of_list {Φ : A → PROP} {l : List A} (h : l.Nodup) :
@@ -328,7 +320,7 @@ theorem bigSepS_filter_cond (φ : A → Bool) {Φ : A → PROP} {X : S} :
     ([∗set] y ∈ X, if φ y then Φ y else emp) := by
   refine bigSepS_elements.trans ?_
   refine (bigSepL_perm (Iris.Std.FiniteSet.toList_filter_perm φ X)).trans ?_
-  exact (equiv_iff.mp (bigOpL_filter_eqv φ Φ (FiniteSet.toList X))).trans <|
+  exact (BiEntails.of_eq (bigOpL_filter_eq φ Φ (FiniteSet.toList X))).trans <|
     bigSepS_elements.symm
 
 @[rocq_alias big_sepS_filter]
@@ -340,32 +332,49 @@ theorem bigSepS_filter [BIAffine PROP] (φ : A → Bool) {Φ : A → PROP} {X : 
     · exact ⟨imp_intro_swap <| pure_elim_left (fun hf => nomatch hf), Affine.affine⟩
     · simp [true_imp.symm]
 
-@[rocq_alias big_sepS_filter_acc']
-theorem bigSepS_filter_acc_cond (φ : A → Bool) {Φ : A → PROP} {X Y : S}
+@[rocq_alias big_sepS_filter_acc]
+theorem bigSepS_filter_acc (φ : A → Bool) {Φ : A → PROP} {X Y : S}
     (h : ∀ y, y ∈ Y → φ y → y ∈ X) :
     ([∗set] y ∈ X, Φ y) ⊢
-      ([∗set] y ∈ Y, if φ y then Φ y else emp) ∗
-      (([∗set] y ∈ Y, if φ y then Φ y else emp) -∗ [∗set] y ∈ X, Φ y) := by
+      ([∗set] y ∈ FiniteSet.filter φ Y, Φ y) ∗
+      (([∗set] y ∈ FiniteSet.filter φ Y, Φ y) -∗ [∗set] y ∈ X, Φ y) := by
   have hdisj : FiniteSet.filter φ Y ## (X \ FiniteSet.filter φ Y) :=
     fun a ha => (mem_diff.mp ha.2).2 ha.1
   rw [(diff_subset_decomp (fun z hz => (FiniteSet.mem_filter φ Y z).mp hz |>.elim (h z))).trans
     union_comm]
-  exact (bigSepS_union hdisj).1.trans <|
-    sep_mono (bigSepS_filter_cond φ).1
-      (wand_intro_left <| (sep_mono_left (bigSepS_filter_cond φ).2).trans (bigSepS_union hdisj).2)
+  exact (bigSepS_union hdisj).1.trans <| sep_mono_right <| wand_intro_left (bigSepS_union hdisj).2
 
-@[rocq_alias big_sepS_filter_acc]
-theorem bigSepS_filter_acc [BIAffine PROP] (φ : A → Bool) {Φ : A → PROP} {X Y : S}
-    (h : ∀ y, y ∈ Y → φ y → y ∈ X) :
+/-- Split a big separating conjunction along a subset and its complement. -/
+theorem bigSepS_split_subset {Φ : A → PROP} {X Y : S} (hsub : Y ⊆ X) :
+    ([∗set] y ∈ X, Φ y) ⊣⊢ ([∗set] y ∈ Y, Φ y) ∗ ([∗set] y ∈ X \ Y, Φ y) := by
+  conv => lhs; rw [(diff_subset_decomp hsub).trans union_comm]
+  exact bigSepS_union fun a ha => (mem_diff.mp ha.right).right ha.left
+
+/-- A version of `big_sepS_filter_acc` that also allows changing the predicate `Φ`. -/
+@[rocq_alias big_sepS_filter_acc_impl]
+theorem bigSepS_filter_acc_impl (φ : A → Bool) {Φ : A → PROP} {X : S} :
     ([∗set] y ∈ X, Φ y) ⊢
-      ([∗set] y ∈ Y, ⌜φ y⌝ → Φ y) ∗
-      (([∗set] y ∈ Y, ⌜φ y⌝ → Φ y) -∗ [∗set] y ∈ X, Φ y) := by
-  have hequiv : ([∗set] y ∈ Y, if φ y then Φ y else emp) ⊣⊢
-      ([∗set] y ∈ Y, ⌜φ y⌝ → Φ y) := bigSepS_eqv fun _ => by
-    cases hp : φ _
-    · exact ⟨imp_intro_swap <| pure_elim_left (fun hf => nomatch hf), Affine.affine⟩
-    · simp [true_imp.symm]
-  exact (bigSepS_filter_acc_cond φ h).trans <| sep_mono hequiv.1 (wand_mono hequiv.2 .rfl)
+      ([∗set] y ∈ FiniteSet.filter φ X, Φ y) ∗
+      (∀ Ψ : A → PROP, (□ (∀ y, ⌜y ∈ X⌝ → ⌜¬ φ y⌝ → Φ y -∗ Ψ y)) -∗
+        ([∗set] y ∈ FiniteSet.filter φ X, Ψ y) -∗ [∗set] y ∈ X, Ψ y) := by
+  have hfilter : FiniteSet.filter φ X ⊆ X := fun z hz => ((FiniteSet.mem_filter φ X z).mp hz).left
+  refine (bigSepS_split_subset hfilter).mp.trans <| sep_mono_right <|
+    forall_intro fun Ψ => wand_intro <| wand_intro ?_
+  refine .trans ?_ (bigSepS_split_subset hfilter).mpr
+  refine sep_comm.mp.trans <| sep_mono_right ?_
+  calc iprop(([∗set] x ∈ X \ FiniteSet.filter φ X, Φ x) ∗ □ ∀ y, ⌜y ∈ X⌝ → ⌜¬φ y = true⌝ → Φ y -∗ Ψ y)
+    _ ⊢ ([∗set] x ∈ X \ FiniteSet.filter φ X, Φ x) ∗
+        □ ∀ x, ⌜x ∈ X \ FiniteSet.filter φ X⌝ → Φ x -∗ Ψ x :=
+        sep_mono_right <| intuitionistically_mono <| forall_mono fun y =>
+          imp_intro_swap <| pure_elim_left fun hy => ?_
+    _ ⊢ ((□ ∀ x, ⌜x ∈ X \ FiniteSet.filter φ X⌝ → Φ x -∗ Ψ x) -∗
+          [∗set] x ∈ X \ FiniteSet.filter φ X, Ψ x) ∗
+        □ ∀ x, ⌜x ∈ X \ FiniteSet.filter φ X⌝ → Φ x -∗ Ψ x := sep_mono_left bigSepS_impl
+    _ ⊢ [∗set] x ∈ X \ FiniteSet.filter φ X, Ψ x := wand_elim_left
+  have hdiff : y ∈ X ∧ ¬ φ y :=
+    match mem_diff.mp hy with
+    | ⟨hyX, hyF⟩ => ⟨hyX, fun hφ => hyF ((FiniteSet.mem_filter φ X y).mpr ⟨hyX, hφ⟩)⟩
+  exact (pure_imp_elim hdiff.left).trans (pure_imp_elim hdiff.right)
 
 @[rocq_alias big_sepS_union_2]
 theorem bigSepS_union_elim {Φ : A → PROP} {X Y : S} [∀ x, TCOr (Affine (Φ x)) (Absorbing (Φ x))] :
@@ -428,7 +437,6 @@ theorem bigSepS_dup {P : PROP} [Affine P] {X : S} :
     ⊢ □ (P -∗ P ∗ P) -∗ P -∗ [∗set] _x ∈ X, P :=
   entails_wand <| wand_intro_left <| sep_comm.1.trans <| bigSepL_dup.trans bigSepS_elements.2
 
--- TODO: `big_sepS_sepMS` requires multiset infrastructure (`gmultiset`)
 
 end BigSepS
 

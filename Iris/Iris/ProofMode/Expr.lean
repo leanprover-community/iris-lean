@@ -1,11 +1,10 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König, Mario Carneiro, Michael Sammler, Yunsong Yang
 -/
 module
 
-public meta import Qq
 public import Iris.BI
 public import Iris.ProofMode.Classes
 public import Iris.Std
@@ -32,7 +31,7 @@ the named hypothesis.
 `IrisHyp` should be only inserted at the outermost level of Iris hypotheses.
 See https://github.com/leanprover-community/iris-lean/issues/469
 -/
-@[expose, reducible] public def IrisHyp {α : Sort u} (x : α) : α := x
+abbrev IrisHyp {α : Sort u} (x : α) : α := x
 
 structure IVarId where
   name : Name
@@ -51,13 +50,15 @@ def mkFreshIVarId [Monad m] [MonadNameGenerator m] (persistent? : Bool) : m IVar
   deriving Inhabited, EmptyCollection, Singleton
 
 def parseName? : Expr → Option (Name × Name × Expr)
-  | .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar)]⟩ (.app (.app c _α) e) => do
+  | .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar)]⟩
+      (.app (.app c _α) e) => do
     if c.constName? != some ``IrisHyp then
       failure
     some (name, ivar, e)
   | _ => none
 
-def mkNameAnnotation {prop : Q(Type u)} (name : Name) (ivar : IVarId) (e : Q($prop)) : Q($prop) :=
+def mkNameAnnotation {prop : Q(Type u)} (name : Name) (ivar : IVarId)
+    (e : Q($prop)) : Q($prop) :=
   .mdata ⟨[(nameAnnotation, .ofName name), (ivarAnnotation, .ofName ivar.name)]⟩ q(IrisHyp $e)
 
 def getFreshName : TSyntax ``binderIdent → CoreM (Name × Syntax)
@@ -140,7 +141,8 @@ def Hyps.tm : @Hyps _ prop bi s → Q($prop)
   | .emp _ => s
   | .sep tm .. | .hyp tm .. => tm
 
-def Hyps.mkEmp {prop : Q(Type u)} (bi : Q(BI $prop)) (e := q(BI.emp : $prop)) : Hyps bi e := .emp ⟨⟩
+def Hyps.mkEmp {prop : Q(Type u)} (bi : Q(BI $prop)) (e := q(BI.emp : $prop)) : Hyps bi e :=
+  .emp ⟨⟩
 
 def Hyps.mkSep {prop : Q(Type u)} {bi : Q(BI $prop)} {elhs erhs}
     (lhs : Hyps bi elhs) (rhs : Hyps bi erhs) (e := q(BI.sep $elhs $erhs)) : Hyps bi e :=
@@ -153,15 +155,17 @@ def mkIntuitionisticIf {prop : Q(Type u)} (_bi : Q(BI $prop))
   | .inr _ => ⟨e, ⟨⟩⟩
 
 def Hyps.mkHyp {prop : Q(Type u)} (bi : Q(BI $prop))
-    (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) : Hyps bi e :=
+    (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) (e := q(iprop(□?$p $ty))) :
+    Hyps bi e :=
   .hyp (mkIntuitionisticIf bi p (mkNameAnnotation name ivar ty)) name ivar p ty ⟨⟩
 
--- TODO: should this ensure that adding a hypothesis to emp creates a
--- hyp node instead of a sep node?
 def Hyps.add {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : Name) (ivar : IVarId) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
-    : Hyps bi q(iprop($e ∗ □?$p $ty)) :=
-  Hyps.mkSep h (.mkHyp bi name ivar p ty)
+    : (e' : Q($prop)) × Hyps bi e' × Q(iprop($e ∗ □?$p $ty ⊣⊢ $e')) :=
+  match h with
+  -- Adding a hypothesis to `emp` creates a `.hyp` node instead of a `.sep` node
+  | .emp _ => ⟨_, .mkHyp bi name ivar p ty, q(emp_sep)⟩
+  | _ => ⟨_, .mkSep h (.mkHyp bi name ivar p ty), q(.rfl)⟩
 
 partial def parseHyps? {prop : Q(Type u)} (bi : Q(BI $prop)) (expr : Expr) :
     Option ((s : Q($prop)) × Hyps bi s) := do
@@ -184,7 +188,21 @@ partial def Hyps.find? {u prop bi} (name : Name) :
   | _, .hyp _ name' ivar _ ty _ => if name == name' then (ivar, ty) else none
   | _, .sep _ _ _ _ lhs rhs => rhs.find? name <|> lhs.find? name
 
-partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
+partial def Hyps.findM? [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)}
+    (p : Name → IVarId → Q(Bool) → Q($prop) → m Bool) :
+    ∀ {e}, Hyps bi e → m (Option (Name × IVarId × Q(Bool) × Q($prop)))
+  | _, .emp _ => return none
+  | _, .hyp _ name ivar bp ty _ => do
+    if ← p name ivar bp ty then
+      return some (name, ivar, bp, ty)
+    else
+      return none
+  | _, .sep _ _ _ _ lhs rhs => do
+    match ← rhs.findM? p with
+    | some res => return some res
+    | none => lhs.findM? p
+
+partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s} :
     @Hyps u prop bi s → Option (Name × IVarId × Q(Bool) × Q($prop))
   | .emp _ => none
   | .hyp _ name ivar' p ty _ => if ivar == ivar' then (name, ivar, p, ty) else none
@@ -193,17 +211,34 @@ partial def Hyps.getDecl? {u prop bi} (ivar : IVarId) {s}:
 def Hyps.getUserName? {u prop bi} (ivar : IVarId) (h : @Hyps u prop bi s) : Option Name :=
   h.getDecl? ivar |>.map (·.1)
 
-partial def Hyps.spatialIVarIds {u prop bi} :
-    ∀ {s}, @Hyps u prop bi s → List IVarId
-  | _, .emp _ => []
-  | _, .hyp _ _ ivar p _ _ => if isTrue p then [] else [ivar]
-  | _, .sep _ _ _ _ lhs rhs => lhs.spatialIVarIds ++ rhs.spatialIVarIds
+/-- Indicates whether hypotheses should be in the same order as in the context or in reverse. -/
+inductive HypsOrder where
+  | topToBottom
+  | bottomToTop
 
-partial def Hyps.intuitionisticIVarIds {u prop bi} :
-    ∀ {s}, @Hyps u prop bi s → List IVarId
-  | _, .emp _ => []
-  | _, .hyp _ _ ivar p _ _ => if isTrue p then [ivar] else []
-  | _, .sep _ _ _ _ lhs rhs => lhs.intuitionisticIVarIds ++ rhs.intuitionisticIVarIds
+partial def Hyps.spatialIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s) (le : HypsOrder) :
+    List IVarId :=
+  spatialIVarIdsAux hyps le []
+where
+  spatialIVarIdsAux : ∀ {s}, @Hyps u prop bi s → HypsOrder → List IVarId → List IVarId
+  | _, .emp _, _, acc => acc
+  | _, .hyp _ _ ivar p _ _, _, acc => if isTrue p then acc else ivar :: acc
+  | _, .sep _ _ _ _ lhs rhs, .topToBottom, acc =>
+    spatialIVarIdsAux lhs .topToBottom (spatialIVarIdsAux rhs .topToBottom acc)
+  | _, .sep _ _ _ _ lhs rhs, .bottomToTop, acc =>
+    spatialIVarIdsAux rhs .bottomToTop (spatialIVarIdsAux lhs .bottomToTop acc)
+
+partial def Hyps.intuitionisticIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s)
+    (le : HypsOrder) : List IVarId :=
+  intuitionisticIVarIdsAux hyps le []
+where
+  intuitionisticIVarIdsAux : ∀ {s}, @Hyps u prop bi s → HypsOrder → List IVarId → List IVarId
+  | _, .emp _, _, acc => acc
+  | _, .hyp _ _ ivar p _ _, _, acc => if isTrue p then ivar :: acc else acc
+  | _, .sep _ _ _ _ lhs rhs, .topToBottom, acc =>
+    intuitionisticIVarIdsAux lhs .topToBottom (intuitionisticIVarIdsAux rhs .topToBottom acc)
+  | _, .sep _ _ _ _ lhs rhs, .bottomToTop, acc =>
+    intuitionisticIVarIdsAux rhs .bottomToTop (intuitionisticIVarIdsAux lhs .bottomToTop acc)
 
 /--
   Given any hypotheses `hyps` representing `e`, filter in all spatial hypotheses
@@ -246,13 +281,13 @@ def Hyps.rename : ∀ {e}, Hyps bi e → Option (Hyps bi e)
   | _, .hyp _ _ ivar p ty _ =>
     if oldIVar == ivar then some (Hyps.mkHyp bi new ivar p ty _) else none
 
-def Hyps.select (ty : Expr) : ∀ {s}, @Hyps u prop bi s → MetaM (IVarId × Q(Bool) × Q($prop))
+def Hyps.select (ty : Expr) :
+    ∀ {s}, @Hyps u prop bi s → MetaM (IVarId × Q(Bool) × Q($prop))
   | _, .emp _ => failure
   | _, .hyp _ _ ivar p ty' _ => do
     let .true ← isDefEq ty ty' | failure
     pure (ivar, p, ty')
   | _, .sep _ _ _ _ lhs rhs => try Hyps.select ty rhs catch _ => Hyps.select ty lhs
-
 
 theorem intuitionistically_sep_dup [BI PROP] {P : PROP} : □ P ⊣⊢ □ P ∗ □ P :=
   intuitionistically_sep_idem.symm
@@ -320,6 +355,44 @@ def Hyps.split {prop : Q(Type u)} (bi : Q(BI $prop)) (toRight : Name → IVarId 
   | .right => ⟨_, _, .mkEmp bi, hyps, q(emp_sep_rev)⟩
   | .split lhs rhs pf => ⟨_, _, lhs, rhs, pf⟩
 
+/--
+  Split `Hyps` into two parts, one with all spatial hypotheses representing `eS`
+  and another with all intuitionistic hypotheses representing `eI`.
+  A proof of `eI ⊢ □ eI` asserts that `eI` is indeed intuitionistic.
+-/
+def Hyps.splitIntuitionisticSpatial {prop : Q(Type u)} {bi : Q(BI $prop)} :
+    ∀ {e : Q($prop)}, Hyps bi e →
+      (eI : Q($prop)) × (eS : Q($prop)) × Q($e ⊣⊢ $eI ∗ $eS) × Q($eI ⊢ □ $eI)
+  | _, .emp _ =>
+    ⟨q(iprop(emp)), q(iprop(emp)), q(emp_sep_rev), q(intuitionistically_emp.mpr)⟩
+  | _, .hyp _ _ _ p ty _ =>
+    match matchBool p with
+    | .inl _ =>
+      ⟨q(iprop(□ $ty)), q(iprop(emp)), q(sep_emp_rev), q(intuitionistically_idem.mpr)⟩
+    | .inr _ =>
+      ⟨q(iprop(emp)), ty, q(emp_sep_rev), q(intuitionistically_emp.mpr)⟩
+  | _, .sep _ _ _ _ lhs rhs =>
+    let ⟨eIl, eSl, pfl, pIl⟩ := splitIntuitionisticSpatial lhs
+    let ⟨eIr, eSr, pfr, pIr⟩ := splitIntuitionisticSpatial rhs
+    let ⟨eI, hI, pI⟩ : (eI : Q($prop)) × Q(iprop($eIl ∗ $eIr) ⊣⊢ $eI) × Q($eI ⊢ □ $eI) :=
+      if eIl == q(iprop(emp)) then
+        let h : Q(iprop(emp) ∗ $eIr ⊣⊢ $eIr) := q(emp_sep)
+        ⟨eIr, h, pIr⟩
+      else if eIr == q(iprop(emp)) then
+        let h : Q($eIl ∗ iprop(emp) ⊣⊢ $eIl) := q(sep_emp)
+        ⟨eIl, h, pIl⟩
+      else
+        ⟨q(iprop($eIl ∗ $eIr)), q(.rfl), q((sep_mono $pIl $pIr).trans intuitionistically_sep_mpr)⟩
+    let ⟨eS, hS⟩ : (eS : Q($prop)) × Q(iprop($eSl ∗ $eSr) ⊣⊢ $eS) :=
+      if eSl == q(iprop(emp)) then
+        let h : Q(emp ∗ $eSr ⊣⊢ $eSr) := q(emp_sep)
+        ⟨eSr, h⟩
+      else if eSr == q(iprop(emp)) then
+        let h : Q($eSl ∗ emp ⊣⊢ $eSl) := q(sep_emp)
+        ⟨eSl, h⟩
+      else ⟨q(iprop($eSl ∗ $eSr)), q(.rfl)⟩
+    ⟨eI, eS, q((split_ss $pfl $pfr).trans (sep_congr $hI $hS)), pI⟩
+
 end split
 
 section remove
@@ -335,11 +408,11 @@ inductive RemoveHypCore {prop : Q(Type u)} (bi : Q(BI $prop)) (e : Q($prop)) (α
   | one (a : α) (out' : Q($prop)) (p : Q(Bool)) (eq : $e =Q iprop(□?$p $out'))
   | main (a : α) (_ : RemoveHyp bi e)
 
-theorem remove_l [BI PROP] {P P' Q R : PROP} (h : P ⊣⊢ P' ∗ R) :
+theorem remove_left [BI PROP] {P P' Q R : PROP} (h : P ⊣⊢ P' ∗ R) :
     P ∗ Q ⊣⊢ (P' ∗ Q) ∗ R :=
   (sep_congr_left h).trans sep_right_comm
 
-theorem remove_r [BI PROP] {P Q Q' R : PROP} (h : Q ⊣⊢ Q' ∗ R) :
+theorem remove_right [BI PROP] {P Q Q' R : PROP} (h : Q ⊣⊢ Q' ∗ R) :
     P ∗ Q ⊣⊢ (P ∗ Q') ∗ R :=
   (sep_congr_right h).trans sep_assoc.symm
 
@@ -363,13 +436,13 @@ def Hyps.removeCore : ∀ {e}, Hyps bi e → m (RemoveHypCore bi e α)
       return .main a ⟨elhs, lhs, erhs, out', p, h, q(.rfl)⟩
     | .main a ⟨_, rhs', out, out', p, h, pf⟩ =>
       let hyps' := .mkSep lhs rhs'
-      return .main a ⟨_, hyps', out, out', p, h, q(remove_r $pf)⟩
+      return .main a ⟨_, hyps', out, out', p, h, q(remove_right $pf)⟩
     | .none => match ← lhs.removeCore with
       | .one a out' p h =>
         return .main a ⟨erhs, rhs, elhs, out', p, h, q(sep_comm)⟩
       | .main a ⟨_, lhs', out, out', p, h, pf⟩ =>
         let hyps' := .mkSep lhs' rhs
-        return .main a ⟨_, hyps', out, out', p, h, q(remove_l $pf)⟩
+        return .main a ⟨_, hyps', out, out', p, h, q(remove_left $pf)⟩
       | .none => pure .none
 
 def Hyps.removeG [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q(Prop)}
@@ -398,14 +471,14 @@ theorem Replaces.apply [BI PROP] {P P' Q : PROP}
     (h : Replaces Q P P') (h_entails : P' ⊢ Q) : P ⊢ Q :=
   wand_entails <| (entails_wand h_entails).trans h
 
-theorem replaces_r [BI PROP] {K P Q Q' : PROP} (h : Replaces K Q Q') :
+theorem replaces_right [BI PROP] {K P Q Q' : PROP} (h : Replaces K Q Q') :
     Replaces K iprop(P ∗ Q) iprop(P ∗ Q') :=
   wand_intro <| sep_assoc.2.trans <| wand_elim <|
   (wand_intro <| sep_assoc.1.trans wand_elim_left).trans h
 
-theorem replaces_l [BI PROP] {K P P' Q : PROP} (h : Replaces K P P') :
+theorem replaces_left [BI PROP] {K P P' Q : PROP} (h : Replaces K P P') :
     Replaces K iprop(P ∗ Q) iprop(P' ∗ Q) :=
-  (wand_mono_left sep_comm.1).trans <| (replaces_r h).trans (wand_mono_left sep_comm.1)
+  (wand_mono_left sep_comm.1).trans <| (replaces_right h).trans (wand_mono_left sep_comm.1)
 
 theorem to_persistent_spatial [BI PROP] {P P' Q : PROP}
     [hP : IntoPersistently false P P'] [or : TCOr (Affine P) (Absorbing Q)] :
@@ -433,7 +506,7 @@ theorem replace_hyp {PROP} [BI PROP] {p} {ty ty' e0 : PROP}
     | false => (sep_mono_left intuitionistically_elim).trans <| wand_elim_left
     | true => intuitionistically_sep_mpr.trans <| intuitionistically_mono wand_elim_left
 
-theorem replace_hyp_sep_l {PROP} [BI PROP] {elhs elhs' erhs e0 : PROP}
+theorem replace_hyp_sep_left {PROP} [BI PROP] {elhs elhs' erhs e0 : PROP}
   (h : ∀ P, (elhs ∗ P) ∧ e0 ⊢ elhs' ∗ P) :
   ∀ P, ((elhs ∗ erhs) ∗ P) ∧ e0 ⊢ (elhs' ∗ erhs) ∗ P := fun P =>
   calc iprop(((elhs ∗ erhs) ∗ P) ∧ e0)
@@ -441,7 +514,7 @@ theorem replace_hyp_sep_l {PROP} [BI PROP] {elhs elhs' erhs e0 : PROP}
     _ ⊢ elhs' ∗ (erhs ∗ P) := h _
     _ ⊢ (elhs' ∗ erhs) ∗ P := sep_assoc.2
 
-theorem replace_hyp_sep_r {PROP} [BI PROP] {elhs erhs' erhs e0 : PROP}
+theorem replace_hyp_sep_right {PROP} [BI PROP] {elhs erhs' erhs e0 : PROP}
   (h : ∀ P, (erhs ∗ P) ∧ e0 ⊢ erhs' ∗ P) :
   ∀ P, ((elhs ∗ erhs) ∗ P) ∧ e0 ⊢ (elhs ∗ erhs') ∗ P := fun P =>
   calc iprop(((elhs ∗ erhs) ∗ P) ∧ e0)
@@ -458,8 +531,11 @@ theorem replace_finish {PROP} [BI PROP] {e e' : PROP}
       _ ⊢ e' := sep_emp.1
 
 variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)} (bi : Q(BI $prop)) (e0 : Q($prop))
-  (ivar : IVarId) (repl : Name → Q(Bool) → (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($e0 ⊢ <pers> ($ty -∗ $ty')))) in
-def Hyps.replaceCore : ∀ {e}, Hyps bi e → m (Option ((e' : Q($prop)) × Hyps bi e' × Q(∀ P, (($e ∗ P) ∧ $e0 ⊢ $e' ∗ P))))
+  (ivar : IVarId)
+  (repl : Name → Q(Bool) → (ty : Q($prop)) →
+          m ((ty' : Q($prop)) × Q($e0 ⊢ <pers> ($ty -∗ $ty')))) in
+def Hyps.replaceCore : ∀ {e}, Hyps bi e →
+    m (Option ((e' : Q($prop)) × Hyps bi e' × Q(∀ P, (($e ∗ P) ∧ $e0 ⊢ $e' ∗ P))))
   | _, .emp _ => return none
   | _, .hyp _ name ivar' p ty _ => do
     if ivar == ivar' then
@@ -468,13 +544,14 @@ def Hyps.replaceCore : ∀ {e}, Hyps bi e → m (Option ((e' : Q($prop)) × Hyps
     return none
   | _, .sep _ _ _ _ lhs rhs => do
     if let some ⟨_, lhs', pf⟩ ← lhs.replaceCore then
-      return some ⟨_, .mkSep lhs' rhs, q(replace_hyp_sep_l $pf)⟩
+      return some ⟨_, .mkSep lhs' rhs, q(replace_hyp_sep_left $pf)⟩
     if let some ⟨_, rhs', pf⟩ ← rhs.replaceCore then
-      return some ⟨_, .mkSep lhs rhs', q(replace_hyp_sep_r $pf)⟩
+      return some ⟨_, .mkSep lhs rhs', q(replace_hyp_sep_right $pf)⟩
     return none
 
-variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e)
-  (ivar : IVarId) (repl : Name → Q(Bool) → (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($e ⊢ <pers> ($ty -∗ $ty')))) in
+variable [Monad m] [MonadLiftT MetaM m] {prop : Q(Type u)}
+  {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e) (ivar : IVarId)
+  (repl : Name → Q(Bool) → (ty : Q($prop)) → m ((ty' : Q($prop)) × Q($e ⊢ <pers> ($ty -∗ $ty')))) in
 def Hyps.replace : m (Option ((e' : Q($prop)) × Hyps bi e' × Q($e ⊢ $e'))) := do
   let some ⟨_, hyps', pf⟩ ← hyps.replaceCore bi e ivar repl | return none
   return some ⟨_, hyps', q(replace_finish $pf)⟩
@@ -538,6 +615,14 @@ def parseIrisGoal? (expr : Expr) : Option IrisGoal := do
   let ⟨e, hyps⟩ ← parseHyps? bi P
   some { u, prop, bi, e, hyps, goal }
 
+/--
+  Parse an Iris entailment (`Entails` rather than `Entails'`).
+-/
+def parseEntails? (expr : Expr) : Option <| Expr × Expr × Expr × Expr :=
+  match expr.consumeMData.appM? ``Entails with
+  | some #[prop, bi, e, goal] => some ⟨prop, bi, e, goal⟩
+  | _ => none
+
 def IrisGoal.toExpr : IrisGoal → Expr
   | { hyps, goal, .. } => q(Entails' $(hyps.tm) $goal)
 
@@ -569,21 +654,23 @@ def addHypInfo (stx : Syntax) (name : Name) (ivar : IVarId) (prop : Q(Type u)) (
   let ty := q(HypMarker $ty)
   addLocalVarInfo stx (lctx.mkLocalDecl ⟨ivar.name⟩ name ty) (.fvar ⟨ivar.name⟩) ty isBinder
 
-/-- Hyps.findWithInfo should be used on names obtained from the syntax of a tactic to highlight them correctly. -/
+/-- Hyps.findWithInfo should be used on names obtained from the syntax of a tactic to
+highlight them correctly. -/
 def Hyps.findWithInfo {u prop bi} (hyps : @Hyps u prop bi s) (name : Ident) : MetaM IVarId := do
   let some (ivar, ty) := hyps.find? name.getId | throwError "unknown hypothesis {name}"
   addHypInfo name name.getId ivar prop ty
   pure (ivar)
 
-/-- Hyps.addWithInfo should be used by tactics that introduce a hypothesis based on the name given by the user. -/
+/-- Hyps.addWithInfo should be used by tactics that introduce a hypothesis based on the name
+given by the user. -/
 def Hyps.addWithInfo {prop : Q(Type u)} (bi : Q(BI $prop))
     (name : TSyntax ``binderIdent) (p : Q(Bool)) (ty : Q($prop)) {e} (h : Hyps bi e)
-    : MetaM (IVarId × Hyps bi q(iprop($e ∗ □?$p $ty))) := do
+    : MetaM (IVarId × (e' : Q($prop)) × Hyps bi e' × Q(iprop($e ∗ □?$p $ty ⊣⊢ $e'))) := do
   let ivar' ← mkFreshIVarId (isTrue p)
   let (nameTo, nameRef) ← getFreshName name
   addHypInfo nameRef nameTo ivar' prop ty (isBinder := true)
-  let hyps := Hyps.add bi nameTo ivar' p ty h
-  return ⟨ivar', hyps⟩
+  let ⟨e', hyps, pf⟩ := Hyps.add bi nameTo ivar' p ty h
+  return ⟨ivar', e', hyps, pf⟩
 
 /--
   Given hypothesis `hyps` representing `e` where every hypothesis exist in the
@@ -602,3 +689,7 @@ def Hyps.buildIntuitionisticProof {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     let pfL ← buildIntuitionisticProof lhs
     let pfR ← buildIntuitionisticProof rhs
     some q((sep_mono $pfL $pfR).trans intuitionistically_sep_mpr)
+
+end ProofMode
+
+end Iris

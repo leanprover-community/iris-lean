@@ -1,12 +1,11 @@
 /-
-Copyright (c) 2025 Alok Singh. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alok Singh, Markus de Medeiros
 -/
 module
 
 public import Iris.Std.PartialMap
-public import Iris.Std.Infinite
 public import Std.Data.TreeMap
 public import Std.Data.ExtTreeMap
 
@@ -17,12 +16,12 @@ This file provides a library of `PartialMap`, `Heap`, and `UnboundedHeap`
 instances for types from the Lean standard library.
 
 ## Instances
-- Plain functions: `PartialMap`, `IsoFunMap`
+- Plain functions: `PartialMap`
 - Functions into `Option`: `Heap`
 - Classical functions into `Option`: `UnboundedHeap`
 - Association lists: `UnboundedHeap`
 - `TreeMap`: `PartialMap`
-- `ExtTreeMap`: `PartialMap`
+- `ExtTreeMap`: `UnboundedHeap`
 -/
 
 @[expose] public section
@@ -64,8 +63,7 @@ end FunPartialMap
 /-! ## (Noncomputable) Allocation in an infinite function type -/
 noncomputable section ClassicalAllocHeap
 
-open Classical
-
+open Classical in
 instance instClassicalAllocHeap : Heap (K → Option ·) K where
   notFull f := infinite <| cosupport f
   fresh := choose ∘ coinfinite_exists_next
@@ -251,7 +249,7 @@ instance : PartialMap (ExtTreeMap K · compare) K where
 @[simp]
 theorem getElem?_mergeWith' {t₁ t₂ : ExtTreeMap K V compare} :
     (t₁.mergeWith f t₂)[k]? = merge (f k) t₁[k]? t₂[k]? := by
-  show
+  change
     Const.get? (Const.mergeWith f t₁.inner t₂.inner) k =
     merge (f k) (Const.get? t₁.inner k) (Const.get? t₂.inner k)
   obtain ⟨q₁⟩ := t₁.inner
@@ -282,5 +280,23 @@ instance : LawfulFiniteMap (ExtTreeMap K · compare) K where
   toList_get {_ m _ _} := m.mem_toList_iff_getElem?_eq_some
 
 end HeapInstance
-
 end Std.ExtTreeMap
+
+namespace Classical
+
+open Std Iris.Std
+variable {K} [Ord K] [TransOrd K] [LawfulEqOrd K]
+
+noncomputable scoped instance instUnboundedHeapCompare [InfiniteType K] :
+    UnboundedHeap (ExtTreeMap K · compare) K where
+  notFull _ := True
+  fresh {_} {m} _ := m.keys.fresh.choose
+  get?_fresh {V} {m} {_} := by
+    change m.get? m.keys.fresh.choose = none
+    grind
+  notFull_empty := trivial
+  notFull_insert_fresh := trivial
+
+end Classical
+
+section

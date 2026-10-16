@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sergei Stepanenko
 -/
 module
 
@@ -12,33 +13,14 @@ public import Iris.Algebra.Numbers
 
 namespace Iris
 
-open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
-
-section MaxNat
-
-abbrev MaxNat := Nat
-
-scoped instance : Add MaxNat := ⟨max⟩
-scoped instance : Associative (Add.add (α := MaxNat)) where
-  assoc := Nat.max_assoc
-scoped instance : Commutative (Add.add (α := MaxNat)) where
-  comm := Nat.max_comm
-scoped instance : Zero MaxNat := ⟨0⟩
-scoped instance : LawfulLeftIdentity (Add.add (α := MaxNat)) (0 : MaxNat) where
-  left_id := Nat.zero_max
-scoped instance : Std.IdempotentOp (Add.add (α := MaxNat)) where
-  idempotent x := by simp [Add.add]
-scoped instance : COFE MaxNat := COFE.ofDiscrete _
-scoped instance : OFE.Discrete MaxNat := ⟨fun h _ => h⟩
-scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRAOfLawfulLeftIdentityAddZero
-scoped instance : CMRA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
-scoped instance : CMRA.CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
-
-end MaxNat
-
+@[rocq_alias mono_nat]
 abbrev MonoNat := Auth MaxNat
 
+#rocq_ignore mono_natR "Use the MonoNat type and View.instCMRA typeclass"
+#rocq_ignore mono_natUR "Use the MonoNat type and View.instUORA typeclass"
+
 namespace MonoNat
+open ORA
 
 @[rocq_alias mono_nat_auth]
 def auth (dq : DFrac) (n : MaxNat) : MonoNat := (●{dq} n) • (◯ n)
@@ -54,58 +36,45 @@ scoped instance : OFE.DiscreteE (◯MN n : MonoNat) := Auth.frag_discrete
 scoped instance : OFE.DiscreteE (●MN{dq} n : MonoNat) :=
   ⟨fun h => OFE.discrete h⟩
 scoped instance : IsUnit (◯MN 0 : MonoNat) where
-  unit_valid := by simp only [lb, Auth.frag_valid]; exact True.intro
-  unit_left_id {x} := .rfl
-  pcore_unit := .rfl
+  unit_valid := Auth.frag_valid.mpr trivial
+  unit_left_id := rfl
+  pcore_unit := rfl
 
 @[rocq_alias mono_nat_lb_core_id]
-instance {n : MaxNat} : CMRA.CoreId (◯MN n : MonoNat) := by
+instance {n : MaxNat} : CoreId (◯MN n : MonoNat) := by
   unfold lb
   infer_instance
 
 @[rocq_alias mono_nat_auth_core_id]
-instance {l : MaxNat} : CMRA.CoreId (●MN□ l : MonoNat) := by
+instance {l : MaxNat} : CoreId (●MN□ l : MonoNat) := by
   unfold auth
   infer_instance
 
 @[rocq_alias mono_nat_auth_dfrac_op]
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (n : MaxNat) :
-  (●MN{dq1 • dq2} n : MonoNat) ≡ (●MN{dq1} n) • (●MN{dq2} n) := by
-  refine CMRA.comm.trans ?_
-  refine (CMRA.op_right_eqv _ Auth.auth_dfrac_op).trans ?_
-  refine CMRA.comm.trans ?_
-  refine CMRA.assoc.symm.trans ?_
-  refine (CMRA.op_right_eqv _ CMRA.comm).trans ?_
-  refine (CMRA.op_right_eqv _ (CMRA.op_self (◯ n)).symm.op_l).trans ?_
-  refine (CMRA.op_right_eqv _ CMRA.assoc.symm).trans ?_
-  refine CMRA.assoc.trans ?_
-  refine CMRA.op_right_eqv _ CMRA.comm
+  (●MN{dq1 • dq2} n : MonoNat) = (●MN{dq1} n) • (●MN{dq2} n) := by
+  unfold auth
+  rw [← assoc', op_core_right_of_inc (inc_op_right ..), assoc', ← Auth.auth_dfrac_op]
 
 @[rocq_alias mono_nat_lb_op]
 theorem lb_op (n1 n2 : MaxNat) :
-  (◯MN (max n1 n2) : MonoNat) = ((◯MN n1) • (◯MN n2) : MonoNat) :=
+  (◯MN (n1 + n2) : MonoNat) = ((◯MN n1) • (◯MN n2) : MonoNat) :=
   Auth.frag_op
 
 @[rocq_alias mono_nat_auth_lb_op]
 theorem auth_lb_op (dq : DFrac) (n : MaxNat) :
-  (●MN{dq} n : MonoNat) ≡ (●MN{dq} n) • (◯MN n) := by
-  refine .trans ?_ CMRA.assoc
-  simp only [lb, ←Auth.frag_op]
-  refine CMRA.op_right_eqv _ ?_
-  simp [CMRA.op, Add.add]
+  (●MN{dq} n : MonoNat) = (●MN{dq} n) • (◯MN n) :=
+  (op_core_left_of_inc (inc_op_right ..)).symm
 
 @[rocq_alias mono_nat_lb_op_le_l]
 theorem lb_op_le_l (n n' : MaxNat) (h : n' ≤ n) :
-  (◯MN n : MonoNat) = ((◯MN n') • (◯MN n) : MonoNat) := by
-  rw [←lb_op]
-  congr
-  simp only [h, Nat.max_eq_right]
+  (◯MN n : MonoNat) = ((◯MN n') • (◯MN n) : MonoNat) :=
+  (congrArg lb (by grind)).trans (lb_op n' n)
 
 @[rocq_alias mono_nat_auth_dfrac_valid]
 theorem auth_dfrac_valid (dq : DFrac) (n : MaxNat) :
-  (✓ (●MN{dq} n : MonoNat)) ↔ ✓ dq := by
-  refine Auth.both_dfrac_valid_discrete.trans ?_
-  simpa only [CMRA.inc_refl, true_and] using ⟨fun ⟨h, _⟩ => h, fun h => ⟨h, True.intro⟩⟩
+  (✓ (●MN{dq} n : MonoNat)) ↔ ✓ dq :=
+  Auth.both_dfrac_valid_discrete.trans ⟨And.left, fun h => ⟨h, inc_refl _, trivial⟩⟩
 
 @[rocq_alias mono_nat_auth_valid]
 theorem auth_valid (n : MaxNat) :
@@ -118,64 +87,50 @@ theorem auth_dfrac_op_valid (dq1 dq2 : DFrac) (n1 n2 : MaxNat) :
   constructor
   · intro h
     unfold auth at h
-    replace h := CMRA.valid_of_eqv (CMRA.assoc.symm.trans <| (CMRA.op_right_eqv _ <|
-      CMRA.assoc.trans <| (CMRA.op_left_eqv _ CMRA.comm).trans CMRA.assoc.symm).trans
-      CMRA.assoc) h
-    have ⟨hdq, heq, _⟩ := Auth.auth_dfrac_op_valid.mp (CMRA.valid_op_left h)
-    exact ⟨hdq, heq.to_eq⟩
+    have ⟨hdq, heq, _⟩ := Auth.auth_dfrac_op_valid.mp <|
+      valid_of_inc (op_mono (inc_op_left ..) (inc_op_left ..)) h
+    exact ⟨hdq, heq⟩
   · rintro ⟨hdq, rfl⟩
-    refine CMRA.valid_of_eqv ?_ (Auth.both_dfrac_valid_discrete.mpr ⟨hdq, CMRA.inc_refl n1, trivial⟩)
-    exact auth_dfrac_op dq1 dq2 n1
+    exact auth_dfrac_op dq1 dq2 n1 ▸ (auth_dfrac_valid _ n1).mpr hdq
 
 @[rocq_alias mono_nat_auth_op_valid]
 theorem auth_op_valid (n1 n2 : MaxNat) :
-  (✓ ((●MN n1) • (●MN n2) : MonoNat)) ↔ False := by
-  refine (auth_dfrac_op_valid _ _ n1 n2).trans ?_
-  refine ⟨fun ⟨h, _⟩ => ?_, False.elim⟩
-  exact DFrac.own_whole_exclusive |>.exclusive0_l _ h.validN
+  (✓ ((●MN n1) • (●MN n2) : MonoNat)) ↔ False :=
+  (auth_dfrac_op_valid ..).trans
+    ⟨fun ⟨h, _⟩ => DFrac.own_whole_exclusive.exclusive0_l _ h.validN, False.elim⟩
 
 @[rocq_alias mono_nat_both_dfrac_valid]
 theorem both_dfrac_valid (dq : DFrac) (n m : MaxNat) :
   (✓ ((●MN{dq} n) • (◯MN m) : MonoNat)) ↔ ✓ dq ∧ m ≤ n := by
   unfold auth lb
-  rw [CMRA.valid_iff CMRA.assoc.symm, ←Auth.frag_op, Auth.both_dfrac_valid_discrete]
-  constructor
-  · intro ⟨hdq, ⟨k, hk⟩, _⟩; refine ⟨hdq, ?_⟩
-    replace hk := hk.to_eq
-    simp only [CMRA.op, Add.add] at hk
-    grind
-  · intro ⟨hdq, hle⟩; refine ⟨hdq, ⟨0, ?_⟩, trivial⟩
-    refine OFE.Equiv.of_eq ?_
-    simp [CMRA.op, Add.add, Nat.max_eq_left hle]
+  rw [assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete, MaxNat.inc_iff]
+  exact ⟨fun ⟨hdq, hle, _⟩ => ⟨hdq, by grind⟩, fun ⟨hdq, hle⟩ => ⟨hdq, by grind, trivial⟩⟩
 
 @[rocq_alias mono_nat_both_valid]
 theorem both_valid (n m : MaxNat) :
-  (✓ ((●MN n) • (◯MN m) : MonoNat)) ↔ m ≤ n := by
-  rw [both_dfrac_valid]
-  exact ⟨fun h => h.2, fun h => ⟨DFrac.valid_own_one, h⟩⟩
+  (✓ ((●MN n) • (◯MN m) : MonoNat)) ↔ m ≤ n :=
+  (both_dfrac_valid ..).trans ⟨And.right, fun h => ⟨DFrac.valid_own_one, h⟩⟩
+
+theorem lb_mono_ord (n1 n2 : MaxNat) (h : n1 ≤ n2) :
+  (◯MN n1 : MonoNat) ≼ₒ ◯MN n2 :=
+  Auth.frag_ord_of_ord (MaxNat.ord_iff.mpr h)
 
 @[rocq_alias mono_nat_lb_mono]
 theorem lb_mono (n1 n2 : MaxNat) (h : n1 ≤ n2) :
-  (◯MN n1 : MonoNat) ≼ ◯MN n2 := by
-  refine Auth.frag_inc_of_inc ?_
-  exists n2
-  refine OFE.Equiv.of_eq ?_
-  simp only [CMRA.op, Add.add]
-  grind
+  (◯MN n1 : MonoNat) ≼ ◯MN n2 :=
+  inc_iff_ord.mpr (lb_mono_ord n1 n2 h)
+
+theorem ord (dq : DFrac) (n : MaxNat) : (◯MN n : MonoNat) ≼ₒ ●MN{dq} n := ord_op_right ..
 
 @[rocq_alias mono_nat_included]
 theorem included (dq : DFrac) (n : MaxNat) :
   (◯MN n : MonoNat) ≼ ●MN{dq} n :=
-  CMRA.inc_op_right _ _
+  inc_iff_ord.mpr (ord dq n)
 
 @[rocq_alias mono_nat_update]
 theorem update {n : MaxNat} (n' : MaxNat) (h : n ≤ n') :
-  (●MN n : MonoNat) ~~> ●MN n' := by
-  refine Auth.auth_update (fun _ mz _ hn => ?_)
-  refine ⟨trivial, ?_⟩
-  cases mz with | none => rfl | some z =>
-  simp only [CMRA.op?, CMRA.op, Add.add] at hn ⊢
-  exact OFE.Dist.of_eq (Nat.max_eq_left (Nat.le_trans (hn ▸ Nat.le_max_right n z) h)).symm
+  (●MN n : MonoNat) ~~> ●MN n' :=
+  Auth.auth_update (MaxNat.local_update h)
 
 @[rocq_alias mono_nat_auth_persist]
 theorem auth_persist (n : MaxNat) (dq : DFrac) :
@@ -190,15 +145,15 @@ theorem auth_unpersist (n : MaxNat) :
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mono_nat_auth_dfrac_is_op]
 instance {dq dq1 dq2 : DFrac} {n : MaxNat}
-    [h : IsOp io1 dq io2 dq1 io3 dq2] :
-    IsOp io1 (●MN{dq} n) io2 (●MN{dq1} n) io3 (●MN{dq2} n) where
-  is_op := by rw [h.is_op.to_eq]; apply auth_dfrac_op
+    [h : IsOp d dq dq1 dq2] :
+    IsOp d (●MN{dq} n) (●MN{dq1} n) (●MN{dq2} n) where
+  is_op := by rw [h.is_op]; exact auth_dfrac_op ..
 
 @[rocq_alias mono_nat_lb_max_is_op]
 instance {n n1 n2 : MaxNat}
-    [h : IsOp io1 n io2 n1 io3 n2] :
-    IsOp io1 (◯MN n : MonoNat) io2 (◯MN n1) io3 (◯MN n2) where
-  is_op := by rw [h.is_op.to_eq]; exact .rfl
+    [h : IsOp d n n1 n2] :
+    IsOp d (◯MN n : MonoNat) (◯MN n1) (◯MN n2) where
+  is_op := by rw [h.is_op]; exact rfl
 
 end MonoNat
 

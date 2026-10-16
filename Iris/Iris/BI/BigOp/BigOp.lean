@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Zongyuan Liu. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Zongyuan Liu
 -/
@@ -8,7 +8,7 @@ module
 public import Iris.Algebra.Monoid
 public import Iris.Algebra.BigOp
 public import Iris.BI.DerivedLaws
-import Lean
+public import Iris.BI.Notation
 
 namespace Iris.BI
 
@@ -20,60 +20,85 @@ open Iris.Algebra Iris.Std OFE BIBase
 
 instance sepMonoidOps [BI PROP] : MonoidOps (sep (PROP := PROP)) emp where
   op_ne := BI.sep_ne
-  op_assoc := equiv_iff.mpr sep_assoc
-  op_comm := equiv_iff.mpr sep_comm
-  op_left_id := equiv_iff.mpr emp_sep
+  op_assoc := (BiEntails.to_eq sep_assoc)
+  op_comm := (BiEntails.to_eq sep_comm)
+  op_left_id := (BiEntails.to_eq emp_sep)
 
 instance andMonoidOps [BI PROP] : MonoidOps (and (PROP := PROP)) iprop(True) where
   op_ne := BI.and_ne
-  op_assoc := equiv_iff.mpr and_assoc
-  op_comm := equiv_iff.mpr and_comm
-  op_left_id := equiv_iff.mpr true_and
+  op_assoc := (BiEntails.to_eq and_assoc)
+  op_comm := (BiEntails.to_eq and_comm)
+  op_left_id := (BiEntails.to_eq true_and)
 
 instance orMonoidOps [BI PROP] : MonoidOps (or (PROP := PROP)) iprop(False) where
   op_ne := BI.or_ne
-  op_assoc := equiv_iff.mpr or_assoc
-  op_comm := equiv_iff.mpr or_comm
-  op_left_id := equiv_iff.mpr false_or
+  op_assoc := (BiEntails.to_eq or_assoc)
+  op_comm := (BiEntails.to_eq or_comm)
+  op_left_id := (BiEntails.to_eq false_or)
 
 /-! ## Homomorphism helpers for OFE equivalence -/
 
-/-- Build a `MonoidHomomorphism` for OFE equivalence from just the essential fields. -/
-theorem MonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
+/-- Build a `MonoidHomomorphism` for Leibniz equality from just the essential fields. -/
+theorem MonoidHomomorphism.ofEq [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
-    (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) ≡ op₂ (f x) (f y))
-    (hunit : f u₁ ≡ u₂) : MonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) f where
-  rel_refl := .rfl
-  rel_trans := .trans
-  op_proper ha hb := MonoidOps.op_proper ha hb
+    (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) = op₂ (f x) (f y))
+    (hunit : f u₁ = u₂) : MonoidHomomorphism op₁ op₂ u₁ u₂ (· = ·) f where
+  rel_refl := rfl
+  rel_trans := Eq.trans
+  op_proper ha hb := ha ▸ hb ▸ rfl
   map_ne := hne
   map_op := hop
   map_unit := hunit
 
-/-- Build a `WeakMonoidHomomorphism` for OFE equivalence from just the essential fields. -/
-theorem WeakMonoidHomomorphism.ofEquiv [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
+/-- Build a `WeakMonoidHomomorphism` for Leibniz equality from just the essential fields. -/
+theorem WeakMonoidHomomorphism.ofEq [OFE PROP] {op₁ op₂ : PROP → PROP → PROP}
     {u₁ u₂ : PROP} [MonoidOps op₁ u₁] [MonoidOps op₂ u₂] {f : PROP → PROP}
-    (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) ≡ op₂ (f x) (f y)) :
-    WeakMonoidHomomorphism op₁ op₂ u₁ u₂ (· ≡ ·) f where
-  rel_refl := .rfl
-  rel_trans := .trans
-  op_proper ha hb := MonoidOps.op_proper ha hb
+    (hne : NonExpansive f) (hop : ∀ {x y}, f (op₁ x y) = op₂ (f x) (f y)) :
+    WeakMonoidHomomorphism op₁ op₂ u₁ u₂ (· = ·) f where
+  rel_refl := rfl
+  rel_trans := Eq.trans
+  op_proper ha hb := ha ▸ hb ▸ rfl
   map_ne := hne
   map_op := hop
 
-/-- Big separating conjunction over a list with index access. -/
+/--
+Big separating conjunction over a list with index access.
+- Big separating conjunction over a list: `[∗list] x ∈ l, P x`.
+- Big separating conjunction over a list, with the index bound: `[∗list] i ↦ x ∈ l, P i x`.
+- Big separating conjunction over two lists in lockstep: `[∗list] x; y ∈ l1; l2, P x y`.
+- Big separating conjunction over two lists in lockstep, with the index bound:
+  `[∗list] i ↦ x; y ∈ l1; l2, P i x y`.
+-/
 abbrev bigSepL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : PROP :=
   bigOpL sep Φ l
 
-/-- Big conjunction over a list with index access. -/
+/--
+Big conjunction over a list with index access.
+
+- Big conjunction over a list: `[∧list] x ∈ l, P x`.
+- Big conjunction over a list, with the index bound: `[∧list] i ↦ x ∈ l, P i x`.
+-/
 abbrev bigAndL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : PROP :=
   bigOpL and Φ l
 
-/-- Big disjunction over a list with index access. -/
+/--
+Big disjunction over a list with index access.
+
+- Big disjunction over a list: `[∨list] x ∈ l, P x`.
+- Big disjunction over a list, with the index bound: `[∨list] i ↦ x ∈ l, P i x`.
+-/
 abbrev bigOrL [BI PROP] {A : Type _} (Φ : Nat → A → PROP) (l : List A) : PROP :=
   bigOpL or Φ l
 
-@[rocq_alias big_sepL2, expose] def bigSepL2 [BI PROP] {A B : Type _} (Φ : Nat → A → B → PROP)
+/--
+Big separating conjunction over two lists in lockstep.
+
+- Big separating conjunction over two lists: `[∗list] x;y ∈ l1; l2, P x y`.
+- Big separating conjunction over two lists, with the index bound:
+  `[∗list] i ↦ x; y ∈ l1; l2, P i x y`.
+-/
+@[rocq_alias big_sepL2, expose]
+def bigSepL2 [BI PROP] {A B : Type _} (Φ : Nat → A → B → PROP)
     (l1 : List A) (l2 : List B) : PROP :=
   match l1, l2 with
   | [], [] => emp
@@ -85,102 +110,155 @@ end List
 public section Map
 open Iris.Algebra Iris.Std OFE BIBase
 
-/-- Big separating conjunction over a map with key access. -/
-abbrev bigSepM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
-    (Φ : K → V → PROP) (m : M V) : PROP :=
+/--
+Big separating conjunction over a finite map's values, with key access.
+- Big separating conjunction over a map: `[∗map] v ∈ m, P v`.
+- Big separating conjunction over a map, with the key bound: `[∗map] k ↦ v ∈ m, P k v`.
+-/
+abbrev bigSepM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _}
+    [LawfulFiniteMap M K] (Φ : K → V → PROP) (m : M V) : PROP :=
   bigOpM sep Φ m
 
-/-- Big conjunction over a map with key access. -/
-abbrev bigAndM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
-    (Φ : K → V → PROP) (m : M V) : PROP :=
+/--
+Big conjunction over a finite map's values, with key access.
+- Big conjunction over a map: `[∧map] v ∈ m, P v`.
+- Big conjunction over a map, with the key bound: `[∧map] k ↦ v ∈ m, P k v`.
+-/
+abbrev bigAndM [BI PROP] {K : Type _} {V : Type _} {M : Type _ → Type _}
+    [LawfulFiniteMap M K] (Φ : K → V → PROP) (m : M V) : PROP :=
   bigOpM and Φ m
+
+/--
+Big separating conjunction over two finite maps in lockstep.
+- Big separating conjunction over two maps: `[∗map] v1; v2 ∈ m1;m2, P v1 v2`.
+- Big separating conjunction over two maps, with the key bound: `[∗map] k ↦ v1;v2 ∈ m1;m2, P k v1 v2`.
+-/
+@[rocq_alias big_sepM2_def, rocq_alias big_sepM2, expose]
+def bigSepM2 {PROP : Type _} [BI PROP] {K : Type _} {A B : Type u} {M : Type _ → Type _}
+ [LawfulFiniteMap M K] (Φ : K → A → B → PROP) (m1 : M A) (m2 : M B) : PROP :=
+  iprop(⌜PartialMap.dom m1 = PartialMap.dom m2⌝ ∧
+    bigSepM (fun k xy => Φ k xy.1 xy.2) (PartialMap.zipWith (fun (x : A) (y : B) => (x, y)) m1 m2))
 
 end Map
 
 public section Set
 open Iris.Algebra Iris.Std OFE BIBase
 
-/-- Big separating conjunction over a finite set. -/
-abbrev bigSepS [BI PROP] {A : Type _} {S : Type _} [FiniteSet S A] (Φ : A → PROP) (s : S) : PROP :=
+/--
+Big separating conjunction over a finite set: `[∗set] x ∈ s, P x`.
+-/
+abbrev bigSepS [BI PROP] {A : Type _} {S : Type _}
+    [FiniteSet S A] (Φ : A → PROP) (s : S) : PROP :=
   bigOpS sep Φ s
 
-/-- Big separating conjunction over a finite multiset. -/
-abbrev bigSepMS [BI PROP] {A : Type _} {MS : Type _} [FiniteMultiSet MS A] (Φ : A → PROP) (X : MS) : PROP :=
+/--
+Big separating conjunction over a finite multiset: `[∗mset] x ∈ X, P x`.
+-/
+abbrev bigSepMS [BI PROP] {A : Type _} {MS : Type _}
+    [FiniteMultiSet MS A] (Φ : A → PROP) (X : MS) : PROP :=
   bigOpMS sep Φ X
 
 end Set
 
 public meta section
 open Lean PrettyPrinter Delaborator SubExpr
+
 /-! ## Notation -/
 
--- Notation for bigSepL without index
-syntax "[∗list] " ident " ∈ " term ", " term : term
--- Notation for bigSepL with index
-syntax "[∗list] " ident " ↦ " ident " ∈ " term ", " term : term
--- Notation for bigSepL2 without index
-syntax "[∗list] " ident ";" ident " ∈ " term ";" term ", " term : term
--- Notation for bigSepL2 with index
-syntax "[∗list] " ident " ↦ " ident ";" ident " ∈ " term ";" term ", " term : term
+@[inherit_doc bigSepL] syntax "[∗list] " ident " ∈ " term ", " term : term
+@[inherit_doc bigSepL] syntax "[∗list] " ident " ↦ " ident " ∈ " term ", " term : term
+@[inherit_doc bigSepL2] syntax "[∗list] " ident ";" ident " ∈ " term ";" term ", " term : term
+@[inherit_doc bigSepL2] syntax "[∗list] " ident " ↦ " ident ";" ident " ∈ " term ";" term ", " term : term
 
--- Notation for bigAndL without index
-syntax "[∧list] " ident " ∈ " term ", " term : term
--- Notation for bigAndL with index
-syntax "[∧list] " ident " ↦ " ident " ∈ " term ", " term : term
+@[inherit_doc bigAndL] syntax "[∧list] " ident " ∈ " term ", " term : term
+@[inherit_doc bigAndL] syntax "[∧list] " ident " ↦ " ident " ∈ " term ", " term : term
 
--- Notation for bigOrL without index
-syntax "[∨list] " ident " ∈ " term ", " term : term
--- Notation for bigOrL with index
-syntax "[∨list] " ident " ↦ " ident " ∈ " term ", " term : term
+@[inherit_doc bigOrL] syntax "[∨list] " ident " ∈ " term ", " term : term
+@[inherit_doc bigOrL] syntax "[∨list] " ident " ↦ " ident " ∈ " term ", " term : term
 
--- Notation for bigSepM without key
-syntax "[∗map] " ident " ∈ " term ", " term : term
--- Notation for bigSepM with key
-syntax "[∗map] " ident " ↦ " ident " ∈ " term ", " term : term
+@[inherit_doc bigSepM] syntax "[∗map] " ident " ∈ " term ", " term : term
+@[inherit_doc bigSepM] syntax "[∗map] " ident " ↦ " ident " ∈ " term ", " term : term
 
--- Notation for bigAndM without key
-syntax "[∧map] " ident " ∈ " term ", " term : term
--- Notation for bigAndM with key
-syntax "[∧map] " ident " ↦ " ident " ∈ " term ", " term : term
+@[inherit_doc bigSepM2] syntax "[∗map] " ident ";" ident " ∈ " term ";" term ", " term : term
+@[inherit_doc bigSepM2] syntax "[∗map] " ident " ↦ " ident ";" ident " ∈ " term ";" term ", " term : term
 
--- Notation for bigSepS
-syntax "[∗set] " ident " ∈ " term ", " term : term
 
--- Notation for bigSepMS
-syntax "[∗mset] " ident " ∈ " term ", " term : term
+@[inherit_doc bigAndM] syntax "[∧map] " ident " ∈ " term ", " term : term
+@[inherit_doc bigAndM] syntax "[∧map] " ident " ↦ " ident " ∈ " term ", " term : term
+
+@[inherit_doc bigSepS] syntax "[∗set] " ident " ∈ " term ", " term : term
+
+@[inherit_doc bigSepMS] syntax "[∗mset] " ident " ∈ " term ", " term : term
 
 macro_rules
-  | `([∗list] $x:ident ∈ $l, $P) => `(bigSepL (fun _ $x => $P) $l)
-  | `([∗list] $k:ident ↦ $x:ident ∈ $l, $P) => `(bigSepL (fun $k $x => $P) $l)
-  | `([∧list] $x:ident ∈ $l, $P) => `(bigAndL (fun _ $x => $P) $l)
-  | `([∧list] $k:ident ↦ $x:ident ∈ $l, $P) => `(bigAndL (fun $k $x => $P) $l)
-  | `([∨list] $x:ident ∈ $l, $P) => `(bigOrL (fun _ $x => $P) $l)
-  | `([∨list] $k:ident ↦ $x:ident ∈ $l, $P) => `(bigOrL (fun $k $x => $P) $l)
-  | `([∗list] $x1:ident;$x2:ident ∈ $l1;$l2, $P) => `(bigSepL2 (fun _ $x1 $x2 => $P) $l1 $l2)
-  | `([∗list] $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P) => `(bigSepL2 (fun $k $x1 $x2 => $P) $l1 $l2)
-  | `([∗map] $x:ident ∈ $m, $P) => `(bigSepM (fun _ $x => $P) $m)
-  | `([∗map] $k:ident ↦ $x:ident ∈ $m, $P) => `(bigSepM (fun $k $x => $P) $m)
-  | `([∧map] $x:ident ∈ $m, $P) => `(bigAndM (fun _ $x => $P) $m)
-  | `([∧map] $k:ident ↦ $x:ident ∈ $m, $P) => `(bigAndM (fun $k $x => $P) $m)
-  | `([∗set] $x:ident ∈ $s, $P) => `(bigSepS (fun $x => $P) $s)
-  | `([∗mset] $x:ident ∈ $X, $P) => `(bigSepMS (fun $x => $P) $X)
+  | `([∗list]%$tk $x:ident ∈ $l, $P) => do
+      `($(wrapIprop tk ``bigSepL) (fun _ $x => $P) $l)
+  | `([∗list]%$tk $k:ident ↦ $x:ident ∈ $l, $P) => do
+      `($(wrapIprop tk ``bigSepL) (fun $k $x => $P) $l)
+  | `([∧list]%$tk $x:ident ∈ $l, $P) => do
+      `($(wrapIprop tk ``bigAndL) (fun _ $x => $P) $l)
+  | `([∧list]%$tk $k:ident ↦ $x:ident ∈ $l, $P) => do
+      `($(wrapIprop tk ``bigAndL) (fun $k $x => $P) $l)
+  | `([∨list]%$tk $x:ident ∈ $l, $P) => do
+      `($(wrapIprop tk ``bigOrL) (fun _ $x => $P) $l)
+  | `([∨list]%$tk $k:ident ↦ $x:ident ∈ $l, $P) => do
+      `($(wrapIprop tk ``bigOrL) (fun $k $x => $P) $l)
+  | `([∗list]%$tk $x1:ident;$x2:ident ∈ $l1;$l2, $P) => do
+      `($(wrapIprop tk ``bigSepL2) (fun _ $x1 $x2 => $P) $l1 $l2)
+  | `([∗list]%$tk $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P) => do
+      `($(wrapIprop tk ``bigSepL2) (fun $k $x1 $x2 => $P) $l1 $l2)
+  | `([∗map]%$tk $x:ident ∈ $m, $P) => do
+      `($(wrapIprop tk ``bigSepM) (fun _ $x => $P) $m)
+  | `([∗map]%$tk $k:ident ↦ $x:ident ∈ $m, $P) => do
+      `($(wrapIprop tk ``bigSepM) (fun $k $x => $P) $m)
+  | `([∗map] $x1:ident;$x2:ident ∈ $m1;$m2, $P) =>
+      `(bigSepM2 (fun _ $x1 $x2 => $P) $m1 $m2)
+  | `([∗map] $k:ident ↦ $x1:ident;$x2:ident ∈ $m1;$m2, $P) =>
+      `(bigSepM2 (fun $k $x1 $x2 => $P) $m1 $m2)
+  | `([∧map]%$tk $x:ident ∈ $m, $P) => do
+      `($(wrapIprop tk ``bigAndM) (fun _ $x => $P) $m)
+  | `([∧map]%$tk $k:ident ↦ $x:ident ∈ $m, $P) => do
+      `($(wrapIprop tk ``bigAndM) (fun $k $x => $P) $m)
+  | `([∗set]%$tk $x:ident ∈ $s, $P) => do
+      `($(wrapIprop tk ``bigSepS) (fun $x => $P) $s)
+  | `([∗mset]%$tk $x:ident ∈ $X, $P) => do
+      `($(wrapIprop tk ``bigSepMS) (fun $x => $P) $X)
+
 
 -- iprop macro rules
 macro_rules
-  | `(iprop([∗list] $x:ident ∈ $l, $P)) => `(bigSepL (fun _ $x => iprop($P)) $l)
-  | `(iprop([∗list] $k:ident ↦ $x:ident ∈ $l, $P)) => `(bigSepL (fun $k $x => iprop($P)) $l)
-  | `(iprop([∧list] $x:ident ∈ $l, $P)) => `(bigAndL (fun _ $x => iprop($P)) $l)
-  | `(iprop([∧list] $k:ident ↦ $x:ident ∈ $l, $P)) => `(bigAndL (fun $k $x => iprop($P)) $l)
-  | `(iprop([∨list] $x:ident ∈ $l, $P)) => `(bigOrL (fun _ $x => iprop($P)) $l)
-  | `(iprop([∨list] $k:ident ↦ $x:ident ∈ $l, $P)) => `(bigOrL (fun $k $x => iprop($P)) $l)
-  | `(iprop([∗list] $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => `(bigSepL2 (fun _ $x1 $x2 => iprop($P)) $l1 $l2)
-  | `(iprop([∗list] $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => `(bigSepL2 (fun $k $x1 $x2 => iprop($P)) $l1 $l2)
-  | `(iprop([∗map] $x:ident ∈ $m, $P)) => `(bigSepM (fun _ $x => iprop($P)) $m)
-  | `(iprop([∗map] $k:ident ↦ $x:ident ∈ $m, $P)) => `(bigSepM (fun $k $x => iprop($P)) $m)
-  | `(iprop([∧map] $x:ident ∈ $m, $P)) => `(bigAndM (fun _ $x => iprop($P)) $m)
-  | `(iprop([∧map] $k:ident ↦ $x:ident ∈ $m, $P)) => `(bigAndM (fun $k $x => iprop($P)) $m)
-  | `(iprop([∗set] $x:ident ∈ $s, $P)) => `(bigSepS (fun $x => iprop($P)) $s)
-  | `(iprop([∗mset] $x:ident ∈ $X, $P)) => `(bigSepMS (fun $x => iprop($P)) $X)
+  | `(iprop([∗list]%$tk $x:ident ∈ $l, $P)) => do
+      `($(wrapIprop tk ``bigSepL) (fun _ $x => iprop($P)) $l)
+  | `(iprop([∗list]%$tk $k:ident ↦ $x:ident ∈ $l, $P)) => do
+      `($(wrapIprop tk ``bigSepL) (fun $k $x => iprop($P)) $l)
+  | `(iprop([∧list]%$tk $x:ident ∈ $l, $P)) => do
+      `($(wrapIprop tk ``bigAndL) (fun _ $x => iprop($P)) $l)
+  | `(iprop([∧list]%$tk $k:ident ↦ $x:ident ∈ $l, $P)) => do
+      `($(wrapIprop tk ``bigAndL) (fun $k $x => iprop($P)) $l)
+  | `(iprop([∨list]%$tk $x:ident ∈ $l, $P)) => do
+      `($(wrapIprop tk ``bigOrL) (fun _ $x => iprop($P)) $l)
+  | `(iprop([∨list]%$tk $k:ident ↦ $x:ident ∈ $l, $P)) => do
+      `($(wrapIprop tk ``bigOrL) (fun $k $x => iprop($P)) $l)
+  | `(iprop([∗list]%$tk $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => do
+      `($(wrapIprop tk ``bigSepL2) (fun _ $x1 $x2 => iprop($P)) $l1 $l2)
+  | `(iprop([∗list]%$tk $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => do
+      `($(wrapIprop tk ``bigSepL2) (fun $k $x1 $x2 => iprop($P)) $l1 $l2)
+  | `(iprop([∗map]%$tk $x:ident ∈ $m, $P)) => do
+      `($(wrapIprop tk ``bigSepM) (fun _ $x => iprop($P)) $m)
+  | `(iprop([∗map]%$tk $k:ident ↦ $x:ident ∈ $m, $P)) => do
+      `($(wrapIprop tk ``bigSepM) (fun $k $x => iprop($P)) $m)
+  | `(iprop([∗map] $x1:ident;$x2:ident ∈ $m1;$m2, $P)) =>
+      `(bigSepM2 (fun _ $x1 $x2 => iprop($P)) $m1 $m2)
+  | `(iprop([∗map] $k:ident ↦ $x1:ident;$x2:ident ∈ $m1;$m2, $P)) =>
+      `(bigSepM2 (fun $k $x1 $x2 => iprop($P)) $m1 $m2)
+  | `(iprop([∧map]%$tk $x:ident ∈ $m, $P)) => do
+      `($(wrapIprop tk ``bigAndM) (fun _ $x => iprop($P)) $m)
+  | `(iprop([∧map]%$tk $k:ident ↦ $x:ident ∈ $m, $P)) => do
+      `($(wrapIprop tk ``bigAndM) (fun $k $x => iprop($P)) $m)
+  | `(iprop([∗set]%$tk $x:ident ∈ $s, $P)) => do
+      `($(wrapIprop tk ``bigSepS) (fun $x => iprop($P)) $s)
+  | `(iprop([∗mset]%$tk $x:ident ∈ $X, $P)) => do
+      `($(wrapIprop tk ``bigSepMS) (fun $x => iprop($P)) $X)
 
 /-- Helper to delaborate a bigOpL-shaped lambda body into list notation.
     `opConst` is checked against the `op` argument; `mkWithIdx` / `mkNoIdx` build syntax. -/
@@ -364,6 +442,40 @@ private def delabBigOpSBody (fn : Expr) (sArg phiArg : Nat)
     mk x s P
   | _ => failure
 
+/-- Delaborator for `bigSepM2` -/
+@[delab app.Iris.BI.bigSepM2]
+def delabBigSepM2 : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``bigSepM2 do failure
+  let args := e.getAppArgs
+  unless args.size == 10 do failure
+  let fn := args[7]!
+  let m1 ← withNaryArg 8 delab
+  let m2 ← withNaryArg 9 delab
+  match fn with
+  | .lam kn _ body1 _ =>
+    match body1 with
+    | .lam x1n _ body2 _ =>
+      match body2 with
+      | .lam x2n _ _ _ =>
+        let (kUsed, P) ← withNaryArg 7 <|
+          withBindingBody' kn (fun kFVar => return kFVar.fvarId!) fun kFVarId => do
+            let innerBody := (← getExpr).bindingBody!.bindingBody!
+            let kUsed := innerBody.containsFVar kFVarId
+            let P ← withBindingBody x1n <| withBindingBody x2n <| delab
+            return (kUsed, P)
+        let x1 := mkIdent x1n
+        let x2 := mkIdent x2n
+        if kUsed then
+          let k := mkIdent kn
+          `([∗map]  $k ↦ $x1;$x2 ∈ $m1;$m2, $P)
+        else
+          `([∗map]  $x1;$x2 ∈ $m1;$m2, $P)
+      | _ => failure
+    | _ => failure
+  | _ => failure
+
 /-- Delaborator for `bigSepS` -/
 @[delab app.Iris.BI.bigSepS]
 def delabBigSepS : Delab := do
@@ -391,6 +503,42 @@ def delabBigOpS : Delab := do
       (fun x s P => `([∗set]  $x ∈ $s, $P))
   else
     failure
+
+private def delabBigOpMSBody (fn : Expr) (xArg phiArg : Nat)
+    (mk : Ident → TSyntax `term → TSyntax `term → DelabM (TSyntax `term)) : Delab := do
+  let X ← withNaryArg xArg delab
+  match fn with
+  | .lam xn _ _ _ =>
+    let P ← withNaryArg phiArg <| withBindingBody xn delab
+    let x := mkIdent xn
+    mk x X P
+  | _ => failure
+
+/-- Delaborator for `bigSepMS` -/
+@[delab app.Iris.BI.bigSepMS]
+def delabBigSepMS : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``bigSepMS do failure
+  let args := e.getAppArgs
+  unless args.size == 7 do failure
+  delabBigOpMSBody args[5]! 6 5
+    (fun x X P => `([∗mset] $x ∈ $X, $P))
+
+@[delab app.Iris.Algebra.bigOpMS]
+def delabBigOpMS : Delab := do
+  let e ← getExpr
+  unless e.isApp do failure
+  unless e.getAppFn.isConstOf ``Iris.Algebra.bigOpMS do failure
+  let args := e.getAppArgs
+  -- need at least `Φ` and `X`, plus an `op` somewhere before them
+  unless args.size ≥ 3 do failure
+  let phiArg := args.size - 2
+  let xArg := args.size - 1
+  -- the monoid operation is the (unique) earlier argument headed by a BI connective
+  unless args[:phiArg].any (·.getAppFn.isConstOf ``BIBase.sep) do failure
+  delabBigOpMSBody args[phiArg]! xArg phiArg
+    (fun x X P => `([∗mset] $x ∈ $X, $P))
 
 /-- Delaborator for `bigOpL` applied to `sep`/`and`/`or` — catches cases where
     `bigSepL`/`bigAndL`/`bigOrL` abbrevs are unfolded. -/
@@ -430,26 +578,37 @@ open Iris.Algebra Iris.Std OFE BIBase
 
 @[rocq_alias bi.bi_persistently_and_homomorphism]
 instance bi_persistently_and_homomorphism [BI PROP] :
-    MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· ≡ ·) persistently :=
-  MonoidHomomorphism.ofEquiv BI.persistently_ne
-    (equiv_iff.mpr persistently_and) (equiv_iff.mpr persistently_true)
+    MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·) persistently :=
+  MonoidHomomorphism.ofEq BI.persistently_ne
+    (BiEntails.to_eq persistently_and) (BiEntails.to_eq persistently_true)
+
+@[rocq_alias bi.bi_persistently_or_homomorphism_2]
+instance bi_persistently_or_homomorphism_mpr [BI PROP] :
+    MonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (flip Entails)
+      persistently where
+  rel_refl := .rfl
+  rel_trans := flip .trans
+  op_proper := or_mono
+  map_ne := BI.persistently_ne
+  map_op := persistently_or_mpr
+  map_unit := false_elim
 
 @[rocq_alias bi.bi_persistently_or_homomorphism]
-instance bi_persistently_or_homomorphism [BI PROP] :
-    MonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· ≡ ·) persistently :=
-  MonoidHomomorphism.ofEquiv BI.persistently_ne
-    (equiv_iff.mpr persistently_or) (equiv_iff.mpr persistently_pure)
+instance bi_persistently_or_homomorphism [BI PROP] [BIPersistentlyExist PROP] :
+    MonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·) persistently :=
+  MonoidHomomorphism.ofEq BI.persistently_ne
+    (BiEntails.to_eq persistently_or) (BiEntails.to_eq persistently_pure)
 
 @[rocq_alias bi.bi_persistently_sep_weak_homomorphism]
 instance bi_persistently_sep_weak_homomorphism [BI PROP] [BIPositive PROP] :
-    WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· ≡ ·) persistently :=
-  WeakMonoidHomomorphism.ofEquiv BI.persistently_ne (equiv_iff.mpr persistently_sep)
+    WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·) persistently :=
+  WeakMonoidHomomorphism.ofEq BI.persistently_ne (BiEntails.to_eq persistently_sep)
 
 @[rocq_alias bi.bi_persistently_sep_homomorphism]
 instance bi_persistently_sep_homomorphism [BI PROP] [BIAffine PROP] :
-    MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· ≡ ·) persistently :=
-  MonoidHomomorphism.ofEquiv BI.persistently_ne
-    (equiv_iff.mpr persistently_sep) (equiv_iff.mpr persistently_emp_affine)
+    MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·) persistently :=
+  MonoidHomomorphism.ofEq BI.persistently_ne
+    (BiEntails.to_eq persistently_sep) (BiEntails.to_eq persistently_emp_affine)
 
 @[rocq_alias bi.bi_persistently_sep_entails_weak_homomorphism]
 instance bi_persistently_sep_entails_weak_homomorphism [BI PROP] :
@@ -471,80 +630,5 @@ instance bi_persistently_sep_entails_homomorphism [BI PROP] :
   map_unit := persistently_emp_intro
 
 end Persistently
-
-section Tests
-open Iris.Std OFE BIBase
-variable [BI PROP] (P : Nat → PROP) (Q : Nat → Nat → PROP) (l l1 l2 : List Nat)
-  (Q' : Nat → Nat → Nat → PROP)
-
-/-! ## Delaborator round-trip tests -/
-
--- bigSepL without index
-/-- info: [∗list] x ∈ l, P x : PROP -/
-#guard_msgs in #check [∗list] x ∈ l, P x
-
--- bigSepL with index
-/-- info: [∗list] k ↦ x ∈ l, Q k x : PROP -/
-#guard_msgs in #check [∗list] k ↦ x ∈ l, Q k x
-
--- bigAndL without index
-/-- info: [∧list] x ∈ l, P x : PROP -/
-#guard_msgs in #check [∧list] x ∈ l, P x
-
--- bigAndL with index
-/-- info: [∧list] k ↦ x ∈ l, Q k x : PROP -/
-#guard_msgs in #check [∧list] k ↦ x ∈ l, Q k x
-
--- bigOrL without index
-/-- info: [∨list] x ∈ l, P x : PROP -/
-#guard_msgs in #check [∨list] x ∈ l, P x
-
--- bigOrL with index
-/-- info: [∨list] k ↦ x ∈ l, Q k x : PROP -/
-#guard_msgs in #check [∨list] k ↦ x ∈ l, Q k x
-
--- bigSepL2 without index
-/-- info: [∗list] x;y ∈ l1;l2, Q x y : PROP -/
-#guard_msgs in #check [∗list] x;y ∈ l1;l2, Q x y
-
--- bigSepL2 with index
-/-- info: [∗list] k ↦ x;y ∈ l1;l2, Q' k x y : PROP -/
-#guard_msgs in #check [∗list] k ↦ x;y ∈ l1;l2, Q' k x y
-
-end Tests
-
-section MapTests
-open Iris.Std OFE BIBase
-variable [BI PROP] {K : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
-  (P : Nat → PROP) (Q : K → Nat → PROP) (m : M Nat)
-
--- bigSepM without key
-/-- info: [∗map] x ∈ m, P x : PROP -/
-#guard_msgs in #check [∗map] x ∈ m, P x
-
--- bigSepM with key
-/-- info: [∗map] k ↦ x ∈ m, Q k x : PROP -/
-#guard_msgs in #check [∗map] k ↦ x ∈ m, Q k x
-
--- bigAndM without key
-/-- info: [∧map] x ∈ m, P x : PROP -/
-#guard_msgs in #check [∧map] x ∈ m, P x
-
--- bigAndM with key
-/-- info: [∧map] k ↦ x ∈ m, Q k x : PROP -/
-#guard_msgs in #check [∧map] k ↦ x ∈ m, Q k x
-
-end MapTests
-
-section SetTests
-open Iris.Std OFE BIBase
-variable [BI PROP] {S : Type _} {A : Type _} [FiniteSet S A]
-  (P : A → PROP) (s : S)
-
--- bigSepS
-/-- info: [∗set] x ∈ s, P x : PROP -/
-#guard_msgs in #check [∗set] x ∈ s, P x
-
-end SetTests
 
 end Iris.BI

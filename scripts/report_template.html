@@ -47,9 +47,24 @@
   .arrow { font-size: 0.65em; width: 1em; text-align: center; transition: transform 0.15s; }
   .open > .section-header > .arrow { transform: rotate(90deg); }
 
+  /* Package level (groups folders by Rocq source package) */
+  .package-section { margin-bottom: 28px; }
+  .package-header { padding: 4px 0 5px; border-bottom: 2px solid #333; }
+  .package-name { font-size: 1.05em; font-weight: bold; letter-spacing: 0.02em;
+                  font-family: "SF Mono", "Menlo", "Consolas", monospace; }
+  .package-header .section-stats { font-size: 0.85em; color: #444; }
+  .package-children { display: none; }
+  .package-section.open > .package-children { display: block; }
+
   /* Folder level (top) */
   .folder-section { border-top: 1px solid #ccc; }
-  .folder-section:last-child { border-bottom: 1px solid #ccc; }
+  .package-children > :first-child { border-top: none; }
+  .package-children > :last-child { border-bottom: 1px solid #ccc; }
+  /* Files at a package root have no folder to nest in, so they take the folder's
+     divider -- but stay in the file weight, since they are files. */
+  .package-children > .file-section { border-top: 1px solid #ccc; }
+  /* The stale-entry section sits outside any package; keep it clear of the last one. */
+  #content > .folder-section { margin-top: 28px; border-top-width: 2px; border-top-color: #333; }
   .folder-section > .section-header { font-weight: bold; }
   .folder-name { font-size: 0.95em; font-family: "SF Mono", "Menlo", "Consolas", monospace; }
   .folder-children { display: none; padding-left: 16px; }
@@ -106,7 +121,7 @@
 <body>
 <h1>Iris Porting Status</h1>
 <p class="meta">Lean: {{lean_rev_html}} &middot; Rocq:
-  <a href="{{gitlab_web_base}}/-/commit/{{rocq_commit}}">{{rocq_commit_short}}</a>
+  <a href="{{rocq_commit_url}}">{{rocq_commit_short}}</a>
 </p>
 
 <table class="summary">
@@ -178,6 +193,15 @@ function applyFilters() {
     const children = folder.querySelectorAll('.file-section');
     const anyChildVisible = Array.from(children).some(c => !c.classList.contains('hidden'));
     folder.classList.toggle('hidden', children.length > 0 && !anyChildVisible);
+  });
+
+  // Hide a package section once all its children are hidden. Children are folder
+  // sections plus any file sections for files at the package root.
+  document.querySelectorAll('.package-section').forEach(pkg => {
+    const children = pkg.querySelectorAll(
+      ':scope > .package-children > .folder-section, :scope > .package-children > .file-section');
+    const anyVisible = Array.from(children).some(c => !c.classList.contains('hidden'));
+    pkg.classList.toggle('hidden', children.length > 0 && !anyVisible);
   });
 }
 </script>

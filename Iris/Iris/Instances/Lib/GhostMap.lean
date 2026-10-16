@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Сухарик. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Сухарик (@suhr)
 -/
@@ -14,7 +14,7 @@ public import Iris.ProofMode
 
 namespace Iris
 
-open Std HeapView PartialMap Iris.Algebra CMRA BI ProofMode
+open Iris.Std HeapView PartialMap Iris.Algebra ORA BI ProofMode
 
 @[rocq_alias ghost_mapG]
 class GhostMapG (GF : BundledGFunctors)
@@ -29,7 +29,7 @@ section definitions
 variable [LawfulFiniteMap H K] [GhostMapG GF K V H]
 
 @[rocq_alias ghost_map_auth]
-public def ghost_map_auth (γ : GName) (dq : DFrac) (m : H V) : IProp GF :=
+def ghost_map_auth (γ : GName) (dq : DFrac) (m : H V) : IProp GF :=
   iOwn (E := GhostMapG.elem) γ (Auth dq (Std.PartialMap.map (fun x ↦ toAgree ⟨x⟩) m))
 
 #rocq_ignore ghost_map_auth_def "Not needed"
@@ -37,7 +37,7 @@ public def ghost_map_auth (γ : GName) (dq : DFrac) (m : H V) : IProp GF :=
 #rocq_ignore ghost_map_auth_unseal "Not needed"
 
 @[rocq_alias ghost_map_elem]
-public def ghost_map_elem (γ : GName) (dq : DFrac) (k : K) (v : V) : IProp GF :=
+def ghost_map_elem (γ : GName) (dq : DFrac) (k : K) (v : V) : IProp GF :=
   iOwn (E := GhostMapG.elem) γ (Frag k dq (toAgree ⟨v⟩))
 
 #rocq_ignore ghost_map_elem_def "Not needed"
@@ -78,15 +78,15 @@ instance ghost_map_elem_fractional (γ : GName) (k : K) (v : V) :
   fractional p q := by
     unfold ghost_map_elem
     refine .trans ?_ iOwn_op
-    refine equiv_iff.mp ?_
-    refine .trans ?_ (iOwn_ne.eqv frag_add_op_eqv)
-    refine OFE.NonExpansive.eqv (OFE.NonExpansive.eqv ?_)
+    refine BIBase.BiEntails.of_eq ?_
+    refine .trans ?_ (congrArg (iOwn γ) frag_add_op_eqv)
+    refine congrArg (iOwn γ) (congrArg (Frag k (.own (p + q))) ?_)
     exact Agree.idemp.symm
 
 @[rocq_alias ghost_map_elem_as_fractional]
 instance (γ : GName) (k : K) (v : V) : AsFractional (PROP := IProp GF) (γ ↪◯MAP[k]{.own q} v)
-    (fun q => γ ↪◯MAP[k]{.own q} v) q where
-  as_fractional := BIBase.BiEntails.of_eq rfl
+    ioΦ (fun q => γ ↪◯MAP[k]{.own q} v) ioq q where
+  as_fractional := .rfl
   as_fractional_fractional := ghost_map_elem_fractional γ k v
 
 @[rocq_alias ghost_map_elems_unseal]
@@ -210,12 +210,11 @@ theorem ghost_map_alloc_strong [DecidableEq K] (P : GName → Prop) (m : H V) :
     iapply BIUpdate.mono <| sep_mono_right <| bigOpM_iOwn_entail γ _ m
     iapply BIUpdate.mono <| iOwn_op.mp
     iapply iOwn_update $$ G
-    refine Update.equiv_right ?_
-      (update_big_alloc _ (Std.PartialMap.map (fun x ↦ toAgree ⟨x⟩) m) _
+    have H := update_big_alloc _ (Std.PartialMap.map (fun x : V ↦ toAgree (DiscreteO.mk x)) m) _
         (disjoint_empty_right _) DFrac.valid_own_one
-        (all_map fun _ _ => Agree.toAgree_valid))
-    refine CMRA.op_eqv ?_ (BigOpM.bigOpM_map_eqv _ _ _)
-    exact OFE.NonExpansive.eqv (OFE.Equiv.of_eq union_empty_right)
+        (all_map fun _ _ => Agree.toAgree_valid)
+    rw [union_empty_right, BigOpM.bigOpM_map_eq] at H
+    exact H
 
 @[rocq_alias ghost_map_alloc_strong_empty]
 theorem ghost_map_alloc_strong_empty [DecidableEq K] (P : GName → Prop)
@@ -256,14 +255,14 @@ instance ghost_map_auth_fractional (m : H V) :
   fractional p q := by
     unfold ghost_map_auth
     refine .trans ?_ iOwn_op
-    refine equiv_iff.mp ?_
-    refine .trans ?_ (iOwn_ne.eqv auth_dfrac_op_eqv)
+    refine BIBase.BiEntails.of_eq ?_
+    refine .trans ?_ (congrArg (iOwn γ) auth_dfrac_op_eqv)
     rfl
 
 @[rocq_alias ghost_map_auth_as_fractional]
 instance (γ : GName) (m : H V) (q : Qp) :
-    AsFractional (PROP := IProp GF) (γ ↪●MAP{.own q} m) (fun q => γ ↪●MAP{.own q} m) q where
-  as_fractional := BIBase.BiEntails.of_eq rfl
+    AsFractional (PROP := IProp GF) (γ ↪●MAP{.own q} m) ioΦ (fun q => γ ↪●MAP{.own q} m) ioq q where
+  as_fractional := .rfl
   as_fractional_fractional := ghost_map_auth_fractional m
 
 @[rocq_alias ghost_map_auth_valid]
@@ -284,11 +283,13 @@ theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac} {m1 m2 : H V} :
   ipureintro
   have ⟨h₁, h₂⟩ := auth_op_auth_valid_iff.mp G
   refine ⟨h₁, equiv_iff_eq.mp fun k => ?_⟩
-  have h : _ ≡ _ := fun n => h₂ n k
-  simp only [get?_map, Option.map] at h
-  cases h₁ : get? m1 k <;> cases h₂ : get? m2 k <;>
-    grind [OFE.not_none_eqv_some, OFE.not_some_eqv_none,
-      → Agree.toAgree_inj, DiscreteO.eqv_inj, OFE.some_eqv_some, Option.some.injEq]
+  have h : _ = _ := congrArg (fun m => get? m k) h₂
+  simp only [LawfulPartialMap.get?_map, Option.map] at h
+  cases h₁ : get? m1 k <;> cases h₂ : get? m2 k <;> simp only [h₁, h₂] at h
+  · rfl
+  · exact (OFE.not_none_eqv_some h).elim
+  · exact (OFE.not_some_eqv_none h).elim
+  · exact congrArg some (DiscreteO.eqv_inj (Agree.toAgree_inj (Option.some.inj h)))
 
 @[rocq_alias ghost_map_auth_agree]
 theorem ghost_map_auth_agree γ (dq1 dq2 : DFrac) (m1 m2 : H V) :
@@ -322,7 +323,7 @@ theorem ghost_map_lookup {γ dq} {m : H V} {k : K} {dq' v} :
   icombine H1 H2 gives %G
   ipureintro
   have ⟨av', _, _, h_av', _, h⟩ := auth_op_frag_valid_total_discrete_iff G
-  cases h₂ : get? m k <;> grind [get?_map,Agree.toAgree_included, OFE.Equiv.to_eq]
+  cases h₂ : get? m k <;> grind [LawfulPartialMap.get?_map,Agree.toAgree_included]
 
 @[rocq_alias ghost_map_lookup_combine_gives_1]
 instance ghost_map_lookup_combine_gives_1 γ (m : H V) (k : K) (dq1 dq2 : DFrac) (v : V) :
@@ -350,13 +351,13 @@ theorem ghost_map_insert {γ} {m : H V} (k : K) (v : V) (Heq : get? m k = .none)
   unfold ghost_map_auth ghost_map_elem
   iintro H
   imod iOwn_update (update_one_alloc (k := k) (v1 := toAgree ⟨v⟩)
-    (by simp [get?_map, Heq])
+    (by simp [LawfulPartialMap.get?_map, Heq])
     DFrac.valid_own_one
     Agree.toAgree_valid) $$ H with H
   icases H with ⟨H, $⟩
   imodintro
-  iapply iOwn_mono $$ H
-  exact auth_inc_of_map_eq _ map_insert
+  iapply iOwn_ord_mono $$ H
+  exact auth_ord_of_map_eq _ map_insert
 
 @[rocq_alias ghost_map_insert_persist]
 theorem ghost_map_insert_persist {γ} {m : H V} (k : K) (v : V) (Heq : get? m k = .none) :
@@ -372,8 +373,8 @@ theorem ghost_map_delete {γ} {m : H V} (k : K) (v : V) :
   iintro H1 H2
   icombine H1 H2 as G
   imod iOwn_update (update_one_delete (k := k) (v1 := toAgree (⟨v⟩ : DiscreteO V))) $$ G with G
-  iapply iOwn_mono $$ G
-  exact auth_inc_of_map_eq _ map_delete
+  iapply iOwn_ord_mono $$ G
+  exact auth_ord_of_map_eq _ map_delete
 
 @[rocq_alias ghost_map_update]
 theorem ghost_map_update {γ} {m : H V} {k : K} {v : V} (w : V) :
@@ -383,8 +384,8 @@ theorem ghost_map_update {γ} {m : H V} {k : K} {v : V} (w : V) :
   ihave >⟨aux, $⟩ := ghost_map_insert _ w (get?_delete_eq rfl) $$ aux
   imodintro
   unfold ghost_map_auth
-  iapply iOwn_mono $$ aux
-  exact auth_inc_of_map_eq _ (map_equiv insert_delete.symm)
+  iapply iOwn_ord_mono $$ aux
+  exact auth_ord_of_map_eq _ (map_equiv insert_delete.symm)
 
 /-! ### Big-op versions of the above lemmas -/
 
@@ -405,8 +406,8 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
   by_cases h : m' = ∅
   · imodintro
     isplitl [H]
-    · iapply iOwn_mono $$ H
-      exact auth_inc_of_map_eq _ (map_equiv ((union_equiv h rfl).trans union_empty_left))
+    · iapply iOwn_ord_mono $$ H
+      exact auth_ord_of_map_eq _ (map_equiv ((union_equiv h rfl).trans union_empty_left))
     · iapply (BigSepM.bigSepM_eqv_empty h).mpr; itrivial
   · rw [←(bigOpM_iOwn γ _ _ h).to_eq, ←iOwn_op.to_eq]
     imod iOwn_update (E := GhostMapG.elem) (update_big_alloc _
@@ -416,10 +417,11 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
     icases H with ⟨H1, H2⟩
     imodintro
     isplitl [H1]
-    · iapply iOwn_mono $$ H1
-      exact auth_inc_of_map_eq _ map_union
-    · iapply iOwn_mono $$ H2
-      exact inc_of_inc_of_eqv .rfl (BigOpM.bigOpM_map_eqv _ _ _).symm
+    · iapply iOwn_ord_mono $$ H1
+      exact auth_ord_of_map_eq _ map_union
+    · iapply iOwn_ord_mono $$ H2
+      rw [BigOpM.bigOpM_map_eq]
+      exact ord_refl _
 
 @[rocq_alias ghost_map_insert_persist_big]
 theorem ghost_map_insert_persist_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ m) :
@@ -438,10 +440,10 @@ theorem ghost_map_delete_big [DecidableEq K] {γ m} (m0 : H V) :
   imod ghost_map_elems_unseal $$ H2 with H2
   unfold ghost_map_auth
   iapply iOwn_update_op $$ [$H1 $H2]
-  refine Update.equiv_left (CMRA.op_right_eqv _ (BigOpM.bigOpM_map_eqv _ _ m0)) ?_
+  rw [← congrArg (op _) (BigOpM.bigOpM_map_eq _ _ m0)]
   refine (update_big_delete _ _).trans ?_
-  refine Update.equiv_right ?_ .id
-  exact OFE.NonExpansive.eqv (OFE.Equiv.of_eq map_difference_map)
+  rw [map_difference_map]
+  exact Update.id
 
 @[rocq_alias ghost_map_update_big]
 theorem ghost_map_update_big [DecidableEq K] {γ m} (m0 m1 : H V) (Heq : dom m0 = dom m1) :
@@ -453,22 +455,21 @@ theorem ghost_map_update_big [DecidableEq K] {γ m} (m0 m1 : H V) (Heq : dom m0 
   · imodintro
     isplitl [H1]
     · unfold ghost_map_auth
-      iapply iOwn_mono $$ H1
-      exact auth_inc_of_map_eq _ (map_equiv ((union_equiv h rfl).trans union_empty_left))
+      iapply iOwn_ord_mono $$ H1
+      exact auth_ord_of_map_eq _ (map_equiv ((union_equiv h rfl).trans union_empty_left))
     · iapply (BigSepM.bigSepM_eqv_empty h).mpr; itrivial
   · unfold ghost_map_elem ghost_map_auth
     icombine H1 H2 as H
     rw [←(bigOpM_iOwn γ _ _ h).to_eq, ←iOwn_op.to_eq]
     iapply iOwn_update $$ H
-    refine Update.equiv_left (CMRA.op_right_eqv _ (BigOpM.bigOpM_map_eqv _ _ m0)) ?_
+    rw [← congrArg (op _) (BigOpM.bigOpM_map_eq _ _ m0)]
     have Heq' : dom (Std.PartialMap.map (fun x : V => toAgree (DiscreteO.mk x)) m0) =
         dom (Std.PartialMap.map (fun x : V => toAgree (DiscreteO.mk x)) m1) := by
       rw [dom_map, dom_map, Heq]
     refine (update_big_replace _ _ _ Heq'
       (all_map fun _ _ => Agree.toAgree_valid)).trans ?_
-    refine Update.equiv_right ?_ .id
-    refine CMRA.op_eqv ?_ (BigOpM.bigOpM_map_eqv _ _ _)
-    exact OFE.NonExpansive.eqv (OFE.Equiv.of_eq map_union.symm)
+    rw [← map_union, BigOpM.bigOpM_map_eq]
+    exact Update.id
 
 end lemmas
 

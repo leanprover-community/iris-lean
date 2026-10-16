@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Markus de Medeiros. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -136,13 +136,13 @@ def wp {Expr State Value : Type _} [@Ex3WP Expr State Value GF] (e : Expr) (Φ :
   (fixpoint <| @wp_F Expr State Value _ GF _) e Φ
 
 theorem wp_unfold (e : Expr) (Φ : Value → IProp GF) :
-    wp e Φ ≡ iprop(
+    wp e Φ = iprop(
         (∃ v : Value, ⌜@to_value _ State _ _ e = some v⌝ ∗ |==> Φ v) ∨
         ∀ s, @state_interp State _ _ s -∗
           ∃ e' s', ⌜@step _ _ Value _ (e, s) = (e', s') ⌝ ∗
           ▷ |==> (@state_interp _ _ _  s' ∗ wp e' Φ)) := by
-  exact fun n => fixpoint_unfold (f := ⟨(@wp_F Expr State Value _ GF _),
-                                @OFE.ne_of_contractive _ _ _ _ (@wp_F Expr State Value _ GF _) _⟩) n e Φ
+  exact OFE.eq_dist_2 fun _n => (fixpoint_unfold (f := ⟨(@wp_F Expr State Value _ GF _),
+                                @OFE.ne_of_contractive _ _ _ _ (@wp_F Expr State Value _ GF _) _⟩)).dist e Φ
 
 /- Now, we can derive some example proof rules. First let's prove a rule for pure deterministic steps: -/
 example (e e' : Expr) Φ (Hstep : ∀ {s : State}, @step _ _ Value _ (e, s) = (e', s)) :
@@ -162,14 +162,14 @@ example (e e' : Expr) Φ (Hstep : ∀ {s : State}, @step _ _ Value _ (e, s) = (e
    Then, it suffies to have access to P, and show that access to P' is enough to verify e'. -/
 example (e e' : Expr) (P P' : IProp GF) Φ
       (Hstep : ∀ s, iprop(P ∗ @state_interp State GF _ s ⊢ ∃ s',
-          ⌜ step Value (e, s) = (e', s')⌝ ∗ |==> (P' ∗ @state_interp State GF _ s'))) :
+          ⌜step Value (e, s) = (e', s')⌝ ∗ |==> (P' ∗ @state_interp State GF _ s'))) :
     P ∗ (P' -∗ wp e' Φ) ⊢ wp e Φ := by
   iintro ⟨HP, Hspec⟩
   iapply wp_unfold
   iright
   iintro %s Hs
   ihave ⟨%s', %Hstep, Hupd⟩ := Hstep s $$ [HP Hs]
-  . iframe
+  · iframe
   iexists e', s'
   isplitr
   · itrivial

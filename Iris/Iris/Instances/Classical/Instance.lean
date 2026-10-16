@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
@@ -12,7 +12,7 @@ public import Iris.Std.Equivalence
 @[expose] public section
 
 namespace Iris.Instances.Classical
-open Iris.BI Iris.Instances.Data Std
+open Iris.BI Iris.Instances.Data Iris.Std
 
 /- Instance of `BIBase` and `BI` for classical (non-affine) separation logic. -/
 
@@ -32,13 +32,11 @@ instance : BIBase (HeapProp Val) where
   persistently P _ := P ∅
   later P        σ := P σ
 
-instance : Std.Preorder (Entails (PROP := HeapProp Val)) where
-  refl := by
-    simp only [BI.Entails]
+instance heapPropPreorder : Std.IsPreorder (HeapProp Val) where
+  le_refl := by
     intro _ _ h
     exact h
-  trans := by
-    simp only [BI.Entails]
+  le_trans := by
     intro _ _ _ h_xy h_yz σ h_x
     apply h_yz σ
     apply h_xy σ
@@ -47,10 +45,11 @@ instance : Std.Preorder (Entails (PROP := HeapProp Val)) where
 instance : COFE (HeapProp Val) := COFE.ofDiscrete _
 
 instance : BI (HeapProp Val) where
-  entails_preorder := by infer_instance
+  entails_refl := heapPropPreorder.le_refl _
+  entails_trans := heapPropPreorder.le_trans _ _ _
   equiv_iff {P Q} := ⟨
-    fun h => h.to_eq ▸ ⟨refl, refl⟩,
-    fun ⟨h₁, h₂⟩ => OFE.Equiv.of_eq (funext fun σ => propext ⟨h₁ σ, h₂ σ⟩)
+    fun h => h ▸ ⟨Std.IsPreorder.le_refl P, Std.IsPreorder.le_refl P⟩,
+    fun ⟨h₁, h₂⟩ => funext fun σ => propext ⟨h₁ σ, h₂ σ⟩
   ⟩
 
   and_ne          := ⟨by rintro _ _ _ h1 _ _ h2; exact (h1 : _ = _) ▸ (h2 : _ = _) ▸ rfl⟩
@@ -236,10 +235,6 @@ instance : BI (HeapProp Val) where
     simp only [BI.Entails, BI.persistently, BI.and]
     intro _ _ _ h
     exact h
-  persistently_sExists_1 := by
-    simp only [BI.Entails, BI.persistently, BI.exists]
-    intro _ _ ⟨p, hp, h⟩
-    exact ⟨_, ⟨_, rfl⟩, hp, h⟩
   persistently_absorb_l := by
     simp only [BI.Entails, BI.persistently, BI.sep]
     intro _ _ _ ⟨_, _, _, _, h_P, _⟩
@@ -264,3 +259,9 @@ instance : BI (HeapProp Val) where
   later_sep := ⟨fun _ => id, fun _ => id⟩
   later_persistently := ⟨fun _ => id, fun _ => id⟩
   later_false_em _ h := .inr fun _ => h
+
+end Classical
+
+end Instances
+
+end Iris

@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2025 Markus de Medeiros. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -11,54 +11,71 @@ public import Iris.Algebra.OFE
 @[expose] public section
 
 namespace Iris
-open CMRA
+open ORA
 
 -- EXPERIMENT: UPred Leibniz by construction
 -- https://leanprover.zulipchat.com/#narrow/channel/490604-iris-lean/topic/Bi-entailment.20and.20generalized.20rewriting/with/565019365
 @[ext]
-structure ValidAt (M : Type _) [UCMRA M] (n : Nat) where
+structure ValidAt (M : Type _) [UORA M] (n : Nat) where
   val : M
   property : ✓{n} val
 
-instance {M : Type _} [UCMRA M] {n : Nat} : CoeOut (ValidAt M n) M where
+instance {M : Type _} [UORA M] {n : Nat} : CoeOut (ValidAt M n) M where
   coe := (·.val)
 
-def ValidAt.le {M : Type _} [UCMRA M] {n m : Nat} (Hle : m ≤ n) : ValidAt M n → ValidAt M m :=
+def ValidAt.le {M : Type _} [UORA M] {n m : Nat} (Hle : m ≤ n) : ValidAt M n → ValidAt M m :=
   fun v => ⟨v.val, validN_of_le Hle v.property⟩
 
 @[simp]
-theorem ValidAt.le_val {M : Type _} [UCMRA M] {n m : Nat} {Hle : m ≤ n} {v : ValidAt M n} :
+theorem ValidAt.le_val {M : Type _} [UORA M] {n m : Nat} {Hle : m ≤ n} {v : ValidAt M n} :
   (v.le Hle).val = v.val := by rfl
 
 @[simp]
-theorem ValidAt.le_rfl {M : Type _} [UCMRA M] {n : Nat} {Hle : n ≤ n} {v : ValidAt M n} :
+theorem ValidAt.le_rfl {M : Type _} [UORA M] {n : Nat} {Hle : n ≤ n} {v : ValidAt M n} :
   v.le Hle = v := by rfl
 
 /-- The data of a UPred object is an indexed proposition over M (Bundled version) -/
 @[ext, rocq_alias uPred]
-structure UPred (M : Type _) [UCMRA M] where
+structure UPred (M : Type _) [UORA M] where
   holds : (n : Nat) → ValidAt M n → Prop
   mono {n1 n2} {x1 : ValidAt M n1} {x2 : ValidAt M n2} :
-    holds n1 x1 → (x1 : M) ≼{n2} (x2 : M) → (Hle : n2 ≤ n1) → holds n2 x2
+    holds n1 x1 → (x1 : M) ≼ₒ{n2} (x2 : M) → (Hle : n2 ≤ n1) → holds n2 x2
 
-def UPred.holds_unpacked {M : Type _} [UCMRA M] (P : UPred M) (n : Nat) (x : M) (Hx : ✓{n} x) :
+def UPred.holds_unpacked {M : Type _} [UORA M] (P : UPred M) (n : Nat) (x : M) (Hx : ✓{n} x) :
     Prop :=
   P.holds n ⟨x, Hx⟩
 
-theorem UPred.mono_unpacked {M : Type _} [UCMRA M] (P : UPred M) {n1 n2 : Nat} {x1 x2 : M}
-    (Hx1 : ✓{n1} x1) (Hx2 : ✓{n2} x2) (HP : P.holds_unpacked n1 x1 Hx1) (Hxle : x1 ≼{n2} x2)
+theorem UPred.mono_unpacked {M : Type _} [UORA M] (P : UPred M) {n1 n2 : Nat} {x1 x2 : M}
+    (Hx1 : ✓{n1} x1) (Hx2 : ✓{n2} x2) (HP : P.holds_unpacked n1 x1 Hx1) (Hxle : x1 ≼ₒ{n2} x2)
     (Hle : n2 ≤ n1) : P.holds_unpacked n2 x2 Hx2 :=
   P.mono HP Hxle Hle
 
-instance [UCMRA M] : Inhabited (UPred M) :=
-  ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
+/-- The definition of UPred is equivalent to separately proving pointwise down-closure,
+non-expansivity, and monotonicity. -/
+@[rocq_alias uPred_alt]
+theorem uPred_alt {M : Type _} [UORA M] (P : Nat → M → Prop) :
+    (∀ {n1 n2} {x1 x2 : M}, P n1 x1 → x1 ≼ₒ{n1} x2 → n2 ≤ n1 → P n2 x2) ↔
+    ((∀ {x : M} {n1 n2}, n2 ≤ n1 → P n1 x → P n2 x) ∧
+     (∀ {n} {x1 x2 : M}, x1 ≡{n}≡ x2 → ∀ m, m ≤ n → (P m x1 ↔ P m x2)) ∧
+     (∀ {n} {x1 x2 : M}, x1 ≼ₒ{n} x2 → ∀ m, m ≤ n → P m x1 → P m x2)) := by
+  constructor
+  · intro H
+    refine ⟨fun Hle HP => H HP .rfl Hle, ?_, ?_⟩
+    · refine fun He m Hm => ⟨fun HP => ?_, fun HP => ?_⟩
+      · exact H HP (ordN_of_dist_of_ordN (He.le Hm) .rfl) (Nat.le_refl _)
+      · exact H HP (ordN_of_dist_of_ordN (He.le Hm).symm .rfl) (Nat.le_refl _)
+    · exact fun Hinc m Hm HP => H HP (ordN_of_ordN_le Hm Hinc) (Nat.le_refl _)
+  · refine fun ⟨Hdc, _, Hmono⟩ n1 n2 x1 x2 HP Hinc Hle => ?_
+    exact Hmono (ordN_of_ordN_le Hle Hinc) n2 (Nat.le_refl _) (Hdc Hle HP)
 
-instance [UCMRA M] : CoeFun (UPred M) (fun _ => (n : Nat) → ValidAt M n → Prop) where
+instance [UORA M] : Inhabited (UPred M) := ⟨fun _ _ => True, fun _ _ _ => ⟨⟩⟩
+
+instance [UORA M] : CoeFun (UPred M) (fun _ => (n : Nat) → ValidAt M n → Prop) where
   coe x := x.holds
 
 section UPred
 
-variable [UCMRA M]
+variable [UORA M]
 
 open UPred
 
@@ -69,7 +86,7 @@ instance : OFE (UPred M) where
     refl _ _ _ _ _ := .rfl
     symm H _ _ A B := (H _ _ A B).symm
     trans H1 H2 _ _ A B := (H1 _ _ A B).trans (H2 _ _ A B) }
-  eq_dist {P Q} := by
+  eq_dist' {P Q} := by
     refine ⟨fun h _ _ _ _ _ => h ▸ Iff.rfl, fun h => ?_⟩
     ext n e
     exact h n n e.val (Nat.le_refl n) e.property
@@ -85,11 +102,9 @@ instance : OFE (UPred M) where
 
 @[rocq_alias uPred_ne]
 theorem uPred_ne {P : UPred M} {n} {m₁ m₂ : ValidAt M n} (H : (m₁ : M) ≡{n}≡ (m₂ : M)) : P n m₁ ↔ P n m₂ :=
-  ⟨fun H' => P.mono H' H.to_incN .refl, fun H' => P.mono H' H.symm.to_incN .refl⟩
+  ⟨fun H' => P.mono H' H.to_ordN .refl, fun H' => P.mono H' H.symm.to_ordN .refl⟩
 
-@[rocq_alias uPred_proper]
-theorem uPred_proper {P : UPred M} {n} {m₁ m₂ : ValidAt M n} (H : (m₁ : M) ≡ (m₂ : M)) : P n m₁ ↔ P n m₂ :=
-  uPred_ne H.dist
+#rocq_ignore uPred_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias uPred_holds_ne]
 theorem uPred_holds_ne {P Q : UPred M} {n₁ n₂} {x : M}
@@ -115,14 +130,15 @@ abbrev UPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
   fun A B _ _ => UPred (F B A)
 
 @[rocq_alias uPredO_map]
-def uPred_map [UCMRA α] [UCMRA β] (f : β -C> α) : UPred α -n> UPred β := by
+def uPred_map [UORA α] [UORA β] (f : β -C> α) : UPred α -n> UPred β := by
   refine ⟨fun P => ⟨fun n x => P n ⟨(f x.val), f.validN x.property⟩, ?_⟩, ⟨?_⟩⟩
   · intro n1 n2 x1 x2 HP Hm Hn
-    exact P.mono HP (f.monoN _ Hm) Hn
+    exact P.mono HP (f.monoN_ord Hm) Hn
   · intro n x1 x2 Hx1x2 n' y Hn' Hv
     exact Hx1x2 _ _ Hn' (f.validN Hv)
 
 #rocq_ignore uPred_map "Inlined in `uPred_map`"
+#rocq_ignore uPred_map_ne "Inlined in the bundled `-n>` of `uPred_map`."
 
 @[rocq_alias uPredOF]
 instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
@@ -131,12 +147,19 @@ instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
   map_ne.ne _ _ _ Hx _ _ Hy _ _ z2 Hn _ := by
     simp only [uPred_map]
     exact uPred_ne <| URFunctor.map_ne.ne (Hy.le Hn) (Hx.le Hn) z2
-  map_id _ _ _ z _ _ := by
+  map_id x := OFE.eq_dist_2 <| by
+    intro _ _ z _ _
     simp only [uPred_map]
-    exact uPred_proper <| URFunctor.map_id z
-  map_comp f g f' g' _ _ _ H _ _ := by
+    simp only [URFunctor.map_id]
+  map_comp f g f' g' x := OFE.eq_dist_2 <| by
+    intro _ _ H _ _
     simp only [uPred_map]
-    exact uPred_proper <| URFunctor.map_comp g' f' g f H
+    simp only [URFunctor.map_comp]
+
+#rocq_ignore uPredO_map_ne "Inlined as the `map_ne` field of the `COFE.OFunctor (UPredOF F)` instance."
+#rocq_ignore uPred_map_id "Inlined as the `map_id` field of the `COFE.OFunctor (UPredOF F)` instance."
+#rocq_ignore uPred_map_compose "Inlined as the `map_comp` field of the `COFE.OFunctor (UPredOF F)` instance."
+#rocq_ignore uPred_map_ext "Inlined as the `map_ne` field of the `COFE.OFunctor (UPredOF F)` instance."
 
 @[rocq_alias uPredOF_contractive]
 instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorContractive (UPredOF F) where
@@ -146,3 +169,5 @@ instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorCo
     exact fun m Hm => ⟨(HKL m Hm).2, (HKL m Hm).1⟩
 
 end UPred
+
+end Iris

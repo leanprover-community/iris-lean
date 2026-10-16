@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sergei Stepanenko
 -/
 module
 
@@ -37,11 +38,11 @@ section proof
 
 noncomputable def GF : BundledGFunctors := fun n =>
   match n with
-  | 0  => ⟨InvMapF, by infer_instance⟩
-  | 1  => ⟨constOF CoPsetDisjL, by infer_instance⟩
-  | 2  => ⟨constOF (DisjointLeibnizSet PosSet), by infer_instance⟩
-  | 3  => ⟨AuthURF (constOF Credit), by infer_instance⟩
-  | _  => ⟨constOF Unit, by infer_instance⟩
+  | 0  => ⟨InvMapF⟩
+  | 1  => ⟨constOF CoPsetDisjL⟩
+  | 2  => ⟨constOF (DisjointLeibnizSet PosSet)⟩
+  | 3  => ⟨AuthURF (constOF Credit)⟩
+  | _  => ⟨constOF Unit⟩
 
 instance : WsatGpreS GF where
   inv := { τ := 0, transp := by unfold GF; rfl }
@@ -59,7 +60,7 @@ example : True := by
   apply pure_soundness (PROP := IProp GF)
   iapply step_fupdN_soundness_close (hlc := .hasNoLC) (m := 0) (n := 1)
   iintro %_ _
-  simp only [Nat.repeat]
+  simp only [step_fupdN]
   icases inv_alloc nroot ⊤ iprop(True) $$ [] with >#Hinv
   · itrivial
   imod inv_acc $$ Hinv with ⟨HP, Hcl⟩

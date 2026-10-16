@@ -2,18 +2,28 @@ name = "irismath"
 version = "0.1.0"
 keywords = ["math"]
 defaultTargets = ["IrisMath"]
+testDriver = "IrisMathTest"
+builtinLint = true
 
 [leanOptions]
-pp.unicode.fun = true 
+pp.unicode.fun = true
 relaxedAutoImplicit = true
 weak.linter.mathlibStandardSet = true
 maxSynthPendingDepth = 3
-linter.style.header = false
+weak.linter.style.header = false
+# Built-in linters
+linter.missingDocs = false
+linter.omit = false
+linter.loopingSimpArgs = false
+linter.extra.unreachableTactic = true
+linter.redundantVisibility = true
+linter.extra.unnecessarySeqFocus = true
+linter.extra.unusedDecidableInType = false
 
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "v4.32.0"
+rev = "v4.34.1"
 
 [[require]]
 name = "iris"
@@ -21,3 +31,12 @@ path = "../Iris/"
 
 [[lean_lib]]
 name = "IrisMath"
+
+[[lean_lib]]
+name = "IrisMathTest"
+globs = ["IrisMathTest.+"]
+
+[[lean_exe]]
+name = "check-imports"
+srcDir = "../scripts"
+root = "CheckImports"

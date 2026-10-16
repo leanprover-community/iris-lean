@@ -1,22 +1,26 @@
 /-
-Copyright (c) 2025 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler, Zongyuan Liu, Yunsong Yang, Alvin Tang
 -/
 module
 
 public meta import Iris.ProofMode.Expr
+public import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Classes
 
 public meta section
 
 namespace Iris.ProofMode
-open Lean Elab Tactic Meta Qq BI Std
+open Lean Elab Tactic Meta Qq BI Iris.Std
+
+structure ProofModeM.Context where
+  tacName : Name := .anonymous
 
 structure ProofModeM.State where
   goals : Array MVarId := #[]
 
-abbrev ProofModeM := StateRefT ProofModeM.State TacticM
+abbrev ProofModeM := ReaderT ProofModeM.Context <| StateRefT ProofModeM.State TacticM
 
 structure ProofModeM.SavedState where
   tactic : Tactic.SavedState
@@ -33,6 +37,36 @@ instance : MonadBacktrack ProofModeM.SavedState ProofModeM where
   saveState := ProofModeM.saveState
   restoreState b := b.restore
 
+/-- Name of the tactic currently being run; prefixes IPM error messages. -/
+def ProofModeM.getTacticName : ProofModeM Name :=
+  return (← readThe ProofModeM.Context).tacName
+
+/-- Run `k` attributing its errors to `n` instead of the ambient tactic name. -/
+def ProofModeM.withTacticName (n : Name) (k : ProofModeM α) : ProofModeM α :=
+  withTheReader ProofModeM.Context ({ · with tacName := n }) k
+
+@[inline] protected def ProofModeM.throwError (msg : MessageData) : ProofModeM α := do
+  let n ← ProofModeM.getTacticName
+  if n.isAnonymous then
+    Lean.throwError msg
+  else
+    Lean.throwError m!"{n}: {msg}"
+
+@[inline] protected def ProofModeM.throwErrorAt (ref : Syntax) (msg : MessageData) :
+    ProofModeM α :=
+  withRef ref <| ProofModeM.throwError msg
+
+syntax:max "throwIPMError "   (interpolatedStr(term) <|> term) : term
+syntax:max "throwIPMErrorAt " term:max (interpolatedStr(term) <|> term) : term
+
+macro_rules
+  | `(throwIPMError $msg:interpolatedStr) => `(ProofModeM.throwError (m! $msg))
+  | `(throwIPMError $msg:term)            => `(ProofModeM.throwError $msg)
+
+macro_rules
+  | `(throwIPMErrorAt $ref $msg:interpolatedStr) => `(ProofModeM.throwErrorAt $ref (m! $msg))
+  | `(throwIPMErrorAt $ref $msg:term)            => `(ProofModeM.throwErrorAt $ref $msg)
+
 /-
 Make the compiler generate specialized `pure`/`bind` so we do not have to optimize through the
 whole monad stack at every use site. May eventually be covered by `deriving`.
@@ -47,7 +81,8 @@ instance : Inhabited (ProofModeM α) where
 
 /-- Create a new BI goal without registering it in the proof mode state. -/
 def mkBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) :
+    ProofModeM Q($e ⊢ $goal) := do
   let m : Q($e ⊢ $goal) ← mkFreshExprSyntheticOpaqueMVar <|
     IrisGoal.toExpr { prop, bi, hyps, goal, .. }
   m.mvarId!.setUserName name
@@ -55,17 +90,19 @@ def mkBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
 
 /-- Create a new BI goal with the given hypotheses and goal, and add it to the proof mode state. -/
 def addBIGoal {prop : Q(Type u)} {bi : Q(BI $prop)}
-    {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (name : Name := .anonymous) :
+    ProofModeM Q($e ⊢ $goal) := do
   let m ← mkBIGoal hyps goal name
   modify ({goals := ·.goals.push m.mvarId!})
   pure m
 
-/-- Run `k` in a context where `fvarIds` are removed from the context.
-The user should check whether the fvars can be cleared using `Hyps.checkRemovableFVar`.
-TODO: calling this function requires specifying `u`. Not clear why.
+/--
+  Run `k` in a context where `fvarIds` are removed from the context.
+  The user should check whether the fvars can be cleared using `Hyps.checkRemovableFVar`.
+  TODO: calling this function requires specifying `u`. Not clear why.
 -/
 def withoutFVars {α : Q(Sort u)} (fvarIds : Array FVarId) (k : ProofModeM Q($α)) :
-  ProofModeM Q($α) := do
+    ProofModeM Q($α) := do
   -- TODO: Is there a better way of doing this that does not require
   -- creating an mvar, using another function than MVarId.clear?
   let m := (← mkFreshExprSyntheticOpaqueMVar α).mvarId!
@@ -73,16 +110,20 @@ def withoutFVars {α : Q(Sort u)} (fvarIds : Array FVarId) (k : ProofModeM Q($α
     -- see Lean.MVarId.tryClearMany'
     -- sort to ensure that the fvars can be given in an arbitrary order
     let fvarIds := (← getLCtx).sortFVarsByContextOrder fvarIds
-    let m ← fvarIds.foldrM (init := m) (λ h m => m.clear h)
+    let m ← fvarIds.foldrM (init := m) (fun h m => m.clear h)
     m.withContext k
   m.assign expr
   return expr
 
-/-- Create a new BI goal with the given hypotheses and goal, but without some fvars, and add it to the proof mode state.
-It is the responsibility of the user of this function to check that the variables to clear can actually be cleared (e.g. using
-`Hyps.checkRemovableFVar`). -/
+/--
+  Create a new BI goal with the given hypotheses and goal, but without some
+  fvars, and add it to the proof mode state. It is the responsibility of the
+  user of this function to check that the variables to clear can actually be
+  cleared (e.g. using `Hyps.checkRemovableFVar`).
+-/
 def addBIGoalWithoutFVars {prop : Q(Type u)} {bi : Q(BI $prop)}
-  {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId) (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
+    {e} (hyps : Hyps bi e) (goal : Q($prop)) (toClear : Array FVarId)
+    (name : Name := .anonymous) : ProofModeM Q($e ⊢ $goal) := do
   withoutFVars (u:=0) toClear (addBIGoal hyps goal name)
 
 /-- Add an existing metavariable as a goal to the proof mode state if it is not already assigned or present. -/
@@ -133,44 +174,68 @@ def ProofModeM.synthInstanceQ (α : Q(Sort v)) : ProofModeM Q($α) := do
   return e
 
 /-- Initialize proof mode for a metavariable, converting it to an Iris goal. -/
-def startProofMode (mvar : MVarId) : MetaM (MVarId × IrisGoal) := mvar.withContext do
+def startProofMode (mvar : MVarId) (customProp : Option Expr := none)
+    (tacName : Name := `istart): MetaM (MVarId × IrisGoal) := mvar.withContext do
   -- parse goal
   let goal ← instantiateMVars <| ← mvar.getType
 
   -- check if already in proof mode
   if let some irisGoal := parseIrisGoal? goal then
+    if let some customProp := customProp then
+      unless ← isDefEq irisGoal.prop customProp do
+        throwError m!"{tacName}: currently in the Iris Proof Mode with \
+          {irisGoal.prop} rather than {customProp}"
     return (mvar, irisGoal)
 
   let some goal ← checkTypeQ goal q(Prop)
     | throwError "type mismatch\n{← mkHasTypeButIsExpectedMsg (← inferType goal) q(Prop)}"
   let u ← mkFreshLevelMVar
   let prop ← mkFreshExprMVarQ q(Type u)
+
+  if let some customProp := customProp then
+    unless ← isDefEq prop customProp do
+      throwError "{tacName}: {customProp} is not a valid BI instance type"
+
   let P ← mkFreshExprMVarQ q($prop)
   let bi ← mkFreshExprMVarQ q(BI $prop)
-  let .some (_, mvars) ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal .out $prop .out $bi $P)
-    | throwError "istart: {goal} is not an emp valid"
-  if !mvars.isEmpty then throwError "istart does not support creating mvars"
+  let io : Q(InOut) := if customProp.isSome then q(.in) else q(.out)
+  let synthResult ← ProofMode.trySynthInstanceQ q(AsEmpValid .from $goal $io $prop $bi $P)
 
-  let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P, .. }
-  let subgoal : Quoted q(⊢ $P) ←
-    mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
-  mvar.assign q(asEmpValid_2 $goal $subgoal)
-  pure (subgoal.mvarId!, irisGoal)
+  match synthResult, customProp with
+  | .some (inst, mvars), _ =>
+    if !mvars.isEmpty then throwError "{tacName} does not support creating mvars"
+    let irisGoal := { u, prop, bi, hyps := .mkEmp bi, goal := P, .. }
+    let subgoal : Quoted q(⊢ $P) ←
+      mkFreshExprSyntheticOpaqueMVar (IrisGoal.toExpr irisGoal) (← mvar.getTag)
+    mvar.assign q(asEmpValid_2 $goal $inst $subgoal)
+    pure (subgoal.mvarId!, irisGoal)
+  | _, none =>
+    throwError "{tacName}: {goal} is not an emp valid"
+  | _, some _ =>
+    throwError "{tacName}: {goal} is not an emp valid in {customProp}"
 
-/-- Run a ProofModeM computation on the main goal, ordering resulting goals with dependencies last. -/
-def ProofModeM.runTactic (x : MVarId → IrisGoal → ProofModeM α) (s : ProofModeM.State := {}) : TacticM α := do
+/--
+  Run a ProofModeM computation on the main goal, ordering resulting goals with
+  dependencies last.
+-/
+def ProofModeM.runTactic (tacName : Name) (x : MVarId → IrisGoal → ProofModeM α)
+    (s : ProofModeM.State := {}) : TacticM α := do
   let (mvar, g) ← startProofMode (← getMainGoal)
   mvar.withContext do
 
-  let (res, {goals}) ← StateRefT'.run (x mvar g) s
+  let (res, {goals}) ← StateRefT'.run ((x mvar g).run { tacName }) s
 
   -- make sure to synthesize everything postponed
   Term.synthesizeSyntheticMVarsNoPostponing (ignoreStuckTC := true)
 
   -- put the goals that depend on other goals last
-  let dependees ← goals.foldlM (λ m g => do
+  let dependees ← goals.foldlM (fun m g => do
     return m ∪ (← g.getMVarDependencies)) ∅
   let (dep, nonDep) := goals.partition dependees.contains
 
   replaceMainGoal (nonDep ++ dep).toList
   return res
+
+end ProofMode
+
+end Iris

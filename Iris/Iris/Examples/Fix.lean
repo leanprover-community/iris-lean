@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sergei Stepanenko
 -/
 module
 
@@ -52,9 +53,9 @@ def unfold : Dom V E -n> V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom 
 
 theorem unfold_fold {x : V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E)} :
     unfold (fold x) = x :=
-  (OFunctor.Fix.unfold_fold (F := DomF (Val := V) (Err := E)) x).to_eq
+  OFunctor.Fix.unfold_fold (F := DomF (Val := V) (Err := E)) x
 
 theorem fold_unfold {x : Dom V E} : fold (unfold x) = x :=
-  (OFunctor.Fix.fold_unfold (F := DomF (Val := V) (Err := E)) x).to_eq
+  OFunctor.Fix.fold_unfold (F := DomF (Val := V) (Err := E)) x
 
 end Dom

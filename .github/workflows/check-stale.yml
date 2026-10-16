@@ -13,21 +13,22 @@ jobs:
   check-stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: leanprover/lean-action@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: leanprover/lean-action@f061402b660e0c34644504b324e830f2991d4865 # v1.6.1
         with:
           lake-package-directory: Iris
 
       - name: Resolve Iris-Rocq master to a commit SHA
         id: rocq-commit
         run: |
-          sha=$(curl -fsSL \
-            "https://gitlab.mpi-sws.org/api/v4/projects/iris%2Firis/repository/commits/master" \
+          set -euo pipefail
+          url=$(python3 scripts/check_porting.py --print commit-api-url)
+          sha=$(curl -fsSL "$url" \
             | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
       - name: Cache Rocq definitions
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: Iris/.lake/iris-rocq-cache
           key: rocq-defs-${{ steps.rocq-commit.outputs.sha }}

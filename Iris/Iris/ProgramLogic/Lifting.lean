@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Fernando Leal
 -/
 module
 
@@ -170,8 +171,8 @@ theorem wp_lift_atomic_step (h : toVal e₁ = none) :
 
 @[rocq_alias wp_lift_pure_det_step_no_fork]
 theorem wp_lift_pure_det_step_no_fork [Inhabited State] (E₂ : CoPset)
-    (Hsafe : ∀ σ₁, match s with | .NotStuck => PrimStep.Reducible (e₁,σ₁) | _ => toVal e₁ = none)
-    (Hpuredet : ∀ σ₁ obs e₂' σ₂ eₜ', (e₁, σ₁) -<obs>-> (e₂', σ₂, eₜ') →
+    (Hsafe : ∀ σ₁, match s with | .NotStuck => PrimStep.Reducible (e₁, σ₁) | _ => toVal e₁ = none)
+    (Hpuredet : ∀ {σ₁ obs e₂' σ₂ eₜ'}, (e₁, σ₁) -<obs>-> (e₂', σ₂, eₜ') →
       obs = [] ∧ σ₂ = σ₁ ∧ e₂' = e₂ ∧ eₜ' = []) :
     (|={E}[E₂]▷=> £ 1 -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro H
@@ -179,7 +180,7 @@ theorem wp_lift_pure_det_step_no_fork [Inhabited State] (E₂ : CoPset)
   iapply step_fupd_wand $$ H
   iintro H
   iintro %obs %e' %eₜ' %σ %aux
-  obtain ⟨rfl, _, rfl, rfl⟩ := Hpuredet _ _ _ _ _ aux
+  obtain ⟨rfl, _, rfl, rfl⟩ := Hpuredet aux
   iassumption
 
 @[rocq_alias wp_pure_step_fupd]
@@ -187,7 +188,7 @@ theorem wp_pure_step_fupd [Inhabited State] (E₂ : CoPset)
     [Hexec : PureExec φ n e₁ e₂] (Hφ : φ) :
     (|={E}[E₂]▷=>^[n] £ n -∗ WP e₂ @ s; E {{ Φ }}) ⊢ WP e₁ @ s; E {{ Φ }} := by
   replace Hexec := Hexec.pureExec Hφ
-  iinduction Hexec using Relation.Iterate.head_induction_on with simp only [Nat.repeat]
+  iinduction Hexec using Relation.Iterate.head_induction_on with simp only [step_fupdN]
   | rfl =>
     iintro Hwp
     rw (occs := [2]) [fupd_wp_iff.to_eq]
@@ -220,7 +221,11 @@ theorem wp_pure_step_later [Inhabited State] [Hexec : PureExec φ n e₁ e₂] (
   induction n with
   | zero => exact .rfl
   | succ n IH =>
-    simp only [Nat.repeat]
-    rw [(later_laterN n).to_eq]
+    simp only [step_fupdN]
+    rw [(laterN_succ_left n).to_eq]
     refine (later_mono IH).trans ?_
     exact step_fupd_intro Std.LawfulSet.subset_refl
+
+end ProgramLogic
+
+end Iris

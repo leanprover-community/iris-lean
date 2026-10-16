@@ -1,12 +1,13 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Alex Bai, Markus de Medeiros
+-/
 module
 
 public import Iris.Std
-public import Iris.BI
 public import Iris.Algebra.Updates
-public import Iris.ProofMode.Classes
-public import Iris.ProofMode.Tactics
-public import Iris.ProofMode.Display
-public import Iris.ProofMode.InstancesUpdates
+public import Iris.ProofMode
 
 @[expose] public section
 
@@ -21,11 +22,11 @@ which can be used to instantiate BUpd for any Sbi BI.
 cf. https://gitlab.mpi-sws.org/iris/iris/merge_requests/211
 -/
 
-namespace BUpdPlain
-
 @[rocq_alias bupd_alt]
 def BUpdPlain [BIBase PROP] [BIBase.Plainly PROP] (P : PROP) : PROP :=
   iprop(∀ R, (P -∗ ■ R) -∗ ■ R)
+
+namespace BUpdPlain
 
 section BupdPlainDef
 
@@ -36,6 +37,8 @@ variable [Sbi PROP]
 @[rocq_alias bupd_alt_ne]
 instance BUpdPlain_ne : NonExpansive (BUpdPlain (PROP := PROP)) where
   ne _ _ _ H := forall_ne fun _ => wand_ne.ne (wand_ne.ne H .rfl) .rfl
+
+#rocq_ignore bupd_alt_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias bupd_alt_intro]
 theorem BUpdPlain_intro {P : PROP} : P ⊢ BUpdPlain P := by
@@ -54,6 +57,9 @@ theorem BUpdPlain_mono {P Q : PROP} : (P ⊢ Q) → (BUpdPlain P ⊢ BUpdPlain Q
   iapply Hp
   iapply H $$ HP
 
+#rocq_ignore bupd_alt_mono' "Use BUpdPlain_mono."
+#rocq_ignore bupd_alt_flip_mono' "Use BUpdPlain_mono."
+
 @[rocq_alias bupd_alt_trans]
 theorem BUpdPlain_idem {P : PROP} : BUpdPlain (BUpdPlain P) ⊢ BUpdPlain P := by
   unfold BUpdPlain
@@ -69,9 +75,7 @@ theorem BUpdPlain_frame_right {P Q : PROP} : BUpdPlain P ∗ Q ⊢ (BUpdPlain ip
   iapply Hp
   iintro Hp
   iapply H
-  isplitl [Hp]
-  · iexact Hp
-  · iexact Hq
+  iframe Hp Hq
 
 @[rocq_alias bupd_alt_plainly]
 theorem BUpdPlain_plainly {P : PROP} : BUpdPlain iprop(■ P) ⊢ (■ P) := by
@@ -82,32 +86,30 @@ theorem BUpdPlain_plainly {P : PROP} : BUpdPlain iprop(■ P) ⊢ (■ P) := by
 
 /- BiBUpdPlainly entails the alternative definition -/
 @[rocq_alias bupd_bupd_alt]
-theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdateSbi PROP] [BIAffine PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P := by
-  unfold BUpdPlain
-  iintro HP %_ Hx
-  imod HP
-  iapply Hx $$ HP
+theorem BUpd_BUpdPlain [BIUpdate PROP] [BIBUpdateSbi PROP] {P : PROP} : (|==> P) ⊢ BUpdPlain P :=
+  forall_intro fun _ => wand_intro <| bupd_frame_right.trans <|
+    (BIUpdate.mono (wand_elim_right.trans plainly_idem.mpr)).trans bupd_plainly_elim
 
--- FIXME: @[rocq_alias own_updateP] duplicate alias
-/-- We get the usual rule for frame preserving updates if we have an [own]
-  connective satisfying the following rule w.r.t. interaction with plainly. -/
-theorem own_updateP [UCMRA M] {own : M → PROP} {x : M} {Φ : M → Prop}
+/-- We get the usual rule for frame preserving updates if we have an `own`
+connective satisfying the following rule w.r.t. interaction with plainly. -/
+@[rocq_alias bupd_alt.own_updateP]
+theorem own_updateP [UORA M] {own : M → PROP} {x : M} {Φ : M → Prop}
   (own_updateP_plainly : ∀ (x : M) (Φ : M → Prop) (R : PROP),
-    (x ~~>: Φ) → own x ∗ (∀ y, iprop(⌜Φ y⌝) -∗ own y -∗ ■ R) ⊢ ■ R)
+    (x ~~>: Φ) → iprop(own x ∗ ∀ y, ⌜Φ y⌝ -∗ own y -∗ ■ R) ⊢ ■ R)
   (Hup : x ~~>: Φ) :
     own x ⊢ BUpdPlain iprop(∃ y, ⌜Φ y⌝ ∧ own y) := by
   iintro Hx
   unfold BUpdPlain
   iintro %R H
   iapply own_updateP_plainly x Φ R Hup
-  isplitl [Hx]
-  · iexact Hx
+  iframe Hx
   iintro %y %HΦ Hy
   iapply H
   iexists y
-  isplit
-  · itrivial
-  · iexact Hy
+  iframe %HΦ Hy
 
 end BupdPlainDef
+
 end BUpdPlain
+
+end Iris

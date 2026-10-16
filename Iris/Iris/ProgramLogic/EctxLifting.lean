@@ -1,11 +1,14 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Fernando Leal
 -/
 module
 
 public import Iris.ProgramLogic.Lifting
 public import Iris.ProgramLogic.EctxiLanguage
+
+#rocq_ignore ectx_lifting.reducible_not_val_inhabitant "Rocq-specific `auto` resolve hint; not needed."
 
 namespace Iris.ProgramLogic
 
@@ -143,7 +146,6 @@ theorem wp_lift_atomic_base_step_no_fork_fupd (h : toVal e₁ = none) :
   subst h
   simp only [List.length_nil, Nat.add_zero, Algebra.BigOpL.bigOpL_nil]
   iframe
-  itrivial
 
 @[rocq_alias wp_lift_atomic_base_step_no_fork]
 theorem wp_lift_atomic_base_step_no_fork (h : toVal e₁ = none) :
@@ -185,3 +187,7 @@ theorem wp_lift_pure_det_base_step_no_fork' [Inhabited State] (h : toVal e₁ = 
   iintro _
   refine .trans ?_ <| wp_lift_pure_det_base_step_no_fork E h Hbred Hpure
   exact step_fupd_intro Std.LawfulSet.subset_refl
+
+end ProgramLogic
+
+end Iris

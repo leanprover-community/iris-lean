@@ -1,12 +1,12 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
 module
 
-public import Lean.Expr
 public import Lean.Meta
+public import Iris.Init
 
 @[expose] public section
 

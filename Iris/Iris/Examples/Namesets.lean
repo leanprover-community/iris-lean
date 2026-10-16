@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sergei Stepanenko
 -/
 module
 
@@ -19,6 +20,7 @@ namespace Iris.Examples.Set
 open Iris.BI COFE Std.LawfulSet Iris.Std DisjointLeibnizSet
 
 section sets
+open ORA
 -- This section demonstrates an example of using set algebra operations
 -- with both namespaces and general sets.
 
@@ -42,7 +44,7 @@ example {x y : α} : SetOwn {x, y} ⊢ (SetOwn ({x} : SetImpl α cmp) -∗ False
   apply (UPred.ownM_valid _).trans
   apply UPred.ownM_always_invalid_elim
   intro n H
-  simp only [MySet, ←CMRA.valid_iff_validN', valid_op_iff_disj] at H
+  simp only [MySet, ←valid_iff_validN', valid_op_iff_disj] at H
   apply H x
   simp
 
@@ -60,7 +62,7 @@ example {x y : gname} : CoPSetOwn {x, y} ⊢ (CoPSetOwn CoPset.full -∗ False) 
   apply (UPred.ownM_valid _).trans
   apply UPred.ownM_always_invalid_elim
   intro n H
-  simp only [MyCoPSet, ←CMRA.valid_iff_validN', valid_op_iff_disj] at H
+  simp only [MyCoPSet, ←valid_iff_validN', valid_op_iff_disj] at H
   apply H x; grind only [mem_singleton, mem_insert, CoPset.mem_full]
 
 end sets

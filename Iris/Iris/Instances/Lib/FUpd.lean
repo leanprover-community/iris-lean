@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Sergei Stepanenko, Zongyuan Liu
 -/
@@ -10,10 +10,12 @@ public import Iris.Algebra.Auth
 public import Iris.Algebra.Numbers
 public import Iris.ProofMode
 public import Iris.BI.Algebra
+public import Iris.BI.Notation
 public import Iris.Instances.IProp
 public import Iris.Instances.Lib.WSat
 public import Iris.Instances.Lib.LaterCredits
 public import Iris.BI.Plainly
+public import Iris.Std
 
 @[expose] public section
 
@@ -139,12 +141,20 @@ instance {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIUpdateFUpdate (IProp GF)
     imod H; imodintro
     iassumption
 
+@[rocq_alias uPred_bi_bupd_lc]
+instance uPred_bi_bupd_lc {GF : BundledGFunctors} [LcGS hlc GF] : BIBUpdLaterCredits (IProp GF) where
+  lc_zero := by
+    rw [uPred_lc_unseal]
+    cases hlc with
+    | hasNoLC => simp only [uPred_lc]; itrivial
+    | hasLC => exact iOwn_unit (ε := UORA.unit)
+
 end Instances
 
 section LaterCreditLemmas
 
 @[rocq_alias fupd_unfold_no_lc]
-theorem fupd_unfold_no_lc [Hi:InvGS_gen .hasNoLC GF] E1 E2 (P : IProp GF) :
+theorem fupd_unfold_no_lc [Hi : InvGS_gen .hasNoLC GF] E1 E2 (P : IProp GF) :
   (|={E1,E2}=> P) ⊣⊢ (wsat ∗ ownE E1 ==∗ ◇ (wsat ∗ ownE E2 ∗ P)) := by
   simp only [fupd, uPred_fupd]
   rw [(le_upd_unfold_no_le (GF := GF)).to_eq]
@@ -152,51 +162,15 @@ theorem fupd_unfold_no_lc [Hi:InvGS_gen .hasNoLC GF] E1 E2 (P : IProp GF) :
 
 variable {GF : BundledGFunctors} [InvGS GF]
 
-@[rocq_alias lc_fupd_elim_later]
-theorem lc_fupd_elim_later {E : CoPset} {P : IProp GF} : ⊢ £ 1 -∗ (▷ P) -∗ |={E}=> P := by
-  iintro Hcr HP
-  simp only [fupd, uPred_fupd]
-  iintro ⟨Hwsat, HE⟩
-  iapply le_upd_later $$ Hcr
-  inext
-  iframe
-
-@[rocq_alias lc_fupd_add_later]
-theorem lc_fupd_add_later {E1 E2 : CoPset} {P : IProp GF} : ⊢ £ 1 -∗ (▷ |={E1, E2}=>P) -∗ |={E1, E2}=> P := by
-  iintro Hf Hupd
-  iapply (BIFUpdate.trans (E1 := E1) (E2 := E1))
-  iapply lc_fupd_elim_later $$ Hf Hupd
-
-@[rocq_alias lc_fupd_add_laterN]
-theorem lc_fupd_add_laterN (n : Nat) {E : CoPset} {P : IProp GF} :
-    ⊢ £ n -∗ (▷^[n] |={E}=> P) -∗ |={E}=> P := by
-  iintro Hf Hupd
-  iinduction n with
-  | zero =>
-    dsimp only [BIBase.laterN, Nat.repeat]
-    iexact Hupd
-  | succ n IH =>
-    icases Hf with ⟨H1, Hf⟩
-    iapply lc_fupd_add_later $$ H1
+@[rocq_alias uPred_bi_fupd_lc]
+instance uPred_bi_fupd_lc : BIFUpdLaterCredits (IProp GF) where
+  lc_fupd_elim_later {E P} := by
+    iintro Hcr HP
+    simp only [fupd, uPred_fupd]
+    iintro ⟨Hwsat, HE⟩
+    iapply le_upd_later $$ Hcr
     inext
-    iapply IH $$ [$] [$]
-
-@[rocq_alias lc_fupd_add_step_fupdN]
-theorem lc_fupd_add_step_fupdN (E1 E2 E3: CoPset) (P : IProp GF) (n : Nat) :
-    £ n -∗ (|={E1}[E2]▷=>^[n] |={E1,E3}=> P) -∗ |={E1,E3}=> P := by
-  iintro Hf Hupd
-  iinduction n with
-  | zero =>
-    simp only [Nat.repeat]
-    iexact Hupd
-  | succ n IH =>
-    simp only [Nat.repeat]
-    imod Hupd
-    icases Hf with ⟨H1, Hf⟩
-    iapply lc_fupd_add_later $$ H1
-    inext
-    imod Hupd
-    iapply IH $$ [$] [$]
+    iframe
 
 end LaterCreditLemmas
 
@@ -210,13 +184,14 @@ def fupd_finally [InvGS_gen hlc GF] (E : CoPset) (P : IProp GF) : IProp GF :=
 #rocq_ignore fupd_finally_aux "Not needed"
 #rocq_ignore fupd_finally_unseal "Not needed"
 
-
 syntax "|={" term "|}=> " term : term
 syntax:25 term:26 "={" term "|}=∗ " term:25 : term
 
 macro_rules
-  | `(iprop(|={$E|}=> $P))  => ``(fupd_finally $E iprop($P))
-  | `(iprop($P ={$E|}=∗ $Q))  => ``(BIBase.wand iprop($P) (fupd_finally $E iprop($Q)))
+  | `(iprop(|={%$tk1 $E |}=>%$tk2 $P))  =>
+    ``($(wrapIpropSpan tk1 tk2 ``fupd_finally) $E iprop($P))
+  | `(iprop($P ={%$tk1 $E |}=∗%$tk2 $Q))  =>
+    ``(BIBase.wand iprop($P) ($(wrapIpropSpan tk1 tk2 ``fupd_finally) $E iprop($Q)))
   | `($P ={$E|}=∗ $Q)  => ``(⊢ $P ={$E|}=∗ $Q)
 
 delab_rule fupd_finally
@@ -224,10 +199,9 @@ delab_rule fupd_finally
       let P ← Iris.BI.unpackIprop P
       ``(iprop(|={$E|}=> $P))
 
-
 section fupd_finally
 
-open ProofMode Std
+open ProofMode Iris.Std
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 
@@ -324,8 +298,8 @@ theorem fupd_finally_keep {E : CoPset} (P : IProp GF) {Q : IProp GF} [TCOr (TCEq
 
 @[rocq_alias uPred_bi_fupd_sbi_no_lc]
 instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .hasNoLC GF] :
-    BIFUpdatePlainly (IProp GF) where
-  fupd_keep_si_pure E' Pi R := by
+    BIFUpdateSbi (IProp GF) where
+  fupd_keep_siPure E' Pi R := by
     iintro H
     iapply fupd_keep iprop(<si_pure> Pi)
     isplit
@@ -334,10 +308,10 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .h
       iapply BIFUpdate.mono (fupd_finally_intro E' iprop(<si_pure> Pi))
       iapply BIFUpdate.mono Plain.plain $$ H
     · icases H with ⟨-, $⟩
-  fupd_plainly_later _ P := by
+  fupd_siPure_later _ P := by
     simp only [fupd, uPred_fupd]
     iintro H ⟨Hwsat, HE⟩
-    ihave #HP : ▷ ◇ ■ P $$ [H Hwsat HE]
+    ihave #HP : ▷ ◇ <si_pure> P $$ [H Hwsat HE]
     · inext
       ihave H := H $$ [$]
       icases le_upd_unfold_no_le.mp $$ H with H
@@ -345,18 +319,24 @@ instance uPred_bi_fupd_plainly_no_lc {GF : BundledGFunctors} [INV : InvGS_gen .h
     imodintro
     iframe
     inext; imod HP; imodintro
-    iapply plainly_elim $$ HP
-  fupd_plainly_sForall_2 E P := by
-    simp only [fupd, uPred_fupd]
-    iintro H ⟨Hwsat, HE⟩
-    ihave #HP : ◇ ■ sForall P $$ [H Hwsat HE]
-    · ihave H := H $$ [$]
-      icases le_upd_unfold_no_le.mp $$ H with H
-      imod H with ⟨_, _, $⟩
-    imod HP; imodintro
-    iframe
-    iclear H
-    iapply plainly_elim $$ HP
+    iexact HP
+  fupd_siPure_sForall_2 E Ψi := by
+    iintro H
+    iapply fupd_keep iprop(<si_pure> (sForall Ψi))
+    isplit
+    · iapply fupd_finally_mono (siPure_sForall_mpr (Ψi := Ψi))
+      iapply fupd_finally_forall
+      iintro %q
+      iapply fupd_finally_mono pure_imp_forall.mpr
+      iapply fupd_finally_forall
+      iintro %hq
+      iapply fupd_fupd_finally
+      imod H $$ %q %hq with #Hq
+      imodintro
+      iapply fupd_finally_intro
+      iintro !> //
+    · iintro Hall
+      iapply fupd_mask_intro_discard LawfulSet.subset_refl $$ Hall
 
 @[rocq_alias fupd_finally_mask_mono]
 theorem fupd_finally_mask_mono (E1 E2 : CoPset) (P : IProp GF) (H : E1 ⊆ E2) :
@@ -366,8 +346,8 @@ theorem fupd_finally_mask_mono (E1 E2 : CoPset) (P : IProp GF) (H : E1 ⊆ E2) :
   iapply fupd_mask_intro_discard H $$ Hupd
 
 @[rocq_alias from_modal_fupd_finally]
-instance fromModal_fupd_finally (E : CoPset) (P : IProp GF) :
-    FromModal True modality_plainly iprop(|={E|}=> P) iprop(|={E|}=> P) P where
+instance fromModal_fupd_finally (E : CoPset) io (P : IProp GF) :
+    FromModal io modality_plainly True iprop(|={E|}=> P) iprop(|={E|}=> P) P where
   from_modal _ := fupd_finally_intro E P
 
 @[rocq_alias is_except_0_fupd_finally]
@@ -379,8 +359,8 @@ instance isExcept0_fupd_finally (E : CoPset) (P : IProp GF) : IsExcept0 iprop(|=
     iapply except0_mono fupd_intro $$ H
 
 @[rocq_alias elim_modal_bupd_fupd_finally]
-instance elimModal_bupd_fupd_finally p (E : CoPset) (P Q : IProp GF) :
-    ElimModal True p false iprop(|==> P) P iprop(|={E|}=> Q) iprop(|={E|}=> Q) where
+instance elimModal_bupd_fupd_finally p io (E : CoPset) (P Q : IProp GF) :
+    ElimModal True p io false iprop(|==> P) P iprop(|={E|}=> Q) iprop(|={E|}=> Q) where
   elim_modal _ := by
     iintro ⟨H1, H2⟩
     iapply fupd_fupd_finally E E
@@ -390,8 +370,8 @@ instance elimModal_bupd_fupd_finally p (E : CoPset) (P Q : IProp GF) :
     iapply H2 $$ H1
 
 @[rocq_alias elim_modal_fupd_fupd_finally]
-instance elimModal_fupd_fupd_finally p (E1 E2 : CoPset) (P Q : IProp GF) :
-    ElimModal True p false iprop(|={E1,E2}=> P) P iprop(|={E1|}=> Q) iprop(|={E2|}=> Q) where
+instance elimModal_fupd_fupd_finally p io (E1 E2 : CoPset) (P Q : IProp GF) :
+    ElimModal True p io false iprop(|={E1,E2}=> P) P iprop(|={E1|}=> Q) iprop(|={E2|}=> Q) where
   elim_modal _ := by
     iintro ⟨H1, H2⟩
     iapply fupd_fupd_finally E1 E2
@@ -405,12 +385,12 @@ theorem step_fupdN_fupd_finally (E1 E2 : CoPset) (n : Nat) (P : IProp GF) :
   iintro HP
   iinduction n with
   | zero =>
-    simp only [Nat.repeat]
+    simp only [step_fupdN]
     exact fupd_finally_mono except0_intro
   | succ n IH =>
-    simp only [Nat.repeat]
+    simp only [step_fupdN]
     imod HP
-    iapply fupd_finally_mono (later_laterN n).mpr
+    iapply fupd_finally_mono (laterN_succ_left n).mpr
     iapply fupd_finally_mono (later_mono (laterN_mono n except0_idem.mp))
     iapply fupd_finally_mono (later_mono (except0_laterN (P := iprop(◇ P)) n))
     iapply fupd_finally_later
@@ -526,7 +506,7 @@ end Soundness
 
 section StepIndexed
 
-open Iris Std LawfulSet BIFUpdatePlainly
+open Iris Iris.Std LawfulSet BIFUpdateSbi
 
 variable {GF : BundledGFunctors}
 
@@ -538,7 +518,7 @@ theorem step_fupdN_soundness [InvGpreS GF] (n m : Nat) {P : IProp GF} [Plain P] 
   apply fupd_finally_soundness hlc (n := m) (E := ⊤)
   iintro %Hinv Hc
   imod HP $$ Hc with HP
-  rw [(laterN_later n).to_eq]
+  rw [(laterN_succ_right n).to_eq]
   iapply fupd_finally_mono (laterN_mono _ except0_into_later)
   iapply step_fupdN_fupd_finally
   iapply step_fupdN_wand $$ HP
@@ -553,7 +533,7 @@ theorem step_fupdN_soundness_close [InvGpreS GF] (n m : Nat) {P : IProp GF} [Pla
   apply fupd_finally_soundness hlc (n := m) (E := ⊤)
   iintro %Hinv Hc
   ihave HP := HP $$ Hc
-  rw [(laterN_later n).to_eq]
+  rw [(laterN_succ_right n).to_eq]
   iapply fupd_finally_mono (laterN_mono _ except0_into_later)
   iapply step_fupdN_fupd_finally
   iapply step_fupdN_wand $$ HP
@@ -567,7 +547,7 @@ theorem fupd_soundness_no_lc_unfold [InvGpreS GF] m E :
   imod wsat_alloc with ⟨%W, Hw, HE⟩
   icases (lc_alloc_no_lc m) with ⟨%Hc, _, Hlc⟩
   let Hi := @InvGS_gen.mk .hasNoLC GF (inferInstance) W Hc
-  iexists Hi, (λ E => iprop(wsat ∗ ownE E))
+  iexists Hi, (fun E => iprop(wsat ∗ ownE E))
   rw [diff_subset_decomp (s₁ := E) (s₂ := ⊤) (fun _ _ => CoPset.mem_full)]
   icases (ownE_op (disjoint_symm disjoint_diff_right)) $$ HE with ⟨_, HE⟩
   -- FIXME: iframe failed without simplication here
@@ -582,5 +562,6 @@ theorem fupd_soundness_no_lc_unfold [InvGpreS GF] m E :
 end StepIndexed
 
 end Iris
+
 
 end

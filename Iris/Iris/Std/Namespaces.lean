@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Remy Seassau. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 -/
@@ -8,8 +8,6 @@ module
 public import Iris.Std.CoPset
 public import Iris.Std.Positives
 public import Iris.Std.GenSets
-meta import Iris.Std.DelabRule
-meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -24,14 +22,13 @@ def nroot : Namespace := List.nil
 def ndot [Pos.Countable A] (N : Namespace) (x : A) : Namespace :=
   (Pos.Countable.encode x) :: N
 
+@[coe]
 def nclose (N : Namespace) : CoPset :=
   CoPset.suffixes ((Pos.flatten N))
 
 instance : CoeOut Namespace CoPset where coe := nclose
 
-delab_rule nclose
-  | `($_ $N) => `(↑$N)
-
+@[coe]
 def ofName : Lean.Name → Namespace
   | .anonymous => nroot
   | .str rest str => ndot (ofName rest) str
@@ -44,7 +41,11 @@ infix:80 ".@" => ndot
 instance ndisjoint : Iris.Std.Disjoint Namespace where
   disjoint N1 N2 := nclose N1 ## nclose N2
 
-theorem nclose_root : ↑nroot = CoPset.full := by rfl
+theorem nclose_root : ↑nroot = CoPset.full := by
+  ext p
+  simp only [nclose, Pos.flatten, nroot, Pos.flattenGo, CoPset.elem_suffixes,
+    CoPset.mem_full, iff_true, HAppend.hAppend, Pos.app]
+  exists p
 
 theorem nclose_subseteq [Pos.Countable A] N (x : A) : (↑N.@x : CoPset) ⊆ (↑N : CoPset) := by
   intros p

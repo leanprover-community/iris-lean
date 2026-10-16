@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Markus de Medeiros. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
@@ -16,7 +16,7 @@ public import Iris.ProofMode
 
 namespace Iris
 
-open BI CMRA Agree OFE UPred IProp Std ProofMode COFE
+open BI ORA Agree OFE Iris.UPred IProp Iris.Std ProofMode COFE
 
 /-! ## Saved anything -/
 
@@ -57,13 +57,12 @@ instance saved_anything_fractional (γ : GName) (x : F.ap (IProp GF)) :
   fractional p q := by
     unfold saved_anything_own
     refine .trans ?_ iOwn_op
-    refine equiv_iff.mp ?_
-    exact iOwn_ne.eqv (DFracAgree.Frac.mk_op (q₁ := p) (q₂ := q))
+    exact (congrArg (iOwn _) (DFracAgree.Frac.mk_op (q₁ := p) (q₂ := q))).to_bi
 
 @[rocq_alias saved_anything_as_fractional]
 instance saved_anything_as_fractional (γ : GName) (x : F.ap (IProp GF)) (q : Qp) :
     AsFractional (saved_anything_own γ (.own q) x)
-      (fun q => saved_anything_own γ (.own q) x) q where
+      ioΦ (fun q => saved_anything_own γ (.own q) x) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := saved_anything_fractional γ x
 
@@ -74,10 +73,7 @@ theorem saved_anything_alloc_strong (x : F.ap (IProp GF)) (I : GName → Prop) (
     (Hdq : ✓ dq) (HI : PredInfinite I) :
     ⊢@{IProp GF} |==> ∃ γ, ⌜I γ⌝ ∗ saved_anything_own γ dq x := by
   unfold saved_anything_own
-  refine iOwn_alloc_strong _ I ?_ ⟨Hdq, toAgree_valid⟩
-  intro N
-  obtain ⟨k, hk, hnk⟩ := HI (List.range N)
-  exact ⟨k, Nat.not_lt.mp (fun h => hnk (List.mem_range.mpr h)), hk⟩
+  exact iOwn_alloc_strong _ I HI.exists_ge ⟨Hdq, toAgree_valid⟩
 
 @[rocq_alias saved_anything_alloc_cofinite]
 theorem saved_anything_alloc_cofinite (x : F.ap (IProp GF)) (G : List GName) (dq : DFrac)
@@ -125,7 +121,7 @@ instance saved_anything_combine_as (γ : GName) (dq1 dq2 : DFrac) (x y : F.ap (I
     icombine Hx Hy gives ⟨-, #H⟩
     irewrite [← H] at Hy
     unfold saved_anything_own
-    iapply (equiv_iff.mp (iOwn_ne.eqv (DFracAgree.mk_op (d₁ := dq1) (d₂ := dq2) (a := x)))).mpr
+    iapply (congrArg (iOwn _) (DFracAgree.mk_op (d₁ := dq1) (d₂ := dq2) (a := x)))
     iapply iOwn_op.mpr
     isplitl [Hx] <;> iassumption
 
@@ -209,7 +205,7 @@ instance saved_prop_fractional (γ : GName) (P : IProp GF) :
 
 @[rocq_alias saved_prop_as_fractional]
 instance saved_prop_as_fractional (γ : GName) (P : IProp GF) (q : Qp) :
-    AsFractional (saved_prop_own γ (.own q) P) (fun q => saved_prop_own γ (.own q) P) q where
+    AsFractional (saved_prop_own γ (.own q) P) ioΦ (fun q => saved_prop_own γ (.own q) P) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := saved_prop_fractional γ P
 
@@ -312,7 +308,7 @@ instance saved_pred_fractional (γ : GName) (Φ : A → IProp GF) :
 
 @[rocq_alias saved_pred_as_fractional]
 instance saved_pred_as_fractional (γ : GName) (Φ : A → IProp GF) (q : Qp) :
-    AsFractional (saved_pred_own γ (.own q) Φ) (fun q => saved_pred_own γ (.own q) Φ) q where
+    AsFractional (saved_pred_own γ (.own q) Φ) ioΦ (fun q => saved_pred_own γ (.own q) Φ) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := saved_pred_fractional γ Φ
 

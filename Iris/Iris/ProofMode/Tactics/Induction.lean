@@ -1,18 +1,11 @@
 /-
-Copyright (c) 2026 Yunsong Yang. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yunsong Yang, Michael Sammler, Alvin Tang
 -/
 module
 
-public meta import Iris.ProofMode.Tactics.Basic
-public meta import Iris.ProofMode.Tactics.Assumption
-public meta import Iris.ProofMode.Tactics.Cases
-public meta import Iris.ProofMode.Patterns.CasesPattern
-public meta import Iris.ProofMode.ClassesMake
-public meta import Iris.ProofMode.Tactics.RevertIntro
-public meta import Iris.ProofMode.Tactics.Revert
-public meta import Lean.Meta.Tactic.TryThis
+public import Iris.ProofMode.Tactics.RevertIntro
 
 namespace Iris.ProofMode
 
@@ -50,7 +43,7 @@ theorem revert_IH [BI PROP] {P Q R : PROP} {φ}
   _ ⊢ Q ∗ □ R     := sep_mono_left intuitionistically_elim
 
 public meta section
-open BI Std Lean Elab Tactic Meta Qq Parser.Tactic
+open BI Iris.Std Lean Elab Tactic Meta Qq Parser.Tactic
 
 syntax (name := iinduction) "iinduction " colGt term
   (" using " ident)? (generalizingSelPats)? (inductionAlts)? : tactic
@@ -82,7 +75,7 @@ private structure Alts where
   and return an `Alts` instance.
 -/
 private def parseInductionAlts (altsSyntax : TSyntax `Lean.Parser.Tactic.inductionAlts) :
-    TacticM Alts := do
+    ProofModeM Alts := do
   -- For parsing the user-supplied names for variables and induction hypotheses
   let parseVars (vars : Array Syntax) : TacticM (Array (TSyntax `Lean.binderIdent)) := do
     vars.mapM fun v =>
@@ -99,7 +92,7 @@ private def parseInductionAlts (altsSyntax : TSyntax `Lean.Parser.Tactic.inducti
         | `(inductionAlt| $[$lhs:inductionAltLHS]* => $tac:tacticSeq) => pure (lhs, some tac)
         | `(inductionAlt| $[$lhs:inductionAltLHS]* => $_:hole)
         | `(inductionAlt| $[$lhs:inductionAltLHS]* => $_:syntheticHole) => pure (lhs, none)
-        | _ => throwErrorAt alt "iinduction: invalid syntax"
+        | _ => throwIPMErrorAt alt "invalid syntax"
 
       for l in lhs do
         match l with
@@ -108,13 +101,13 @@ private def parseInductionAlts (altsSyntax : TSyntax `Lean.Parser.Tactic.inducti
           parsedAlts := parsedAlts.push ⟨ctor.getId, ← parseVars vars, tacs, alt⟩
         | `(inductionAltLHS| | $_:hole $[$vars]*) =>
           if parsedAlts.size < alts.size - 1 then
-            throwErrorAt alt
-              s!"iinduction: invalid occurrence of the wildcard alternative `| _ => ...`: ".append
-              "It must be the last alternative"
+            throwIPMErrorAt alt
+              s!"invalid occurrence of the wildcard alternative `| _ => ...`: \
+              It must be the last alternative"
           return ⟨tac, parsedAlts, some ⟨.anonymous, ← parseVars vars, tacs, alt⟩, altsSyntax⟩
-        | _ => throwErrorAt l "iinduction: invalid syntax"
+        | _ => throwIPMErrorAt l "invalid syntax"
     return ⟨tac, parsedAlts, none, altsSyntax⟩
-  | _ => throwErrorAt altsSyntax "iinduction: invalid syntax"
+  | _ => throwIPMErrorAt altsSyntax "invalid syntax"
 
 /--
   Designed to be a mutable state such that `newHyps` contains induction
@@ -135,25 +128,26 @@ private def addIHs {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
 
   -- Iteratively move the induction hypotheses into the intuitionistic context
   for i in ihFVars do
-    let ⟨_u, (ϕ : Q(Prop)), (p : Q($ϕ))⟩ ← inferTypeQ <| mkFVar i
+    let ⟨_u, (φ : Q(Prop)), (p : Q($φ))⟩ ← inferTypeQ <| mkFVar i
 
     -- Obtain the proposition to be introduced into the intuitionistic context
     let Q ← mkFreshExprMVarQ q($prop)
-    let some inst ← ProofModeM.trySynthInstanceQ q(IntoIH $ϕ $e $Q)
-    | throwError m!"iinduction: unable to perform type class synthesis with IntoIH for the induction hypothesis {ϕ}"
+    let some inst ← ProofModeM.trySynthInstanceQ q(IntoIH $φ $e $Q)
+    | throwIPMError "unable to perform type class synthesis with \
+        IntoIH for the induction hypothesis {φ}"
 
     -- Introduce the induction hypothesis into the intuitionistic context
     let nameIdent := mkIdent <| ← i.getUserName
     let binderIdent ← `(binderIdent| $nameIdent:ident)
-    let ⟨_, newHyps⟩ ← Hyps.addWithInfo bi binderIdent q(true) Q st.newHyps
-    let pf := q(revert_IH $p $pfIntHyps $st.pf $inst)
+    let ⟨_, _, newHyps, pf'⟩ ← Hyps.addWithInfo bi binderIdent q(true) Q st.newHyps
+    let pf := q(revert_IH $p $pfIntHyps $st.pf $inst |>.trans $(pf').mp)
 
     st := { newHyps, pf }
 
   return st
 
 private def throwMissingAlt {α} (ctor : Name) : ProofModeM α :=
-  throwError "iinduction: alternative `{ctor.getString!}` has not been provided"
+  throwIPMError "alternative `{ctor.getString!}` has not been provided"
 
 /--
   Check that all the alternative names are valid and that there are no duplicates.
@@ -178,7 +172,8 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
     (parsedAlts : Option Alts) (altRecName : Option Name) (genSelTargets : List SelTarget) :
     ProofModeM Q($e ⊢ $goal) := do
   let targets := genSelTargets ++
-    (hyps.spatialIVarIds.map ({ kind := .ipm ·, explicit := false })).filter (not <| (genSelTargets.map (·.kind)).contains ·.kind)
+    ((hyps.spatialIVarIds .topToBottom).map ({ kind := .ipm ·, explicit := false })).filter
+      (not <| (genSelTargets.map (·.kind)).contains ·.kind)
 
   -- Find the recursor name and constructor names of the inductive datatype
   let fvarType ← liftM <| (inferType <| mkFVar fvar) >>= whnf
@@ -189,8 +184,8 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
       altRecName.elim
         (getCustomEliminator? #[mkFVar fvar] true <&> (·.getD <| mkRecName indName))
         pure
-    | _ => throwError "iinduction: {indName} is not inductive"
-  | _ => throwError "iinduction: unable to determine inductive type"
+    | _ => throwIPMError "{indName} is not inductive"
+  | _ => throwIPMError "unable to determine inductive type"
 
   let matcher := fun ctor alt => alt.ctor != .anonymous && ctor == alt.ctor
 
@@ -263,8 +258,8 @@ private def iInductionCore {u} {prop : Q(Type u)} {bi : Q(BI $prop)} {e}
                   -- Check that the number of arguments matches what are needed
                   if vars.size > s.fields.size then
                     throwOrLogErrorAt stx <|
-                      s!"iinduction: too many variable names provided at alternative `{ctor}`: ".append
-                      s!"{vars.size} provided, but {s.fields.size} expected"
+                      s!"iinduction: too many variable names provided at alternative `{ctor}`: \
+                        {vars.size} provided, but {s.fields.size} expected"
                   -- Label the arguments with their types, shown when the user hovers over them
                   for ⟨fieldFVar, varStx⟩ in s.fields.zip vars do
                     if let `(binderIdent| $id:ident) := varStx then
@@ -382,16 +377,17 @@ elab_rules : tactic
     let fvar ← generalizeTermWithFVar x
     -- Parse the recursor name provided by the user
     let recName := r.map (·.getId)
-    -- Parse the list of alternative names supplied by the user
-    let parsedAlts ← alts.mapM parseInductionAlts
 
-    ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+    ProofModeM.runTactic `iinduction fun mvar { hyps, goal, .. } => do
+      -- Parse the list of alternative names supplied by the user
+      let parsedAlts ← alts.mapM parseInductionAlts
+
       let genSelTargets ← do
         -- Parse the selection patterns for generalising hypotheses
         let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
-        let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
+        let genSelTargets ← SelPat.resolve hyps parsedGenSelPats .topToBottom
         -- Check for dependencies with the hypotheses in the selection targets
-        checkDependentHyps "iinduction" hyps genSelTargets fvar genSelPats
+        checkDependentHyps hyps genSelTargets fvar genSelPats
           (fun pats => `(tactic| iinduction $x $[using $r]? generalizing $pats* $[$alts]?))
           (fun pats => `(tactic| iinduction $x $[using $r]? generalizing! $pats* $[$alts]?))
         pure genSelTargets
@@ -402,10 +398,11 @@ elab_rules : tactic
     let fvar ← generalizeTermWithFVar x
     -- Parse the recursor name provided by the user
     let recName := r.map (·.getId)
-    -- Parse the list of alternative names supplied by the user
-    let parsedAlts ← alts.mapM parseInductionAlts
 
-    ProofModeM.runTactic λ mvar { hyps, goal, .. } => do
+    ProofModeM.runTactic `iinduction fun mvar { hyps, goal, .. } => do
+      -- Parse the list of alternative names supplied by the user
+      let parsedAlts ← alts.mapM parseInductionAlts
+
       let mkGenSelTargets := fun genSelTargets => do
         let ⟨_, missingIrisHyps, allPureFVarsSorted⟩ ←
           getDependentHyps hyps genSelTargets fvar false
@@ -417,9 +414,17 @@ elab_rules : tactic
         | some genSelPats =>
           -- Parse the selection patterns provided by the tactic user
           let parsedGenSelPats ← liftMacroM <| SelPat.parse genSelPats
-          let genSelTargets ← SelPat.resolve hyps parsedGenSelPats
+          let genSelTargets ← SelPat.resolve hyps parsedGenSelPats .topToBottom
           -- Include dependent hypotheses as well
           mkGenSelTargets genSelTargets
 
       let pf ← iInductionCore hyps goal fvar parsedAlts recName genSelTargets
       mvar.assign pf
+
+end
+
+end
+
+end ProofMode
+
+end Iris

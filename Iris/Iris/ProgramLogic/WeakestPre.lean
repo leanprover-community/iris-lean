@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Fernando Leal. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Fernando Leal
 -/
 module
 
@@ -8,13 +9,14 @@ public import Iris.Algebra
 public import Iris.Instances.Lib.FUpd
 public import Iris.BI
 public import Iris.BI.WeakestPre
+public import Iris.BI.DerivedLaws
 public import Iris.ProofMode
 public import Iris.ProgramLogic.Language
 public import Iris.Std.CoPset
 
 namespace Iris
 
-open ProgramLogic Language.Notation Std
+open ProgramLogic Language.Notation Iris.Std Iris.BI
 
 @[expose] public section
 
@@ -31,7 +33,7 @@ This was not a problem in Iris Rocq becuse of canonical structures.
 In Iris Lean, we instead fix our choice of `State` from the choice
 of `Expr`, so `Expr` cannot be inferred from `State` instead.
 -/
-class StateInterp (State : Type _) (Obs : outParam $ Type _) (GF : BundledGFunctors)
+class StateInterp (State : Type _) (Obs : outParam <| Type _) (GF : BundledGFunctors)
   where
     /-- Interpretation of a state in a language model. Takes a state,
     number of steps, list of observations prior to the state, and number of
@@ -43,7 +45,8 @@ export StateInterp (stateInterp)
 @[rocq_alias irisGS_gen]
 class IrisGS_gen (hlc : outParam HasLC) (Expr : Type _) {Val : Type _} {State : Type _}
     {Obs : Type _} [Λ : Language Expr State Obs Val] (GF : BundledGFunctors) extends
-    StateInterp State Obs GF, InvGS_gen hlc GF where
+    StateInterp State Obs GF where
+  [invGS : InvGS_gen hlc GF]
   /-- Number of later credits obtained from taking one step in the
   operational semantics of our language. -/
   numLatersPerStep : Nat → Nat
@@ -55,6 +58,8 @@ class IrisGS_gen (hlc : outParam HasLC) (Expr : Type _) {Val : Type _} {State : 
   considered a lower bound. -/
   stateInterp_mono σ ns obs nt :
     iprop(stateInterp σ ns obs nt ⊢ |={∅}=> stateInterp σ (ns + 1) obs nt)
+
+attribute [implicit_reducible, instance] IrisGS_gen.invGS
 
 variable {hlc : outParam HasLC} {Expr State Obs Val}
 variable [Λ : Language Expr State Obs Val]
@@ -123,7 +128,8 @@ section Wp
 @[rocq_alias wp_unfold]
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
-  BI.equiv_iff.1 <| fun n => fixpoint_unfold (f := (wp.pre s).toContractiveHom) n E e Φ
+  BI.equiv_iff.1 <| OFE.eq_dist_2 <|
+    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist E e Φ
 
 @[rocq_alias wp_ne]
 instance wp_ne {s : Stuckness} {E} {e : Expr} :
@@ -186,7 +192,7 @@ theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
     WP (v : Expr) @ s ; E {{ Φ }} ⊣⊢ |={E}=> Φ v := by
-  simp [wp_unfold.to_eq, toVal_coe, BI.BIBase.BiEntails.rfl, wp.pre]
+  simp [wp_unfold.to_eq, toVal_coe, wp.pre]
 
 @[rocq_alias wp_strong_mono]
 theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : Val → IProp GF}
@@ -208,7 +214,7 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
       ipureintro
       grind [cases Stuckness]
     · iintro %e₂ %σ₂ %eₜ #hstep hc
-      dsimp only [Nat.repeat]
+      dsimp only [step_fupdN]
       imod H $$ hstep hc with H
       iintro !> !>; imod H; iintro !>
       iapply step_fupdN_wand $$ H
@@ -230,7 +236,7 @@ theorem wp_strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : V
     iapply HΦ $$ h
 
 @[rocq_alias fupd_wp]
-theorem fupd_wp {s : Stuckness}{E}{e : Expr} {Φ : Val → IProp GF} :
+theorem fupd_wp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
     (|={E}=> WP e @ s ; E {{ Φ }}) ⊢ WP e @ s ; E {{ Φ }} := by
   simp only [wp_unfold.to_eq]
   iintro H
@@ -305,7 +311,7 @@ theorem wp_atomic {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {Φ : Val → IPro
       iframe
 
 @[rocq_alias wp_credit_access]
-theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp GF} (h : toVal e = none)
+theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P : IProp GF} (h : toVal e = none)
     (Htri : ∀ m k, ι.numLatersPerStep m + ι.numLatersPerStep k ≤ ι.numLatersPerStep (m + k)) :
     (∀ (σ₁ : State) ns obs nt,
       stateInterp σ₁ ns obs nt ={E}=∗
@@ -327,7 +333,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
   ihave Hc := lc_weaken _ (Htri m k) $$ Hc
   icases lc_split $$ Hc with ⟨Hm, Hk⟩
   icombine Hm Hone as Hm
-  dsimp only [Nat.repeat]
+  dsimp only [step_fupdN]
   ihave Hwp := Hwp $$ [//] [Hm]
   · simp [lc_split.to_eq]; itrivial
   iapply step_fupd_wand $$ Hwp; iintro Hwp
@@ -341,7 +347,7 @@ theorem wp_credit_access {s : Stuckness} {E : CoPset} {e : Expr} {Φ} {P: IProp 
 
 @[rocq_alias wp_step_fupdN_strong]
 theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IProp GF} {Φ} {n}
-    (toVal_e : toVal e = none)  (E2_E1 : E2 ⊆ E1) :
+    (toVal_e : toVal e = none) (E2_E1 : E2 ⊆ E1) :
     (∀ (σ : State) ns obs nt, stateInterp σ ns obs nt ={E1, ∅}=∗ ⌜n ≤ ι.numLatersPerStep ns + 1⌝)
     ∧ ((|={E1,E2}=> |={∅}▷=>^[n] |={E2,E1}=> P)
     ∗ WP e @ s ; E2 {{ v, P ={E1}=∗ Φ v}}) ⊢
@@ -351,7 +357,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
     iintro ⟨-, ⟨Hp, Hwp⟩⟩
     iapply wp_strong_mono (Std.IsPreorder.le_refl s) E2_E1 $$ Hwp
     iintro %v H
-    dsimp only [Nat.repeat]
+    dsimp only [step_fupdN]
     imod Hp
     imod Hp
     iapply H $$ Hp
@@ -362,7 +368,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
     by_cases Hn : n ≤ ι.numLatersPerStep ns
     · icases H with ⟨-, ⟨Hp, Hwp⟩⟩
       imod Hp
-      dsimp only [Nat.repeat]
+      dsimp only [step_fupdN]
       imod Hwp $$ Hσ₁ with ⟨$, H⟩
       iintro !> %e₂ %σ₂ %efs %Hstep Hcred
       icases H $$ %_ %_ %_ %Hstep Hcred with H
@@ -375,7 +381,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
       | zero =>
         iapply step_fupdN_wand $$ H
         iintro >⟨$, Hwp, $⟩
-        dsimp only [Nat.repeat]
+        dsimp only [step_fupdN]
         imod Hp
         imodintro
         iapply wp_strong_mono (Std.IsPreorder.le_refl s) E2_E1 $$ Hwp
@@ -383,7 +389,7 @@ theorem wp_step_fupdN_strong {s : Stuckness} {E1 E2 : CoPset} {e : Expr} {P : IP
         iapply HΦ $$ Hp
       | succ n IH =>
         obtain ⟨n0, rfl⟩ : ∃ n0', n0 = n0' + 1 := by cases n0 <;> grind
-        dsimp only [Nat.repeat]
+        dsimp only [step_fupdN]
         imod Hp; imod H; imodintro; imodintro; imod Hp; imod H; imodintro
         -- TODO: remove this once we have iinduction
         unfold ProofMode.Entails' at IH
@@ -410,7 +416,7 @@ theorem wp_bind_iff (K : Expr → Expr) [κ : Language.Context K] {s : Stuckness
   | none =>
     rw [wp_unfold.to_eq]
     dsimp only
-    simp only [wp.pre, κ.toVal_eq_none_fill h, Nat.repeat]
+    simp only [wp.pre, κ.toVal_eq_none_fill h, step_fupdN]
     isplit <;>
     (iintro H %σ₁ %step %obs %obs' %n Hσ; imod H $$ [$] with ⟨%_, H⟩; imodintro; isplit)
     · ipureintro; grind only [cases Stuckness, Language.Context.reducible_fill]
@@ -538,7 +544,7 @@ theorem wp_step_fupd {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : IProp 
     iapply fupd_mask_intro_discard LawfulSet.empty_subset $$ [HR]
     itrivial
   · imod HR
-    dsimp only [Nat.repeat]
+    dsimp only [step_fupdN]
     iframe
 
 @[rocq_alias wp_frame_step_l]
@@ -557,7 +563,7 @@ theorem wp_frame_step_r {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {Φ : Va
   (BI.sep_comm.1.trans <| wp_frame_step_l h1 h2 |>.trans <| wp_mono (fun _ => BI.sep_comm.1))
 
 @[rocq_alias wp_frame_step_l']
-theorem wp_frame_step_l' {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr}{Φ : Val → IProp GF} {R : IProp GF}
+theorem wp_frame_step_l' {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {Φ : Val → IProp GF} {R : IProp GF}
     (toVal_e : toVal e = none) (E₂E₁ : E₂ ⊆ E₁) :
     (▷ R) ∗ WP e @ s; E₂ {{ Φ }} ⊢ WP e @ s; E₁ {{ v, R ∗ Φ v }} := by
   iintro ⟨Hu, Hwp⟩
@@ -595,7 +601,7 @@ theorem wp_wand_r {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF
   BI.wand_elim wp_wand
 
 @[rocq_alias wp_frame_wand]
-theorem wp_frame_wand {s : Stuckness} {E : CoPset} {e : Expr} {Φ :Val → IProp GF} {R : IProp GF} :
+theorem wp_frame_wand {s : Stuckness} {E : CoPset} {e : Expr} {Φ : Val → IProp GF} {R : IProp GF} :
     R ⊢ WP e @ s; E {{ v, R -∗ Φ v }} -∗ WP e @ s; E {{ Φ }} := by
   iintro R Hwp
   iapply wp_wand $$ Hwp
@@ -617,17 +623,14 @@ variable [ι : IrisGS_gen hlc Expr GF]
 variable {s : Stuckness} {E : CoPset} {e : Expr} {v : Val} {Φ Ψ : Val → IProp GF} {P Q R : IProp GF}
 
 @[rocq_alias frame_wp]
-instance frameWp {p : Bool} [H : ∀ v, Frame p R (Φ v) (Ψ v)] :
-    -- TODO: move FrameInstantiateExistDisabled over the `FrameInstantiateExistDisabled` constant
-    -- Blocked by #390
-    -- see: https://github.com/leanprover-community/iris-lean/pull/393
+instance frameWp {p : Bool} [H : ∀ v, FrameInstantiateExistDisabled p R (Φ v) (Ψ v)] :
     Frame p R (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Ψ }}) where
   frame := by
     refine wp_frame_l.trans ?_
     apply wp_mono
-    exact fun v => frame
+    exact fun v => (H v).frame_instantiatiate_exist_disabled.frame
 
-@[rocq_alias is_except_0_wp]
+@[rocq_alias weakestpre.is_except_0_wp]
 instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
   is_except0 :=
     calc iprop(◇ _)
@@ -638,7 +641,7 @@ instance isExcept0Wp : IsExcept0 (WP e @ s ; E {{ Φ }}) where
 -- this should have higher priority than elimModalFupdWpAtomic
 @[rocq_alias elim_modal_fupd_wp]
 instance (priority := default + 10) elimModalFupdWp p :
-    ElimModal True p false iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
+    ElimModal True p io false iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
   elim_modal := by
     iintro %_ ⟨H, G⟩
     icases BI.intuitionisticallyIf_elim $$ H with H
@@ -648,11 +651,11 @@ instance (priority := default + 10) elimModalFupdWp p :
 
 @[rocq_alias elim_modal_bupd_wp]
 instance elimModalBupdWp p :
-    ElimModal True p false iprop(|==> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
+    ElimModal True p io false iprop(|==> P) P (WP e @ s ; E {{ Φ }}) (WP e @ s ; E {{ Φ }}) where
   elim_modal := by
     rintro ⟨⟩
     refine BI.sep_mono (BI.intuitionisticallyIf_mono (BIUpdateFUpdate.fupd_of_bupd (E := E))) .rfl |>.trans ?_
-    apply elimModalFupdWp _ |>.elim_modal ⟨⟩
+    exact elimModalFupdWp _ |>.elim_modal ⟨⟩ (io := io)
 
 /-- Error message instance for non-mask-changing view shifts.  Also uses a slightly
 different error: we cannot apply `fupd_mask_subseteq` if `e` is not atomic, so
@@ -661,12 +664,12 @@ we tell the user to first add a leading `fupd` and then change the mask of that.
 instance elimModalFupdWp_wrongMask :
     ElimModal (PMError "Goal and eliminated modality must have the same mask.
     Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
-    p false iprop(|={E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
+    p io false iprop(|={E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
 
 @[rocq_alias elim_modal_fupd_wp_atomic]
 instance elimModalFupdWpAtomic :
-    ElimModal (Language.Atomic ↑s e) p false iprop(|={E₁,E₂}=> P) P (WP e @ s ; E₁ {{ Φ }}) (WP e @ s ; E₂ {{ v, |={E₂,E₁}=> Φ v}}) where
+    ElimModal (Language.Atomic ↑s e) p io false iprop(|={E₁,E₂}=> P) P (WP e @ s ; E₁ {{ Φ }}) (WP e @ s ; E₂ {{ v, |={E₂,E₁}=> Φ v}}) where
   elim_modal := by
     rintro atomic; iintro ⟨H, G⟩
     icases BI.intuitionisticallyIf_elim $$ H with H
@@ -678,7 +681,54 @@ instance elimModalFupdWpAtomic :
 instance elimModalFupdWpAtomic_wrongMask :
     ElimModal (PMError "Goal and eliminated modality must have the same mask.
     Use `iapply fupd_wp; imod (fupd_mask_subseteq E₂)` to adjust the mask of your goal to `E₂`")
-    p false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
+    p io false iprop(|={E₁,E₂}=> P) iprop(False) (WP e @ s ; E₁ {{ Φ }}) iprop(False) where
   elim_modal := nofun
 
+@[rocq_alias add_modal_fupd_wp]
+instance addModalFupdWp : AddModal iprop(|={E}=> P) P (WP e @ s ; E {{ Φ }}) where
+  add_modal := by
+    iintro ⟨H1, H2⟩
+    imod H1
+    iapply H2 $$ H1
+
+@[rocq_alias elim_acc_wp_atomic]
+instance (priority := low) elimAcc_wp_atomic {X} (E₁ E₂ : CoPset) α β (γ : X → Option (IProp GF)) :
+    ElimAcc (Language.Atomic ↑s e) (fupd E₁ E₂) (fupd E₂ E₁) α β γ
+      (WP e @ s ; E₁ {{ Φ }})
+      (fun x => WP e @ s ; E₂ {{ v, |={E₂}=> β x ∗ (γ x -∗? Φ v) }}) where
+  elim_acc := by
+    dsimp only [accessor, BIBase.wandM, Option.getD]
+    iintro %atomic Hinner >⟨%x, Hα, Hclose⟩
+    iapply wp_wand $$ [Hinner Hα]
+    · iapply Hinner $$ Hα
+    · iintro %v >⟨Hβ, HΦ⟩
+      ispecialize Hclose $$ Hβ
+      imod Hclose
+      imodintro
+      cases (γ x) with
+      | none => iexact HΦ
+      | some P => iapply HΦ $$ Hclose
+
+@[rocq_alias elim_acc_wp_nonatomic]
+instance elimAcc_wp_nonatomic {X} E (α β : X → IProp GF) (γ : X → Option (IProp GF)) :
+    ElimAcc True (fupd E E) (fupd E E) α β γ (WP e @ s ; E {{ Φ }})
+    (fun x => WP e @ s ; E {{ v, |={E}=> β x ∗ (γ x -∗? Φ v) }}) where
+  elim_acc := by
+    dsimp only [accessor, BIBase.wandM, Option.getD]
+    iintro %_ Hinner >⟨%x, Hα, Hclose⟩
+    iapply wp_fupd
+    iapply wp_wand $$ [Hinner Hα]
+    · iapply Hinner $$ Hα
+    · iintro %v >⟨Hβ, HΦ⟩
+      ispecialize Hclose $$ Hβ
+      imod Hclose
+      imodintro
+      cases (γ x) with
+      | none => iexact HΦ
+      | some P => iapply HΦ $$ Hclose
+
 end ProofModeClasses
+
+end
+
+end Iris

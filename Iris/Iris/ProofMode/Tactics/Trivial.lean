@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Michael Sammler. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Michael Sammler
 -/
@@ -7,12 +7,12 @@ module
 
 import Iris.BI
 public import Iris.ProofMode.Classes
-public meta import Iris.ProofMode.Tactics.Basic
+public import Iris.ProofMode.Tactics.Basic
 
 namespace Iris.ProofMode
 
 public meta section
-open BI Lean Elab Tactic Meta Qq Std
+open BI Lean Elab Tactic Meta Qq Iris.Std
 
 /--
 Try to solve the provided goal using `itrivial`.
@@ -28,4 +28,10 @@ def iTrivial {prop : Q(Type u)} {bi : Q(BI $prop)} {e} (hyps : Hyps bi e)
     -- itrivial failed, so we fail
     return none
   -- itrivial succeed, but did not fully solve the goal. This should not happen.
-  throwError "itrivial: itrivial should not make partial progress"
+  throwIPMError "itrivial should not make partial progress"
+
+end
+
+end ProofMode
+
+end Iris

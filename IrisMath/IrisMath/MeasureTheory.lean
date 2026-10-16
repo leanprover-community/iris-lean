@@ -1,3 +1,7 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 module
 
 public import Mathlib.Probability.Independence.Basic
@@ -22,5 +26,5 @@ def RandomVariable (δ : Type _) (μ : Measure Ω) : Type _ := Quotient (aeSetoi
 instance (δ : Type _) (μ : Measure Ω) : OFE (RandomVariable δ μ) where
   Dist _ := (· = ·)
   dist_eqv := eq_equivalence
-  eq_dist := (forall_const _).symm
+  eq_dist' := (forall_const _).symm
   dist_lt h _ := h

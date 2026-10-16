@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sergei Stepanenko
 -/
 module
 
@@ -64,6 +65,8 @@ instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
 @[rocq_alias inv_ne]
 instance inv_ne (N : Namespace) : NonExpansive (inv (GF := GF) N) := ne_of_contractive _
 
+#rocq_ignore inv_proper "Subsumed by the NonExpansive instance `inv_ne`."
+
 @[rocq_alias inv_persistent]
 instance inv_persistent (N : Namespace) (P : IProp GF) : Persistent (inv N P) := by
   simp only [inv]
@@ -87,13 +90,32 @@ theorem except_0_inv (N : Namespace) (P : IProp GF) : ⊢ ◇ inv N P -∗ inv N
 instance is_except_0_inv (N : Namespace) (P : IProp GF) : IsExcept0 (inv N P) where
   is_except0 := by iintro H; iapply except_0_inv $$ H
 
--- TODO: into_inv_inv, into_acc_inv
+@[rocq_alias into_inv_inv]
+instance intoInv_inv (N : Namespace) (P : IProp GF) : IntoInv (inv N P) N := {}
+
+set_option synthInstance.checkSynthOrder false in
+@[rocq_alias into_acc_inv]
+instance intoAcc_inv (N : Namespace) (P : IProp GF) E :
+    IntoAcc (X := Unit) (inv N P) (↑N ⊆ E) iprop(True) (fupd E (E \ ↑N)) (fupd (E \ ↑N) E)
+      (fun _ => iprop(▷ P)) (fun _ => iprop(▷ P)) (fun _ => none) where
+  into_acc := by
+    dsimp only [inv, accessor, Option.getD]
+    iintro %x #Hinv -
+    imod Hinv $$ %E [] with ⟨HP, Hclose⟩
+    · itrivial
+    · iexists ()
+      imodintro
+      isplitl [HP]
+      · iassumption
+      · iintro HP
+        iapply (BIFUpdate.mono true_emp.mp)
+        iapply Hclose $$ HP
 
 end Instances
 
 section BasicLemmas
 
-open Iris Std LawfulSet
+open Iris Iris.Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
@@ -135,11 +157,10 @@ theorem own_inv_alloc (N : Namespace) (E : CoPset) (P : IProp GF) :
   ⊢ ▷ P ={E}=∗ own_inv N P := by
   simp only [own_inv, fupd, uPred_fupd]
   iintro HP ⟨Hw, HE⟩
-  imod ownI_alloc (.∈ (↑N : CoPset)) P $$ [HP Hw] with ⟨%i, %Hin, Hw, HI⟩
+  imod ownI_alloc (· ∈ (↑N : CoPset)) P $$ [HP Hw] with ⟨%i, %Hin, Hw, HI⟩
   · intro E; apply fresh_name
   · isplitl [Hw] <;> iassumption
   · imodintro; iframe
-    iexists i; iframe
     itrivial
 
 @[rocq_alias own_inv_alloc_open]
@@ -226,7 +247,7 @@ end Allocation
 
 section Access
 
-open Iris Std LawfulSet
+open Iris Iris.Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
@@ -313,7 +334,7 @@ end Modification
 
 section Combination
 
-open Iris Std LawfulSet
+open Iris Iris.Std LawfulSet
 
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 

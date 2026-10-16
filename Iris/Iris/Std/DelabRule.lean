@@ -1,12 +1,13 @@
 /-
-Copyright (c) 2022 Lars König. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
 module
 
-public meta import Lean.PrettyPrinter.Delaborator
-public meta import Lean.Parser.Term
+public import Lean.PrettyPrinter.Delaborator
+public import Lean.Parser.Term
+public import Iris.Init
 
 public meta section
 
@@ -36,3 +37,7 @@ macro_rules
         meta def unexpand : Lean.PrettyPrinter.Unexpander
           $[| $p => $s]*
           | _ => throw ())
+
+end Std
+
+end Iris

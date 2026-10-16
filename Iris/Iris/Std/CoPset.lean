@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Remy Seassau. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Remy Seassau, Markus de Medeiros, Sergei Stepanenko
 -/
@@ -256,7 +256,7 @@ theorem mem_full {p : Pos} : p ∈ full := by
   simp only [Membership.mem, full, CoPsetRaw.ElemOf]
 
 @[simp]
-theorem subseteq_top {X : CoPset} : X ⊆ ⊤ := λ _ _ => mem_full
+theorem subseteq_top {X : CoPset} : X ⊆ ⊤ := fun _ _ => mem_full
 
 theorem top_ne_empty : (⊤ : CoPset) ≠ ∅ := by
   intro h
@@ -267,7 +267,7 @@ theorem in_singleton {p q : Pos} : p ∈ ({q} : CoPset) ↔ p = q := by
   refine ⟨fun h => ?_, fun h => ?_⟩
   · simp only [Singleton.singleton, Membership.mem] at h
     induction q generalizing p with
-    | xH => cases p <;> simp at h <;> rfl
+    | xH => cases p <;> simp at h; rfl
     | xO q' IH =>
       cases p with
       | xH => simp [elem_of_node] at h
@@ -376,6 +376,8 @@ theorem not_in_union {p} {X1 X2 : CoPset} : ¬ p ∈ X1 ∪ X2 <-> ¬ p ∈ X1 �
   · exact ⟨(Hu <| in_union.mpr <| .inl ·), (Hu <| in_union.mpr <| .inr ·)⟩
   · exact in_union.mp Hu |>.elim H1 H2
 
+@[refl] theorem subseteq_refl {X : CoPset} : X ⊆ X := fun _ => id
+
 theorem subseteq_trans {X Y Z : CoPset} (Hxy : X ⊆ Y) (Hyz : Y ⊆ Z) : X ⊆ Z :=
   fun p => (Hyz p) ∘ (Hxy p)
 
@@ -400,7 +402,7 @@ def CoPsetRaw.pickRaw : CoPsetRaw → Option Pos
   | CoPsetRaw.node false l r =>
     match pickRaw l with
     | some i => some (i~0)
-    | none => Option.map (λ i => i~1) (pickRaw r)
+    | none => Option.map (fun i => i~1) (pickRaw r)
 
 def pick (X : CoPset) : Pos :=
   (CoPsetRaw.pickRaw X.tree).getD Pos.P1
@@ -490,6 +492,9 @@ theorem coPsetSuffixes_wf p : coPsetWf (CoPsetRaw.suffixesRaw p) := by
   induction p <;> simp [CoPsetRaw.suffixesRaw, coPsetWf] <;>
   apply node'_wf <;> simp_all [coPsetWf]
 
+-- `suffixes` is irreducible since computing `CoPsetRaw.suffixesRaw easily
+-- hits the recursion limit, see https://github.com/leanprover-community/iris-lean/issues/557
+@[irreducible]
 def suffixes (p : Pos) : CoPset :=
   ⟨CoPsetRaw.suffixesRaw p, coPsetSuffixes_wf p⟩
 
@@ -497,13 +502,13 @@ theorem elem_suffixes {p q} : p ∈ suffixes q <-> ∃ q', p = q' ++ q := by
   constructor
   · induction q generalizing p with
     | xI q IH =>
-      simp only [suffixes, CoPsetRaw.suffixesRaw, Membership.mem, elem_of_node]
+      simp only [suffixes, CoPsetRaw.suffixesRaw, Membership.mem, elem_of_node] at IH |-
       intros Hin
       cases p <;> simp [CoPsetRaw.ElemOf] at Hin
       obtain ⟨q', rfl⟩ := IH Hin
       exact ⟨q', rfl⟩
     | xO q IH =>
-      simp only [suffixes, CoPsetRaw.suffixesRaw, Membership.mem, elem_of_node]
+      simp only [suffixes, CoPsetRaw.suffixesRaw, Membership.mem, elem_of_node] at IH |-
       intros Hin
       cases p <;> simp [CoPsetRaw.ElemOf] at Hin
       obtain ⟨q', rfl⟩ := IH Hin

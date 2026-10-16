@@ -1,11 +1,11 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sergei Stepanenko
 -/
 
 module
 
-public import Iris.Std.GenSets
 public import Std.Data.ExtTreeSet
 public import Iris.Std.CoPset
 

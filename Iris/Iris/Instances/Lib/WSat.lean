@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2026 Sergei Stepanenko. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Sergei Stepanenko
 -/
 module
 
@@ -21,7 +22,7 @@ This file defines the world satisfaction (wsat) predicate for Iris.
 
 namespace Iris
 
-open Iris Std OFE COFE BI HeapView PartialMap DisjointLeibnizSet DFrac LawfulPartialMap BigSepM
+open Iris Iris.Std OFE COFE BI HeapView PartialMap DisjointLeibnizSet DFrac LawfulPartialMap BigSepM
   HeapView FiniteMap LawfulFiniteMap
 
 section WsatGS
@@ -107,12 +108,12 @@ section ownE
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
 @[rocq_alias ownE_empty]
-theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UCMRA.unit)
+theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UORA.unit)
 
 @[rocq_alias ownE_op]
 theorem ownE_op {E1 E2} (Hdisj : E1 ## E2) : ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
   refine .trans (.of_eq ?_) iOwn_op
-  rw [(disj_op_union Hdisj).to_eq]
+  rw [disj_op_union Hdisj]
   rfl
 
 @[rocq_alias ownE_disjoint]
@@ -151,12 +152,12 @@ section ownD
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
 @[rocq_alias ownD_empty]
-theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UCMRA.unit)
+theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UORA.unit)
 
 @[rocq_alias ownD_op]
 theorem ownD_op {E1 E2} (Hdisj : E1 ## E2) : ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
   refine .trans (.of_eq ?_) iOwn_op
-  rw [(disj_op_union Hdisj).to_eq]
+  rw [disj_op_union Hdisj]
   rfl
 
 @[rocq_alias ownD_disjoint]
@@ -205,7 +206,8 @@ theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
   ihave ⟨%v', %dp', %Hdp, %Hlookup, H1, H2⟩ :=
     (auth_op_frag_validI_total
       (own 1) (map toAgree (map invariant_unfold I))) $$ H
-  simp only [get?_map, Option.map_map, Option.map_eq_some_iff, Function.comp_apply] at Hlookup
+  simp only [LawfulPartialMap.get?_map, Option.map_map, Option.map_eq_some_iff,
+    Function.comp_apply] at Hlookup
   have ⟨Q', Hget, Hagree⟩ := Hlookup
   iexists Q'
   isplit
@@ -254,7 +256,7 @@ theorem ownI_close {i : Pos} {P : IProp GF} : wsat ∗ ownI i P ∗ ▷ P ∗ ow
       iapply bigSepM_delete HEQ
       isplitl [HE HProp]; ileft; isplitr [HE]
       · inext
-        iapply internalEq.rewrite (Ψ := fun x => x) (hΨ := OFE.id_ne) $$ [H] HProp
+        iapply internalEq.rewrite (Ψ := fun x => x) (hΨ := OFE.id_ne) (a := P) $$ [H] HProp
         iapply internalEq.symm; iassumption
       · iassumption
       iassumption
@@ -285,7 +287,7 @@ theorem ownI_alloc [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
   -- FIXME: removing E causes a PM error
   imod iOwn_update (E := W.inv) (update_one_alloc (v1 := toAgree (invariant_unfold P)) _
       DFrac.valid_discard (fun _ => ⟨⟩)) $$ Hown with Hown
-  · simpa [get?_map]
+  · simpa [LawfulPartialMap.get?_map]
   icases iOwn_op $$ Hown with ⟨Hown, Hpt⟩
   imodintro
   iexists j
@@ -324,7 +326,7 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
   obtain ⟨j, HEQ, ⟨Hget, Hφ⟩⟩ := Hpure
   imod iOwn_update (E := W.inv) (update_one_alloc (v1 := toAgree (invariant_unfold P)) _
       DFrac.valid_discard (fun _ => ⟨⟩)) $$ Hown with Hown
-  · simpa [get?_map]
+  · simpa [LawfulPartialMap.get?_map]
   icases iOwn_op $$ Hown with ⟨Hown, Hpt⟩
   imodintro
   iexists j
@@ -346,16 +348,16 @@ theorem ownI_alloc_open [W : WsatGS GF] (φ : Pos → Prop) (P : IProp GF)
   · unfold ownI; rw [HEQ]; isplit <;> iassumption
 
 @[rocq_alias wsat_alloc]
-theorem wsat_alloc [WP : WsatGpreS GF] :
+theorem wsat_alloc [instWp : WsatGpreS GF] :
     ⊢ |==> ∃ (W : WsatGS GF), wsat (W := W) ∗ ownE ⊤ := by
-  imod (iOwn_alloc (E := WP.inv) (Auth (.own 1) ∅) auth_one_valid) with ⟨%γ, H⟩
-  imod (iOwn_alloc (E := WP.enabled) (valid ⊤) ⟨⟩) with ⟨%γe, He⟩
-  imod (iOwn_alloc (E := WP.disabled) (valid ∅) ⟨⟩) with ⟨%γd, Hd⟩
+  imod (iOwn_alloc (E := instWp.inv) (Auth (.own 1) ∅) auth_one_valid) with ⟨%γ, H⟩
+  imod (iOwn_alloc (E := instWp.enabled) (valid ⊤) ⟨⟩) with ⟨%γe, He⟩
+  imod (iOwn_alloc (E := instWp.disabled) (valid ∅) ⟨⟩) with ⟨%γd, Hd⟩
   imodintro
   let W : WsatGS GF := {
-    inv := WP.inv,
-    enabled := WP.enabled,
-    disabled := WP.disabled,
+    inv := instWp.inv,
+    enabled := instWp.enabled,
+    disabled := instWp.disabled,
     invariant_name := γ,
     enabled_name := γe,
     disabled_name := γd
