@@ -216,9 +216,9 @@ inductive HypsOrder where
   | topToBottom
   | bottomToTop
 
-partial def Hyps.spatialIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s) (ord : HypsOrder) :
+partial def Hyps.spatialIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s) (le : HypsOrder) :
     List IVarId :=
-  spatialIVarIdsAux hyps ord []
+  spatialIVarIdsAux hyps le []
 where
   spatialIVarIdsAux : ∀ {s}, @Hyps u prop bi s → HypsOrder → List IVarId → List IVarId
   | _, .emp _, _, acc => acc
@@ -229,8 +229,8 @@ where
     spatialIVarIdsAux rhs .bottomToTop (spatialIVarIdsAux lhs .bottomToTop acc)
 
 partial def Hyps.intuitionisticIVarIds {u prop bi} {s} (hyps : @Hyps u prop bi s)
-    (ord : HypsOrder) : List IVarId :=
-  intuitionisticIVarIdsAux hyps ord []
+    (le : HypsOrder) : List IVarId :=
+  intuitionisticIVarIdsAux hyps le []
 where
   intuitionisticIVarIdsAux : ∀ {s}, @Hyps u prop bi s → HypsOrder → List IVarId → List IVarId
   | _, .emp _, _, acc => acc

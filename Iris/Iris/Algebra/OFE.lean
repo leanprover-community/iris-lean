@@ -486,7 +486,7 @@ theorem dist_some [OFE α] {n mx y} (h : mx ≡{n}≡ some y) :
     | some t => ⟨t, rfl, (e2 ▸ e1 : some t ≡{n}≡ some y)⟩
     | none => False.elim (e2 ▸ e1 : none ≡{n}≡ some y)
 
-/-- Data-valued form of `dist_some`, for building the witnesses of `CMRA.extend`. -/
+/-- Data-valued form of `dist_some`, for building the witnesses of `ORA.extend`. -/
 def distSome [OFE α] {n} {mx : Option α} {y : α} (h : mx ≡{n}≡ some y) :
     (z : α) ×' mx = some z ∧ y ≡{n}≡ z :=
   match mx, h with
