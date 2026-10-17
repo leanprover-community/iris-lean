@@ -1,14 +1,14 @@
 module
 
 import Iris.ProofMode
-public import IrisITree.Core.Wpi
 public import ITree.Effects.State
+public import IrisITree.Core.Wpi
 
-@[expose] public section
+public section
 
-namespace IrisITree.Effects
+namespace IrisITree
 
-open Iris Iris.BI ITree ITree.Effects IrisITree.Core
+open Iris Iris.BI ITree ITree.Effects
 
 section handler
 
@@ -38,7 +38,7 @@ variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {S : Type _}
   {E : Effect} {H : IHandler PROP E}
   [stateE S -< E] [Hin : InH (stateH stateInterp) H]
 
--- Allow a mask-changing fancy update from `Ms` to `Me` while handling `get`.
+/-- Allow a mask-changing fancy update from `Ms` to `Me` while handling `get`. -/
 theorem wpi_stateE_get Ms Me (Φ : S → PROP) :
     (∀ s, stateInterp s ={Ms, Me}=∗ stateInterp s ∗ Φ s) -∗
     WPi StateE.get @> H; Ms, Me {{Φ}} := by
@@ -53,7 +53,7 @@ theorem wpi_get Ms Me (Φ : S → PROP) :
     (∀ s, stateInterp s ={Ms, Me}=∗ stateInterp s ∗ Φ s) -∗
     WPi get @> H; Ms, Me {{Φ}} := wpi_stateE_get _ _ _ _
 
--- Allow a mask-changing fancy update from `Ms` to `Me` while handling `get`.
+/-- Allow a mask-changing fancy update from `Ms` to `Me` while handling `get`. -/
 theorem wpi_stateE_set Ms Me s' (Φ : PUnit → PROP) :
     (∀ s, stateInterp s ={Ms, Me}=∗ stateInterp s' ∗ Φ ⟨⟩) -∗
     WPi StateE.set s' @> H; Ms, Me {{Φ}} := by
@@ -61,9 +61,9 @@ theorem wpi_stateE_set Ms Me s' (Φ : PUnit → PROP) :
   iapply wpi_trigger_bind
   iapply fupd_mask_intro (by simp); iintro Hm
   simp [stateH]; iintro %s Hs; imod Hm
-  imod Hw $$ [$] with ⟨$, _⟩
+  imod Hw $$ [$] with ⟨$, HΦ⟩
   iapply fupd_mask_intro (by simp); iintro >_
-  iapply wpi_pure $$ [$]
+  iapply wpi_pure; iexact HΦ
 
 theorem wpi_set Ms Me s' (Φ : PUnit → PROP) :
     (∀ s, stateInterp s ={Ms, Me}=∗ stateInterp s' ∗ Φ ⟨⟩) -∗
@@ -73,7 +73,7 @@ end wpi_rules
 
 section exec
 
-open ITree.Exec IrisITree.Core
+open ITree.Exec
 
 variable {PROP : Type _} [BI PROP] [BIFUpdate PROP]
   {S : Type _} (stateInterp : S → PROP)
@@ -89,3 +89,5 @@ instance stateEH_adequate :
     itrivial
 
 end exec
+
+end IrisITree

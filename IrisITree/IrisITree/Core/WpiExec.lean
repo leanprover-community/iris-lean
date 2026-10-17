@@ -1,26 +1,29 @@
 module
 
-public import IrisITree.Core.ITree
 public import IrisITree.Core.Exec
 public import Iris.Instances.Lib.FUpd
 
-@[expose] public section
+public section
 
-namespace IrisITree.Core
+namespace IrisITree
 
 open Iris BI ITree Std
 
-/-- The constant-Φ weakest precondition functional.
-    Unlike `wpiF`, the postcondition Φ is fixed rather than varying. -/
+/--
+  The constant-Φ weakest precondition functional.
+  Unlike `wpiF`, the postcondition Φ is fixed rather than varying.
+-/
+@[expose]
 def wpiConstF {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PROP]
     (H : IHandler PROP E) (Φ : R → PROP)
     (wpi : ITree E R → PROP) :
     ITree E R → PROP :=
-  λ t => iprop(|={∅}=>
+  fun t => iprop(|={∅}=>
       match t.unfold with
       | ITreeF.ret r => Φ r
       | ITreeF.tau t' => wpi t'
-      | ITreeF.vis i k => H.ihandle i (λ a => wpi (k a)) (λ a => wpi (k a)))
+      | ITreeF.vis i k => H.ihandle i (fun a => wpi (k a)) (fun a => wpi (k a))
+    )
 
 section wp_itree_const
 
@@ -64,11 +67,15 @@ def wpiConst (H : IHandler PROP E) (Φ : R → PROP) : ITree E R → PROP :=
   bi_least_fixpoint (wpiConstF H Φ)
 
 theorem wpi_const_iter (H : IHandler PROP E) (Φ : R → PROP)
-    (P : ITree E R → PROP)  :
+    (P : ITree E R → PROP) :
     □ (∀ y, wpiConstF H Φ P y -∗ P y) -∗
-    ∀ t, wpiConst H Φ t -∗ P t :=
-  have : OFE.NonExpansive P := by constructor; rintro _ _ _ ⟨_⟩; exact .rfl
-  @least_fixpoint_iter _ _ _ _ (wpiConstF H Φ) P _
+    ∀ t, wpiConst H Φ t -∗ P t := by
+  letI : OFE.NonExpansive P := by
+    constructor; intro _ _ _ Hx
+    exact .of_eq (congrArg P Hx)
+  iintro #Hwand %t Hwp
+  iapply least_fixpoint_iter (wpiConstF H Φ) $$ Hwand
+  unfold wpiConst; iexact Hwp
 
 end wp_itree_const
 
@@ -94,14 +101,14 @@ section wpi_tp_section
 variable {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PROP] [BIAffine PROP]
 
 theorem wpi_tp_intro (t : ITree E R) (H : IHandler PROP E) (Φ : R → PROP) :
-    WPi t @> H; ∅ {{ Φ }} ⊢ wpi_tp H [λ P => P t] Φ := by
-  letI : ∀ t, OFE.NonExpansive (λ Ψ : R → PROP =>
+    WPi t @> H; ∅ {{ Φ }} ⊢ wpi_tp H [fun P => P t] Φ := by
+  letI : ∀ t, OFE.NonExpansive (fun Ψ : R → PROP =>
       iprop(□ (∀ r, Ψ r -∗ Φ r) -∗ bi_least_fixpoint (wpiConstF H Φ) t)) :=
     fun _ => ⟨fun _ _ _ HΨ => wand_ne.ne
       (intuitionistically_ne.ne (forall_ne fun r => wand_ne.ne (HΨ r) .rfl)) .rfl⟩
   iintro Hwpi; unfold wpi_tp
   iapply lfp_tp_intro
-  iapply (wpi_ind (λ t Ψ => iprop(□ (∀ r, Ψ r -∗ Φ r) -∗
+  iapply (wpi_ind (fun t Ψ => iprop(□ (∀ r, Ψ r -∗ Φ r) -∗
     bi_least_fixpoint (wpiConstF H Φ) t))) $$ [] %t %Φ Hwpi
   · iintro !> %t %Ψ Hstep #Hpost
     iapply least_fixpoint_unfold_mpr
@@ -124,7 +131,7 @@ section wpi_adequate
 
 open ITree.Exec
 
-variable {E : Effect.{u} } {R : Type u} {σ : Type _}
+variable {E : Effect.{u}} {R : Type u} {σ : Type _}
 variable {PROP} [BI PROP] [BIFUpdate PROP] [BIAffine PROP]
 variable (H : IHandler PROP E) (EH : EHandler E E R σ)
 variable [A : EHandlerAdequate (PROP := PROP) H EH]
@@ -133,31 +140,31 @@ theorem wpi_adequate_ind (Φ : R → PROP)
     (t : ITree E R) (s : σ) (Ms Mss : List (((ITree E R → PROP) → PROP)))
     (M : (ITree E R → PROP) → PROP) (C : ITree E R → σ → Prop)
     (Hexec : exec EH t s C) (HMs : Ms.Perm (M :: Mss)) :
-    ⊢ (WPi_tp Ms @> H {{ Φ }}) -∗
-      A.inv s Mss -∗
-      (∀ P, M P ={∅}=∗ P t) -∗
+    (WPi_tp Ms @> H {{ Φ }}) -∗
+    A.inv s Mss -∗
+    (∀ P, M P ={∅}=∗ P t) -∗
+    |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
+      bi_close Eq (fun t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
+      wpi_tp H (M' :: Ms') Φ := by
+  letI : OFE.NonExpansive (fun Ms : DiscreteO (List ((ITree E R → PROP) → PROP)) =>
+    iprop(∀ (t : ITree E R) (s : σ) (M : (ITree E R → PROP) → PROP)
+      (Mss : List ((ITree E R → PROP) → PROP)) (C : ITree E R → σ → Prop),
+      ⌜exec EH t s C⌝ -∗ ⌜Ms.car.Perm (M :: Mss)⌝ -∗
+      A.inv s Mss -∗ (∀ P, M P ={∅}=∗ P t) -∗
       |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
-        bi_close Eq (λ t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
-        wpi_tp H (M' :: Ms') Φ := by
-  letI : OFE.NonExpansive (λ Ms : DiscreteO (List ((ITree E R → PROP) → PROP)) =>
-      iprop(∀ (t : ITree E R) (s : σ) (M : (ITree E R → PROP) → PROP)
-        (Mss : List ((ITree E R → PROP) → PROP)) (C : ITree E R → σ → Prop),
-        ⌜exec EH t s C⌝ -∗ ⌜Ms.car.Perm (M :: Mss)⌝ -∗
-        A.inv s Mss -∗ (∀ P, M P ={∅}=∗ P t) -∗
-        |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
-          bi_close Eq (λ t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
-          lfp_tp (wpiConstF H Φ) (M' :: Ms'))) := ⟨
+        bi_close Eq (fun t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
+        lfp_tp (wpiConstF H Φ) (M' :: Ms'))) := ⟨
     fun _ _ _ HMs => by cases HMs; rfl
   ⟩
   unfold wpi_tp; iintro Htp; irevert %t %s %M %Mss %C %Hexec %HMs
-  -- TODO: Find a way to shorten the `iapply`?
-  iapply (lfp_tp_ind (wpiConstF H Φ) (λ Ms => iprop(
+  -- [TODO]: find some way to shorten this iapply?
+  iapply (lfp_tp_ind (wpiConstF H Φ) (fun Ms => iprop(
     ∀ (t : ITree E R) (s : σ) (M : (ITree E R → PROP) → PROP)
       (Mss : List ((ITree E R → PROP) → PROP)) (C : ITree E R → σ → Prop),
       ⌜exec EH t s C⌝ -∗ ⌜Ms.car.Perm (M :: Mss)⌝ -∗
       A.inv s Mss -∗ (∀ P, M P ={∅}=∗ P t) -∗
       |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
-        bi_close Eq (λ t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
+        bi_close Eq (fun t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
         lfp_tp (wpiConstF H Φ) (M' :: Ms')))) $$ [] %⟨Ms⟩ Htp
   iintro !> %Ms IH %t %s %M %Mss %C %Hexec %HMs Hinv Ht
   rw [← exec.fold] at Hexec; clear this
@@ -173,20 +180,20 @@ theorem wpi_adequate_ind (Φ : R → PROP)
   | tau t _ _ Hexec =>
     ihave IH := lfp_tpF_perm_close _ _ _ _ HMs $$ IH
     unfold lfp_tpF; ispecialize IH $$ %0 %M %(by simp)
-    ihave IH := bi_mono0_mono_l M (λ P => iprop(|={∅}=> P t.tau)) $$ IH [Ht]
+    ihave IH := bi_mono0_mono_l M (fun P => iprop(|={∅}=> P t.tau)) $$ IH [Ht]
     · iframe
     imod bi_mono0_elim $$ IH [] with ⟨%G, Hwpi, Hc⟩
     · iintro %Q %Q' Hwand >HQ'; imodintro; iapply Hwand $$ [$]
     simp [wpiConstF]; imod Hwpi
-    ispecialize Hc $$ %([λ P => P t]) [Hwpi]
+    ispecialize Hc $$ %([fun P => P t]) [Hwpi]
     · simp only [Algebra.BigOpL.bigOpL_cons, Algebra.BigOpL.bigOpL_nil]; iframe
     simp only [bi_close]; icases Hc with ⟨%Ns, %Hperm, ⟨Hadequate, -⟩⟩
-    iapply Hadequate $$ %t %s %(λ P => P t) %Mss %C %Hexec %Hperm.symm Hinv
+    iapply Hadequate $$ %t %s %(fun P => P t) %Mss %C %Hexec %Hperm.symm Hinv
     iintro %_ $
   | step i k _ _ Hhandle =>
     ihave IH := lfp_tpF_perm_close _ _ _ _ HMs $$ IH
     unfold lfp_tpF; ispecialize IH $$ %0 %M %(by simp)
-    ihave IH := bi_mono0_mono_l M (λ P => iprop(|={∅}=> P (.vis i k))) $$ IH [Ht]
+    ihave IH := bi_mono0_mono_l M (fun P => iprop(|={∅}=> P (.vis i k))) $$ IH [Ht]
     · iframe
     imod bi_mono0_elim $$ IH [] with ⟨%G, Hwpi, Hc⟩
     · iintro %Q %Q' Hwand >HQ'; imodintro; iapply Hwand $$ [$]
@@ -204,12 +211,12 @@ theorem wpi_adequate (Φ : R → PROP)
     ⊢ WPi t @> H;m {{ Φ }} -∗
       A.inv s [] -∗
       |={m, ∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
-      bi_close Eq (λ t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
-      wpi_tp H (M' :: Ms') (λ v => iprop(|={∅,m}=> Φ v)) := by
+      bi_close Eq (fun t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
+      wpi_tp H (M' :: Ms') (fun v => iprop(|={∅,m}=> Φ v)) := by
   iintro >Hwpi Hinv
   ihave Hwpi := wpi_fupd_empty $$ Hwpi
-  iapply wpi_adequate_ind _ _ _ t s [λ P => P t] []
-    (λ P => P t) C Hexec (by simp) $$ [Hwpi] Hinv []
+  iapply wpi_adequate_ind _ _ _ t s [fun P => P t] []
+    (fun P => P t) C Hexec (by simp) $$ [Hwpi] Hinv []
   iapply wpi_tp_intro $$ Hwpi
   iintro %_ $
 
@@ -229,7 +236,7 @@ theorem wpi_adequate_pure (hlc : HasLC) (n : Nat) (m : CoPset)
       ∃ (H : IHandler (IProp GF) E) (A : EHandlerAdequate H EH) (Φ : R → IProp GF),
         WPi t @> H;m {{ Φ }} ∗ A.inv s [] ∗
         (∀ t' s' Ms' M', ⌜C t' s'⌝ -∗ A.inv s' Ms' -∗
-          bi_close Eq (λ t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
+          bi_close Eq (fun t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
             (WPi_tp (M' :: Ms') @> H {{ v, iprop(|={∅,m}=> Φ v) }})={∅}=∗ ⌜Ψ⌝)) →
     Ψ := by
   intro Hexec Hwp
@@ -240,8 +247,8 @@ theorem wpi_adequate_pure (hlc : HasLC) (n : Nat) (m : CoPset)
   imod wpi_adequate H EH Φ t s C m Hexec $$ Hwpi Hs with
     ⟨%t', %s', %Ms', %M', %HC, Hs', Hclose, Htp⟩
   imod Hc $$ %t' %s' %Ms' %M' %HC Hs' [$Hclose $Htp] with %HΨ
-  imodintro; simp only [Nat.repeat]; itrivial
+  imodintro; iapply step_fupdN_0; itrivial
 
 end wpi_adequate_pure
 
-end IrisITree.Core
+end IrisITree

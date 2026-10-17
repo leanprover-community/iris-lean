@@ -4,18 +4,18 @@ import Iris.ProofMode
 public import ITree.Effects.Halt
 public import IrisITree.Core.Wpi
 
-@[expose] public section
+public section
 
-namespace IrisITree.Effects
+namespace IrisITree
 
-open Iris Iris.BI ITree IrisITree.Core ITree.Effects
+open Iris Iris.BI ITree ITree.Effects
 
 section handler
 
 variable {PROP : Type _} [BI PROP] [BIFUpdate PROP]
 
 def haltH : IHandler PROP haltE where
-  ihandle := λ _ _ _ => iprop(|={∅, ⊤}=> True)
+  ihandle := fun _ _ _ => iprop(|={∅, ⊤}=> True)
   ihandle_mono := by
     iintro %i %Φ %Φ' %s %s' HΦwand #Hswand HH
     iexact HH
@@ -30,8 +30,8 @@ end handler
 
 section wpi_rules
 
-variable {PROP : Type _} [BI PROP] [BIFUpdate PROP]  {E : Effect}
-  {H : IHandler PROP E} [sub: haltE -< E] [Hin : InH haltH H]
+variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {E : Effect}
+  {H : IHandler PROP E} [Hsub : haltE -< E] [Hin : InH haltH H]
 
 theorem wpi_halt {R} (Φ : R → PROP) :
     ⊢ WPi HaltE.halt @> H; ⊤ {{ Φ }} := by
@@ -51,7 +51,7 @@ end wpi_rules
 
 section exec
 
-open ITree.Exec ITree.Effects IrisITree.Core
+open ITree.Exec ITree.Effects
 
 instance haltEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] :
     SEHandlerAdequate (haltH (PROP := PROP)) haltEH where
@@ -61,3 +61,5 @@ instance haltEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] :
     cases Hhandle
 
 end exec
+
+end IrisITree

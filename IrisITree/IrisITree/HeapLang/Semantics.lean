@@ -5,37 +5,10 @@ public import Iris.HeapLang
 public import Iris.Std.BitOp
 
 @[expose] public section
-namespace Iris.HeapLang
 
-open ITree ITree.Effects ITree.Exec
+namespace IrisITree
 
-def Val.int! [failE -< E] : Val → ITree E Int
-  | .lit (.int i) => return i
-  | x => fail s!"{reprStr x} is not Int"
-
-def Val.bool! [failE -< E] : Val → ITree E Bool
-  | .lit (.bool b) => return b
-  | x => fail s!"{reprStr x} is not Bool"
-
-def Val.loc! [failE -< E] : Val → ITree E Loc
-  | .lit (.loc l) => return l
-  | x => fail s!"{reprStr x} is not Loc"
-
-def Val.pair! [failE -< E] : Val → ITree E (Val × Val)
-  | .pair v1 v2 => return (v1, v2)
-  | x => fail s!"{reprStr x} is not Pair"
-
-def Val.rec! [failE -< E] : Val → ITree E (Binder × Binder × Exp)
-  | .rec_ f x e => return (f, x, e)
-  | x => fail s!"{reprStr x} is not Rec"
-
-def Val.injL! [failE -< E] : Val → ITree E Val
-  | .injL v => return v
-  | x => fail s!"{reprStr x} is not InjL"
-
-def Val.injR! [failE -< E] : Val → ITree E Val
-  | .injR v => return v
-  | x => fail s!"{reprStr x} is not InjR"
+open Iris.HeapLang ITree ITree.Effects ITree.Exec
 
 abbrev heaplangE := concE ⊕ₑ heapE Loc Val ⊕ₑ failE ⊕ₑ demonicE Loc ⊕ₑ stepE
 
@@ -66,8 +39,44 @@ instance : MonadEval heaplangM IO where
     let r ← x |>.run (ConcState.new) |>.run ∅
     match r with
     | .ok v => return v.1.1
-    | .error msg => IO.ofExcept $ .error (s!"Evaluation failed: {msg}")
+    | .error msg => IO.ofExcept <| .error (s!"Evaluation failed: {msg}")
 
+end IrisITree
+
+/-! Methods on upstream HeapLang types (`Val`, `UnOp`, `BinOp`, `Exp`). They stay in `Iris.HeapLang`
+so that dot notation (`e.denote`, `v.loc!`, ...) resolves. `BinOp.evalInt`/`evalBool`/`evalLoc`
+come from upstream `Iris.HeapLang.Semantics`. -/
+namespace Iris.HeapLang
+
+open IrisITree ITree ITree.Effects ITree.Exec
+
+def Val.int! [failE -< E] : Val → ITree E Int
+  | .lit (.int i) => return i
+  | x => fail s!"{reprStr x} is not Int"
+
+def Val.bool! [failE -< E] : Val → ITree E Bool
+  | .lit (.bool b) => return b
+  | x => fail s!"{reprStr x} is not Bool"
+
+def Val.loc! [failE -< E] : Val → ITree E Loc
+  | .lit (.loc l) => return l
+  | x => fail s!"{reprStr x} is not Loc"
+
+def Val.pair! [failE -< E] : Val → ITree E (Val × Val)
+  | .pair v1 v2 => return (v1, v2)
+  | x => fail s!"{reprStr x} is not Pair"
+
+def Val.rec! [failE -< E] : Val → ITree E (Binder × Binder × Exp)
+  | .rec_ f x e => return (f, x, e)
+  | x => fail s!"{reprStr x} is not Rec"
+
+def Val.injL! [failE -< E] : Val → ITree E Val
+  | .injL v => return v
+  | x => fail s!"{reprStr x} is not InjL"
+
+def Val.injR! [failE -< E] : Val → ITree E Val
+  | .injR v => return v
+  | x => fail s!"{reprStr x} is not InjR"
 
 def UnOp.denote (op : UnOp) (v : Val) : ITree heaplangE Val :=
   match op, v with
@@ -75,38 +84,6 @@ def UnOp.denote (op : UnOp) (v : Val) : ITree heaplangE Val :=
   | .neg, .lit (.int n) => return .lit (.int (~~~n))
   | .minus, .lit (.int n) => return .lit (.int (-n))
   | _, _ => fail "UnOp: type mismatch"
-
-def BinOp.evalInt (op : BinOp) (n₁ n₂ : Int) : Option BaseLit :=
-  match op with
-  | .plus => some $ .int (n₁ + n₂)
-  | .minus => some $ .int (n₁ - n₂)
-  | .mult => some $ .int (n₁ * n₂)
-  | .tdiv => some $ .int (Int.tdiv n₁ n₂)
-  | .tmod => some $ .int (Int.tmod n₁ n₂)
-  | .and => some $ .int (n₁ &&& n₂)
-  | .or => some $ .int (n₁ ||| n₂)
-  | .xor => some $ .int (n₁ ^^^ n₂)
-  | .shiftl => some $ .int (n₁ <<< n₂)
-  | .shiftr => some $ .int (n₁ >>> n₂)
-  | .le => some $ .bool (decide (n₁ ≤ n₂))
-  | .lt => some $ .bool (decide (n₁ < n₂))
-  | .eq => some $ .bool (decide (n₁ = n₂))
-  | .offset => none
-
-def BinOp.evalBool (op : BinOp) (b₁ b₂ : Bool) : Option BaseLit :=
-  match op with
-  | .and => some $ .bool (b₁ && b₂)
-  | .or => some $ .bool (b₁ || b₂)
-  | .xor => some $ .bool (Bool.xor b₁ b₂)
-  | .eq => some $ .bool (decide (b₁ = b₂))
-  | _ => none
-
-def BinOp.evalLoc (op : BinOp) (l₁ : Loc) (v₂ : BaseLit) : Option BaseLit :=
-  match op, v₂ with
-  | .offset, .int off => some $ .loc (l₁ + off)
-  | .le, .loc l₂ => some $ .bool (decide (l₁.n ≤ l₂.n))
-  | .lt, .loc l₂ => some $ .bool (decide (l₁.n < l₂.n))
-  | _, _ => none
 
 def BinOp.denote (op : BinOp) (v₁ v₂ : Val) : ITree heaplangE Val :=
   if op == .eq then
@@ -145,7 +122,7 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
   match e with
   | .val v => return v
   | .var x => fail s!"Unbound variable {reprStr x}"
-  | .rec_ f x e => do contVal $ .rec_ f x e
+  | .rec_ f x e => do contVal <| .rec_ f x e
   | .app e₁ e₂ => do
     let v ← denoteYield e₂
     let f ← denoteYield e₁
@@ -170,7 +147,7 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
   | .pair e₁ e₂ => do
     let v₂ ← denoteYield e₂
     let v₁ ← denoteYield e₁
-    contVal $ .pair v₁ v₂
+    contVal <| .pair v₁ v₂
   | .fst e => do
     let v ← denoteYield e
     let p ← v.pair!
@@ -178,13 +155,13 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
   | .snd e => do
     let v ← denoteYield e
     let p ← v.pair!
-    contVal $ p.2
+    contVal <| p.2
   | .injL e => do
     let v ← denoteYield e
-    contVal $ .injL v
+    contVal <| .injL v
   | .injR e => do
     let v ← denoteYield e
-    contVal $ .injR v
+    contVal <| .injR v
   | .case e₀ e₁ e₂ => do
     let v ← denoteYield e₀
     match v with
@@ -201,22 +178,22 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
       intro l m
       simp [compare, compareOfLessAndEq, Ordering.isLE]
       grind)
-    contVal $ .lit (.loc l)
+    contVal <| .lit (.loc l)
   | .free e => do
     let v ← denoteYield e
     let l ← v.loc!
     let .some _ ← storeOpt (Val:=Val) l none
       | fail "free: location not allocated"
-    contVal $ .lit .unit
+    contVal <| .lit .unit
   | .load e => do
     let v ← denoteYield e
     let r ← load! (← v.loc!)
-    contVal $ r
+    contVal r
   | .store e₁ e₂ => do
     let v₂ ← denoteYield e₂
     let v₁ ← denoteYield e₁
     let _ ← store! (← v₁.loc!) v₂
-    contVal $ .lit .unit
+    contVal <| .lit .unit
   | .cmpXchg e₀ e₁ e₂ => do
     let v₂ ← denoteYield e₂
     let v₁ ← denoteYield e₁
@@ -227,14 +204,14 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
       fail "CmpXchg: comparing boxed values"
     if vl = v₁ then
       let _ ← store! l v₂
-      contVal $ .pair vl (.lit (.bool true))
+      contVal <| .pair vl (.lit <| .bool true)
     else
-      contVal $ .pair vl (.lit (.bool false))
+      contVal <| .pair vl (.lit <| .bool false)
   | .xchg e₁ e₂ => do
     let v₂ ← denoteYield e₂
     let v₁ ← denoteYield e₁
     let r ← store! (← v₁.loc!) v₂
-    contVal $ r
+    contVal r
   | .faa e₁ e₂ => do
     let v₂ ← denoteYield e₂
     let v₁ ← denoteYield e₁
@@ -245,10 +222,12 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
     let _ ← store! l (.lit (.int (i₁ + i₂)) : Val)
     contVal old
   | .fork e => do
-    let _ ← ConcE.fork (denoteYield e >>= λ _ => return ⟨⟩)
-    contVal $ .lit .unit
+    let _ ← ConcE.fork (denoteYield e >>= fun _ => return ⟨⟩)
+    contVal <| .lit .unit
   | .newProph => do
     fail "prophecy is not implemented"
   | .resolve _ _ _ => do
     fail "prophecy is not implemented"
 partial_fixpoint
+
+end Iris.HeapLang

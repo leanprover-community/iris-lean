@@ -4,18 +4,18 @@ import Iris.ProofMode
 public import ITree.Effects.Angelic
 public import IrisITree.Core.Wpi
 
-@[expose] public section
+public section
 
-namespace IrisITree.Effects
+namespace IrisITree
 
-open Iris Iris.BI ITree IrisITree.Core ITree.Effects
+open Iris Iris.BI ITree.Effects
 
 section handler
 
 variable {PROP : Type _} [BI PROP]
 
 def angelicH (α : Type _) : IHandler PROP (angelicE α) where
-  ihandle := λ _ Φ _ => iprop(∃ a, Φ a)
+  ihandle := fun _ Φ _ => iprop(∃ a, Φ a)
   ihandle_mono := by
     iintro %p %Φ %Φ' %s %s' HΦwand #Hswand H
     icases H with ⟨%a, HΦ⟩
@@ -51,7 +51,7 @@ end wpi_rules
 
 section exec
 
-open ITree.Exec IrisITree.Core
+open ITree.Exec
 
 instance angelicEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] {α : Type _} :
     SEHandlerAdequate (angelicH (PROP := PROP) α) (angelicEH α) where
@@ -62,3 +62,5 @@ instance angelicEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] {α : Typ
     iintro ⟨%a, HΦ⟩ Hinv !>; iexists a, s; iframe; itrivial
 
 end exec
+
+end IrisITree

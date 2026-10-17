@@ -8,9 +8,9 @@ public import Iris.Instances.IProp
 public import Iris.Instances.Lib.FUpd
 
 @[expose] public section
-namespace IrisITree.HeapLang
+namespace IrisITree
 
-open Iris IrisITree.Core Iris.HeapLang IrisITree.Effects ITree ITree.Effects
+open Iris Iris.HeapLang ITree ITree.Effects
 
 class heaplangHGpreS (GF : BundledGFunctors) where
   heaplangH_heapHG : heapHGpreS GF Loc Val
@@ -413,7 +413,7 @@ theorem wp_cmpXchg_fail {M : CoPset} (l : Loc) (dq : DFrac) (v' v₁ v₂ : Val)
     v'.compareSafe v₁ = true →
     l ↦{dq} v' -∗
     m iprop(l ↦{dq} v' -∗ Φ (.pair v' (.lit (.bool false)))) -∗
-    WP (Exp.cmpXchg (Exp.val $ Val.lit $ BaseLit.loc l) (Exp.val v₁) (Exp.val v₂))
+    WP (Exp.cmpXchg (Exp.val <| Val.lit <| BaseLit.loc l) (Exp.val v₁) (Exp.val v₂))
       @ m ; M {{ Φ }} := by
   iintro %Hmask %Hneq %Hcmp Hpt HΦ
   simp only [wp_unfold, Exp.denote.eq_18, Exp.isVal, ↓reduceIte]
@@ -432,8 +432,8 @@ theorem wp_cmpXchg_suc {M : CoPset} (l : Loc) (v' v₁ v₂ : Val) (Φ : Val →
     v' = v₁ →
     v'.compareSafe v₁ = true →
     l ↦ v' -∗
-    m iprop(l ↦ v₂ -∗ Φ (.pair v' (.lit $ .bool true))) -∗
-    WP (Exp.cmpXchg (Exp.val $ Val.lit $ BaseLit.loc l) (Exp.val v₁) (Exp.val v₂))
+    m iprop(l ↦ v₂ -∗ Φ (.pair v' (.lit <| .bool true))) -∗
+    WP (Exp.cmpXchg (Exp.val <| Val.lit <| BaseLit.loc l) (Exp.val v₁) (Exp.val v₂))
       @ m ; M {{ Φ }} := by
   iintro %Hmask %Heq %Hcmp Hpt HΦ; subst Heq
   simp only [wp_unfold, Exp.denote.eq_18, Exp.isVal, ↓reduceIte]
@@ -453,7 +453,7 @@ theorem wp_faa {M : CoPset} (l : Loc) (i₁ i₂ : Int) (Φ : Val → IProp GF) 
     ↑(heapH_inv_name (GF := GF) (Loc := Loc) (Val := Val)) ⊆ M →
     l ↦ Val.lit (.int i₁) -∗
     m iprop(l ↦ (.lit (.int (i₁ + i₂)) : Val) -∗ Φ (.lit (.int i₁))) -∗
-    WP (Exp.faa (.val $ .lit $ .loc l) (.val $ .lit $ .int i₂)) @ m ; M {{ Φ }} := by
+    WP (Exp.faa (.val <| .lit <| .loc l) (.val <| .lit <| .int i₂)) @ m ; M {{ Φ }} := by
   iintro %Hmask Hpt HΦ
   simp only [wp_unfold, Exp.denote.eq_20, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -470,3 +470,5 @@ theorem wp_faa {M : CoPset} (l : Loc) (i₁ i₂ : Int) (Φ : Val → IProp GF) 
 end heap_rules
 
 end wp_rules
+
+end IrisITree

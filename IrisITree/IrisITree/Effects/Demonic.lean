@@ -4,19 +4,18 @@ import Iris.ProofMode
 public import ITree.Effects.Demonic
 public import IrisITree.Core.Wpi
 
-@[expose] public section
+public section
 
+namespace IrisITree
 
-namespace IrisITree.Effects
-
-open Iris Iris.BI ITree IrisITree.Core ITree.Effects
+open Iris Iris.BI ITree ITree.Effects
 
 section handler
 
 variable {PROP : Type _} [BI PROP]
 
 def demonicH (α : Type _) : IHandler PROP (demonicE α) where
-  ihandle := λ _ Φ _ => iprop(∀ a, Φ a)
+  ihandle := fun _ Φ _ => iprop(∀ a, Φ a)
   ihandle_mono := by
     iintro %i %Φ %Φ' %s %s' HΦwand #Hswand H %a
     iapply HΦwand; iapply H
@@ -37,7 +36,7 @@ variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {E : Effect}
   [sub : demonicE α -< E] [Hin : InH (demonicH (PROP := PROP) α) H]
 
 theorem wpi_demonic (M : CoPset) (Φ : α → Prop) [Hdec : DecidablePred Φ]
-    [Hi: Inhabited {a // Φ a}] (Ψ : {a // Φ a} → PROP) :
+    [Hi : Inhabited {a // Φ a}] (Ψ : {a // Φ a} → PROP) :
     (∀ a, Ψ a) ⊢ WPi choose Φ @> H;M {{ Ψ }} := by
   iintro HΨ; unfold choose
   set_option pp.all true in
@@ -51,7 +50,7 @@ end wpi_rules
 
 section exec
 
-open ITree.Exec IrisITree.Core
+open ITree.Exec
 
 abbrev demonicEH := ITree.Effects.demonicEH
 instance demonicEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] {α : Type _} :
@@ -67,3 +66,5 @@ instance demonicEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] {α : Typ
     iapply HΦ1
 
 end exec
+
+end IrisITree

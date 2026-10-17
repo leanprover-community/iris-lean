@@ -1,14 +1,14 @@
 module
 
 import Iris.ProofMode
-public import IrisITree.Core.Wpi
 public import ITree.Effects.Conc
+public import IrisITree.Core.Wpi
 
-@[expose] public section
+public section
 
-namespace IrisITree.Effects
+namespace IrisITree
 
-open Iris Iris.BI ITree ITree.Effects IrisITree.Core
+open Iris Iris.BI ITree ITree.Effects
 
 section handler
 
@@ -53,7 +53,7 @@ theorem wpi_fork M (Φ : PUnit → PROP) :
   iapply wpi_trigger_bind
   iapply fupd_mask_intro (by simp); iintro Hm
   simp [concH]; isplitr [Ht]
-  · imod Hm; iapply wpi_pure $$ [$]
+  · imod Hm; iapply wpi_pure; iexact HΦ
   · imod Ht; imodintro; iapply wpi_bind'
     iapply wpi_wand $$ [$]; iintro %_ _
     iapply wpi_kill $$ [$]
@@ -70,7 +70,7 @@ end wpi_rules
 
 section exec
 
-open ITree.Exec IrisITree.Core
+open ITree.Exec
 
 variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] [BIAffine PROP]
 
@@ -99,18 +99,16 @@ private theorem filterMap_set_perm {T U : Type _} (f : T → U)
 
 instance coneEH_adequate {GE GR} :
     EHandlerAdequate (PROP:=PROP) concH (concEH (GE:=GE) (GR:=GR)) where
-  inv s Ms :=
-    iprop(<affine> ⌜Ms = s.pool.filterMap λ t =>
-      (λ t P => iprop(|={⊤, ∅}=> P t)) <$> t⌝)
+  inv s Ms := iprop(<affine> ⌜Ms = s.pool.filterMap fun t =>
+      (fun t P => iprop(|={⊤, ∅}=> P t)) <$> t⌝)
   adequate := by
     intro G i s Ms C k Hhandle
     simp [concH, concEH] at Hhandle ⊢
     cases i <;> simp at Hhandle ⊢
     · -- Fork case
       iintro ⟨_, _⟩ %h !>
-      iexists _, _, λ P => P (k .parent),
-        Ms ++ [(λ P => iprop(|={⊤, ∅}=> P (k .child)))],
-        [λ P => P (k .parent), λ P => iprop(|={⊤, ∅}=> P (k .child))]
+      iexists _, _, fun P => P (k .parent), Ms ++ [(fun P => iprop(|={⊤, ∅}=> P (k .child)))],
+        [fun P => P (k .parent), fun P => iprop(|={⊤, ∅}=> P (k .child))]
       isplitr; itrivial
       isplitr; itrivial
       simp; iframe; isplitr
@@ -118,7 +116,7 @@ instance coneEH_adequate {GE GR} :
       · iintro %_ $
     · -- Kill case
       iintro Ht %h; rcases Hhandle with ⟨i, t', hi, Hget, HC⟩; imodintro
-      let f := λ t (P: (ITree GE GR → PROP)) => iprop(|={⊤, ∅}=> P t)
+      let f := fun t (P: (ITree GE GR → PROP)) => iprop(|={⊤, ∅}=> P t)
       iexists t', ConcState.yield s.pool i hi, f t',
         (ConcState.yield s.pool i hi).pool.filterMap (Option.map f), []
       isplitr; ipureintro; exact HC
@@ -131,7 +129,7 @@ instance coneEH_adequate {GE GR} :
     · -- Yield case
       iintro >Ht %h; rcases Hhandle with ⟨i, t', hi, Hget, HC⟩
       iapply fupd_mask_intro (by simp); iintro Hemp
-      let f := λ t (P : ITree GE GR → PROP) => iprop(|={⊤, ∅}=> P t)
+      let f := fun t (P : ITree GE GR → PROP) => iprop(|={⊤, ∅}=> P t)
       let tp' := s.pool.set s.curr (some (k ⟨⟩))
       have hi' : i < tp'.length := by simpa [tp'] using hi
       iexists t', ConcState.yield tp' i hi', f t',
@@ -147,3 +145,5 @@ instance coneEH_adequate {GE GR} :
       simp [f]; imod Hemp; iintro %x $
 
 end exec
+
+end IrisITree

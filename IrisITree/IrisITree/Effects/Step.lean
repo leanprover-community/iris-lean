@@ -5,11 +5,11 @@ public import IrisITree.Core.Wpi
 public import ITree.Effects.Step
 public import Iris.Instances.Lib.FUpd
 
-@[expose] public section
+public section
 
-namespace IrisITree.Effects
+namespace IrisITree
 
-open Iris Iris.BI ITree ITree.Effects IrisITree.Core
+open Iris Iris.BI ITree ITree.Effects
 
 section handler
 
@@ -20,7 +20,7 @@ class StepMod (PROP : Type _) [BI PROP] where
   apply : PROP → PROP
   mono (P Q : PROP) : ⊢@{PROP} (P -∗ Q) -∗ apply P -∗ apply Q
 
-instance : CoeFun (StepMod PROP) (λ _ => PROP → PROP) where
+instance : CoeFun (StepMod PROP) (fun _ => PROP → PROP) where
   coe m := @StepMod.apply PROP _ m
 
 namespace StepMod
@@ -55,7 +55,7 @@ end StepMod
 
 /-- Interpret an operational step using `m`. -/
 def stepH (m : StepMod PROP) : IHandler PROP stepE where
-  ihandle := λ _ Φ _ => m (Φ ⟨⟩)
+  ihandle := fun _ Φ _ => m (Φ ⟨⟩)
   ihandle_mono := by
     iintro %_ %Φ %Φ' %_ %_ HΦwand _ HΦ
     ispecialize HΦwand $$ %⟨⟩
@@ -105,7 +105,7 @@ variable {GF : BundledGFunctors} [InvGS GF]
 
 /-- Executing an identity-interpreted step requires no later credits. -/
 instance stepEH_ident_adequate :
-    SEHandlerAdequate (stepH (.ident (PROP := IProp GF))) (stepEH (λ _ => 0)) where
+    SEHandlerAdequate (stepH (.ident (PROP := IProp GF))) (stepEH (fun _ => 0)) where
   inv _ := iprop(True)
   adequate := by
     intro i s C Φ₁ Φ₂ Hhandle
@@ -117,7 +117,7 @@ instance stepEH_ident_adequate :
 
 /-- Executing a later-interpreted step consumes one later credit. -/
 instance stepEH_later_adequate :
-    SEHandlerAdequate (stepH (.later (PROP := IProp GF))) (stepEH (λ _ => 1)) where
+    SEHandlerAdequate (stepH (.later (PROP := IProp GF))) (stepEH (fun _ => 1)) where
   inv s := £ s.2.down
   adequate := by
     intro i s C Φ₁ Φ₂ Hhandle
@@ -135,3 +135,5 @@ instance stepEH_later_adequate :
     iframe; itrivial
 
 end exec
+
+end IrisITree

@@ -1,21 +1,18 @@
 module
 
+public import Iris.BI.BigOp.BigSepList
 public import IrisITree.Core.Handler
 public import IrisITree.Core.Wpi
-public import Iris.ProofMode
-public import Iris.BI.Lib.Fixpoint
-public import Iris.BI.BigOp.BigSepList
-public import ITree.Definition
-public import ITree.Exec
 
-@[expose] public section
+public section
 
-namespace IrisITree.Core
+namespace IrisITree
 
 open Iris BI ITree Std OFE
 
+@[expose]
 def bi_close {PROP : Type _} [BI PROP] {α : Type _} (R : α → α → Prop) (P : α → PROP) : α → PROP :=
-  λ a => iprop(∃ a', ⌜R a a'⌝ ∗ P a')
+  fun a => iprop(∃ a', ⌜R a a'⌝ ∗ P a')
 
 section bi_close
 
@@ -29,11 +26,11 @@ theorem bi_close_mono (P1 P2 : α → PROP) (a : α) :
   · ipureintro; exact HR
   · iapply Hwand $$ HP1
 
-theorem bi_close_intro (P : α → PROP) (a : α) [Href : Reflexive R] :
+theorem bi_close_intro (P : α → PROP) (a : α) [Href : Std.Refl R] :
     P a ⊢ bi_close R P a := by
   iintro HP; simp [bi_close]
   iexists a; isplitr
-  · ipureintro; exact Href.refl
+  · ipureintro; exact Href.refl a
   · iexact HP
 
 theorem bi_close_respect (P : α → PROP) [Hsym : Symm R] [Htran : Trans R R R] :
@@ -50,9 +47,9 @@ theorem bi_close_respect (P : α → PROP) [Hsym : Symm R] [Htran : Trans R R R]
 
 end bi_close
 
-/-- [bi_mono0] : linear monotone closure of a predicate transformer. -/
+/-- linear monotone closure of a predicate transformer. -/
 def bi_mono0 {PROP : Type _} [BI PROP] {α : Type _} (P : (α → PROP) → PROP) : (α → PROP) → PROP :=
-  λ Q => iprop(∃ Q' : α → PROP, P Q' ∗ ∀ x, Q' x -∗ Q x)
+  fun Q => iprop(∃ Q' : α → PROP, P Q' ∗ ∀ x, Q' x -∗ Q x)
 
 section bi_mono0
 
@@ -105,19 +102,20 @@ theorem bi_mono0_intro (P : (α → PROP) → PROP) (Q Q' : α → PROP) :
 
 end bi_mono0
 
-/-- The functional whose least fixed point is `lfp_tp`. -/
+/-- One-step rule for a whole thread pool. -/
+@[expose]
 def lfp_tpF {PROP : Type _} [BI PROP] {α : Type _}
     (F : (α → PROP) → (α → PROP))
     (rec_tp : DiscreteO (List ((α → PROP) → PROP)) → PROP) :
     DiscreteO (List ((α → PROP) → PROP)) → PROP :=
-  λ Ms => iprop(
+  fun Ms => iprop(
     ∀ (i : Nat) (M : (α → PROP) → PROP), ⌜Ms.car[i]? = some M⌝ -∗
-      bi_mono0 M λ x => iprop(
+      bi_mono0 M fun x => iprop(
         ∃ G, F G x ∗ ∀ Ms', ([∗list] M' ∈ Ms', M' G) -∗ rec_tp ⟨Ms' ++ Ms.car.eraseIdx i⟩
       )
   )
 
-section lfp_tp
+section lfp_tpF
 
 variable {PROP : Type _} [BI PROP] [BIAffine PROP] {α : Type _}
   (F : (α → PROP) → (α → PROP))
@@ -125,16 +123,16 @@ variable {PROP : Type _} [BI PROP] [BIAffine PROP] {α : Type _}
 instance lfp_tpF_ne : NonExpansive (lfp_tpF F) where
   ne {_ _ _} Hfg := by
     intro Ms; unfold lfp_tpF bi_mono0
-    refine forall_ne λ i => forall_ne λ _ => ?_
-    refine wand_ne.ne .rfl $ exists_ne λ _ => ?_
-    refine sep_ne.ne .rfl $ forall_ne λ _ => ?_
-    refine wand_ne.ne .rfl $ exists_ne λ _ => ?_
-    refine sep_ne.ne .rfl $ forall_ne λ Ms' => ?_
-    exact wand_ne.ne .rfl $ Hfg ⟨Ms' ++ Ms.car.eraseIdx i⟩
+    refine forall_ne fun i => forall_ne fun _ => ?_
+    refine wand_ne.ne .rfl <| exists_ne fun _ => ?_
+    refine sep_ne.ne .rfl <| forall_ne fun _ => ?_
+    refine wand_ne.ne .rfl <| exists_ne fun _ => ?_
+    refine sep_ne.ne .rfl <| forall_ne fun Ms' => ?_
+    exact wand_ne.ne .rfl <| Hfg ⟨Ms' ++ Ms.car.eraseIdx i⟩
 
 theorem lfp_tpF_mono (tp1 tp2 : DiscreteO (List ((α → PROP) → PROP)) → PROP) :
-    ⊢ □ (∀ Ms, tp1 Ms -∗ tp2 Ms) -∗
-      ∀ Ms, lfp_tpF F tp1 Ms -∗ lfp_tpF F tp2 Ms := by
+    □ (∀ Ms, tp1 Ms -∗ tp2 Ms) -∗
+    ∀ Ms, lfp_tpF F tp1 Ms -∗ lfp_tpF F tp2 Ms := by
   iintro #Hwand %Ms Htp; unfold lfp_tpF
   iintro %i %M %Hi; ispecialize Htp $$ %i %M %Hi
   iapply bi_mono0_mono $$ Htp
@@ -142,51 +140,8 @@ theorem lfp_tpF_mono (tp1 tp2 : DiscreteO (List ((α → PROP) → PROP)) → PR
   · iexact HF
   · iintro %Ms HM'; iapply Hwand; iapply HMS $$ HM'
 
-instance : BIMonoPred (lfp_tpF (PROP := PROP) F) where
-  mono_pred := by
-    iintro %Φ %Ψ %HneΦ %HneΨ #Hwand %Ms HΦ
-    iapply lfp_tpF_mono F Φ Ψ $$ [] [HΦ]
-    · iexact Hwand
-    · iexact HΦ
-  mono_pred_ne.ne n Φ Φ' Hdist := by
-    cases Hdist; rfl
-
-end lfp_tp
-
-/-- The `lfp_tp` least-fixed-point predicate. -/
-def lfp_tp {PROP : Type _} [BI PROP] {α : Type _}
-    (F : (α → PROP) → (α → PROP))
-    (Ms : List ((α → PROP) → PROP)) : PROP :=
-  bi_least_fixpoint (lfp_tpF F) ⟨Ms⟩
-
-section lfp_tp_lemmas
-
-variable {PROP : Type _} [BI PROP] [BIAffine PROP] {α : Type _}
-  (F : (α → PROP) → (α → PROP))
-
-theorem lfp_tp_unfold (Ms : List ((α → PROP) → PROP)) :
-    lfp_tp F Ms ⊣⊢ lfp_tpF F (λ Ms => lfp_tp F Ms.car) ⟨Ms⟩ :=
-  equiv_iff.mp <| least_fixpoint_unfold (lfp_tpF F)
-
-theorem lfp_tp_nil : ⊢ (lfp_tp F [] : PROP) := by
-  iapply (lfp_tp_unfold F []).mpr
-  simp only [lfp_tpF]
-  iintro %i %M %Hi; simp at Hi
-
-theorem lfp_tp_ind (Φ : DiscreteO (List ((α → PROP) → PROP)) → PROP)
-    [NonExpansive Φ] :
-    ⊢ □ (∀ y, lfp_tpF F (λ x => iprop(Φ x ∧ lfp_tp F x.car)) y -∗ Φ y) -∗
-      (∀ Ms, lfp_tp F Ms.car -∗ Φ Ms) := by
-  iintro #Hwand %Ms Hlfp
-  iapply least_fixpoint_ind (lfp_tpF (PROP := PROP) F)
-  · iintro !> %y Hlfp; iapply Hwand;
-    iapply lfp_tpF_mono F $$ [] Hlfp
-    iintro !> %Ms Hpre; iapply BI.and_congr_right $$ Hpre
-    simp [lfp_tp]
-  · simp [lfp_tp]; iexact Hlfp
-
--- Helper function for [lfp_*_perm_*]
-theorem perm_pick_erase {β : Type _} {Ms1 Ms2 : List β} {i : Nat} {M : β}
+/-- Helper function for [lfp_*_perm_*]. -/
+private theorem perm_pick_erase {β : Type _} {Ms1 Ms2 : List β} {i : Nat} {M : β}
     (hperm : Ms1.Perm Ms2) (Hi : Ms2[i]? = some M) :
     ∃ j, Ms1[j]? = some M ∧ (Ms1.eraseIdx j).Perm (Ms2.eraseIdx i) := by
   induction hperm generalizing i M with
@@ -208,9 +163,9 @@ theorem perm_pick_erase {β : Type _} {Ms1 Ms2 : List β} {i : Nat} {M : β}
         · simpa [List.eraseIdx, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
             using List.Perm.swap x y (l.eraseIdx i)
   | trans h₁ h₂ ih₁ ih₂ =>
-      rcases ih₂ Hi with ⟨j₂, Hj₂, Hperm₂⟩
-      rcases ih₁ Hj₂ with ⟨j₁, Hj₁, Hperm₁⟩
-      exact ⟨j₁, Hj₁, List.Perm.trans Hperm₁ Hperm₂⟩
+    obtain ⟨j₂, Hj₂, Hperm₂⟩ := ih₂ Hi
+    obtain ⟨j₁, Hj₁, Hperm₁⟩ := ih₁ Hj₂
+    exact ⟨j₁, Hj₁, List.Perm.trans Hperm₁ Hperm₂⟩
 
 theorem lfp_tpF_perm (Ms1 Ms2 : List ((α → PROP) → PROP))
     (wp1 wp2 : DiscreteO (List ((α → PROP) → PROP)) → PROP)
@@ -220,7 +175,7 @@ theorem lfp_tpF_perm (Ms1 Ms2 : List ((α → PROP) → PROP))
       ⌜Ns1.car.Perm Ns2.car⌝ -∗ wp1 Ns1 -∗ wp2 Ns2) -∗
     lfp_tpF F wp2 ⟨Ms2⟩ := by
   iintro Htp Hwp; unfold lfp_tpF; iintro %i %M %Hi
-  rcases perm_pick_erase h Hi with ⟨j, Hj, Herase⟩
+  obtain ⟨j, Hj, Herase⟩ := perm_pick_erase h Hi
   ispecialize Htp $$ %j %M %Hj
   iapply bi_mono0_mono $$ Htp
   iintro %x Hstep; icases Hstep with ⟨%G, HFx, Hcont⟩
@@ -232,8 +187,8 @@ theorem lfp_tpF_perm (Ms1 Ms2 : List ((α → PROP) → PROP))
 theorem lfp_tpF_perm_close (Ms1 Ms2 : List ((α → PROP) → PROP))
     (wp : DiscreteO (List ((α → PROP) → PROP)) → PROP)
     (h : Ms1.Perm Ms2) :
-    lfp_tpF F wp ⟨Ms1⟩ ⊢
-    lfp_tpF F (bi_close (λ a b => a.car.Perm b.car) wp) ⟨Ms2⟩ := by
+    lfp_tpF F wp ⟨Ms1⟩ -∗
+    lfp_tpF F (bi_close (fun a b => a.car.Perm b.car) wp) ⟨Ms2⟩ := by
   iintro Htp; iapply lfp_tpF_perm $$ Htp
   · exact h
   · iintro %Ns1 %Ns2 %Hperm Hwp; simp only [bi_close]
@@ -241,16 +196,62 @@ theorem lfp_tpF_perm_close (Ms1 Ms2 : List ((α → PROP) → PROP))
     · ipureintro; exact Hperm.symm
     · iexact Hwp
 
+instance : BIMonoPred (lfp_tpF (PROP := PROP) F) where
+  mono_pred := by
+    iintro %Φ %Ψ %HneΦ %HneΨ #Hwand %Ms HΦ
+    iapply lfp_tpF_mono F Φ Ψ $$ [] [HΦ]
+    · iexact Hwand
+    · iexact HΦ
+  mono_pred_ne.ne n Φ Φ' Hdist := by
+    cases Hdist; rfl
+
+end lfp_tpF
+
+/--
+  Every thread in the pool `Ms` can keep stepping safely according to `F`,
+  however the threads are scheduled.
+-/
+def lfp_tp {PROP : Type _} [BI PROP] {α : Type _}
+    (F : (α → PROP) → (α → PROP))
+    (Ms : List ((α → PROP) → PROP)) : PROP :=
+  bi_least_fixpoint (lfp_tpF F) ⟨Ms⟩
+
+section lfp_tp_lemmas
+
+variable {PROP : Type _} [BI PROP] [BIAffine PROP] {α : Type _}
+  (F : (α → PROP) → (α → PROP))
+
+theorem lfp_tp_unfold (Ms : List ((α → PROP) → PROP)) :
+    lfp_tp F Ms ⊣⊢ lfp_tpF F (fun Ms => lfp_tp F Ms.car) ⟨Ms⟩ :=
+  equiv_iff.mp <| least_fixpoint_unfold (lfp_tpF F)
+
+theorem lfp_tp_nil : ⊢ (lfp_tp F [] : PROP) := by
+  iapply (lfp_tp_unfold F []).mpr
+  simp only [lfp_tpF]
+  iintro %i %M %Hi; simp at Hi
+
+theorem lfp_tp_ind (Φ : DiscreteO (List ((α → PROP) → PROP)) → PROP)
+    [NonExpansive Φ] :
+    ⊢ □ (∀ y, lfp_tpF F (fun x => iprop(Φ x ∧ lfp_tp F x.car)) y -∗ Φ y) -∗
+      (∀ Ms, lfp_tp F Ms.car -∗ Φ Ms) := by
+  iintro #Hwand %Ms Hlfp
+  iapply least_fixpoint_ind (lfp_tpF (PROP := PROP) F)
+  · iintro !> %y Hlfp; iapply Hwand;
+    iapply lfp_tpF_mono F $$ [] Hlfp
+    iintro !> %Ms Hpre; iapply BI.and_congr_right $$ Hpre
+    simp [lfp_tp]
+  · simp [lfp_tp]; iexact Hlfp
+
 theorem lfp_tp_perm (Ms1 Ms2 : List ((α → PROP) → PROP)) (h : Ms1.Perm Ms2) :
     ⊢ lfp_tp F Ms1 -∗ lfp_tp F Ms2 := by
-  letI : NonExpansive λ (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
+  letI : NonExpansive fun (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
     iprop(∀ Ms2, ⌜Ms.car.Perm Ms2⌝ -∗ lfp_tp F Ms2) := ⟨
-      λ n lst1 lst2 Hlst => by
-        refine forall_ne (λ lst => ?_)
+      fun n lst1 lst2 Hlst => by
+        refine forall_ne (fun lst => ?_)
         cases Hlst; rfl
     ⟩
   iintro Htp; irevert %Ms2 %h
-  iapply lfp_tp_ind F λ Ms => iprop(∀ Ms2, ⌜Ms.car.Perm Ms2⌝ -∗ lfp_tp F Ms2) $$ [] Htp
+  iapply lfp_tp_ind F fun Ms => iprop(∀ Ms2, ⌜Ms.car.Perm Ms2⌝ -∗ lfp_tp F Ms2) $$ [] Htp
   iintro !> %Ms1 Htp %Ms2 %Hperm; iapply lfp_tp_unfold
   iapply lfp_tpF_perm F Ms1.car _ _ _ Hperm $$ Htp
   iintro %Ns1 %Ns2 %Hperm Hw; icases Hw with ⟨H, -⟩
@@ -258,44 +259,28 @@ theorem lfp_tp_perm (Ms1 Ms2 : List ((α → PROP) → PROP)) (h : Ms1.Perm Ms2)
 
 theorem lfp_tp_app (Ms1 Ms2 : List ((α → PROP) → PROP)) :
     ⊢ lfp_tp F Ms1 -∗ lfp_tp F Ms2 -∗ lfp_tp F (Ms1 ++ Ms2) := by
-  letI : NonExpansive λ (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
+  letI : NonExpansive fun (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
     iprop(∀ Ms2, lfp_tp F Ms2 -∗ lfp_tp F (Ms.car ++ Ms2)) := ⟨
-      λ n ls1 lst2 Hlst => by
-        refine forall_ne (λ Ms2 => ?_)
+      fun n ls1 lst2 Hlst => by
+        refine forall_ne (fun Ms2 => ?_)
         cases Hlst; rfl
     ⟩
-  letI : NonExpansive λ (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
-    iprop(∀ Ms1, lfp_tpF F (λ x => iprop((∀ Ms, lfp_tp F Ms -∗ lfp_tp F (x.car ++ Ms))
+  letI : NonExpansive fun (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
+    iprop(∀ Ms1, lfp_tpF F (fun x => iprop((∀ Ms, lfp_tp F Ms -∗ lfp_tp F (x.car ++ Ms))
       ∧ lfp_tp F x.car)) Ms1 -∗ lfp_tp F (Ms1.car ++ Ms.car)) := ⟨
-        λ n lst1 lst2 Hlst => by
-          refine forall_ne (λ Ms1 => ?_)
+        fun n lst1 lst2 Hlst => by
+          refine forall_ne (fun Ms1 => ?_)
           cases Hlst; rfl
       ⟩
-  -- TODO: Try to remove these two have statements
-  have Hwrap : ⊢ (∀ (Ms1 : DiscreteO (List ((α → PROP) → PROP))),
-    iprop(lfp_tp F Ms1.car -∗ ∀ Ms2, iprop(lfp_tp F Ms2 -∗
-      lfp_tp F (Ms1.car ++ Ms2)))) -∗
-    ∀ (Ms1 : List ((α → PROP) → PROP)), iprop(lfp_tp F Ms1 -∗
-      ∀ Ms2, iprop(lfp_tp F Ms2 -∗ lfp_tp F (Ms1 ++ Ms2))) := by
-    iintro H %Ms1 Hx1 %Ms2 Hx2
-    iapply H $$ %⟨Ms1⟩ Hx1 %Ms2 Hx2
-  have Hwrap2 : ⊢ (∀ (Ms2 : DiscreteO (List ((α → PROP) → PROP))),
-    iprop(lfp_tp F Ms2.car -∗ ∀ Ms1, iprop(lfp_tpF F (λ x =>
-      iprop((∀ Ms, lfp_tp F Ms -∗ lfp_tp F (x.car ++ Ms)) ∧ lfp_tp F x.car)) Ms1 -∗
-      lfp_tp F (Ms1.car ++ Ms2.car)))) -∗
-    ∀ (Ms2 : List ((α → PROP) → PROP)), iprop(lfp_tp F Ms2 -∗ BI.forall (λ Ms1 =>
-      iprop(lfp_tpF F (λ x => iprop((∀ Ms, lfp_tp F Ms -∗ lfp_tp F (x.car ++ Ms)) ∧
-      lfp_tp F x.car)) Ms1 -∗ lfp_tp F (Ms1.car ++ Ms2)))) := by
-    iintro H %Ms2 Hx2 %Ms1 Hx1
-    iapply H $$ %⟨Ms2⟩ Hx2 %Ms1 Hx1
-  iintro Hx1 Hx2; irevert %Ms1 Hx1 %Ms2 Hx2; iapply Hwrap; iclear %Hwrap
-  iapply lfp_tp_ind F λ Ms => iprop(∀ Ms2, lfp_tp F Ms2 -∗ lfp_tp F (Ms.car ++ Ms2))
-  iintro !> %Ms1 Hx1 %Ms2 Hx2; irevert %Ms2 Hx2 %Ms1 Hx1; iapply Hwrap2; iclear %Hwrap2
-  iapply lfp_tp_ind F λ Ms => iprop(∀ Ms1, lfp_tpF F (λ x =>
+  iintro Hx1 Hx2
+  iapply (lfp_tp_ind F fun Ms =>
+    iprop(∀ Ms2, lfp_tp F Ms2 -∗ lfp_tp F (Ms.car ++ Ms2))) $$ [] %⟨Ms1⟩ Hx1 %Ms2 Hx2
+  iintro !> %Ms1 Hx1 %Ms2 Hx2
+  iapply (lfp_tp_ind F fun Ms => iprop(∀ Ms1, lfp_tpF F (fun x =>
     iprop((∀ Ms, lfp_tp F Ms -∗ lfp_tp F (x.car ++ Ms)) ∧ lfp_tp F x.car)) Ms1 -∗
-      lfp_tp F (Ms1.car ++ Ms.car))
+      lfp_tp F (Ms1.car ++ Ms.car))) $$ [] %⟨Ms2⟩ Hx2 %Ms1 Hx1
   repeat clear this
-  iintro !> %Ms2 Hx2 %Ms1 Hx1; iapply lfp_tp_unfold; unfold lfp_tpF at ⊢; simp
+  iintro !> %Ms2 Hx2 %Ms1 Hx1; iapply lfp_tp_unfold; unfold lfp_tpF; simp
   iintro %i %M %Hlookup
   by_cases Hi : i < Ms1.car.length
   · -- M appears in Ms1
@@ -330,15 +315,15 @@ theorem lfp_tp_cons (M : (α → PROP) → PROP) (Ms : List ((α → PROP) → P
   simpa using (lfp_tp_app F [M] Ms)
 
 theorem lfp_tp_singleton_mod_elim (M : (α → PROP) → PROP) :
-    ⊢ M (λ x => lfp_tp F [λ P => P x]) -∗ lfp_tp F [M] := by
+    ⊢ M (fun x => lfp_tp F [fun P => P x]) -∗ lfp_tp F [M] := by
   iintro Hx; iapply lfp_tp_unfold; simp only [lfp_tpF]
   iintro %i %M' %Hi; cases i with
   | zero =>
     simp at Hi; subst M'; simp only [List.eraseIdx, List.append_nil]
     iapply bi_mono0_intro M $$ Hx; iintro %x Hlfp;
-    ihave Hlfp := lfp_tp_unfold F [λ P => P x] $$ Hlfp; simp only [lfp_tpF];
-    have Hlookup : ([λ P => P x] : List ((α → PROP) → PROP))[0]? = some (λ P => P x) := by simp
-    ispecialize Hlfp $$ %0 %(λ P => P x) %Hlookup
+    ihave Hlfp := lfp_tp_unfold F [fun P => P x] $$ Hlfp; simp only [lfp_tpF];
+    have Hlookup : ([fun P => P x] : List ((α → PROP) → PROP))[0]? = some (fun P => P x) := by simp
+    ispecialize Hlfp $$ %0 %(fun P => P x) %Hlookup
     simp only [List.eraseIdx, List.append_nil]
     iapply bi_mono0_elim $$ Hlfp; iintro %Q %Q' Hwand HQ'
     iapply Hwand $$ HQ'
@@ -348,26 +333,21 @@ variable {α : Type _} [OFE α] [OFE.Discrete α]
 
 -- TODO: replace the lean' induction with native tactic `iinduction`
 theorem lfp_tp_intro (G : (α → PROP) → (α → PROP)) (x : α) :
-    ⊢ bi_least_fixpoint G x -∗ lfp_tp G [λ P => P x] := by
-  letI : NonExpansive (fun (x : α) => lfp_tp G [λ P => P x] : α → PROP) := ⟨
+    ⊢ bi_least_fixpoint G x -∗ lfp_tp G [fun P => P x] := by
+  letI : NonExpansive (fun (x : α) => lfp_tp G [fun P => P x] : α → PROP) := ⟨
     fun {n x1 x2} Hx => by
-      have Heq : x1 = x2 := (OFE.Discrete.discrete Hx).to_eq
+      have Heq : x1 = x2 := OFE.Discrete.discrete Hx
       subst Heq; rfl
   ⟩
-
-  have Hlist : ∀ Ms : List ((α → PROP) → PROP),
-      ⊢ ([∗list] M ∈ Ms, M (λ x => lfp_tp G [λ P => P x])) -∗ lfp_tp G Ms := by
-    intro Ms
-    induction Ms with
-    | nil =>
-      iintro -; iapply lfp_tp_nil
-    | cons M Ms ih =>
+  have Hlist : ∀ Ms, ([∗list] M ∈ Ms, M (fun x => lfp_tp G [fun P => P x])) -∗ lfp_tp G Ms := by
+    intro Ms; iinduction Ms with
+    | nil => iintro -; iapply lfp_tp_nil
+    | cons M Ms IH =>
       iintro HMs
-      ihave HMs := BigSepL.bigSepL_cons.mp $$ HMs
-      icases HMs with ⟨HM, HMs⟩
-      ihave HM := lfp_tp_singleton_mod_elim G M $$ HM
+      icases BigSepL.bigSepL_cons $$ HMs with ⟨HM, HMs⟩
+      ihave HM := lfp_tp_singleton_mod_elim $$ HM
       iapply lfp_tp_cons G M Ms $$ HM
-      iapply ih $$ HMs
+      iapply IH $$ HMs
   iintro Hlfp; irevert %x Hlfp
   iapply least_fixpoint_iter
   clear this
@@ -395,4 +375,4 @@ theorem lfp_tp_intro (G : (α → PROP) → (α → PROP)) (x : α) :
 
 end lfp_tp_lemmas
 
-end IrisITree.Core
+end IrisITree

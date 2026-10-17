@@ -4,18 +4,18 @@ import Iris.ProofMode
 public import ITree.Effects.Fail
 public import IrisITree.Core.Wpi
 
-@[expose] public section
+public section
 
-namespace IrisITree.Effects
+namespace IrisITree
 
-open Iris Iris.BI ITree IrisITree.Core ITree.Effects
+open Iris Iris.BI ITree ITree.Effects
 
 section handler
 
 variable {PROP : Type _} [BI PROP]
 
 def failH : IHandler PROP failE where
-  ihandle := λ _ _ _ => iprop(False)
+  ihandle := fun _ _ _ => iprop(False)
   ihandle_mono := by
     iintro %_ %_ %_ %_ %_ _ _ ⟨⟩
 
@@ -66,3 +66,5 @@ instance failEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] :
     iintro ⟨⟩
 
 end exec
+
+end IrisITree

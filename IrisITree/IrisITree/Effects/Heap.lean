@@ -9,13 +9,13 @@ public import Iris.Instances.Lib.GhostMap
 public import Iris.Instances.Lib.Invariants
 public import Iris.Std.HeapInstances
 
-@[expose] public section
+public section
 
 -- A heap, represented as a [gmap] of [option val]s, with [None] representing deallocated locations.
 
-namespace IrisITree.Effects
+namespace IrisITree
 
-open Iris BI ITree Effects Core
+open Iris BI ITree Effects
 
 -- TODO: Why can’t we make this universe-polymorphic? `Loc` and `Val` should have type `Type _`
 -- The restriction seems to come from `GhostMapG`; More concretely, `constOF` is too conservative.
@@ -59,7 +59,7 @@ variable [G : heapHGS GF Loc Val]
 def heap_inv : IProp GF :=
   inv (heapH_inv_name (G := G)) iprop(
     ∃ σ, ghost_map_auth (K := Loc) (V := Option Val)
-      G.heapH_heap_name (DFrac.own $ Qp.half 1) σ
+      G.heapH_heap_name (DFrac.own <| Qp.half 1) σ
   )
 
 instance heap_inv_persistent : Persistent (heap_inv (G := G)) := by
@@ -68,7 +68,7 @@ instance heap_inv_persistent : Persistent (heap_inv (G := G)) := by
 
 def stateInterp_heap (σ : heapE.T Loc Val) : IProp GF := iprop(
   ghost_map_auth (K := Loc) (V := Option Val)
-    G.heapH_heap_name (DFrac.own $ Qp.half 1) σ
+    G.heapH_heap_name (DFrac.own <| Qp.half 1) σ
   ∧ heap_inv (G := G)
 )
 
@@ -84,15 +84,15 @@ variable {Loc Val : Type} [Ord Loc] [Std.TransOrd Loc] [Std.LawfulEqOrd Loc] [De
 variable [Gpre : heapHGpreS GF Loc Val]
 
 -- TODO: find way to eliminate the parameter M and use the syntax sugar instead of `bigSepM`
-theorem heapH_init  (σ : heapE.T Loc Val) :
+theorem heapH_init (σ : heapE.T Loc Val) :
     ⊢ |={∅}=> ∃ G : heapHGS GF Loc Val,
       heap_inv (G := G) ∗
       stateInterp_heap σ ∗
-      bigSepM (M := (Std.ExtTreeMap Loc · compare)) (λ k v => k ↦? v) σ := by
+      bigSepM (M := (Std.ExtTreeMap Loc · compare)) (fun k v => k ↦? v) σ := by
   icases (ghost_map_alloc (K := Loc) (V := Option Val) σ) with Hgmap
   imod Hgmap; icases Hgmap with ⟨%γ, ⟨⟨Hauth, Hauth'⟩, Hfrag⟩⟩
   imod (inv_alloc ((nroot.@"heapH").@"") ∅
-    (∃ σ, ghost_map_auth (K := Loc) (V := Option Val) γ (.own $ .half 1) σ)) $$ [Hauth] with #Hinv
+    (∃ σ, ghost_map_auth (K := Loc) (V := Option Val) γ (.own <| .half 1) σ)) $$ [Hauth] with #Hinv
   · inext; iexists σ; iassumption
   · imodintro; iexists ⟨Gpre, γ, ""⟩
     unfold heap_inv heapH_inv_name stateInterp_heap pointsto
@@ -142,7 +142,7 @@ theorem wpi_storeOpt M (l : Loc) (v v' : Option Val) (Φ : Option Val → IProp 
   unfold stateInterp_heap heap_inv
   iintro %σ' ⟨HauthState, -⟩
   ihave %Heq := ghost_map_auth_agree $$ HauthInv HauthState; subst σ'
-  icombine HauthInv HauthState as Hauth; rw [Qp.half_add_half (1 : Qp)]
+  icombine HauthInv HauthState as Hauth
   imod ghost_map_update v' $$ Hauth Hpt with ⟨⟨Hauth, Hauth'⟩, Hpt⟩
   imod Hclose $$ [Hauth'] with -
   · iexists Std.insert (M := (Std.ExtTreeMap Loc · compare)) σ l v'
@@ -209,7 +209,7 @@ end fail
 class LawfulLoc (Loc : Type) [Ord Loc] extends Zero Loc, HAdd Loc Int Loc where
   decEq : DecidableEq Loc
   add_zero (l : Loc) : l + (0 : Int) = l
-  add_nat_inj (l : Loc) : Function.Injective (λ i => l + Int.ofNat i)
+  add_nat_inj (l : Loc) : Function.Injective (fun i => l + Int.ofNat i)
   add_pos_nle (l : Loc) (m : Nat) :
     ¬(compare (l + (1 : Int) + (m : Int)) l).isLE = true
 
@@ -267,10 +267,10 @@ theorem wpi_allocN M (n : Nat) (v : Val) (Φ : Loc → IProp GF) :
   unfold stateInterp_heap heap_inv
   iintro %σ' ⟨Hauth', -⟩
   ihave %Heq := ghost_map_auth_agree $$ HauthInv Hauth'; subst σ'
-  icombine HauthInv Hauth' as Hauth; rw [Qp.half_add_half (1 : Qp)]
+  icombine HauthInv Hauth' as Hauth
 
   -- We do not need to care about the orders
-  let entries := (List.range n).map λ m => (l + Int.ofNat m, some v)
+  let entries := (List.range n).map fun m => (l + Int.ofNat m, some v)
   let σnew := Std.PartialMap.ofList (M := (Std.ExtTreeMap Loc · compare)) entries
   let σsum := Std.PartialMap.union (M := (Std.ExtTreeMap Loc · compare)) σnew σ
 
@@ -278,7 +278,7 @@ theorem wpi_allocN M (n : Nat) (v : Val) (Φ : Loc → IProp GF) :
   have Hnodup : Std.NoDupKeys entries := by
     unfold Iris.Std.NoDupKeys entries
     simp [List.map_map]
-    exact Iris.Std.List.nodup_map_of_injective
+    refine List.nodup_map_of_injective
       (LawfulLoc.add_nat_inj l) List.nodup_range
   have HinsertMany : σ.insertMany entries = σsum := by
     simpa only [σnew] using extTreeMap_insertMany_eq_ofList_union σ entries Hnodup
@@ -295,7 +295,7 @@ theorem wpi_allocN M (n : Nat) (v : Val) (Φ : Loc → IProp GF) :
     rcases Hmem with ⟨i, Hi, Hki⟩
     have Hkey : l + Int.ofNat i = k := congrArg Prod.fst Hki
     rw [← Hkey] at Hk
-    apply Hfree i $ List.mem_range.mp Hi
+    apply Hfree i <| List.mem_range.mp Hi
     simpa [Iris.Std.get?] using Hk.2
   icases Hauth with ⟨HauthInv, HauthState⟩
   imod Hclose $$ [HauthInv] with -
@@ -306,7 +306,7 @@ theorem wpi_allocN M (n : Nat) (v : Val) (Φ : Loc → IProp GF) :
   iapply wpi_pure; iapply Hwand
   unfold pointsto
   iapply (equiv_iff.mp (BigSepL.bigSepL_map
-    (Φ := λ _ kv => ghost_map_elem _ _ kv.1 kv.2)
+    (Φ := fun _ kv => ghost_map_elem _ _ kv.1 kv.2)
     (l + Int.ofNat ·, some v)))
   iapply (BigSepM.bigSepM_ofList (M := (Std.ExtTreeMap Loc · compare))) $$ Hpts
   exact Hnodup
@@ -325,4 +325,4 @@ end alloc
 
 end wpi_rules
 
-end IrisITree.Effects
+end IrisITree
