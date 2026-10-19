@@ -32,7 +32,7 @@ The `islaris` folder should not be ported, all filenames below are relative to t
   - `demonic_ifn`: part of trace based adequacy, should not be ported
   - `demonicEH`: should be given by the itree library
   - [x] exec adequacy
-- [ ] `exec.v` (split into `Core/Exec.lean`, `Core/HandlerAdequate.lean`, and `Core/Wpi_exec.lean`)
+- [x] `exec.v` (split into `Core/Exec.lean`, `Core/HandlerAdequate.lean`, and `Core/Wpi_exec.lean`)
   - [x] `bi_close`
   - [x] `bi_mono0`
   - [x] `lfp_tp`
@@ -83,12 +83,12 @@ The `islaris` folder should not be ported, all filenames below are relative to t
 - [x] `void.v`
   - `voidE`: should be given by the itree library
   - the rest of the file is not necessary to port
-- [ ] `wpi.v`
+- [x] `wpi.v`
   - [x] `wpi` (split into `Core/Wpi.lean` and `WpiMask.lean`)
   - [x] Lemmas about `wpi` (eqit can become =)
   - [x] `wpi_mask`
   - [x] Lemmas and Notation about `wpi_mask` (eqit can become =)
-    - [ ] invariant related (need `inv` and `iinv`)
+    - [x] invariant related (need `inv` and `iinv`)
     - [x] others
   - [x] `wpi_translation`: might be nice to have but unclear if necessary
   - [x] `inH`

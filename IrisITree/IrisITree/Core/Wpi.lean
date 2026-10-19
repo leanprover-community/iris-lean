@@ -400,10 +400,123 @@ end wpi_lemmas
 
 section wp_itree_invariant
 
--- TODO: Invariant rules from the Coq development are omitted for now.
--- This Lean repository does not yet expose an invariant API with
--- `inv`, `inv_acc`, or `inv_acc_timeless`, so the corresponding masked
--- WPi lemmas cannot be stated here yet.
+variable {E R} {Ms Me : CoPset} {H : IHandler PROP E}
+
+/-- Re-mask a `WPi`: change the start mask from `Ms` to `Ms'` up front, and the end mask from `Me'` back to `Me` in the postcondition. -/
+@[rocq_alias wpi_reduce_mask]
+theorem fupd_wpi_fupd Ms' Me' t (Φ : R → PROP) :
+    (|={Ms, Ms'}=> WPi t @> H; Ms', Me' {{ v, |={Me', Me}=> Φ v}}) -∗
+    WPi t @> H; Ms, Me {{ Φ }} := by
+  iintro Hwp; imod Hwp; imod Hwp
+  ihave Hwp := wpi_fupd_empty $$ Hwp
+  iapply wpi_fupd_empty
+  iapply wpi_wand $$ Hwp
+  iintro %_ > $
+
+@[rocq_alias wpi_clear_mask]
+theorem wpi_atomic t (Φ : R → PROP) :
+    (|={Ms, ∅}=> WPi t @> H; ∅ {{ v, |={∅, Me}=> Φ v}}) ⊣⊢
+    WPi t @> H; Ms, Me {{ Φ }} := by
+  isplit
+  · iapply fupd_wpi_fupd
+  · iintro Hwp; imod Hwp; imodintro
+    iapply wpi_fupd_empty $$ Hwp
+
+@[rocq_alias wpi_clear_mask_false]
+theorem wpi_atomic_false (t : ITree E R) :
+    (|={Ms, ∅}=> WPi t @> H; ∅ {{ _v, iprop(False)}}) -∗
+    WPi t @> H; Ms, Me {{ _v, iprop(False)}} := by
+  iintro Hwp; iapply wpi_atomic
+  imod Hwp; imodintro; iapply wpi_wand $$ Hwp
+  iintro %_ ⟨⟩
+
+theorem wpi_mask_mono_start {Ms'} [BIAffine PROP] t (Φ : R → PROP) :
+    Ms ⊆ Ms' →
+    WPi t @> H; Ms, Me {{ Φ }} -∗
+    WPi t @> H; Ms', Me {{ Φ }} := by
+  iintro %Hsub Hwp; ihave Hwp := fupd_wpi_empty $$ Hwp
+  iapply fupd_wpi_empty
+  imod (fupd_mask_subseteq Hsub) with -
+  iexact Hwp
+
+theorem wpi_mask_mono_end {Me'} [BIAffine PROP] t (Φ : R → PROP) :
+    Me' ⊆ Me →
+    WPi t @> H; Ms, Me {{ Φ }} -∗
+    WPi t @> H; Ms, Me' {{ Φ }} := by
+  iintro %Hsub Hwp
+  iapply fupd_wpi_fupd
+  imodintro; iapply wpi_wand $$ Hwp
+  iintro %_ HΦ
+  imod (fupd_mask_subseteq Hsub) with -
+  imodintro; iframe
+
+-- TODO: I feel confused about the following lemma, what is a proper way to generalize it?
+-- Lemma wpi_open_invariant {R} N M (Φ : R → iProp Σ) t P :
+--   ↑N ⊆ M →
+--   inv N P -∗
+--   (▷ P -∗ WPi t @ H; M ∖ ↑N {{ v, ▷ P ∗ Φ v }}) -∗
+--   WPi t @ H; M {{ Φ }}.
+-- Proof.
+--   iIntros (Hsubset) "Hinv Hwp". rewrite /wpi_mask unlock.
+--   iMod (inv_acc _ with "Hinv") as "[HP Hclose]"; first done.
+--   iSpecialize ("Hwp" with "HP").
+--   iMod "Hwp". iModIntro. iApply (wpi_wand_emp_mask with "[Hclose] [Hwp //]").
+--   iIntros (r) "HP". iMod "HP" as "[HP HΦ]". by iMod ("Hclose" with "HP").
+-- Qed.
+-- Lemma wpi_open_invariant_timeless {R} N M (Φ : R → iProp Σ) t P :
+--   Timeless P →
+--   ↑N ⊆ M →
+--   inv N P -∗
+--   (P -∗ WPi t @ H; M ∖ ↑N {{ v, P ∗ Φ v }}) -∗
+--   WPi t @ H; M {{ Φ }}.
+-- Proof.
+--   iIntros (Htimeless Hsubset) "Hinv Hwp". rewrite /wpi_mask unlock.
+--   iMod (inv_acc_timeless _ with "Hinv") as "[HP Hclose]"; first done.
+--   iSpecialize ("Hwp" with "HP").
+--   iMod "Hwp". iModIntro. iApply (wpi_wand_emp_mask with "[Hclose] [Hwp //]").
+--   iIntros (r) "HP". iMod "HP" as "[HP HΦ]". by iMod ("Hclose" with "HP").
+-- Qed.
+
+#rocq_ignore wpi_open_invariant "Use `iinv` (via `elimAcc_wpi`), or `wpi_acc` with `inv_acc`."
+#rocq_ignore wpi_open_invariant_timeless "Use `iinv … with >HP` (via `isExcept0_wpi`)."
+
+theorem wpi_acc {X} M (α β : X → PROP) (γ : X → Option PROP)
+    t (Φ : R → PROP) :
+    (|={Ms, M}=> ∃ x, α x ∗ (β x -∗ |={M, Ms}=> (γ x).getD emp)) -∗
+    (∀ x, α x -∗ WPi t @> H; M {{ v, |={M}=> β x ∗ (γ x -∗? |={Ms, Me}=> Φ v) }}) -∗
+    WPi t @> H; Ms, Me {{ Φ }} := by
+  simp only [BIBase.wandM, Option.getD]
+  iintro Hacc Hinner; iapply fupd_wpi_fupd M M
+  imod Hacc with ⟨%x, Hα, Hclose⟩
+  imodintro; iapply wpi_wand $$ [Hinner Hα]
+  · iapply Hinner $$ Hα
+  · iintro %v >⟨Hβ, HΦ⟩
+    imod Hclose $$ Hβ
+    cases γ x with
+    | none => iexact HΦ
+    | some P => iapply HΦ $$ Hclose
+
+section instances
+
+open ProofMode
+
+instance elimAcc_wpi t (Φ : R → PROP) {X} M (α β : X → PROP) (γ : X → Option PROP) :
+    ElimAcc True (fupd Ms M) (fupd M Ms) α β γ
+      (WPi t @> H; Ms, Me {{ Φ }})
+      (fun x => WPi t @> H; M {{ v, |={M}=> β x ∗ (γ x -∗? |={Ms, Me}=> Φ v) }}) where
+  elim_acc _ := by
+    simp only [accessor]
+    iintro Hinner Hacc
+    iapply wpi_acc M α β γ $$ Hacc Hinner
+
+instance isExcept0_wpi t (Φ : R → PROP) : IsExcept0 (WPi t @> H; Ms, Me {{ Φ }}) where
+  is_except0 := by
+    iintro Hwp
+    iapply fupd_wpi_empty
+    imod Hwp; imod Hwp
+    imodintro; iframe
+
+end instances
 
 end wp_itree_invariant
 
