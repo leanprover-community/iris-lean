@@ -24,7 +24,7 @@ def internalEq [Sbi PROP] {A : Type _} [OFE A] (a b : A) : PROP :=
 
 syntax:40 term:40 " ≡ " term:41 : term
 macro_rules
-  | `(iprop($a ≡%$tk $b)) => ``($(wrapIprop tk ``internalEq) $a $b)
+  | `(iprop($a ≡%$tk $b)) => ``($(wrapIprop tk ``internalEq) (PROP := bi%) $a $b)
 
 delab_rule internalEq
   | `($_ $a $b) => ``(iprop($a ≡ $b))
@@ -34,9 +34,11 @@ namespace BI
 section internalEqLaws
 
 variable {PROP : Type u} [Sbi PROP] {P Q : PROP}
-local bi PROP
 
 namespace internalEq
+
+section
+local bi PROP
 
 @[rocq_alias internal_eq_ne]
 instance instInternalEq_ne (A : Type _) [OFE A] :
@@ -53,11 +55,16 @@ theorem ne_r {A : Type _} [OFE A] (a : A) :
     NonExpansive (internalEq (PROP := PROP) a ·) :=
   NonExpansive₂.ne_right internalEq a
 
+end
+
 @[rocq_alias internal_eq_refl]
 theorem refl {A : Type _} [OFE A] {P : PROP} {a : A} : P ⊢ a ≡ a := calc
   _ ⊢ True                            := true_intro
   _ ⊢ <si_pure> True                  := siPure_pure.mpr
   _ ⊢ <si_pure> SiProp.internalEq a a := siPure_mono <| SiProp.internalEq_refl _ _
+
+section
+local bi PROP
 
 @[rocq_alias equiv_internal_eq]
 theorem of_equiv {A : Type _} [OFE A] {P : PROP} {a b : A} (h : a = b) :
@@ -68,13 +75,15 @@ theorem of_equiv {A : Type _} [OFE A] {P : PROP} {a b : A} (h : a = b) :
 theorem of_pure {A : Type _} [OFE A] {x y : A} : ⌜x = y⌝ ⊢ iprop(x ≡ y) :=
   pure_elim' of_equiv
 
+end
+
 @[rocq_alias internal_eq_rewrite]
 theorem rewrite {A : Type _} [OFE A] {a b : A} (Ψ : A → PROP) [hΨ : NonExpansive Ψ] :
     a ≡ b ⊢ Ψ a → Ψ b := by
   let Φ : A → SiProp := fun a' => iprop(<si_emp_valid> (True -∗ Ψ a → Ψ a'))
   letI _ : NonExpansive Φ :=
     ⟨fun {_ _ _} h => Sbi.siEmpValid_ne.ne (wand_ne.ne .rfl (imp_ne.ne .rfl (hΨ.ne h)))⟩
-  calc internalEq a b
+  calc internalEq (PROP := PROP) a b
     _ ⊢ <si_pure> iprop(Φ a → Φ b) := siPure_mono (SiProp.internalEq_rewrite _ _ _)
     _ ⊢ <si_pure> (Φ b) := by
         refine imp_mp siPure_imp.mp ?_
@@ -86,6 +95,9 @@ theorem rewrite {A : Type _} [OFE A] {a b : A} (Ψ : A → PROP) [hΨ : NonExpan
     _ ⊢ emp ∗ (True -∗ Ψ a → Ψ b)  := emp_sep.mpr
     _ ⊢ True ∗ (True -∗ Ψ a → Ψ b) := sep_mono_left true_intro
     _ ⊢ Ψ a → Ψ b                  := wand_elim_right
+
+section
+local bi PROP
 
 @[rocq_alias internal_eq_rewrite']
 theorem rewrite' {A : Type _} [OFE A] {a b : A} (Ψ : A → PROP) [NonExpansive Ψ]
@@ -111,11 +123,16 @@ theorem of_internalEquiv_ne {A B : Type _} [OFE A] [OFE B] (f : A → B) [hf : N
   letI _ : NonExpansive (fun y => (iprop(f x ≡ f y) : PROP)) := (ne_r (f x)).comp hf
   rewrite' (fun y => iprop(f x ≡ f y)) .rfl refl
 
+end
+
 end internalEq
 
 section datatypes
 
 open internalEq
+
+section
+local bi PROP
 
 @[rocq_alias discrete_eq_1]
 theorem discrete_eq_mp {A : Type _} [OFE A] {a b : A} [TCOr (DiscreteE a) (DiscreteE b)] :
@@ -413,9 +430,11 @@ theorem prop_ext_siEmpValid_equiv (P Q : PROP) :
   refine siPure_pure.mpr.trans (siPure_mono ?_)
   refine siEmpValid_emp.mpr.trans (siEmpValid_mono wandIff_refl)
 
+end
+
 @[rocq_alias later_equivI_prop_2]
 theorem later_equivI_prop_mpr (P Q : PROP) :
-    ▷ P ≡ Q ⊢ iprop(▷ P) ≡ iprop(▷ Q) := by
+    ▷ P ≡ Q ⊢ (iprop(▷ P) ≡ iprop(▷ Q) : PROP) := by
   change iprop(▷ <si_pure> (SiProp.internalEq P Q) ⊢ <si_pure> (SiProp.internalEq iprop(▷ P) iprop(▷ Q)))
   calc iprop(▷ <si_pure> (SiProp.internalEq P Q))
     _ ⊢ <si_pure> ▷ (SiProp.internalEq P Q) := siPure_later.mpr
@@ -426,18 +445,23 @@ theorem later_equivI_prop_mpr (P Q : PROP) :
     _ ⊢ <si_pure> (iprop(▷ P) ≡ iprop(▷ Q)) :=
         siPure_mono (prop_ext_siEmpValid_equiv _ _).mpr
 
+section
+local bi PROP
+
 @[rocq_alias internal_eq_soundness]
 theorem internalEq_soundness {A : Type _} [OFE A] (x y : A) :
     (⊢ x ≡ y) → x = y :=
   (SiProp.internalEq_soundness <| siPure_emp_valid.mp ·)
 
+end
+
 @[rocq_alias only_0_internal_eq]
 theorem only0_internalEq (P Q : PROP) :
-    <only0> (P ≡ Q) ⊣⊢ iprop(<only0> P) ≡ iprop(<only0> Q) := by
+    <only0> (P ≡ Q) ⊣⊢@{PROP} iprop(<only0> P) ≡ iprop(<only0> Q) := by
   change iprop(<only0> <si_pure> (SiProp.internalEq P Q))
-    ⊣⊢ <si_pure> (SiProp.internalEq iprop(<only0> P) iprop(<only0> Q))
+    ⊣⊢@{PROP} <si_pure> (SiProp.internalEq iprop(<only0> P) iprop(<only0> Q))
   calc iprop(<only0> <si_pure> (SiProp.internalEq P Q))
-    _ ⊣⊢ <si_pure> <only0> (SiProp.internalEq P Q) := siPure_only0.symm
+    _ ⊣⊢@{PROP} <si_pure> <only0> (SiProp.internalEq P Q) := siPure_only0.symm
     _ ⊣⊢ <si_pure> <only0> <si_emp_valid> (P ∗-∗ Q) :=
         .ofMono siPure_mono (.ofMono only0_mono (prop_ext_siEmpValid_equiv P Q))
     _ ⊣⊢ <si_pure> <si_emp_valid> (<only0> (P ∗-∗ Q)) :=
@@ -446,6 +470,9 @@ theorem only0_internalEq (P Q : PROP) :
         .ofMono siPure_mono (.ofMono siEmpValid_mono only0_wandIff)
     _ ⊣⊢ <si_pure> (SiProp.internalEq iprop(<only0> P) iprop(<only0> Q)) :=
         .ofMono siPure_mono (prop_ext_siEmpValid_equiv _ _).symm
+
+section
+local bi PROP
 
 /-! ## Derive NonExpansive/Contractive from internal statements -/
 
@@ -482,6 +509,8 @@ theorem contractive_internalEq {A B : Type _} [OFE A] [OFE B] (f : A → B) :
 instance sbi_later_contractive : BILaterContractive PROP where
   toContractive := (contractive_internalEq BIBase.later).mpr
     (fun P Q => later_equivI_prop_mpr P Q)
+
+end
 
 end datatypes
 

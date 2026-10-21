@@ -128,7 +128,7 @@ meta def wpMacro : Lean.Macro := fun stx => do
     if useTotal? then
       `(TotalWp.totalWp $s $E $e $Φ)
     else
-      `($(BI.wrapIpropSpan tk stx ``Wp.wp) $s $E $e $Φ)
+      `($(BI.wrapIpropSpan tk stx ``Wp.wp) (PROP := bi%) $s $E $e $Φ)
   | _ => Lean.Macro.throwUnsupported
 
 meta def parseTexanTriple : Syntax → MacroM Term

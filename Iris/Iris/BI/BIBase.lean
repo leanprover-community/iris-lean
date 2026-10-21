@@ -90,16 +90,16 @@ macro "∃" xs:explicitBinders ", " b:term : term => do
 
 -- `iprop` syntax interpretation
 macro_rules
-  | `(iprop(emp))           => ``(BIBase.emp)
-  | `(iprop(⌜%$tk1 $φ ⌝%$tk2)) => ``($(wrapIpropSpan tk1 tk2 ``BIBase.pure) $φ)
-  | `(iprop($P ∧%$tk $Q))   => ``($(wrapIprop tk ``BIBase.and) iprop($P) iprop($Q))
-  | `(iprop($P ∨%$tk $Q))   => ``($(wrapIprop tk ``BIBase.or) iprop($P) iprop($Q))
-  | `(iprop($P →%$tk $Q))   => ``($(wrapIprop tk ``BIBase.imp) iprop($P) iprop($Q))
+  | `(iprop(emp))           => ``(BIBase.emp (PROP := bi%))
+  | `(iprop(⌜%$tk1 $φ ⌝%$tk2)) => ``($(wrapIpropSpan tk1 tk2 ``BIBase.pure) (PROP := bi%) $φ)
+  | `(iprop($P ∧%$tk $Q))   => ``($(wrapIprop tk ``BIBase.and) (PROP := bi%) iprop($P) iprop($Q))
+  | `(iprop($P ∨%$tk $Q))   => ``($(wrapIprop tk ``BIBase.or) (PROP := bi%) iprop($P) iprop($Q))
+  | `(iprop($P →%$tk $Q))   => ``($(wrapIprop tk ``BIBase.imp) (PROP := bi%) iprop($P) iprop($Q))
   | `(iprop(∃ $xs, $Ψ)) => do expandExplicitBinders ``BIBase.exists xs (← ``(iprop($Ψ)))
-  | `(iprop($P ∗%$tk $Q))   => ``($(wrapIprop tk ``BIBase.sep) iprop($P) iprop($Q))
-  | `(iprop($P -∗%$tk $Q))  => ``($(wrapIprop tk ``BIBase.wand) iprop($P) iprop($Q))
-  | `(iprop(<pers>%$tk $P)) => ``($(wrapIprop tk ``BIBase.persistently) iprop($P))
-  | `(iprop(▷%$tk $P))     => ``($(wrapIprop tk ``BIBase.later) iprop($P))
+  | `(iprop($P ∗%$tk $Q))   => ``($(wrapIprop tk ``BIBase.sep) (PROP := bi%) iprop($P) iprop($Q))
+  | `(iprop($P -∗%$tk $Q))  => ``($(wrapIprop tk ``BIBase.wand) (PROP := bi%) iprop($P) iprop($Q))
+  | `(iprop(<pers>%$tk $P)) => ``($(wrapIprop tk ``BIBase.persistently) (PROP := bi%) iprop($P))
+  | `(iprop(▷%$tk $P))     => ``($(wrapIprop tk ``BIBase.later) (PROP := bi%) iprop($P))
 
 delab_rule BIBase.emp
   | `($_) => ``(iprop($(mkIdent `emp)))
@@ -145,41 +145,41 @@ delab_rule BIBase.imp
 therefore not use `expandExplicitBinders` as for `∃`. -/
 macro_rules
   | `(iprop(∀%$tk' _%$tk, $Ψ)) =>
-    ``($(wrapIprop tk' ``BIBase.forall) (fun _%$tk => iprop($Ψ)))
+    ``($(wrapIprop tk' ``BIBase.forall) (PROP := bi%) (fun _%$tk => iprop($Ψ)))
 macro_rules
   | `(iprop(∀%$tk' $x:ident, $Ψ)) =>
-    ``($(wrapIprop tk' ``BIBase.forall) (fun $x => iprop($Ψ)))
+    ``($(wrapIprop tk' ``BIBase.forall) (PROP := bi%) (fun $x => iprop($Ψ)))
 macro_rules
   | `(iprop(∀%$tk' _%$tk : $t, $Ψ)) =>
-    ``($(wrapIprop tk' ``BIBase.forall) (fun (_%$tk : $t) => iprop($Ψ)))
+    ``($(wrapIprop tk' ``BIBase.forall) (PROP := bi%) (fun (_%$tk : $t) => iprop($Ψ)))
   | `(iprop(∀%$tk' (_%$tk : $t), $Ψ)) =>
-    ``($(wrapIprop tk' ``BIBase.forall) (fun (_%$tk : $t) => iprop($Ψ)))
+    ``($(wrapIprop tk' ``BIBase.forall) (PROP := bi%) (fun (_%$tk : $t) => iprop($Ψ)))
   | `(iprop(∀%$tk' (_%$tk $xs* : $t), $Ψ)) =>
-    ``($(wrapIprop tk' ``BIBase.forall) (fun (_%$tk : $t) => iprop(∀ ($xs* : $t), $Ψ)))
+    ``($(wrapIprop tk' ``BIBase.forall) (PROP := bi%) (fun (_%$tk : $t) => iprop(∀ ($xs* : $t), $Ψ)))
 macro_rules
   | `(iprop(∀%$tk' $x:ident : $t, $Ψ)) =>
-    ``($(wrapIprop tk' ``BIBase.forall) (fun ($x : $t) => iprop($Ψ)))
+    ``($(wrapIprop tk' ``BIBase.forall) (PROP := bi%) (fun ($x : $t) => iprop($Ψ)))
   | `(iprop(∀%$tk' ($x:ident : $t), $Ψ)) =>
-    ``($(wrapIprop tk' ``BIBase.forall) (fun ($x : $t) => iprop($Ψ)))
+    ``($(wrapIprop tk' ``BIBase.forall) (PROP := bi%) (fun ($x : $t) => iprop($Ψ)))
   | `(iprop(∀%$tk' ($x:ident $xs* : $t), $Ψ)) =>
-    ``($(wrapIprop tk' ``BIBase.forall) (fun ($x : $t) => iprop(∀ ($xs* : $t), $Ψ)))
+    ``($(wrapIprop tk' ``BIBase.forall) (PROP := bi%) (fun ($x : $t) => iprop(∀ ($xs* : $t), $Ψ)))
 macro_rules
   | `(iprop(∀%$tk' {_%$tk : $t}, $Ψ)) =>
-    ``($(wrapIprop tk' ``BIBase.forall) (fun {_%$tk : $t}  => iprop($Ψ)))
+    ``($(wrapIprop tk' ``BIBase.forall) (PROP := bi%) (fun {_%$tk : $t}  => iprop($Ψ)))
   | `(iprop(∀%$tk' {_%$tk $xs* : $t}, $Ψ)) =>
-    ``($(wrapIprop tk' ``BIBase.forall) (fun {_%$tk : $t}  => iprop(∀ {$xs* : $t}, $Ψ)))
+    ``($(wrapIprop tk' ``BIBase.forall) (PROP := bi%) (fun {_%$tk : $t}  => iprop(∀ {$xs* : $t}, $Ψ)))
 macro_rules
   | `(iprop(∀%$tk' {$x:ident : $t}, $Ψ)) =>
-    ``($(wrapIprop tk' ``BIBase.forall) (fun ($x : $t) => iprop($Ψ)))
+    ``($(wrapIprop tk' ``BIBase.forall) (PROP := bi%) (fun ($x : $t) => iprop($Ψ)))
   | `(iprop(∀%$tk' {$x:ident $xs* : $t}, $Ψ)) =>
-    ``($(wrapIprop tk' ``BIBase.forall) (fun ($x : $t) => iprop(∀ {$xs* : $t}, $Ψ)))
+    ``($(wrapIprop tk' ``BIBase.forall) (PROP := bi%) (fun ($x : $t) => iprop(∀ {$xs* : $t}, $Ψ)))
 macro_rules
   | `(iprop(∀%$tk $x $y $xs*, $Ψ)) => ``(iprop(∀%$tk $x, ∀%$tk $y $xs*, $Ψ))
 
 -- `iprop` macros
 macro_rules
-  | `(iprop(True))  => ``(BIBase.pure True)
-  | `(iprop(False)) => ``(BIBase.pure False)
+  | `(iprop(True))  => ``(BIBase.pure (PROP := bi%) True)
+  | `(iprop(False)) => ``(BIBase.pure (PROP := bi%) False)
   | `(iprop(¬%$tk $P))   => ``(iprop($P →%$tk False))
 
 /--
@@ -200,8 +200,8 @@ syntax:27 term:28 " ↔ " term:28 : term
 syntax:27 term:28 " ∗-∗ " term:28 : term
 
 macro_rules
-  | `(iprop($P ↔%$tk $Q))   => ``($(wrapIprop tk ``iff) iprop($P) iprop($Q))
-  | `(iprop($P ∗-∗%$tk $Q)) => ``($(wrapIprop tk ``wandIff) iprop($P) iprop($Q))
+  | `(iprop($P ↔%$tk $Q))   => ``($(wrapIprop tk ``iff) (PROP := bi%) iprop($P) iprop($Q))
+  | `(iprop($P ∗-∗%$tk $Q)) => ``($(wrapIprop tk ``wandIff) (PROP := bi%) iprop($P) iprop($Q))
 
 delab_rule iff
   | `($_ $P $Q) => do ``(iprop($(← unpackIprop P) ↔ $(← unpackIprop Q)))
@@ -221,7 +221,7 @@ def wandM [BIBase PROP] (mP : Option PROP) (Q : PROP) : PROP :=
 syntax:25 term:26 " -∗? " term:25 : term
 
 macro_rules
-  | `(iprop($mP -∗?%$tk $Q)) => ``($(wrapIprop tk ``wandM) $mP iprop($Q))
+  | `(iprop($mP -∗?%$tk $Q)) => ``($(wrapIprop tk ``wandM) (PROP := bi%) $mP iprop($Q))
 
 delab_rule wandM
   | `($_ $mP $Q) => do ``(iprop($mP -∗? $(← unpackIprop Q)))
@@ -262,8 +262,8 @@ delab_rule BIBase.BiEntails
   | `($_ $P $Q) => do ``($(← unpackIprop P) ⊣⊢ $(← unpackIprop Q))
 
 macro_rules
-  | `(iprop(<affine>%$tk $P)) => ``($(wrapIprop tk ``affinely) iprop($P))
-  | `(iprop(<absorb>%$tk $P)) => ``($(wrapIprop tk ``absorbingly) iprop($P))
+  | `(iprop(<affine>%$tk $P)) => ``($(wrapIprop tk ``affinely) (PROP := bi%) iprop($P))
+  | `(iprop(<absorb>%$tk $P)) => ``($(wrapIprop tk ``absorbingly) (PROP := bi%) iprop($P))
 
 delab_rule affinely
   | `($_ $P) => do ``(iprop(<affine> $(← unpackIprop P)))
@@ -277,7 +277,7 @@ def intuitionistically [BIBase PROP] (P : PROP) : PROP := iprop(<affine> <pers> 
 syntax:max "□ " term:40 : term
 
 macro_rules
-  | `(iprop(□%$tk $P)) => ``($(wrapIprop tk ``intuitionistically) iprop($P))
+  | `(iprop(□%$tk $P)) => ``($(wrapIprop tk ``intuitionistically) (PROP := bi%) iprop($P))
 
 delab_rule intuitionistically
   | `($_ $P) => do ``(iprop(□ $(← unpackIprop P)))
@@ -290,8 +290,8 @@ syntax:max "▷^[" term:45 "] " term:40 : term
 syntax:max "▷?" term:max ppHardSpace term:40 : term
 
 macro_rules
-  | `(iprop(▷^[%$tk1 $n ]%$tk2 $P)) => ``($(wrapIpropSpan tk1 tk2 ``laterN) $n iprop($P))
-  | `(iprop(▷?%$tk $p $P))          => ``($(wrapIprop tk ``laterN) (Bool.toNat $p) iprop($P))
+  | `(iprop(▷^[%$tk1 $n ]%$tk2 $P)) => ``($(wrapIpropSpan tk1 tk2 ``laterN) (PROP := bi%) $n iprop($P))
+  | `(iprop(▷?%$tk $p $P))          => ``($(wrapIprop tk ``laterN) (PROP := bi%) (Bool.toNat $p) iprop($P))
 
 open Lean PrettyPrinter Delaborator SubExpr in
 /--
@@ -372,10 +372,10 @@ syntax:max "<absorb>?" term:max ppHardSpace term:40 : term
 syntax:max "□?" term:max ppHardSpace term:40 : term
 
 macro_rules
-  | `(iprop(<pers>?%$tk $p $P))   => ``($(wrapIprop tk ``persistentlyIf) $p iprop($P))
-  | `(iprop(<affine>?%$tk $p $P)) => ``($(wrapIprop tk ``affinelyIf) $p iprop($P))
-  | `(iprop(<absorb>?%$tk $p $P)) => ``($(wrapIprop tk ``absorbinglyIf) $p iprop($P))
-  | `(iprop(□?%$tk $p $P))        => ``($(wrapIprop tk ``intuitionisticallyIf) $p iprop($P))
+  | `(iprop(<pers>?%$tk $p $P))   => ``($(wrapIprop tk ``persistentlyIf) (PROP := bi%) $p iprop($P))
+  | `(iprop(<affine>?%$tk $p $P)) => ``($(wrapIprop tk ``affinelyIf) (PROP := bi%) $p iprop($P))
+  | `(iprop(<absorb>?%$tk $p $P)) => ``($(wrapIprop tk ``absorbinglyIf) (PROP := bi%) $p iprop($P))
+  | `(iprop(□?%$tk $p $P))        => ``($(wrapIprop tk ``intuitionisticallyIf) (PROP := bi%) $p iprop($P))
 
 delab_rule persistentlyIf
   | `($_ $p $P) => do ``(iprop(<pers>?$p $(← unpackIprop P)))
@@ -404,7 +404,7 @@ def except0 [BIBase PROP] (P : PROP) := iprop(▷ False ∨ P)
 syntax:max "◇ " term:40 : term
 
 macro_rules
-  | `(iprop(◇%$tk $P)) => ``($(wrapIprop tk ``except0) iprop($P))
+  | `(iprop(◇%$tk $P)) => ``($(wrapIprop tk ``except0) (PROP := bi%) iprop($P))
 
 delab_rule except0
   | `($_ $P) => do ``(iprop(◇ $(← unpackIprop P)))
@@ -416,7 +416,7 @@ def only0 [BIBase PROP] (P : PROP) := iprop(▷ False → P)
 syntax:max "<only0> " term:40 : term
 
 macro_rules
-  | `(iprop(<only0>%$tk $P)) => ``($(wrapIprop tk ``only0) iprop($P))
+  | `(iprop(<only0>%$tk $P)) => ``($(wrapIprop tk ``only0) (PROP := bi%) iprop($P))
 
 delab_rule only0
   | `($_ $P) => do ``(iprop(<only0> $(← unpackIprop P)))
@@ -430,7 +430,7 @@ attribute [inherit_doc Plainly] Plainly.plainly
 syntax "■ " term:40 : term
 
 macro_rules
-  | `(iprop(■%$tk $P))  => ``($(wrapIprop tk ``Plainly.plainly) iprop($P))
+  | `(iprop(■%$tk $P))  => ``($(wrapIprop tk ``Plainly.plainly) (PROP := bi%) iprop($P))
 
 delab_rule Plainly.plainly
   | `($_ $P) => do ``(iprop(■ $(← Iris.BI.unpackIprop P)))
@@ -446,7 +446,7 @@ def Plainly.plainlyIf [BIBase PROP] [Plainly PROP] (p : Bool) (P : PROP) : PROP 
 syntax:max "■?" term:max ppHardSpace term:40 : term
 
 macro_rules
-  | `(iprop(■?%$tk $p $P))  => ``($(wrapIprop tk ``Plainly.plainlyIf) $p iprop($P))
+  | `(iprop(■?%$tk $p $P))  => ``($(wrapIprop tk ``Plainly.plainlyIf) (PROP := bi%) $p iprop($P))
 
 delab_rule Plainly.plainlyIf
   | `($_ $p $P) => do ``(iprop(■? $p $(← Iris.BI.unpackIprop P)))

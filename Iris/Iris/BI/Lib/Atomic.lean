@@ -172,11 +172,11 @@ def auArgs (xs : Option (TSyntax ``auExBinders)) (ys : Option (TSyntax ``auAllBi
 macro_rules
   | `(iprop(AU%$tk <{ $[$xs]? $α }> @ $Eo, $Ei <{ $[$ys]? $β, COMM $Φ }>)) => do
     let (TA, TB, α, β, Φ) ← auArgs xs ys α β Φ
-    ``($(wrapIprop tk ``atomic_update) (TA := $TA) (TB := $TB) $Eo $Ei $α $β $Φ)
+    ``($(wrapIprop tk ``atomic_update) (PROP := bi%) (TA := $TA) (TB := $TB) $Eo $Ei $α $β $Φ)
   | `(iprop(AACC%$tk <{ $[$xs]? $α, ABORT $P }> @ $Eo, $Ei
         <{ $[$ys]? $β, COMM $Φ }>)) => do
     let (TA, TB, α, β, Φ) ← auArgs xs ys α β Φ
-    ``($(wrapIprop tk ``atomic_acc) (TA := $TA) (TB := $TB) $Eo $Ei $α iprop($P) $β $Φ)
+    ``($(wrapIprop tk ``atomic_acc) (PROP := bi%) (TA := $TA) (TB := $TB) $Eo $Ei $α iprop($P) $β $Φ)
 
 /-! ### Delaboration -/
 

@@ -23,15 +23,17 @@ namespace Iris
 open BI OFE SiProp ORA Sbi
 
 section CmraValid
-local bi PROP
 
 variable [Sbi PROP] [ORA A]
+
+section
+local bi PROP
 
 @[rocq_alias internal_cmra_valid]
 def internalCmraValid (a : A) : PROP := siPure (cmraValid a)
 
 macro_rules
-  | `(iprop(✓%$tk $a)) => ``($(wrapIprop tk ``internalCmraValid) $a)
+  | `(iprop(✓%$tk $a)) => ``($(wrapIprop tk ``internalCmraValid) (PROP := bi%) $a)
 
 delab_rule internalCmraValid
   | `($_ $a) => ``(iprop(✓ $a))
@@ -42,6 +44,8 @@ instance internalCmraValid_ne : NonExpansive (internalCmraValid (PROP := PROP) (
 
 #rocq_ignore internal_cmra_valid_proper "Derivable from internalCmraValid_ne with NonExpansive.eqv"
 
+end
+
 @[rocq_alias internal_cmra_valid_intro]
 theorem internalCmraValid_intro {P : PROP} {a : A} (h : ✓ a) :
     P ⊢ ✓ a :=
@@ -51,10 +55,13 @@ theorem internalCmraValid_intro {P : PROP} {a : A} (h : ✓ a) :
     _ ⊢ ✓ a := siPure_mono (cmraValid_intro h)
 
 @[rocq_alias internal_cmra_valid_elim]
-theorem internalCmraValid_elim (a : A) : ✓ a ⊢ ⌜✓{0} a⌝ :=
+theorem internalCmraValid_elim (a : A) : ✓ a ⊢@{PROP} ⌜✓{0} a⌝ :=
   calc iprop(✓ a)
     _ ⊢ <si_pure> ⌜✓{0} a⌝ := siPure_mono cmraValid_elim
     _ ⊢ ⌜✓{0} a⌝ := siPure_pure.mp
+
+section
+local bi PROP
 
 @[rocq_alias internal_cmra_valid_weaken]
 theorem internalCmraValid_weaken {a b : A} :
@@ -111,14 +118,20 @@ instance internalCmraValid_timeless [ORA.Discrete A] (a : A) :
     Timeless (PROP := PROP) iprop(✓ a) := by
   unfold internalCmraValid; infer_instance
 
+end
+
 end CmraValid
 
 section CmraOrder
-local bi PROP
 
 variable [Sbi PROP] [ORA A]
 
+section
+local bi PROP
+
 /-! ### The internal extension inclusion -/
+
+end
 
 /-- The internal extension inclusion `∃ c, b ≡ a • c`, the relation frame-based
 constructions (views, local updates) are stated with; see `internalCmraOrder` for the
@@ -126,8 +139,11 @@ internal order. -/
 @[rocq_alias internal_included]
 def internalCmraIncluded (a b : A) : PROP := siPure (∃ c, iprop(b ≡ (a • c)))
 
+section
+local bi PROP
+
 macro_rules
-  | `(iprop($a ≼ $b)) => ``(internalCmraIncluded $a $b)
+  | `(iprop($a ≼ $b)) => ``(internalCmraIncluded (PROP := bi%) $a $b)
 
 delab_rule internalCmraIncluded
   | `($_ $a $b) => ``(iprop($a ≼ $b))
@@ -140,6 +156,8 @@ instance internalCmraIncluded_ne :
     apply (exists_ne (fun a => NonExpansive₂.ne hy (op_commN.trans ((op_ne.ne hx).trans op_commN))))
 
 #rocq_ignore internal_included_proper "Derivable from internalCmraIncluded_ne with NonExpansive.eqv"
+
+end
 
 @[rocq_alias internal_included_intro]
 theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ b) :
@@ -154,6 +172,9 @@ theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ b) :
 private theorem inc_holds {a b : A} {n : Nat} :
     ((∃ c, iprop(b ≡ (a • c))) : SiProp).holds n ↔ a ≼{n} b := SiProp.exists_holds
 
+section
+local bi PROP
+
 /-- Two internal extension inclusions agree when they agree at every step index. -/
 theorem internalCmraIncluded_iff [ORA B] {a b : A} {a' b' : B}
     (h : ∀ n, a ≼{n} b ↔ a' ≼{n} b') : a ≼ b ⊣⊢ a' ≼ b' :=
@@ -166,10 +187,15 @@ theorem internalCmraIncluded_pure {a b : A} {φ : Prop} (h : ∀ n, a ≼{n} b �
   ⟨.trans (siPure_mono fun n hn => (h n).mp (inc_holds.mp hn)) siPure_pure.mp,
    .trans siPure_pure.mpr (siPure_mono fun n hφ => inc_holds.mpr ((h n).mpr hφ))⟩
 
+end
+
 @[rocq_alias si_pure_internal_included]
 theorem siPure_internalCmraIncluded {a b : A} :
-    <si_pure> a ≼ b ⊣⊢ a ≼ b :=
+    <si_pure> a ≼ b ⊣⊢@{PROP} a ≼ b :=
   persistently_iff.symm.trans persistently_siPure
+
+section
+local bi PROP
 
 @[rocq_alias persistently_internal_included]
 theorem persistently_internalCmraIncluded {a b : A} :
@@ -186,9 +212,11 @@ theorem intuitionistically_internalCmraIncluded [BIAffine PROP] {a b : A} :
     □ a ≼ b ⊣⊢ a ≼ b :=
   intuitionistically_iff_persistently.trans persistently_internalCmraIncluded
 
+end
+
 @[rocq_alias internal_included_discrete]
 theorem internalCmraIncluded_discrete {a b : A} [ORA.Discrete A] :
-    a ≼ b ⊣⊢ ⌜a ≼ b⌝ := by
+    a ≼ b ⊣⊢@{PROP} ⌜a ≼ b⌝ := by
   haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
   refine ⟨?_, pure_elim' internalCmraIncluded_intro⟩
   calc internalCmraIncluded a b
@@ -198,13 +226,18 @@ theorem internalCmraIncluded_discrete {a b : A} [ORA.Discrete A] :
     _ ⊢ ⌜∃ c, b = a • c⌝ := siPure_pure.mp
     _ ⊢ ⌜a ≼ b⌝ := pure_mono fun ⟨c, h⟩ => ⟨c, h⟩
 
+section
+local bi PROP
+
 @[rocq_alias internal_included_refl]
 theorem internalCmraIncluded_refl {a : A} [IsTotal A] : ⊢ a ≼ a :=
   internalCmraIncluded_intro .rfl
 
+end
+
 @[rocq_alias internal_included_trans]
 theorem internalCmraIncluded_trans {a b c : A} :
-    ⊢ a ≼ b -∗ b ≼ c -∗ a ≼ c := by
+    ⊢@{PROP} a ≼ b -∗ b ≼ c -∗ a ≼ c := by
   refine BI.entails_wand (siPure_exist.mp.trans ?_)
   refine BI.exists_elim (fun a' => ?_)
   refine BI.wand_intro ((BI.sep_mono_right siPure_exist.mp).trans (BI.sep_exists_left.mp.trans ?_))
@@ -215,6 +248,9 @@ theorem internalCmraIncluded_trans {a b c : A} :
   refine and_intro ?_ (internalEq.of_equiv assoc'.symm)
   refine Entails.trans ?_ (internalEq.trans (b := (b • b')))
   exact and_intro and_elim_r (and_elim_left_trans (BI.internalEq_entails.mpr (fun n heq => op_left_dist _ heq)))
+
+section
+local bi PROP
 
 /-- The internal `≼` is monotone under any nonexpansive map commuting with `•`. -/
 theorem internalCmraIncluded_map {B : Type _} [ORA B] (g : A → B) [NonExpansive g]
@@ -263,7 +299,7 @@ monotone along it (`ownM_mono`). -/
 def internalCmraOrder (a b : A) : PROP := siPure (SiProp.cmraOrder a b)
 
 macro_rules
-  | `(iprop($a ≼ₒ $b)) => ``(internalCmraOrder $a $b)
+  | `(iprop($a ≼ₒ $b)) => ``(internalCmraOrder (PROP := bi%) $a $b)
 
 delab_rule internalCmraOrder
   | `($_ $a $b) => ``(iprop($a ≼ₒ $b))
@@ -272,11 +308,16 @@ instance internalCmraOrder_ne :
     NonExpansive₂ (internalCmraOrder (PROP := PROP) (A := A)) where
   ne _ _ _ hx _ _ hy := siPure_ne.ne fun hm => ordN_dist_iff (hx.le hm) (hy.le hm)
 
+end
+
 theorem internalCmraOrder_intro {P : PROP} {a b : A} (h : a ≼ₒ b) : P ⊢ a ≼ₒ b :=
   calc (P : PROP)
     _ ⊢ True := true_intro
     _ ⊢ <si_pure> True := siPure_pure.mpr
     _ ⊢ a ≼ₒ b := siPure_mono fun n _ => ordN_of_ord n h
+
+section
+local bi PROP
 
 /-- Two internal orders agree when they agree at every step index. -/
 theorem internalCmraOrder_iff [ORA B] {a b : A} {a' b' : B}
@@ -289,8 +330,13 @@ theorem internalCmraOrder_pure {a b : A} {φ : Prop} (h : ∀ n, a ≼ₒ{n} b �
   ⟨.trans (siPure_mono (Qi := SiProp.pure φ) fun n => (h n).mp) siPure_pure.mp,
    .trans siPure_pure.mpr (siPure_mono (Pi := SiProp.pure φ) fun n => (h n).mpr)⟩
 
-theorem siPure_internalCmraOrder {a b : A} : <si_pure> a ≼ₒ b ⊣⊢ a ≼ₒ b :=
+end
+
+theorem siPure_internalCmraOrder {a b : A} : <si_pure> a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b :=
   persistently_iff.symm.trans persistently_siPure
+
+section
+local bi PROP
 
 theorem persistently_internalCmraOrder {a b : A} : <pers> a ≼ₒ b ⊣⊢ a ≼ₒ b :=
   persistently_siPure
@@ -339,6 +385,8 @@ instance internalCmraOrder_persistent {a b : A} : Persistent (PROP := PROP) ipro
 
 instance internalCmraOrder_absorbing {a b : A} : Absorbing (PROP := PROP) iprop(a ≼ₒ b) :=
   siPure_absorbing _
+
+end
 
 end CmraOrder
 

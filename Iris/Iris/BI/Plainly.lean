@@ -26,9 +26,11 @@ open Iris.Std
 
 variable [Sbi PROP]
 variable {P Q R : PROP}
-local bi PROP
 
 section PlainlyLaws
+
+section
+local bi PROP
 
 @[rocq_alias affinely_plainly_elim]
 theorem affinely_plainly_elim : <affine> ■ P ⊢ P :=
@@ -392,9 +394,14 @@ instance plainly_if_absorbing (P : PROP) [Absorbing P] p : Absorbing iprop(■?p
 #rocq_ignore plainly_if_flip_mono' "Use plainly_if_mono."
 #rocq_ignore plainly_if_proper "Derivable from plainly_if_ne with NonExpansive.eqv"
 
+end
+
 end PlainlyLaws
 
 section PlainLaws
+
+section
+local bi PROP
 
 @[rocq_alias Plain]
 class Plain [BI PROP] [BIBase.Plainly PROP] (P : PROP) where
@@ -578,7 +585,13 @@ theorem bigSepMS_plainly [BIAffine PROP] [LawfulFiniteMultiSet MS A] (Φ : A →
 
 end BigOp
 
+end
+
 section instances
+
+section
+local bi PROP
+
 open Plain
 
 @[rocq_alias pure_plain]
@@ -920,17 +933,22 @@ theorem except0_plainly_1 (P : PROP) : ◇ ■ P ⊢ ■ ◇ P :=
     _ ⊢ ■ ▷ False ∨ ■ P := or_mono_left later_plainly.1
     _ ⊢ ■ (▷ False ∨ P) := plainly_or_mpr
 
+end
+
 @[rocq_alias except_0_plainly]
 theorem except0_plainly {P : PROP} : ◇ ■ P ⊣⊢ ■ ◇ P :=
   calc iprop(◇ <si_pure> <si_emp_valid> P)
-    _ ⊣⊢ <si_pure> (◇ <si_emp_valid> P)   := siPure_except0.symm
+    _ ⊣⊢@{PROP} <si_pure> (◇ <si_emp_valid> P)   := siPure_except0.symm
     _ ⊣⊢        <si_pure> (<si_emp_valid> (◇ P)) := .ofMono siPure_mono siEmpValid_except0.symm
 
 @[rocq_alias only_0_plainly]
 theorem only0_plainly {P : PROP} : <only0> ■ P ⊣⊢ ■ <only0> P :=
   calc iprop(<only0> <si_pure> <si_emp_valid> P)
-    _ ⊣⊢ <si_pure> (<only0> <si_emp_valid> P)   := siPure_only0.symm
+    _ ⊣⊢@{PROP} <si_pure> (<only0> <si_emp_valid> P)   := siPure_only0.symm
     _ ⊣⊢        <si_pure> (<si_emp_valid> (<only0> P)) := .ofMono siPure_mono siEmpValid_only0.symm
+
+section
+local bi PROP
 
 @[rocq_alias later_plain]
 instance later_plain (P : PROP) [Plain P] : Plain iprop(▷ P) where
@@ -943,6 +961,8 @@ instance laterN_plain n (P : PROP) [Plain P] : Plain iprop(▷^[n] P) where
 @[rocq_alias except_0_plain]
 instance except0_plain (P : PROP) [Plain P] : Plain iprop(◇ P) where
   plain := except0_mono Plain.plain |>.trans except0_plainly.1
+
+end
 
 end instances
 

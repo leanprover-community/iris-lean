@@ -103,114 +103,113 @@ class BiEmbedSbi (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] [BiEmbed PROP1 PRO
 
 section
 variable {PROP1 PROP2 : Type _} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
-local bi PROP2
 
 @[rocq_alias embed_ne]
 instance embed_ne : OFE.NonExpansive (embed (A := PROP1) (B := PROP2)) := BiEmbed.ne
 
 @[rocq_alias embed_mono]
-theorem embed_mono {P Q : PROP1} (h : P ⊢@{PROP1} Q) : ⎡P⎤ ⊢ ⎡Q⎤ := BiEmbed.mono h
+theorem embed_mono {P Q : PROP1} (h : P ⊢ Q) : (⎡P⎤ : PROP2) ⊢ ⎡Q⎤ := BiEmbed.mono h
 
-theorem embed_congr {P Q : PROP1} (h : P ⊣⊢@{PROP1} Q) : ⎡P⎤ ⊣⊢ ⎡Q⎤ :=
+theorem embed_congr {P Q : PROP1} (h : P ⊣⊢ Q) : (⎡P⎤ : PROP2) ⊣⊢ ⎡Q⎤ :=
   ⟨embed_mono h.mp, embed_mono h.mpr⟩
 
 #rocq_ignore embed_proper "iris-lean has no setoid `Proper` instances; `embed_congr` is the `≡`-respecting lemma."
 #rocq_ignore embed_flip_mono "iris-lean has no setoid `Proper` instances; covered by `embed_mono`."
 
 @[rocq_alias embed_emp_valid_inj]
-theorem embed_emp_valid_inj {P : PROP1} (h : ⊢ ⎡P⎤) : ⊢@{PROP1} P :=
+theorem embed_emp_valid_inj {P : PROP1} (h : ⊢ (⎡P⎤ : PROP2)) : ⊢ P :=
   BiEmbed.emp_valid_inj P h
 
 @[rocq_alias embed_emp_2]
-theorem embed_emp_2 : emp ⊢ ⎡(emp : PROP1)⎤ := BiEmbed.emp_2
+theorem embed_emp_2 : (emp : PROP2) ⊢ ⎡(emp : PROP1)⎤ := BiEmbed.emp_2
 
 @[rocq_alias embed_impl_2]
-theorem embed_impl_2 (P Q : PROP1) : (⎡P⎤ → ⎡Q⎤) ⊢ ⎡(P → Q)⎤ :=
+theorem embed_impl_2 (P Q : PROP1) : (⎡P⎤ → ⎡Q⎤) ⊢ (⎡(P → Q)⎤ : PROP2) :=
   BiEmbed.impl_2 P Q
 
 @[rocq_alias embed_forall_2]
 theorem embed_sForall_2 {A : Sort _} (Φ : A → PROP1) :
-    (∀ x, ⎡Φ x⎤) ⊢ ⎡∀ x, Φ x⎤ :=
+    (∀ x, (⎡Φ x⎤ : PROP2)) ⊢ ⎡∀ x, Φ x⎤ :=
   BiEmbed.forall_2 (fun P => ∃ x, Φ x = P) fun _P ⟨x, hx⟩ => hx ▸ forall_elim x
 
 @[rocq_alias embed_exist_1]
 theorem embed_sExists_1 {A : Sort _} (Φ : A → PROP1) :
-    ⎡∃ x, Φ x⎤ ⊢ ∃ x, ⎡Φ x⎤ :=
+    (⎡∃ x, Φ x⎤ : PROP2) ⊢ ∃ x, (⎡Φ x⎤ : PROP2) :=
   BiEmbed.exist_1 (fun P => ∃ x, Φ x = P)
-    fun _P ⟨x, hx⟩ => hx ▸ exists_intro (Ψ := fun y => embed (Φ y)) x
+    fun _P ⟨x, hx⟩ => hx ▸ exists_intro (Ψ := fun y => (embed (Φ y) : PROP2)) x
 
 @[rocq_alias embed_sep]
-theorem embed_sep (P Q : PROP1) : ⎡P ∗ Q⎤ ⊣⊢ ⎡P⎤ ∗ ⎡Q⎤ :=
+theorem embed_sep (P Q : PROP1) : (⎡P ∗ Q⎤ : PROP2) ⊣⊢ ⎡P⎤ ∗ ⎡Q⎤ :=
   BiEmbed.sep P Q
 
 @[rocq_alias embed_wand_2]
-theorem embed_wand_2 (P Q : PROP1) : (⎡P⎤ -∗ ⎡Q⎤) ⊢ ⎡P -∗ Q⎤ :=
+theorem embed_wand_2 (P Q : PROP1) : (⎡P⎤ -∗ ⎡Q⎤) ⊢ (⎡P -∗ Q⎤ : PROP2) :=
   BiEmbed.wand_2 P Q
 
 @[rocq_alias embed_persistently]
-theorem embed_persistently (P : PROP1) : ⎡<pers> P⎤ ⊣⊢ <pers> ⎡P⎤ :=
+theorem embed_persistently (P : PROP1) : (⎡<pers> P⎤ : PROP2) ⊣⊢ <pers> ⎡P⎤ :=
   BiEmbed.persistently P
 
 /-! ## Derived laws -/
 
 /-- `⎡sForall Ψ⎤` entails the embedding of any member `⎡p⎤` (forward bridge). -/
 theorem embed_sForall_elim {Ψ : PROP1 → Prop} {p : PROP1} (hp : Ψ p) :
-    ⎡BIBase.sForall Ψ⎤ ⊢ ⎡p⎤ := embed_mono (sForall_elim hp)
+    (⎡BIBase.sForall Ψ⎤ : PROP2) ⊢ ⎡p⎤ := embed_mono (sForall_elim hp)
 
 /-- Witness-wise introduction for `⎡sForall Ψ⎤` (backward bridge). -/
 theorem embed_sForall_intro {Ψ : PROP1 → Prop} {R : PROP2}
-    (h : ∀ p, Ψ p → R ⊢ ⎡p⎤) : R ⊢ ⎡BIBase.sForall Ψ⎤ :=
+    (h : ∀ p, Ψ p → R ⊢ ⎡p⎤) : R ⊢ (⎡BIBase.sForall Ψ⎤ : PROP2) :=
   BiEmbed.forall_2 Ψ h
 
 /-- Witness `⎡p⎤` injects into `⎡sExists Ψ⎤` (backward bridge). -/
 theorem embed_sExists_intro {Ψ : PROP1 → Prop} {p : PROP1} (hp : Ψ p) :
-    ⎡p⎤ ⊢ ⎡BIBase.sExists Ψ⎤ := embed_mono (sExists_intro hp)
+    (⎡p⎤ : PROP2) ⊢ ⎡BIBase.sExists Ψ⎤ := embed_mono (sExists_intro hp)
 
 /-- Witness-wise elimination for `⎡sExists Ψ⎤` (forward bridge). -/
 theorem embed_sExists_elim {Ψ : PROP1 → Prop} {R : PROP2}
-    (h : ∀ p, Ψ p → ⎡p⎤ ⊢ R) : ⎡BIBase.sExists Ψ⎤ ⊢ R :=
+    (h : ∀ p, Ψ p → (⎡p⎤ : PROP2) ⊢ R) : (⎡BIBase.sExists Ψ⎤ : PROP2) ⊢ R :=
   BiEmbed.exist_1 Ψ h
 
 @[rocq_alias embed_forall]
-theorem embed_forall {A : Sort _} (Φ : A → PROP1) : ⎡∀ x, Φ x⎤ ⊣⊢ ∀ x, ⎡Φ x⎤ :=
+theorem embed_forall {A : Sort _} (Φ : A → PROP1) : (⎡∀ x, Φ x⎤ : PROP2) ⊣⊢ ∀ x, ⎡Φ x⎤ :=
   ⟨forall_intro fun x => embed_sForall_elim ⟨x, rfl⟩, embed_sForall_2 Φ⟩
 
 @[rocq_alias embed_exist]
-theorem embed_exist {A : Sort _} (Φ : A → PROP1) : ⎡∃ x, Φ x⎤ ⊣⊢ ∃ x, ⎡Φ x⎤ :=
+theorem embed_exist {A : Sort _} (Φ : A → PROP1) : (⎡∃ x, Φ x⎤ : PROP2) ⊣⊢ ∃ x, ⎡Φ x⎤ :=
   ⟨embed_sExists_1 Φ, exists_elim fun x => embed_sExists_intro ⟨x, rfl⟩⟩
 
 -- `∧`/`∨` use a Bool-indexed `∀`/`∃` encoding; see `and_forall_ite`/`or_exists_ite`.
 @[rocq_alias embed_and]
-theorem embed_and (P Q : PROP1) : ⎡P ∧ Q⎤ ⊣⊢ ⎡P⎤ ∧ ⎡Q⎤ := calc
+theorem embed_and (P Q : PROP1) : (⎡P ∧ Q⎤ : PROP2) ⊣⊢ ⎡P⎤ ∧ ⎡Q⎤ := calc
   _ ⊣⊢ ⎡∀ b, if b = true then P else Q⎤   := embed_congr and_forall_ite
   _ ⊣⊢ ∀ x, ⎡if x = true then P else Q⎤   := embed_forall _
   _ ⊣⊢ ∀ a, if a = true then ⎡P⎤ else ⎡Q⎤ := forall_congr fun b => by cases b <;> exact .rfl
   _ ⊣⊢ ⎡P⎤ ∧ ⎡Q⎤                          := and_forall_ite.symm
 
 @[rocq_alias embed_or]
-theorem embed_or (P Q : PROP1) : ⎡P ∨ Q⎤ ⊣⊢ ⎡P⎤ ∨ ⎡Q⎤ := calc
+theorem embed_or (P Q : PROP1) : (⎡P ∨ Q⎤ : PROP2) ⊣⊢ ⎡P⎤ ∨ ⎡Q⎤ := calc
   _ ⊣⊢ ⎡∃ b, if b = true then P else Q⎤   := embed_congr or_exists_ite
   _ ⊣⊢ ∃ x, ⎡if x = true then P else Q⎤   := embed_exist _
   _ ⊣⊢ ∃ a, if a = true then ⎡P⎤ else ⎡Q⎤ := exists_congr fun b => by cases b <;> exact .rfl
   _ ⊣⊢ ⎡P⎤ ∨ ⎡Q⎤                          := or_exists_ite.symm
 
 @[rocq_alias embed_impl]
-theorem embed_impl (P Q : PROP1) : ⎡P → Q⎤ ⊣⊢ (⎡P⎤ → ⎡Q⎤) :=
+theorem embed_impl (P Q : PROP1) : (⎡P → Q⎤ : PROP2) ⊣⊢ (⎡P⎤ → ⎡Q⎤) :=
   ⟨imp_intro ((embed_and (iprop(P → Q)) P).mpr.trans (embed_mono (imp_elim .rfl))),
    embed_impl_2 P Q⟩
 
 @[rocq_alias embed_wand]
-theorem embed_wand (P Q : PROP1) : ⎡P -∗ Q⎤ ⊣⊢ (⎡P⎤ -∗ ⎡Q⎤) :=
+theorem embed_wand (P Q : PROP1) : (⎡P -∗ Q⎤ : PROP2) ⊣⊢ (⎡P⎤ -∗ ⎡Q⎤) :=
   ⟨wand_intro ((embed_sep (iprop(P -∗ Q)) P).mpr.trans (embed_mono wand_elim_left)),
    embed_wand_2 P Q⟩
 
 @[rocq_alias embed_emp_valid]
-theorem embed_emp_valid (P : PROP1) : (⊢ ⎡P⎤) ↔ (⊢@{PROP1} P) :=
+theorem embed_emp_valid (P : PROP1) : (⊢ (⎡P⎤ : PROP2)) ↔ (⊢ P) :=
   ⟨fun h => embed_emp_valid_inj h, fun h => embed_emp_2.trans (embed_mono h)⟩
 
 /-- `⎡·⎤` reflects entailment. -/
 @[rocq_alias embed_entails_inj]
-theorem embed_entails_inj {P Q : PROP1} (h : ⎡P⎤ ⊢ ⎡Q⎤) : P ⊢@{PROP1} Q :=
+theorem embed_entails_inj {P Q : PROP1} (h : (⎡P⎤ : PROP2) ⊢ ⎡Q⎤) : P ⊢ Q :=
   wand_entails (embed_emp_valid_inj ((entails_wand h).trans (embed_wand_2 P Q)))
 
 /-- `⎡·⎤` reflects equivalence. -/
@@ -220,11 +219,11 @@ theorem embed_inj {P Q : PROP1} (h : (embed P : PROP2) = embed Q) : P = Q :=
                     embed_entails_inj h.to_bi.mpr⟩
 
 @[rocq_alias embed_emp]
-theorem embed_emp [BiEmbedEmp PROP1 PROP2] : ⎡(emp : PROP1)⎤ ⊣⊢ emp :=
+theorem embed_emp [BiEmbedEmp PROP1 PROP2] : (⎡(emp : PROP1)⎤ : PROP2) ⊣⊢ emp :=
   ⟨BiEmbedEmp.embed_emp_1, embed_emp_2⟩
 
 @[rocq_alias embed_pure]
-theorem embed_pure (φ : Prop) : ⎡(⌜φ⌝ : PROP1)⎤ ⊣⊢ ⌜φ⌝ := by
+theorem embed_pure (φ : Prop) : (⎡(⌜φ⌝ : PROP1)⎤ : PROP2) ⊣⊢ ⌜φ⌝ := by
   calc
     _ ⊣⊢ ⎡∃ x, True⎤ := embed_congr (pure_alt φ)
     _ ⊣⊢ ∃ x, ⎡True⎤ := embed_exist _
@@ -236,61 +235,61 @@ theorem embed_pure (φ : Prop) : ⎡(⌜φ⌝ : PROP1)⎤ ⊣⊢ ⌜φ⌝ := by
     _ ⊢ ⎡True⎤        := embed_mono true_intro
 
 @[rocq_alias embed_iff]
-theorem embed_iff (P Q : PROP1) : ⎡P ↔ Q⎤ ⊣⊢ (⎡P⎤ ↔ ⎡Q⎤) :=
+theorem embed_iff (P Q : PROP1) : (⎡P ↔ Q⎤ : PROP2) ⊣⊢ (⎡P⎤ ↔ ⎡Q⎤) :=
   (embed_and _ _).trans (and_congr (embed_impl P Q) (embed_impl Q P))
 
 @[rocq_alias embed_wand_iff]
-theorem embed_wand_iff (P Q : PROP1) : ⎡P ∗-∗ Q⎤ ⊣⊢ (⎡P⎤ ∗-∗ ⎡Q⎤) :=
+theorem embed_wand_iff (P Q : PROP1) : (⎡P ∗-∗ Q⎤ : PROP2) ⊣⊢ (⎡P⎤ ∗-∗ ⎡Q⎤) :=
   (embed_and _ _).trans (and_congr (embed_wand P Q) (embed_wand Q P))
 
 /-! ### Affinely / absorbingly / intuitionistically -/
 
 @[rocq_alias embed_affinely_2]
-theorem embed_affinely_2 (P : PROP1) : <affine> ⎡P⎤ ⊢ ⎡<affine> P⎤ :=
+theorem embed_affinely_2 (P : PROP1) : <affine> ⎡P⎤ ⊢ (⎡<affine> P⎤ : PROP2) :=
   (and_intro (and_elim_l.trans embed_emp_2) and_elim_r).trans (embed_and emp P).mpr
 
 @[rocq_alias embed_affinely]
 theorem embed_affinely [BiEmbedEmp PROP1 PROP2] (P : PROP1) :
-    ⎡<affine> P⎤ ⊣⊢ <affine> ⎡P⎤ :=
+    (⎡<affine> P⎤ : PROP2) ⊣⊢ <affine> ⎡P⎤ :=
   (embed_and emp P).trans (and_congr embed_emp .rfl)
 
 @[rocq_alias embed_absorbingly]
 theorem embed_absorbingly (P : PROP1) :
-    ⎡<absorb> P⎤ ⊣⊢ <absorb> ⎡P⎤ :=
+    (⎡<absorb> P⎤ : PROP2) ⊣⊢ <absorb> ⎡P⎤ :=
   (embed_sep _ P).trans (sep_congr (embed_pure _) .rfl)
 
 @[rocq_alias embed_intuitionistically_2]
-theorem embed_intuitionistically_2 (P : PROP1) : □ ⎡P⎤ ⊢ ⎡□ P⎤ :=
+theorem embed_intuitionistically_2 (P : PROP1) : □ ⎡P⎤ ⊢ (⎡□ P⎤ : PROP2) :=
   (affinely_mono (embed_persistently P).mpr).trans (embed_affinely_2 _)
 
 @[rocq_alias embed_intuitionistically]
 theorem embed_intuitionistically [BiEmbedEmp PROP1 PROP2] (P : PROP1) :
-    ⎡□ P⎤ ⊣⊢ □ ⎡P⎤ :=
+    (⎡□ P⎤ : PROP2) ⊣⊢ □ ⎡P⎤ :=
   (embed_affinely _).trans (affinely_congr (embed_persistently P))
 
 @[rocq_alias embed_persistently_if]
 theorem embed_persistently_if (P : PROP1) (b : Bool) :
-    ⎡<pers>?b P⎤ ⊣⊢ <pers>?b ⎡P⎤ := by cases b <;> first | exact .rfl | exact embed_persistently P
+    (⎡<pers>?b P⎤ : PROP2) ⊣⊢ <pers>?b ⎡P⎤ := by cases b <;> first | exact .rfl | exact embed_persistently P
 
 @[rocq_alias embed_affinely_if_2]
 theorem embed_affinely_if_2 (P : PROP1) (b : Bool) :
-    <affine>?b ⎡P⎤ ⊢ ⎡<affine>?b P⎤ := by cases b <;> first | exact .rfl | exact embed_affinely_2 P
+    <affine>?b ⎡P⎤ ⊢ (⎡<affine>?b P⎤ : PROP2) := by cases b <;> first | exact .rfl | exact embed_affinely_2 P
 
 @[rocq_alias embed_affinely_if]
 theorem embed_affinely_if [BiEmbedEmp PROP1 PROP2] (P : PROP1) (b : Bool) :
-    ⎡<affine>?b P⎤ ⊣⊢ <affine>?b ⎡P⎤ := by cases b <;> first | exact .rfl | exact embed_affinely P
+    (⎡<affine>?b P⎤ : PROP2) ⊣⊢ <affine>?b ⎡P⎤ := by cases b <;> first | exact .rfl | exact embed_affinely P
 
 @[rocq_alias embed_absorbingly_if]
 theorem embed_absorbingly_if (b : Bool) (P : PROP1) :
-    ⎡<absorb>?b P⎤ ⊣⊢ <absorb>?b ⎡P⎤ := by cases b <;> first | exact .rfl | exact embed_absorbingly P
+    (⎡<absorb>?b P⎤ : PROP2) ⊣⊢ <absorb>?b ⎡P⎤ := by cases b <;> first | exact .rfl | exact embed_absorbingly P
 
 @[rocq_alias embed_intuitionistically_if_2]
 theorem embed_intuitionistically_if_2 (P : PROP1) (b : Bool) :
-    □?b ⎡P⎤ ⊢ ⎡□?b P⎤ := by cases b <;> first | exact .rfl | exact embed_intuitionistically_2 P
+    □?b ⎡P⎤ ⊢ (⎡□?b P⎤ : PROP2) := by cases b <;> first | exact .rfl | exact embed_intuitionistically_2 P
 
 @[rocq_alias embed_intuitionistically_if]
 theorem embed_intuitionistically_if [BiEmbedEmp PROP1 PROP2] (P : PROP1) (b : Bool) :
-    ⎡□?b P⎤ ⊣⊢ □?b ⎡P⎤ := by cases b <;> first | exact .rfl | exact embed_intuitionistically P
+    (⎡□?b P⎤ : PROP2) ⊣⊢ □?b ⎡P⎤ := by cases b <;> first | exact .rfl | exact embed_intuitionistically P
 
 /-! ### Persistence / affinity / absorbing (instances) -/
 
@@ -310,14 +309,14 @@ instance embed_absorbing (P : PROP1) [Absorbing P] : Absorbing (embed P : PROP2)
 
 @[rocq_alias embed_laterN]
 theorem embed_laterN [BiEmbedLater PROP1 PROP2] (n : Nat) (P : PROP1) :
-    ⎡▷^[n] P⎤ ⊣⊢ ▷^[n] ⎡P⎤ := by
+    (⎡▷^[n] P⎤ : PROP2) ⊣⊢ ▷^[n] ⎡P⎤ := by
   induction n with
   | zero => exact .rfl
   | succ n ih => exact (BiEmbedLater.embed_later _).trans (later_congr ih)
 
 @[rocq_alias embed_except_0]
 theorem embed_except_0 [BiEmbedLater PROP1 PROP2] (P : PROP1) :
-    ⎡◇ P⎤ ⊣⊢ ◇ ⎡P⎤ :=
+    (⎡◇ P⎤ : PROP2) ⊣⊢ ◇ ⎡P⎤ :=
   (embed_or _ P).trans
     (or_congr ((BiEmbedLater.embed_later _).trans (later_congr (embed_pure False))) .rfl)
 
@@ -381,47 +380,47 @@ homomorphism. -/
 
 @[rocq_alias embed_big_sepL_2]
 theorem embed_big_sepL_2 {A : Type _} (Φ : Nat → A → PROP1) (l : List A) :
-    ([∗list] k ↦ x ∈ l, ⎡Φ k x⎤) ⊢ ⎡[∗list] k ↦ x ∈ l, Φ k x⎤ :=
+    ([∗list] k ↦ x ∈ l, (⎡Φ k x⎤ : PROP2)) ⊢ ⎡[∗list] k ↦ x ∈ l, Φ k x⎤ :=
   bigOpL_hom (H := embed_sep_entails_homomorphism) Φ l
 
 @[rocq_alias embed_big_sepL]
 theorem embed_big_sepL [BiEmbedEmp PROP1 PROP2] {A : Type _} (Φ : Nat → A → PROP1) (l : List A) :
-    ⎡[∗list] k ↦ x ∈ l, Φ k x⎤ ⊣⊢ [∗list] k ↦ x ∈ l, ⎡Φ k x⎤ :=
+    (⎡[∗list] k ↦ x ∈ l, Φ k x⎤ : PROP2) ⊣⊢ [∗list] k ↦ x ∈ l, ⎡Φ k x⎤ :=
   (bigOpL_hom (H := embed_sep_homomorphism) Φ l).to_bi
 
 variable {K V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
 
 @[rocq_alias embed_big_sepM_2]
 theorem embed_big_sepM_2 (Φ : K → V → PROP1) (m : M V) :
-    ([∗map] k ↦ x ∈ m, ⎡Φ k x⎤) ⊢ ⎡[∗map] k ↦ x ∈ m, Φ k x⎤ :=
+    ([∗map] k ↦ x ∈ m, (⎡Φ k x⎤ : PROP2)) ⊢ ⎡[∗map] k ↦ x ∈ m, Φ k x⎤ :=
   bigOpM_hom (ι := embed_sep_entails_homomorphism) Φ m
 
 @[rocq_alias embed_big_sepM]
 theorem embed_big_sepM [BiEmbedEmp PROP1 PROP2] (Φ : K → V → PROP1) (m : M V) :
-    ⎡[∗map] k ↦ x ∈ m, Φ k x⎤ ⊣⊢ [∗map] k ↦ x ∈ m, ⎡Φ k x⎤ :=
+    (⎡[∗map] k ↦ x ∈ m, Φ k x⎤ : PROP2) ⊣⊢ [∗map] k ↦ x ∈ m, ⎡Φ k x⎤ :=
   (bigOpM_hom (ι := embed_sep_homomorphism) Φ m).to_bi
 
 @[rocq_alias embed_big_sepS_2]
 theorem embed_big_sepS_2 {S A : Type _} [LawfulFiniteSet S A] (Φ : A → PROP1) (X : S) :
-    ([∗set] x ∈ X, ⎡Φ x⎤) ⊢ ⎡[∗set] x ∈ X, Φ x⎤ :=
+    ([∗set] x ∈ X, (⎡Φ x⎤ : PROP2)) ⊢ ⎡[∗set] x ∈ X, Φ x⎤ :=
   BigOpS.hom embed_sep_entails_homomorphism Φ X
 
 @[rocq_alias embed_big_sepS]
 theorem embed_big_sepS [BiEmbedEmp PROP1 PROP2] {S A : Type _} [LawfulFiniteSet S A]
     (Φ : A → PROP1) (X : S) :
-    ⎡[∗set] x ∈ X, Φ x⎤ ⊣⊢ [∗set] x ∈ X, ⎡Φ x⎤ :=
+    (⎡[∗set] x ∈ X, Φ x⎤ : PROP2) ⊣⊢ [∗set] x ∈ X, ⎡Φ x⎤ :=
   (BigOpS.hom embed_sep_homomorphism Φ X).to_bi
 
 @[rocq_alias embed_big_sepMS_2]
 theorem embed_big_sepMS_2 {MS A : Type _} [LawfulFiniteMultiSet MS A]
   (Φ : A → PROP1) (X : MS) :
-  ([∗mset] x ∈ X, ⎡Φ x⎤) ⊢ ⎡[∗mset] x ∈ X, Φ x⎤ :=
+  ([∗mset] x ∈ X, (⎡Φ x⎤ : PROP2)) ⊢ ⎡[∗mset] x ∈ X, Φ x⎤ :=
   BigOpMS.hom embed_sep_entails_homomorphism Φ X
 
 @[rocq_alias embed_big_sepMS]
 theorem embed_big_sepMS [BiEmbedEmp PROP1 PROP2] {MS A : Type _} [LawfulFiniteMultiSet MS A]
   (Φ : A → PROP1) (X : MS) :
-  ⎡[∗mset] x ∈ X, Φ x⎤ ⊣⊢ [∗mset] x ∈ X, ⎡Φ x⎤ :=
+  (⎡[∗mset] x ∈ X, Φ x⎤ : PROP2) ⊣⊢ [∗mset] x ∈ X, ⎡Φ x⎤ :=
   (BigOpMS.hom embed_sep_homomorphism Φ X).to_bi
 
 end
@@ -434,22 +433,21 @@ so the `plainly` laws reduce to `embed_si_pure` + `embed_si_emp_valid`. Uses fre
 `P1`/`P2`/`P3` so each `BI` instance comes solely from `Sbi` (no diamond with `[BI _]`). -/
 section
 variable {P1 P2 : Type _} [Sbi P1] [Sbi P2] [BiEmbed P1 P2] [BiEmbedSbi P1 P2]
-local bi P2
 
 @[rocq_alias embed_si_pure]
 theorem embed_siPure (Pi : SiProp) :
-    embed (SiPure.siPure Pi : P1) ⊣⊢ SiPure.siPure Pi :=
+    (embed (SiPure.siPure Pi : P1) : P2) ⊣⊢ SiPure.siPure Pi :=
   ⟨BiEmbedSbi.embed_siPure_1 Pi,
    (siPure_mono ((BiEmbedSbi.embed_siEmpValid _).trans siEmpValid_siPure).mpr).trans
      siPure_siEmpValid_elim⟩
 
 @[rocq_alias embed_internal_eq]
 theorem embed_internal_eq {A : Type _} [OFE A] (x y : A) :
-    embed (iprop(x ≡ y) : P1) ⊣⊢ x ≡ y :=
+    (embed (iprop(x ≡ y) : P1) : P2) ⊣⊢ x ≡ y :=
   embed_siPure (SiProp.internalEq x y)
 
 @[rocq_alias embed_plainly]
-theorem embed_plainly (P : P1) : ⎡■ P⎤ ⊣⊢ ■ ⎡P⎤ := by
+theorem embed_plainly (P : P1) : (⎡■ P⎤ : P2) ⊣⊢ ■ ⎡P⎤ := by
   change (embed (SiPure.siPure (SiEmpValid.siEmpValid P)) : P2)
       ⊣⊢ SiPure.siPure (SiEmpValid.siEmpValid (embed P))
   exact (embed_siPure _).trans
@@ -458,7 +456,7 @@ theorem embed_plainly (P : P1) : ⎡■ P⎤ ⊣⊢ ■ ⎡P⎤ := by
 
 @[rocq_alias embed_plainly_if]
 theorem embed_plainly_if (p : Bool) (P : P1) :
-    ⎡■? p P⎤ ⊣⊢ ■? p ⎡P⎤ := by cases p <;> first | exact .rfl | exact embed_plainly P
+    (⎡■? p P⎤ : P2) ⊣⊢ ■? p ⎡P⎤ := by cases p <;> first | exact .rfl | exact embed_plainly P
 
 /-- `⎡·⎤` preserves `Plain`. Registered as a direct `instance` rather than a `Hint Extern`
 because Lean's instance resolver does not shelve the `BiEmbedSbi` premise. -/
@@ -466,13 +464,10 @@ because Lean's instance resolver does not shelve the `BiEmbedSbi` premise. -/
 instance embed_plain (P : P1) [Plain P] : Plain (embed P : P2) where
   plain := (embed_mono Plain.plain).trans (embed_plainly P).mp
 
-section
-local bi SiProp
-
 /-- `⎡·⎤` reflects internal equality. -/
 @[rocq_alias embed_internal_inj]
 theorem embed_internal_inj {P3 : Type _} [Sbi P3] (P Q : P1) :
-    ((embed P : P2) ≡ embed Q : P3) ⊢@{P3} P ≡ Q := by
+    ((embed P : P2) ≡ embed Q : P3) ⊢ P ≡ Q := by
   refine siPure_mono ?_
   calc
     _ ⊢ <si_emp_valid> (⎡P⎤ ∗-∗ ⎡Q⎤)                              := (prop_ext_siEmpValid_equiv (embed P) (embed Q)).mp
@@ -485,15 +480,12 @@ theorem embed_internal_inj {P3 : Type _} [Sbi P3] (P Q : P1) :
 
 end
 
-end
-
 /-! ## Transitive embedding
 
 Two embeddings `PA → PB → PC` compose to an embedding `PA → PC`. In Rocq these are
 `Local Instance`s; here `embedEmbed` is a plain `def` (a global instance would loop). -/
 section
 variable {PA PC : Type _} [BI PA] [BI PC]
-local bi PC
 
 /-- The composed embedding `⎡⎡·⎤⎤ : PA → PC`. The intermediate `PB` is an explicit
 parameter (it is not determined by `Embed PA PC`, so this cannot be a global
@@ -504,7 +496,7 @@ def embedEmbed (PB : Type _) [BI PB] [BiEmbed PA PB] [BiEmbed PB PC] : Embed PA 
 
 @[rocq_alias embed_embed_alt]
 theorem embed_embed_alt (PB : Type _) [BI PB] [BiEmbed PA PB] [BiEmbed PB PC] (P : PA) :
-    (embedEmbed PB).embed P ⊣⊢ embed (embed P : PB) := .rfl
+    (embedEmbed PB).embed P ⊣⊢ (embed (embed P : PB) : PC) := .rfl
 
 variable (PB : Type _) [BI PB] [BiEmbed PA PB] [BiEmbed PB PC]
 
@@ -582,7 +574,6 @@ names so each `BI` instance comes from `Sbi` (no diamond with the `[BI _]` above
 section
 variable {QA QB QC : Type _} [Sbi QA] [Sbi QB] [Sbi QC]
   [BiEmbed QA QB] [BiEmbed QB QC] [BiEmbedSbi QA QB] [BiEmbedSbi QB QC]
-local bi QC
 
 @[rocq_alias embed_embed_sbi]
 theorem embed_embed_sbi : @BiEmbedSbi QA QC _ _ (embedBiEmbed QB) _ _ :=

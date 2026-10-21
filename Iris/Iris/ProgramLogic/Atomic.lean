@@ -79,7 +79,7 @@ def awpArgs (xs : Option (TSyntax ``auAllBinders)) (ys : Option (TSyntax ``auExB
 macro_rules
   | `(iprop(<<{%$tk $[$xs]? $α }>> $e @ $E <<{ $[$ys]? $β | $[$zs]? RET $v $[; $POST]? }>>)) => do
     let (TA, TB, TP, α, β, POST, f) ← awpArgs xs ys zs α β v POST
-    ``($(wrapIprop tk ``atomic_wp) (TA := $TA) (TB := $TB) (TP := $TP) $e $E $α $β $POST $f)
+    ``($(wrapIprop tk ``atomic_wp) (PROP := bi%) (TA := $TA) (TB := $TB) (TP := $TP) $e $E $α $β $POST $f)
 
 /-! ### Delaboration -/
 

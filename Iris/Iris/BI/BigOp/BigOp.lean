@@ -192,73 +192,73 @@ open Lean PrettyPrinter Delaborator SubExpr
 
 macro_rules
   | `([∗list]%$tk $x:ident ∈ $l, $P) => do
-      `($(wrapIprop tk ``bigSepL) (fun _ $x => $P) $l)
+      `($(wrapIprop tk ``bigSepL) (PROP := bi%) (fun _ $x => $P) $l)
   | `([∗list]%$tk $k:ident ↦ $x:ident ∈ $l, $P) => do
-      `($(wrapIprop tk ``bigSepL) (fun $k $x => $P) $l)
+      `($(wrapIprop tk ``bigSepL) (PROP := bi%) (fun $k $x => $P) $l)
   | `([∧list]%$tk $x:ident ∈ $l, $P) => do
-      `($(wrapIprop tk ``bigAndL) (fun _ $x => $P) $l)
+      `($(wrapIprop tk ``bigAndL) (PROP := bi%) (fun _ $x => $P) $l)
   | `([∧list]%$tk $k:ident ↦ $x:ident ∈ $l, $P) => do
-      `($(wrapIprop tk ``bigAndL) (fun $k $x => $P) $l)
+      `($(wrapIprop tk ``bigAndL) (PROP := bi%) (fun $k $x => $P) $l)
   | `([∨list]%$tk $x:ident ∈ $l, $P) => do
-      `($(wrapIprop tk ``bigOrL) (fun _ $x => $P) $l)
+      `($(wrapIprop tk ``bigOrL) (PROP := bi%) (fun _ $x => $P) $l)
   | `([∨list]%$tk $k:ident ↦ $x:ident ∈ $l, $P) => do
-      `($(wrapIprop tk ``bigOrL) (fun $k $x => $P) $l)
+      `($(wrapIprop tk ``bigOrL) (PROP := bi%) (fun $k $x => $P) $l)
   | `([∗list]%$tk $x1:ident;$x2:ident ∈ $l1;$l2, $P) => do
-      `($(wrapIprop tk ``bigSepL2) (fun _ $x1 $x2 => $P) $l1 $l2)
+      `($(wrapIprop tk ``bigSepL2) (PROP := bi%) (fun _ $x1 $x2 => $P) $l1 $l2)
   | `([∗list]%$tk $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P) => do
-      `($(wrapIprop tk ``bigSepL2) (fun $k $x1 $x2 => $P) $l1 $l2)
+      `($(wrapIprop tk ``bigSepL2) (PROP := bi%) (fun $k $x1 $x2 => $P) $l1 $l2)
   | `([∗map]%$tk $x:ident ∈ $m, $P) => do
-      `($(wrapIprop tk ``bigSepM) (fun _ $x => $P) $m)
+      `($(wrapIprop tk ``bigSepM) (PROP := bi%) (fun _ $x => $P) $m)
   | `([∗map]%$tk $k:ident ↦ $x:ident ∈ $m, $P) => do
-      `($(wrapIprop tk ``bigSepM) (fun $k $x => $P) $m)
+      `($(wrapIprop tk ``bigSepM) (PROP := bi%) (fun $k $x => $P) $m)
   | `([∗map] $x1:ident;$x2:ident ∈ $m1;$m2, $P) =>
       `(bigSepM2 (fun _ $x1 $x2 => $P) $m1 $m2)
   | `([∗map] $k:ident ↦ $x1:ident;$x2:ident ∈ $m1;$m2, $P) =>
       `(bigSepM2 (fun $k $x1 $x2 => $P) $m1 $m2)
   | `([∧map]%$tk $x:ident ∈ $m, $P) => do
-      `($(wrapIprop tk ``bigAndM) (fun _ $x => $P) $m)
+      `($(wrapIprop tk ``bigAndM) (PROP := bi%) (fun _ $x => $P) $m)
   | `([∧map]%$tk $k:ident ↦ $x:ident ∈ $m, $P) => do
-      `($(wrapIprop tk ``bigAndM) (fun $k $x => $P) $m)
+      `($(wrapIprop tk ``bigAndM) (PROP := bi%) (fun $k $x => $P) $m)
   | `([∗set]%$tk $x:ident ∈ $s, $P) => do
-      `($(wrapIprop tk ``bigSepS) (fun $x => $P) $s)
+      `($(wrapIprop tk ``bigSepS) (PROP := bi%) (fun $x => $P) $s)
   | `([∗mset]%$tk $x:ident ∈ $X, $P) => do
-      `($(wrapIprop tk ``bigSepMS) (fun $x => $P) $X)
+      `($(wrapIprop tk ``bigSepMS) (PROP := bi%) (fun $x => $P) $X)
 
 
 -- iprop macro rules
 macro_rules
   | `(iprop([∗list]%$tk $x:ident ∈ $l, $P)) => do
-      `($(wrapIprop tk ``bigSepL) (fun _ $x => iprop($P)) $l)
+      `($(wrapIprop tk ``bigSepL) (PROP := bi%) (fun _ $x => iprop($P)) $l)
   | `(iprop([∗list]%$tk $k:ident ↦ $x:ident ∈ $l, $P)) => do
-      `($(wrapIprop tk ``bigSepL) (fun $k $x => iprop($P)) $l)
+      `($(wrapIprop tk ``bigSepL) (PROP := bi%) (fun $k $x => iprop($P)) $l)
   | `(iprop([∧list]%$tk $x:ident ∈ $l, $P)) => do
-      `($(wrapIprop tk ``bigAndL) (fun _ $x => iprop($P)) $l)
+      `($(wrapIprop tk ``bigAndL) (PROP := bi%) (fun _ $x => iprop($P)) $l)
   | `(iprop([∧list]%$tk $k:ident ↦ $x:ident ∈ $l, $P)) => do
-      `($(wrapIprop tk ``bigAndL) (fun $k $x => iprop($P)) $l)
+      `($(wrapIprop tk ``bigAndL) (PROP := bi%) (fun $k $x => iprop($P)) $l)
   | `(iprop([∨list]%$tk $x:ident ∈ $l, $P)) => do
-      `($(wrapIprop tk ``bigOrL) (fun _ $x => iprop($P)) $l)
+      `($(wrapIprop tk ``bigOrL) (PROP := bi%) (fun _ $x => iprop($P)) $l)
   | `(iprop([∨list]%$tk $k:ident ↦ $x:ident ∈ $l, $P)) => do
-      `($(wrapIprop tk ``bigOrL) (fun $k $x => iprop($P)) $l)
+      `($(wrapIprop tk ``bigOrL) (PROP := bi%) (fun $k $x => iprop($P)) $l)
   | `(iprop([∗list]%$tk $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => do
-      `($(wrapIprop tk ``bigSepL2) (fun _ $x1 $x2 => iprop($P)) $l1 $l2)
+      `($(wrapIprop tk ``bigSepL2) (PROP := bi%) (fun _ $x1 $x2 => iprop($P)) $l1 $l2)
   | `(iprop([∗list]%$tk $k:ident ↦ $x1:ident;$x2:ident ∈ $l1;$l2, $P)) => do
-      `($(wrapIprop tk ``bigSepL2) (fun $k $x1 $x2 => iprop($P)) $l1 $l2)
+      `($(wrapIprop tk ``bigSepL2) (PROP := bi%) (fun $k $x1 $x2 => iprop($P)) $l1 $l2)
   | `(iprop([∗map]%$tk $x:ident ∈ $m, $P)) => do
-      `($(wrapIprop tk ``bigSepM) (fun _ $x => iprop($P)) $m)
+      `($(wrapIprop tk ``bigSepM) (PROP := bi%) (fun _ $x => iprop($P)) $m)
   | `(iprop([∗map]%$tk $k:ident ↦ $x:ident ∈ $m, $P)) => do
-      `($(wrapIprop tk ``bigSepM) (fun $k $x => iprop($P)) $m)
+      `($(wrapIprop tk ``bigSepM) (PROP := bi%) (fun $k $x => iprop($P)) $m)
   | `(iprop([∗map] $x1:ident;$x2:ident ∈ $m1;$m2, $P)) =>
       `(bigSepM2 (fun _ $x1 $x2 => iprop($P)) $m1 $m2)
   | `(iprop([∗map] $k:ident ↦ $x1:ident;$x2:ident ∈ $m1;$m2, $P)) =>
       `(bigSepM2 (fun $k $x1 $x2 => iprop($P)) $m1 $m2)
   | `(iprop([∧map]%$tk $x:ident ∈ $m, $P)) => do
-      `($(wrapIprop tk ``bigAndM) (fun _ $x => iprop($P)) $m)
+      `($(wrapIprop tk ``bigAndM) (PROP := bi%) (fun _ $x => iprop($P)) $m)
   | `(iprop([∧map]%$tk $k:ident ↦ $x:ident ∈ $m, $P)) => do
-      `($(wrapIprop tk ``bigAndM) (fun $k $x => iprop($P)) $m)
+      `($(wrapIprop tk ``bigAndM) (PROP := bi%) (fun $k $x => iprop($P)) $m)
   | `(iprop([∗set]%$tk $x:ident ∈ $s, $P)) => do
-      `($(wrapIprop tk ``bigSepS) (fun $x => iprop($P)) $s)
+      `($(wrapIprop tk ``bigSepS) (PROP := bi%) (fun $x => iprop($P)) $s)
   | `(iprop([∗mset]%$tk $x:ident ∈ $X, $P)) => do
-      `($(wrapIprop tk ``bigSepMS) (fun $x => iprop($P)) $X)
+      `($(wrapIprop tk ``bigSepMS) (PROP := bi%) (fun $x => iprop($P)) $X)
 
 /-- Helper to delaborate a bigOpL-shaped lambda body into list notation.
     `opConst` is checked against the `op` argument; `mkWithIdx` / `mkNoIdx` build syntax. -/

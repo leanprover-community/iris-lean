@@ -37,9 +37,9 @@ syntax "|==> " term:40 : term
 syntax:25 term:26 " ==∗ " term:25 : term
 
 macro_rules
-  | `(iprop(|==>%$tk $P))   => ``($(wrapIprop tk ``BUpd.bupd) iprop($P))
+  | `(iprop(|==>%$tk $P))   => ``($(wrapIprop tk ``BUpd.bupd) (PROP := bi%) iprop($P))
   | `(iprop($P ==∗%$tk $Q)) =>
-    ``(BIBase.wand iprop($P) ($(wrapIprop tk ``BUpd.bupd) iprop($Q)))
+    ``(BIBase.wand (PROP := bi%) iprop($P) ($(wrapIprop tk ``BUpd.bupd) (PROP := bi%) iprop($Q)))
   | `($P ==∗%$tk $Q)        => ``(⊢ $P ==∗%$tk $Q)
 
 delab_rule BUpd.bupd
@@ -78,13 +78,13 @@ syntax:25 term:26 " ={" term "}=∗ " term:25 : term
 
 macro_rules
   | `(iprop(|={%$tk1 $E1,$E2 }=>%$tk2 $P))   => do
-      ``($(wrapIpropSpan tk1 tk2 ``FUpd.fupd) $E1 $E2 iprop($P))
+      ``($(wrapIpropSpan tk1 tk2 ``FUpd.fupd) (PROP := bi%) $E1 $E2 iprop($P))
   | `(iprop($P ={%$tk1 $E1,$E2 }=∗%$tk2 $Q)) => do
-      ``(BIBase.wand iprop($P) ($(wrapIpropSpan tk1 tk2 ``FUpd.fupd) $E1 $E2 iprop($Q)))
+      ``(BIBase.wand (PROP := bi%) iprop($P) ($(wrapIpropSpan tk1 tk2 ``FUpd.fupd) (PROP := bi%) $E1 $E2 iprop($Q)))
   | `(iprop(|={%$tk1 $E1}=>%$tk2 $P))       => do
-      ``($(wrapIpropSpan tk1 tk2 ``FUpd.fupd) $E1 $E1 iprop($P))
+      ``($(wrapIpropSpan tk1 tk2 ``FUpd.fupd) (PROP := bi%) $E1 $E1 iprop($P))
   | `(iprop($P ={%$tk1 $E1 }=∗%$tk2 $Q))     => do
-      ``(BIBase.wand iprop($P) ($(wrapIpropSpan tk1 tk2 ``FUpd.fupd) $E1 $E1 iprop($Q)))
+      ``(BIBase.wand (PROP := bi%) iprop($P) ($(wrapIpropSpan tk1 tk2 ``FUpd.fupd) (PROP := bi%) $E1 $E1 iprop($Q)))
   | `($P ={%$tk $E1,$E2}=∗ $Q)        => ``(⊢ $P ={%$tk $E1,$E2}=∗ $Q)
   | `($P ={%$tk $E1}=∗ $Q)            => ``(⊢ $P ={%$tk $E1}=∗ $Q)
 
@@ -169,13 +169,13 @@ def step_fupdN {PROP : Type _} [BIBase PROP] [FUpd PROP] (Eo Ei : CoPset) : Nat 
 
 macro_rules
   | `(iprop(|={%$tk $E1 }[ $E2 ]▷=>^[ $n ] $P))   =>
-      ``($(wrapIprop tk ``step_fupdN) $E1 $E2 $n iprop($P))
+      ``($(wrapIprop tk ``step_fupdN) (PROP := bi%) $E1 $E2 $n iprop($P))
   | `(iprop($P ={%$tk $E1 }[ $E2 ]▷=∗^[ $n ] $Q)) =>
-      ``(BIBase.wand iprop($P) ($(wrapIprop tk ``step_fupdN) $E1 $E2 $n iprop($Q)))
+      ``(BIBase.wand (PROP := bi%) iprop($P) ($(wrapIprop tk ``step_fupdN) (PROP := bi%) $E1 $E2 $n iprop($Q)))
   | `(iprop(|={%$tk $E1 }▷=>^[ $n ] $P))          =>
-      ``($(wrapIprop tk ``step_fupdN) $E1 $E1 $n iprop($P))
+      ``($(wrapIprop tk ``step_fupdN) (PROP := bi%) $E1 $E1 $n iprop($P))
   | `(iprop($P ={%$tk $E1 }▷=∗^[ $n ] $Q))        =>
-      ``(BIBase.wand iprop($P) ($(wrapIprop tk ``step_fupdN) $E1 $E1 $n iprop($Q)))
+      ``(BIBase.wand (PROP := bi%) iprop($P) ($(wrapIprop tk ``step_fupdN) (PROP := bi%) $E1 $E1 $n iprop($Q)))
 
 delab_rule step_fupdN
   | `($_ $E₁ $E₂ $n $P) => do

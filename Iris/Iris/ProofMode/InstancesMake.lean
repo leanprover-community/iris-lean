@@ -13,6 +13,7 @@ public import Iris.ProofMode.ClassesMake
 namespace Iris.ProofMode
 open Iris.BI
 
+section
 local bi PROP
 
 /- For classes that are not IPM classes (like QuickAffine and QuickAbsorbing), the BIAffine
@@ -287,6 +288,8 @@ instance makeFUpd_True [BI PROP] [BIFUpdate PROP] E :
 instance (priority := low) makeFUpd_default [BI PROP] [BIFUpdate PROP] E1 E2 (P : PROP) :
     MakeFUpd E1 E2 P iprop(|={E1, E2}=> P) where
   make_fupd := .rfl
+
+end
 
 /-! ### MakeEmbed -/
 
