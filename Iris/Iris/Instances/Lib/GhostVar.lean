@@ -90,7 +90,7 @@ theorem ghost_var_agree (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFra
 
 @[rocq_alias ghost_var_combine_gives]
 instance (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFrac) :
-    CombineSepGives (PROP := IProp GF) (γ ↪VAR{dq1} a1) (γ ↪VAR{dq2} a2)
+    CombineSepGives (γ ↪VAR{dq1} a1) (γ ↪VAR{dq2} a2)
       iprop(⌜✓ (dq1 • dq2) ∧ a1 = a2⌝) where
   combine_sep_gives := by
     iintro ⟨H1, H2⟩

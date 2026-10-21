@@ -144,7 +144,7 @@ instance bigSepL_affine_inst {Φ : Nat → A → PROP} {l : List A} [∀ k x, Af
   bigSepL_affine fun _ => inferInstance
 
 @[rocq_alias big_sepL_timeless_id]
-instance bigSepL_timeless_id [Timeless (emp : PROP)] {Ps : List PROP}
+instance bigSepL_timeless_id [Timeless iprop(emp)] {Ps : List PROP}
     [hPs : TCForall Timeless Ps] :
     Timeless ([∗list] P ∈ Ps, P) where
   timeless := bigOpL_closed (P := fun Q => ▷ Q ⊢ ◇ Q) Timeless.timeless
@@ -152,7 +152,7 @@ instance bigSepL_timeless_id [Timeless (emp : PROP)] {Ps : List PROP}
     (fun hget => forall_TCForall.mp hPs _ (List.mem_iff_getElem?.mpr ⟨_, hget⟩) |>.timeless)
 
 @[rocq_alias big_sepL_timeless]
-theorem bigSepL_timeless [Timeless (emp : PROP)] {Φ : Nat → A → PROP} {l : List A}
+theorem bigSepL_timeless [Timeless iprop(emp)] {Φ : Nat → A → PROP} {l : List A}
     (h : ∀ {k x}, l[k]? = some x → Timeless (Φ k x)) :
     Timeless ([∗list] k ↦ x ∈ l, Φ k x) where
   timeless := bigOpL_closed (P := fun Q => ▷ Q ⊢ ◇ Q) Timeless.timeless
@@ -160,12 +160,12 @@ theorem bigSepL_timeless [Timeless (emp : PROP)] {Φ : Nat → A → PROP} {l : 
     (h ·|>.timeless)
 
 @[rocq_alias big_sepL_nil_timeless]
-instance bigSepL_nil_timeless_inst [Timeless (emp : PROP)] {Φ : Nat → A → PROP} :
+instance bigSepL_nil_timeless_inst [Timeless iprop(emp)] {Φ : Nat → A → PROP} :
     Timeless ([∗list] k ↦ x ∈ ([] : List A), Φ k x) where
   timeless := by simpa only [bigOpL] using Timeless.timeless
 
 @[rocq_alias big_sepL_timeless']
-instance bigSepL_timeless_inst [Timeless (emp : PROP)] {Φ : Nat → A → PROP} {l : List A}
+instance bigSepL_timeless_inst [Timeless iprop(emp)] {Φ : Nat → A → PROP} {l : List A}
     [∀ {k x}, Timeless (Φ k x)] :
     Timeless ([∗list] k ↦ x ∈ l, Φ k x) :=
   bigSepL_timeless fun _ => inferInstance
@@ -688,12 +688,12 @@ instance bigSepL2_affine_inst {Φ : Nat → A → B → PROP} {l1 : List A} {l2 
     bigSepL2_affine (fun _ _ => inferInstance)
 
 @[rocq_alias big_sepL2_nil_timeless]
-instance bigSepL2_nil_timeless [Timeless (emp : PROP)] {Φ : Nat → A → B → PROP} :
+instance bigSepL2_nil_timeless [Timeless iprop(emp)] {Φ : Nat → A → B → PROP} :
     Timeless ([∗list] k ↦ x1;x2 ∈ ([] : List A);([] : List B), Φ k x1 x2) where
   timeless := by simp only [bigSepL2]; exact Timeless.timeless
 
 @[rocq_alias big_sepL2_timeless]
-theorem bigSepL2_timeless [Timeless (emp : PROP)] {Φ : Nat → A → B → PROP} {l1 : List A}
+theorem bigSepL2_timeless [Timeless iprop(emp)] {Φ : Nat → A → B → PROP} {l1 : List A}
     {l2 : List B} (h : ∀ k x1 x2, l1[k]? = some x1 → l2[k]? = some x2 → Timeless (Φ k x1 x2)) :
     Timeless ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) where
   timeless := bigSepL2_closed (P := fun Q => ▷ Q ⊢ ◇ Q) Timeless.timeless
@@ -702,7 +702,7 @@ theorem bigSepL2_timeless [Timeless (emp : PROP)] {Φ : Nat → A → B → PROP
     (fun h1 h2 => (h _ _ _ h1 h2).timeless)
 
 @[rocq_alias big_sepL2_timeless']
-instance bigSepL2_timeless' [Timeless (emp : PROP)] {Φ : Nat → A → B → PROP}
+instance bigSepL2_timeless' [Timeless iprop(emp)] {Φ : Nat → A → B → PROP}
     {l1 : List A} {l2 : List B} [∀ k x1 x2, Timeless (Φ k x1 x2)] :
     Timeless ([∗list] k ↦ x1;x2 ∈ l1;l2, Φ k x1 x2) :=
   bigSepL2_timeless fun _ _ _ _ _ => inferInstance
@@ -731,8 +731,8 @@ theorem bigSepL2_and {Φ Ψ : Nat → A → B → PROP} {l1 : List A} {l2 : List
 
 @[rocq_alias big_sepL2_pure_1]
 theorem bigSepL2_pure_intro {φ : Nat → A → B → Prop} {l1 : List A} {l2 : List B} :
-    ([∗list] k ↦ x1;x2 ∈ l1;l2, (⌜φ k x1 x2⌝ : PROP)) ⊢
-      iprop(⌜∀ k x1 x2, l1[k]? = some x1 → l2[k]? = some x2 → φ k x1 x2⌝ : PROP) :=
+    ([∗list] k ↦ x1;x2 ∈ l1;l2, iprop(⌜φ k x1 x2⌝)) ⊢
+      iprop(⌜∀ k x1 x2, l1[k]? = some x1 → l2[k]? = some x2 → φ k x1 x2⌝) :=
   bigSepL2_alt.1.trans <| (and_mono .rfl BigSepL.bigSepL_pure_intro).trans <| pure_and.1.trans <|
   pure_mono fun ⟨_, h⟩ k x1 x2 h1 h2 => h k (x1, x2) (List.getElem?_zip_eq_some.mpr ⟨h1, h2⟩)
 

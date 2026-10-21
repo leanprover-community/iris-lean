@@ -472,7 +472,7 @@ section Timeless
 
 variable [Sbi PROP]
 local bi PROP
-variable [Timeless (emp : PROP)] [OFE A] [OFE.Discrete A]
+variable [Timeless iprop(emp)] [OFE A] [OFE.Discrete A]
   (R : A → A → PROP)
 variable [NonExpansive₂ R]
 

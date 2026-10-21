@@ -340,12 +340,12 @@ theorem persistently_internalEq {A : Type _} [OFE A] (a b : A) :
 
 @[rocq_alias internal_eq_absorbing]
 instance internalEq_absorbing {A : Type _} [OFE A] (x y : A) :
-    Absorbing (PROP := PROP) iprop(x ≡ y) where
+    Absorbing iprop(x ≡ y) where
   absorbing := (absorbingly_internalEq x y).1
 
 @[rocq_alias internal_eq_persistent]
 instance internalEq_persistent {A : Type _} [OFE A] (a b : A) :
-    Persistent (PROP := PROP) iprop(a ≡ b) where
+    Persistent iprop(a ≡ b) where
   persistent := (persistently_internalEq a b).2
 
 /-! ## Equality under a later -/
@@ -385,7 +385,7 @@ theorem internalEq_rewrite_contractive' {A : Type _} [OFE A] (a b : A) (Ψ : A �
 
 @[rocq_alias eq_timeless]
 instance eq_timeless {A : Type _} [OFE A] (a b : A) [TCOr (DiscreteE a) (DiscreteE b)] :
-    Timeless (PROP := PROP) iprop(a ≡ b) where
+    Timeless iprop(a ≡ b) where
   timeless :=
     calc iprop(▷ a ≡ b)
       _ ⊢ ▷ ⌜a = b⌝ := later_mono discrete_eq.1

@@ -406,7 +406,7 @@ theorem or_exists_ite [BI PROP] {P Q : PROP} :
    exists_elim (Bool.rec or_intro_r or_intro_l ·)⟩
 
 @[rocq_alias bi.bi_and_monoid]
-instance bi_and_monoid [BI PROP] : LawfulBigOp and (iprop(True) : PROP) BiEntails where
+instance bi_and_monoid [BI PROP] : LawfulBigOp and iprop(True) BiEntails where
   refl := .rfl
   symm h := h.symm
   trans h1 h2 := h1.trans h2
@@ -497,7 +497,7 @@ theorem sep_emp [BI PROP] {P : PROP} : P ∗ emp ⊣⊢ P := sep_comm.trans emp_
 instance [BI PROP] : RightId (α := PROP) BiEntails emp sep := ⟨sep_emp⟩
 
 @[rocq_alias bi.bi_sep_monoid]
-instance bi_sep_monoid [BI PROP] : LawfulBigOp sep (emp : PROP) BiEntails where
+instance bi_sep_monoid [BI PROP] : LawfulBigOp sep iprop(emp) BiEntails where
   refl := .rfl
   symm h := h.symm
   trans h1 h2 := h1.trans h2
@@ -786,7 +786,7 @@ theorem wandIff_equiv [BI PROP] {P Q : PROP} (h : ⊢ P ∗-∗ Q) : P ⊣⊢ Q 
   ⟨wand_entails (h.trans and_elim_l), wand_entails (h.trans and_elim_r)⟩
 
 @[rocq_alias bi.bi_or_monoid]
-instance bi_or_monoid [BI PROP] : LawfulBigOp or (iprop(False) : PROP) BiEntails where
+instance bi_or_monoid [BI PROP] : LawfulBigOp or iprop(False) BiEntails where
   refl := .rfl
   symm h := h.symm
   trans h1 h2 := h1.trans h2
@@ -997,7 +997,7 @@ theorem affinely_and_left_right [BI PROP] {P Q : PROP} : <affine> P ∧ Q ⊣⊢
 /-! # Affine instances -/
 
 @[rocq_alias bi.emp_affine]
-instance emp_affine [BI PROP] : Affine (PROP := PROP) iprop(emp) where
+instance emp_affine [BI PROP] : Affine iprop(emp) where
   affine := .rfl
 #rocq_ignore bi.Affine_proper "Derivable from _ne with NonExpansive.eqv."
 
@@ -1005,7 +1005,7 @@ theorem affine_mono [BI PROP] {P Q : PROP} (h : P ⊢ Q) [Affine Q] : Affine P w
   affine := h.trans affine
 
 @[rocq_alias bi.False_affine]
-instance false_affine [BI PROP] : Affine (PROP := PROP) iprop(False) where
+instance false_affine [BI PROP] : Affine iprop(False) where
   affine := false_elim
 
 @[rocq_alias bi.and_affine_l]
@@ -1136,7 +1136,7 @@ theorem affinely_absorbingly_elim [BI PROP] {P : PROP} [BIPositive PROP] :
 /-! # Absorbing instances -/
 
 @[rocq_alias bi.pure_absorbing]
-instance pure_absorbing [BI PROP] (φ : Prop) : Absorbing iprop(⌜φ⌝ : PROP) where
+instance pure_absorbing [BI PROP] (φ : Prop) : Absorbing iprop(⌜φ⌝) where
   absorbing := absorbingly_pure.1
 
 @[rocq_alias bi.and_absorbing]
@@ -1182,7 +1182,7 @@ theorem affine_affinely [BI PROP] (P : PROP) [Affine P] : <affine> P ⊣⊢ P :=
 theorem biaffine_iff_true_emp [BI PROP] : BIAffine PROP ↔ True ⊢ emp :=
   ⟨fun _ => affine, fun h => ⟨fun _ => ⟨true_intro.trans h⟩⟩⟩
 
-theorem biaffine_of_true_affine [BI PROP] [Affine (iprop(True) : PROP)] : BIAffine PROP :=
+theorem biaffine_of_true_affine [BI PROP] [Affine iprop(True)] : BIAffine PROP :=
   biaffine_iff_true_emp.2 affine
 
 @[rocq_alias bi.absorbing_absorbingly]
@@ -1190,7 +1190,7 @@ theorem absorbing_absorbingly [BI PROP] {P : PROP} [Absorbing P] : <absorb> P �
   ⟨absorbing, absorbingly_intro⟩
 
 @[rocq_alias bi.emp_absorbing_all_absorbing]
-theorem absorbing_of_emp_absorbing [BI PROP] [Absorbing (emp : PROP)] (P : PROP) : Absorbing P where
+theorem absorbing_of_emp_absorbing [BI PROP] [Absorbing iprop(emp)] (P : PROP) : Absorbing P where
   absorbing := calc
     _ ⊢ <absorb> (emp ∗ P) := absorbingly_mono emp_sep.mpr
     _ ⊢ <absorb> emp ∗ P   := absorbingly_sep_left.mpr
@@ -1263,7 +1263,7 @@ theorem true_emp [BI PROP] [h : BIAffine PROP] : True ⊣⊢ emp :=
   ⟨biaffine_iff_true_emp.1 h, true_intro⟩
 
 @[rocq_alias bi.True_affine_all_affine]
-theorem True_affine_all_affine [BI PROP] [Affine (iprop(True) : PROP)] (P : PROP) : Affine P where
+theorem True_affine_all_affine [BI PROP] [Affine iprop(True)] (P : PROP) : Affine P where
   affine := true_intro.trans (Affine.affine (P := iprop(True)))
 
 instance [BI PROP] [BIAffine PROP] (P : PROP) : Absorbing P where
@@ -1608,11 +1608,11 @@ theorem persistently_and_emp_elim {P : PROP} [BI PROP] : emp ∧ <pers> P ⊢ P 
 /-! # Persistence instances -/
 
 @[rocq_alias bi.pure_persistent]
-instance pure_persistent (φ : Prop) [BI PROP] : Persistent (PROP := PROP) iprop(⌜φ⌝) where
+instance pure_persistent (φ : Prop) [BI PROP] : Persistent iprop(⌜φ⌝) where
   persistent := persistently_pure.2
 
 @[rocq_alias bi.emp_persistent]
-instance emp_persistent [BI PROP] : Persistent (PROP := PROP) iprop(emp) where
+instance emp_persistent [BI PROP] : Persistent iprop(emp) where
   persistent := persistently_emp_intro
 
 @[rocq_alias bi.and_persistent]

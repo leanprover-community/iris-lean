@@ -367,7 +367,7 @@ theorem wp_cmpXchg_fail_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz
 @[rocq_alias heap_lang.twp_faa_offset]
 theorem twp_faa_offset {off : Nat} {i1 i2 : Int} (h : vs[off]? = some hl_val(#i1)) :
     [{ l ↦∗ vs }] hl(faa(#(l + off), #i2)) @ s; E
-    [{ RET hl_val(#i1); (l ↦∗ vs.set off hl_val(#(i1 + i2)) : IProp GF) }] := by
+    [{ RET hl_val(#i1); iprop(l ↦∗ vs.set off hl_val(#(i1 + i2))) }] := by
   iintro %Φ Hl HΦ
   icases update_array (dq := .own 1) h $$ Hl with ⟨Hpt, Hclose⟩
   iapply twp_faa $$ Hpt

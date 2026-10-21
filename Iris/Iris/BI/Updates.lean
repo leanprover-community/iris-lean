@@ -201,7 +201,7 @@ class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
 
 @[rocq_alias BiFUpd]
 class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
-  [ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP))]
+  [ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> ·))]
   subset {E1 E2 : CoPset} : E2 ⊆ E1 → ⊢ |={E1,E2}=> |={E2,E1}=> emp
   except0 {E1 E2 : CoPset} {P : PROP} : (◇ |={E1,E2}=> P) ⊢ |={E1,E2}=> P
   mono {E1 E2 : CoPset} {P Q : PROP} : (P ⊢ Q) → (|={E1,E2}=> P) ⊢ |={E1,E2}=> Q
@@ -393,7 +393,7 @@ variable [BI PROP] [BIFUpdate PROP]
 open BIFUpdate LawfulSet
 
 @[rocq_alias updates.fupd_ne]
-instance fupd_ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP)) := ne
+instance fupd_ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> ·)) := ne
 
 @[rocq_alias updates.fupd_mono]
 theorem fupd_mono {E1 E2 : CoPset} {P Q : PROP} (h : P ⊢ Q) : (|={E1,E2}=> P) ⊢ |={E1,E2}=> Q :=
@@ -644,7 +644,7 @@ variable [BI PROP] [BIFUpdate PROP]
 open BIFUpdate LawfulSet
 
 theorem step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContractive PROP] :
-    OFE.Contractive (iprop(|={E1}[E2]▷=>^[n + 1] · : PROP)) where
+    OFE.Contractive (iprop(|={E1}[E2]▷=>^[n + 1] ·)) where
   distLater_dist {i x y} xy_i := by
     induction n with
     | zero => exact ne.ne (ι.distLater_dist (ne.ne <| xy_i · ·))
@@ -652,7 +652,7 @@ theorem step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContracti
 
 @[rocq_alias step_fupdN_ne]
 instance step_fupdN_ne {E1 E2 : CoPset} {n : Nat} :
-    OFE.NonExpansive (iprop(|={E1}[E2]▷=>^[n] · : PROP)) where
+    OFE.NonExpansive (iprop(|={E1}[E2]▷=>^[n] ·)) where
   ne {i x y} xy_i := by
     induction n with
     | zero => exact xy_i

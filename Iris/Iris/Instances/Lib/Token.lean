@@ -68,7 +68,7 @@ theorem token_exclusive (γ : GName) : token γ ∗ token γ ⊢ False := by
   exact H.elim
 
 @[rocq_alias token_combine_gives]
-instance {γ : GName} : CombineSepGives (token γ) (token γ) (iprop(False) : IProp GF) where
+instance {γ : GName} : CombineSepGives (token γ) (token γ) iprop(False) where
   combine_sep_gives := token_exclusive γ
 
 end Iris

@@ -31,12 +31,12 @@ instance (priority := default + 10) quickAffine_biAffine [BI PROP]
 
 @[rocq_alias False_quick_affine]
 instance quickAffine_False [BI PROP] :
-    QuickAffine (PROP:=PROP) iprop(False) where
+    QuickAffine iprop(False) where
   quick_affine := inferInstance
 
 @[rocq_alias emp_quick_affine]
 instance quickAffine_emp [BI PROP] :
-    QuickAffine (PROP:=PROP) iprop(emp) where
+    QuickAffine iprop(emp) where
   quick_affine := inferInstance
 
 @[rocq_alias affinely_quick_affine]
@@ -59,7 +59,7 @@ instance (priority := default + 10) quickAbsorbing_biAffine [BI PROP]
 
 @[rocq_alias pure_quick_absorbing]
 instance quickAbsorbing_pure [BI PROP] (P : Prop) :
-    QuickAbsorbing (PROP:=PROP) iprop(⌜P⌝) where
+    QuickAbsorbing iprop(⌜P⌝) where
   quick_absorbing := inferInstance
 
 @[rocq_alias absorbingly_quick_absorbing]
@@ -171,7 +171,7 @@ instance (priority := high) makeAffinely_affine [BI PROP] (P : PROP) [Affine P] 
 
 @[rocq_alias make_affinely_True]
 instance makeAffinely_True [BI PROP] :
-    MakeAffinely (PROP := PROP) iprop(True) iprop(emp) where
+    MakeAffinely iprop(True) iprop(emp) where
   make_affinely := affinely_true
 
 @[rocq_alias make_affinely_default]
@@ -188,7 +188,7 @@ instance (priority := high) makeAbsorbingly_absorbing [BI PROP] (P : PROP) [Abso
 
 @[rocq_alias make_absorbingly_emp]
 instance makeAbsorbingly_emp [BI PROP] :
-    MakeAbsorbingly (PROP := PROP) iprop(emp) iprop(True) where
+    MakeAbsorbingly iprop(emp) iprop(True) where
   make_absorbingly := absorbingly_emp
 
 @[rocq_alias make_absorbingly_default]
@@ -199,12 +199,12 @@ instance (priority := low) makeAbsorbingly_default [BI PROP] (P : PROP) :
 /-! ### MakePersistently -/
 @[rocq_alias make_persistently_emp]
 instance (priority := high) makePersistently_emp [BI PROP] :
-    MakePersistently (PROP := PROP) iprop(emp) iprop(True) where
+    MakePersistently iprop(emp) iprop(True) where
   make_persistently := persistently_emp
 
 @[rocq_alias make_persistently_True]
 instance (priority := high) makePersistently_True [BI PROP] :
-    MakePersistently (PROP := PROP) iprop(True) iprop(True) where
+    MakePersistently iprop(True) iprop(True) where
   make_persistently := persistently_true
 
 @[rocq_alias make_persistently_default]
@@ -216,17 +216,17 @@ instance (priority := low) makePersistently_default [BI PROP] (P : PROP) :
 
 @[rocq_alias make_intuitionistically_emp]
 instance (priority := high) makeIntuitionistically_emp [BI PROP] :
-    MakeIntuitionistically (PROP := PROP) iprop(emp) iprop(emp) where
+    MakeIntuitionistically iprop(emp) iprop(emp) where
   make_intuitionistically := intuitionistically_emp
 
 @[ipm_backtrack, rocq_alias make_intuitionistically_True_affine]
 instance (priority := high) makeIntuitionistically_True_affine [BI PROP] [BIAffine PROP] :
-    MakeIntuitionistically (PROP := PROP) iprop(True) iprop(True) where
+    MakeIntuitionistically iprop(True) iprop(True) where
   make_intuitionistically := intuitionistically_true.trans true_emp.symm
 
 @[rocq_alias make_intuitionistically_True]
 instance makeIntuitionistically_True [BI PROP] :
-    MakeIntuitionistically (PROP := PROP) iprop(True) iprop(emp) where
+    MakeIntuitionistically iprop(True) iprop(emp) where
   make_intuitionistically := intuitionistically_true
 
 @[rocq_alias make_intuitionistically_default]
@@ -249,19 +249,19 @@ instance (priority := low) makeLaterN_default [BI PROP] n (P : PROP) :
 
 @[rocq_alias make_laterN_true]
 instance (priority := high) makeLaterN_True [BI PROP] n :
-    MakeLaterN (PROP:=PROP) n iprop(True) iprop(True) where
+    MakeLaterN n iprop(True) iprop(True) where
   make_laterN := laterN_true n
 
 @[ipm_backtrack, rocq_alias make_laterN_emp]
 instance (priority := high) makeLaterN_emp [BI PROP] [BIAffine PROP] n :
-    MakeLaterN (PROP:=PROP) n iprop(emp) iprop(emp) where
+    MakeLaterN n iprop(emp) iprop(emp) where
   make_laterN := laterN_emp n
 
 /-! ### MakeExcept0 -/
 
 @[rocq_alias make_except_0_True]
 instance makeExcept0_True [BI PROP] :
-    MakeExcept0 (PROP:=PROP) iprop(True) iprop(True) where
+    MakeExcept0 iprop(True) iprop(True) where
   make_except0 := except0_true
 
 @[rocq_alias make_except_0_default]
@@ -272,7 +272,7 @@ instance (priority := low) makeExcept0_default [BI PROP] (P : PROP) :
 /-! ### MakeBUpd -/
 
 instance makeBUpd_True [BI PROP] [BIUpdate PROP] :
-    MakeBUpd (PROP:=PROP) iprop(True) iprop(True) where
+    MakeBUpd iprop(True) iprop(True) where
   make_bupd := ⟨true_intro, BIUpdate.intro⟩
 
 instance (priority := low) makeBUpd_default [BI PROP] [BIUpdate PROP] (P : PROP) :
@@ -282,7 +282,7 @@ instance (priority := low) makeBUpd_default [BI PROP] [BIUpdate PROP] (P : PROP)
 /-! ### MakeFUpd -/
 
 instance makeFUpd_True [BI PROP] [BIFUpdate PROP] E :
-    MakeFUpd (PROP:=PROP) E E iprop(True) iprop(True) where
+    MakeFUpd E E iprop(True) iprop(True) where
   make_fupd := ⟨true_intro, fupd_intro⟩
 
 instance (priority := low) makeFUpd_default [BI PROP] [BIFUpdate PROP] E1 E2 (P : PROP) :

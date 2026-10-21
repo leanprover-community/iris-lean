@@ -92,7 +92,7 @@ theorem downClose_of_closed (h : ∀ {n₁ n₂}, Pi n₁ → n₂ ≤ n₁ → 
 
 @[rocq_alias SbiUnfold_closed]
 theorem of_closed (hPi : ∀ {n₁ n₂}, Pi n₁ → n₂ ≤ n₁ → Pi n₂)
-    (h : P ⊣⊢ iprop(<si_pure> (⟨Pi, hPi⟩ : SiProp))) : SbiUnfold clo P Pi where
+    (h : P ⊣⊢ iprop(<si_pure> iprop(⟨Pi, hPi⟩))) : SbiUnfold clo P Pi where
   closed _ := hPi
   as_siPure := h.trans <| siPure_mono_bi <| biEntails_of_iff fun _ => (downClose_of_closed hPi).symm
 
@@ -169,34 +169,34 @@ end SbiUnfold
 /-! ## The instances -/
 
 @[rocq_alias sbi_unfold_pure]
-instance sbiUnfold_pure {φ : Prop} : SbiUnfold clo (iprop(⌜φ⌝) : PROP) (fun _ => φ) :=
+instance sbiUnfold_pure {φ : Prop} : SbiUnfold clo iprop(⌜φ⌝) (fun _ => φ) :=
   .of_closed (fun h _ => h) <|
     siPure_pure.symm.trans <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_eq]
 instance sbiUnfold_internalEq [OFE A] {a b : A} :
-    SbiUnfold clo (iprop(a ≡ b) : PROP) (fun n => a ≡{n}≡ b) :=
+    SbiUnfold clo iprop(a ≡ b) (fun n => a ≡{n}≡ b) :=
   .of_closed Dist.le <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_cmra_valid]
 instance sbiUnfold_cmraValid [ORA A] {a : A} :
-    SbiUnfold clo (iprop(✓ a) : PROP) (fun n => ✓{n} a) :=
+    SbiUnfold clo iprop(✓ a) (fun n => ✓{n} a) :=
   .of_closed (fun h hm => validN_of_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 instance sbiUnfold_included [ORA A] {a b : A} :
-    SbiUnfold clo (iprop(a ≼ₒ b) : PROP) (fun n => a ≼ₒ{n} b) :=
+    SbiUnfold clo iprop(a ≼ₒ b) (fun n => a ≼ₒ{n} b) :=
   .of_closed (fun h hm => ordN_of_ordN_le hm h) <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_included]
 instance sbiUnfold_inc [ORA A] {a b : A} :
-    SbiUnfold clo (iprop(a ≼ b) : PROP) (fun n => a ≼{n} b) :=
+    SbiUnfold clo iprop(a ≼ b) (fun n => a ≼{n} b) :=
   .of_closed (fun h hm => incN_of_incN_le hm h) <|
     siPure_mono_bi <| biEntails_of_iff fun _ => exists_holds
 
 @[rocq_alias sbi_unfold_si_pure]
 instance sbiUnfold_siPure {Psi : SiProp} [h : SbiUnfold clo Psi Pi] :
-    SbiUnfold clo (iprop(<si_pure> Psi) : PROP) Pi where
+    SbiUnfold clo iprop(<si_pure> Psi) Pi where
   closed := h.closed
   as_siPure := siPure_mono_bi h.as_siPure
 

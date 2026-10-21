@@ -43,7 +43,7 @@ instance timeless_laterable [BI PROP] (P : PROP) [Timeless P] : Laterable P wher
 
 @[rocq_alias intuitionistic_laterable]
 theorem intuitionistic_laterable [BI PROP] (P : PROP)
-    [instTimeless : Timeless (emp : PROP)]
+    [instTimeless : Timeless iprop(emp)]
     [instAffine : Affine P] [instPers : Persistent P] :
     Laterable P where
   laterable := by
@@ -112,7 +112,7 @@ theorem big_sep_sepL_laterable [BI PROP] (Q : PROP) (Ps : List PROP)
 
 @[rocq_alias big_sepL_laterable]
 instance big_sepL_laterable [BI PROP] (Ps : List PROP)
-    [instEmp : Laterable (emp : PROP)] [instPs : TCForall Laterable Ps] :
+    [instEmp : Laterable iprop(emp)] [instPs : TCForall Laterable Ps] :
     Laterable iprop([∗] Ps) := by
   apply laterable_congr emp_sep
   apply big_sep_sepL_laterable emp Ps instEmp
@@ -245,7 +245,7 @@ instance (priority := default - 100) into_laterable_fallback [BI PROP] {P : PROP
   into_laterable_result_laterable := later_laterable P
 
 @[rocq_alias modality_make_laterable, rocq_alias modality_make_laterable_mixin]
-def modality_make_laterable [BI PROP] [Timeless (emp : PROP)] : Modality PROP PROP where
+def modality_make_laterable [BI PROP] [Timeless iprop(emp)] : Modality PROP PROP where
   M := make_laterable
   action
   | true => .id
@@ -261,7 +261,7 @@ def modality_make_laterable [BI PROP] [Timeless (emp : PROP)] : Modality PROP PR
   sep := make_laterable_sep
 
 @[rocq_alias from_modal_make_laterable]
-instance fromModal_make_laterable [BI PROP] [Timeless (emp : PROP)] io (P : PROP) :
+instance fromModal_make_laterable [BI PROP] [Timeless iprop(emp)] io (P : PROP) :
     FromModal io modality_make_laterable True
       (make_laterable P) (make_laterable P) P where
   from_modal := by

@@ -100,22 +100,22 @@ theorem internalCmraValid_discrete [ORA.Discrete A] {a : A} :
 
 @[rocq_alias internal_cmra_valid_persistent]
 instance internalCmraValid_persistent (a : A) :
-    Persistent (PROP := PROP) iprop(✓ a) where
+    Persistent iprop(✓ a) where
   persistent := persistently_internalCmraValid.mpr
 
 @[rocq_alias internal_cmra_valid_absorbing]
 instance internalCmraValid_absorbing (a : A) :
-    Absorbing (PROP := PROP) iprop(✓ a) :=
+    Absorbing iprop(✓ a) :=
   siPure_absorbing _
 
 @[rocq_alias internal_cmra_valid_plain]
 instance internalCmraValid_plain (a : A) :
-    Plain (PROP := PROP) iprop(✓ a) where
+    Plain iprop(✓ a) where
   plain := plainly_internalCmraValid a |>.mpr
 
 @[rocq_alias internal_cmra_valid_timeless]
 instance internalCmraValid_timeless [ORA.Discrete A] (a : A) :
-    Timeless (PROP := PROP) iprop(✓ a) := by
+    Timeless iprop(✓ a) := by
   unfold internalCmraValid; infer_instance
 
 end
@@ -261,24 +261,24 @@ theorem internalCmraIncluded_map {B : Type _} [ORA B] (g : A → B) [NonExpansiv
 
 @[rocq_alias internal_included_timeless]
 instance internalCmraIncluded_timeless {a b : A} [ORA.Discrete A] :
-    Timeless (PROP := PROP) iprop(a ≼ b) := by
+    Timeless iprop(a ≼ b) := by
   haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
   unfold internalCmraIncluded
   infer_instance
 
 @[rocq_alias internal_included_plain]
 instance internalCmraIncluded_plain {a b : A} :
-    Plain (PROP := PROP) iprop(a ≼ b) where
+    Plain iprop(a ≼ b) where
   plain := plainly_internalCmraIncluded.mpr
 
 @[rocq_alias internal_included_persistent]
 instance internalCmraIncluded_persistent {a b : A} :
-    Persistent (PROP := PROP) iprop(a ≼ b) where
+    Persistent iprop(a ≼ b) where
   persistent := persistently_internalCmraIncluded.mpr
 
 @[rocq_alias internal_included_absorbing]
 instance internalCmraIncluded_absorbing {a b : A} :
-    Absorbing (PROP := PROP) iprop(a ≼ b) :=
+    Absorbing iprop(a ≼ b) :=
   siPure_absorbing _
 
 /-! ### The internal order -/
@@ -373,17 +373,17 @@ theorem internalCmraIncluded_iff_internalCmraOrder [IncOrd A] [OrdInc A] {a b : 
     fun _ hn => inc_holds.mpr (incN_iff_ordN.mpr hn)⟩
 
 instance internalCmraOrder_timeless {a b : A} [ORA.Discrete A] :
-    Timeless (PROP := PROP) iprop(a ≼ₒ b) := by
+    Timeless iprop(a ≼ₒ b) := by
   unfold internalCmraOrder
   infer_instance
 
-instance internalCmraOrder_plain {a b : A} : Plain (PROP := PROP) iprop(a ≼ₒ b) where
+instance internalCmraOrder_plain {a b : A} : Plain iprop(a ≼ₒ b) where
   plain := plainly_internalCmraOrder.mpr
 
-instance internalCmraOrder_persistent {a b : A} : Persistent (PROP := PROP) iprop(a ≼ₒ b) where
+instance internalCmraOrder_persistent {a b : A} : Persistent iprop(a ≼ₒ b) where
   persistent := persistently_internalCmraOrder.mpr
 
-instance internalCmraOrder_absorbing {a b : A} : Absorbing (PROP := PROP) iprop(a ≼ₒ b) :=
+instance internalCmraOrder_absorbing {a b : A} : Absorbing iprop(a ≼ₒ b) :=
   siPure_absorbing _
 
 end

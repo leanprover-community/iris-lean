@@ -255,7 +255,7 @@ meta-level counterparts by `rfl`; the remaining connectives do. -/
 theorem biEntails_of_iff {P Q : SiProp} (h : ∀ n, P.holds n ↔ Q.holds n) : P ⊣⊢ Q :=
   ⟨fun n => (h n).mp, fun n => (h n).mpr⟩
 
-@[simp] theorem pure_holds {φ : Prop} {n} : (iprop(⌜φ⌝) : SiProp).holds n ↔ φ := .rfl
+@[simp] theorem pure_holds {φ : Prop} {n} : iprop(⌜φ⌝).holds n ↔ φ := .rfl
 
 @[simp] theorem and_holds {P Q : SiProp} {n} :
     iprop(P ∧ Q).holds n ↔ P.holds n ∧ Q.holds n := .rfl

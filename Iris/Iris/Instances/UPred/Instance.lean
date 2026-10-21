@@ -597,7 +597,7 @@ instance : SbiEmpValidExist (UPred M) where
 
 @[rocq_alias uPred_primitive.si_emp_valid_exist_1]
 theorem uPredSiEmpValid_exist_mp {α : Type _} {P : α → UPred M} :
-    (<si_emp_valid> (∃ x, P x) : SiProp) ⊢ ∃ x, <si_emp_valid> P x := siEmpValid_exist_mp
+    iprop(<si_emp_valid> (∃ x, P x)) ⊢ ∃ x, <si_emp_valid> P x := siEmpValid_exist_mp
 
 local bi (UPred M)
 
@@ -606,7 +606,7 @@ theorem plainly_eq_uPred_plainly (P : UPred M) : iprop(■ P) = UPred.plainly P 
 
 /-- The Sbi-derived `internalCmraValid` on UPred unfolds to `UPred.cmraValid`. -/
 theorem internalCmraValid_eq_uPred_cmraValid [ORA A] (a : A) :
-    iprop(✓ a : UPred M) = UPred.cmraValid a := rfl
+    iprop(✓ a) = UPred.cmraValid a := rfl
 
 instance : BUpd (UPred M) := ⟨bupd⟩
 

@@ -133,7 +133,7 @@ theorem ghost_map_elem_agree (γ : GName) (k : K) (dq1 dq2 : DFrac) (v1 v2 : V) 
 
 @[rocq_alias ghost_map_elem_combine_gives]
 instance ghost_map_elem_combine_gives γ (k : K) (dq1 dq2 : DFrac) (v1 v2 : V) :
-    CombineSepGives (PROP := IProp GF)
+    CombineSepGives
       (γ ↪◯MAP[k]{dq1} v1) (γ ↪◯MAP[k]{dq2} v2)
       iprop(⌜✓ (dq1 • dq2) ∧ v1 = v2⌝) where
   combine_sep_gives := by
@@ -329,7 +329,7 @@ theorem ghost_map_lookup {γ dq} {m : H V} {k : K} {dq' v} :
 
 @[rocq_alias ghost_map_lookup_combine_gives_1]
 instance ghost_map_lookup_combine_gives_1 γ (m : H V) (k : K) (dq1 dq2 : DFrac) (v : V) :
-  CombineSepGives (PROP := IProp GF)
+  CombineSepGives
     (γ ↪●MAP{dq1} m) (γ ↪◯MAP[k]{dq2} v)
     iprop(⌜get? m k = .some v⌝) where
   combine_sep_gives := by
@@ -339,7 +339,7 @@ instance ghost_map_lookup_combine_gives_1 γ (m : H V) (k : K) (dq1 dq2 : DFrac)
 
 @[rocq_alias ghost_map_lookup_combine_gives_2]
 instance ghost_map_lookup_combine_gives_2 γ (m : H V) (k : K) (dq dq' : DFrac) (v : V) :
-  CombineSepGives (PROP := IProp GF)
+  CombineSepGives
     (γ ↪◯MAP[k]{dq} v) (γ ↪●MAP{dq'} m)
     iprop(⌜get? m k = .some v⌝) where
   combine_sep_gives := by

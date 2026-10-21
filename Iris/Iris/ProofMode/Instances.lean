@@ -268,12 +268,12 @@ instance fromForall_forall [BI PROP] (Φ : α → PROP) :
 
 @[rocq_alias from_forall_pure]
 instance fromForall_pure [BI PROP] (Φ : α → Prop) :
-    FromForall (PROP := PROP) iprop(⌜∀ a, Φ a⌝) (fun a => iprop(⌜Φ a⌝)) :=
+    FromForall iprop(⌜∀ a, Φ a⌝) (fun a => iprop(⌜Φ a⌝)) :=
   ⟨pure_forall.2⟩
 
 @[rocq_alias from_forall_pure_not]
 instance fromForall_pure_not [BI PROP] (Φ : Prop) :
-    FromForall (PROP := PROP) iprop(⌜¬ Φ⌝) (fun _ : Φ => iprop(False)) :=
+    FromForall iprop(⌜¬ Φ⌝) (fun _ : Φ => iprop(False)) :=
   ⟨pure_forall.2⟩
 
 @[rocq_alias from_forall_impl_pure]
@@ -312,7 +312,7 @@ instance fromForall_tforall {TT : Tele} [BI PROP] (Φ : TT.Arg → PROP) :
 
 @[rocq_alias from_tforall_pure]
 instance fromForall_tforall_pure {TT : Tele} [BI PROP] (φ : TT.Arg → Prop) :
-    FromForall (PROP := PROP) iprop(⌜Tele.tforall φ⌝) (iprop(⌜φ ·⌝)) where
+    FromForall iprop(⌜Tele.tforall φ⌝) (iprop(⌜φ ·⌝)) where
   from_forall := pure_forall.mpr.trans (pure_mono (Tele.tforall_forall φ).mpr)
 
 /-! ### IntoForall -/
@@ -392,7 +392,7 @@ instance (priority := default + 10) fromExists_exists [BI PROP] (Φ : α → PRO
 
 @[rocq_alias from_exist_pure]
 instance fromExists_pure (φ : α → Prop) [BI PROP] :
-    FromExists (PROP := PROP) iprop(⌜∃ x, φ x⌝) (fun a => iprop(⌜φ a⌝)) where
+    FromExists iprop(⌜∃ x, φ x⌝) (fun a => iprop(⌜φ a⌝)) where
   from_exists := pure_exists.1
 
 @[rocq_alias from_exist_affinely]
@@ -429,7 +429,7 @@ instance intoExists_exists [BI PROP] (Φ : α → PROP) : IntoExists (BI.exists 
 
 @[rocq_alias into_exist_pure]
 instance intoExists_pure (φ : α → Prop) [BI PROP] :
-    IntoExists (PROP := PROP) iprop(⌜∃ x, φ x⌝) (fun a => iprop(⌜φ a⌝)) where
+    IntoExists iprop(⌜∃ x, φ x⌝) (fun a => iprop(⌜φ a⌝)) where
   into_exists := pure_exists.2
 
 @[rocq_alias into_exist_affinely]
@@ -514,12 +514,12 @@ instance (priority := default + 20) fromAnd_sep_persistent_right [BI PROP] (P1 P
 
 @[rocq_alias from_and_pure]
 instance (priority := default + 50) fromAnd_pure (φ ψ : Prop) [BI PROP] :
-    FromAnd (PROP := PROP) iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
+    FromAnd iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
   from_and := pure_and.1
 
 @[rocq_alias from_and_pure_iff]
 instance (priority := default + 50) fromAnd_pure_iff (φ ψ : Prop) [BI PROP] :
-    FromAnd (PROP := PROP) iprop(⌜φ ↔ ψ⌝) iprop(⌜φ → ψ⌝) iprop(⌜ψ → φ⌝) where
+    FromAnd iprop(⌜φ ↔ ψ⌝) iprop(⌜φ → ψ⌝) iprop(⌜ψ → φ⌝) where
   from_and := pure_and.mp.trans <| pure_mono fun h => ⟨h.left, h.right⟩
 
 @[rocq_alias from_and_persistently]
@@ -624,7 +624,7 @@ instance intoAnd_sep_affine (p : Bool) [BI PROP] (P Q : PROP)
 
 @[rocq_alias into_and_pure]
 instance intoAnd_pure (p : Bool) (φ ψ : Prop) [BI PROP] :
-    IntoAnd (PROP := PROP) p iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
+    IntoAnd p iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
   into_and := intuitionisticallyIf_mono pure_and.2
 
 @[rocq_alias into_and_affinely]
@@ -671,12 +671,12 @@ instance (priority := default - 20) fromSep_and [BI PROP] (P1 P2 : PROP)
 
 @[rocq_alias from_sep_pure]
 instance (priority := default + 20) fromSep_pure (φ ψ : Prop) [BI PROP] :
-    FromSep (PROP := PROP) iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
+    FromSep iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
   from_sep := pure_sep.1
 
 @[rocq_alias from_sep_pure_iff]
 instance (priority := default + 20) fromSep_pure_iff (φ ψ : Prop) [BI PROP] :
-    FromSep (PROP := PROP) iprop(⌜φ ↔ ψ⌝) iprop(⌜φ → ψ⌝) iprop(⌜ψ → φ⌝) where
+    FromSep iprop(⌜φ ↔ ψ⌝) iprop(⌜φ → ψ⌝) iprop(⌜ψ → φ⌝) where
   from_sep := pure_sep.mp.trans <| pure_mono fun h => ⟨h.left, h.right⟩
 
 @[rocq_alias from_sep_affinely]
@@ -785,7 +785,7 @@ instance intoSep_and_persistent_right [BI PROP] (P Q P' Q' : PROP) [Persistent Q
 
 @[rocq_alias into_sep_pure]
 instance intoSep_pure (φ ψ : Prop) [BI PROP] :
-    IntoSep (PROP := PROP) iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
+    IntoSep iprop(⌜φ ∧ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
   into_sep := pure_and.2.trans persistent_and_sep_mp
 
 @[ipm_backtrack, rocq_alias into_sep_affinely]
@@ -864,7 +864,7 @@ instance fromOr_or [BI PROP] (P1 P2 : PROP) : FromOr iprop(P1 ∨ P2) P1 P2 := �
 
 @[rocq_alias from_or_pure]
 instance fromOr_pure (φ ψ : Prop) [BI PROP] :
-    FromOr (PROP := PROP) iprop(⌜φ ∨ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
+    FromOr iprop(⌜φ ∨ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
   from_or := pure_or.1
 
 @[rocq_alias from_or_affinely]
@@ -894,7 +894,7 @@ instance intoOr_or [BI PROP] (P Q : PROP) : IntoOr iprop(P ∨ Q) P Q := ⟨.rfl
 
 @[rocq_alias into_or_pure]
 instance intoOr_pure (φ ψ : Prop) [BI PROP] :
-    IntoOr (PROP := PROP) iprop(⌜φ ∨ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
+    IntoOr iprop(⌜φ ∨ ψ⌝) iprop(⌜φ⌝) iprop(⌜ψ⌝) where
   into_or := pure_or.2
 
 @[rocq_alias into_or_affinely]
@@ -965,7 +965,7 @@ instance fromAffinely_self [BI PROP] (P : PROP) : FromAffinely P P false := ⟨.
 
 @[rocq_alias into_absorbingly_True]
 instance (priority := default + 30) intoAbsorbingly_true [BI PROP] :
-    IntoAbsorbingly (PROP := PROP) iprop(True) emp where
+    IntoAbsorbingly iprop(True) emp where
   into_absorbingly := absorbingly_emp.2
 
 @[ipm_backtrack, rocq_alias into_absorbingly_absorbing]
@@ -1081,7 +1081,7 @@ instance (priority := default + 10) fromAssumption_tforall {TT : Tele} (p : Bool
 /-! ### IntoPure -/
 
 @[rocq_alias into_pure_pure]
-instance intoPure_pure (φ : Prop) [BI PROP] : IntoPure (PROP := PROP) iprop(⌜φ⌝) φ := ⟨.rfl⟩
+instance intoPure_pure (φ : Prop) [BI PROP] : IntoPure iprop(⌜φ⌝) φ := ⟨.rfl⟩
 
 @[rocq_alias into_pure_pure_and]
 instance intoPure_pure_and (φ1 φ2 : Prop) [BI PROP] (P1 P2 : PROP)
@@ -1221,7 +1221,7 @@ instance fromPure_emp [BI PROP] : FromPure (PROP := PROP) true emp ioφ True whe
 
 @[rocq_alias from_pure_pure]
 instance fromPure_pure [BI PROP] (φ : Prop) :
-    FromPure (PROP := PROP) false iprop(⌜φ⌝) ioφ φ where
+    FromPure false iprop(⌜φ⌝) ioφ φ where
   from_pure := .rfl
 
 @[rocq_alias from_pure_pure_and]

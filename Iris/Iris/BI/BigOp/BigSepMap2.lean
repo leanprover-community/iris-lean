@@ -241,7 +241,7 @@ instance bigSepM2_affine_inst {Φ : K → A → B → PROP} {m1 : M A} {m2 : M B
   bigSepM2_affine Φ m1 m2 fun _ _ => h _ _ _
 
 @[rocq_alias big_sepM2_timeless]
-theorem bigSepM2_timeless [Timeless (emp : PROP)] (Φ : K → A → B → PROP)
+theorem bigSepM2_timeless [Timeless iprop(emp)] (Φ : K → A → B → PROP)
     (m1 : M A) (m2 : M B)
     (h : ∀ {k x1 x2}, get? m1 k = some x1 → get? m2 k = some x2 → Timeless (Φ k x1 x2)) :
     Timeless ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) :=
@@ -254,13 +254,13 @@ theorem bigSepM2_timeless [Timeless (emp : PROP)] (Φ : K → A → B → PROP)
       except0_sep.2⟩) h
 
 @[rocq_alias big_sepM2_empty_timeless]
-instance bigSepM2_empty_timeless_inst [Timeless (emp : PROP)] (Φ : K → A → B → PROP) :
+instance bigSepM2_empty_timeless_inst [Timeless iprop(emp)] (Φ : K → A → B → PROP) :
     Timeless ([∗map] k ↦ x1;x2 ∈ (∅ : M A);(∅ : M B), Φ k x1 x2) where
   timeless := (later_congr (bigSepM2_empty Φ)).1.trans <|
     Timeless.timeless.trans <| except0_mono (bigSepM2_empty Φ).2
 
 @[rocq_alias big_sepM2_timeless']
-instance bigSepM2_timeless_inst [Timeless (emp : PROP)] {Φ : K → A → B → PROP}
+instance bigSepM2_timeless_inst [Timeless iprop(emp)] {Φ : K → A → B → PROP}
     {m1 : M A} {m2 : M B} [h : ∀ k x1 x2, Timeless (Φ k x1 x2)] :
     Timeless ([∗map] k ↦ x1;x2 ∈ m1;m2, Φ k x1 x2) :=
   bigSepM2_timeless Φ m1 m2 fun _ _ => h _ _ _
