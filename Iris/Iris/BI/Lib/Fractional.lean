@@ -35,8 +35,6 @@ class FrameFractionalQp (qR qP : Qp) (r : outParam Qp) : Prop where
 
 section Lemmas
 variable {PROP : Type _} [BI PROP] {P P1 P2 : PROP} {Φ : Qp → PROP} {q q1 q2 : Qp}
-
-section
 local bi PROP
 
 /-- ## AsFractional manipulation lemmas
@@ -124,8 +122,7 @@ instance fractional_sep {Ψ : Qp → PROP} [hΦ : Fractional Φ] [hΨ : Fraction
     Fractional (fun q => iprop(Φ q ∗ Ψ q)) where
   fractional p q := (sep_congr (hΦ.fractional p q) (hΨ.fractional p q)).trans sep_sep_sep_comm
 
-end
-
+local bi _ in
 @[rocq_alias fractional_embed]
 instance fractional_embed {PROP' : Type _} [BI PROP'] [BiEmbed PROP PROP'] [hΦ : Fractional Φ] :
     Fractional (fun q => (iprop(⎡Φ q⎤) : PROP')) where
@@ -134,15 +131,13 @@ instance fractional_embed {PROP' : Type _} [BI PROP'] [BiEmbed PROP PROP'] [hΦ 
     _ ⊣⊢ ⎡Φ p ∗ Φ q⎤   := .ofMono embed_mono (hΦ.fractional p q)
     _ ⊣⊢ ⎡Φ p⎤ ∗ ⎡Φ q⎤ := embed_sep ..
 
+local bi _ in
 @[rocq_alias as_fractional_embed]
 instance as_fractional_embed {PROP' : Type _} [BI PROP'] [BiEmbed PROP PROP']
     [h : AsFractional P ioΦ Φ ioq q] :
     AsFractional (iprop(⎡P⎤) : PROP') ioΦ (fun q => iprop(⎡Φ q⎤)) ioq q where
   as_fractional := .ofMono embed_mono h.as_fractional
   as_fractional_fractional := fractional_embed (hΦ := h.as_fractional_fractional)
-
-section
-local bi PROP
 
 @[rocq_alias fractional_big_sepL]
 instance fractional_bigSepL {A : Type _} {l : List A} {Ψ : Nat → A → Qp → PROP}
@@ -205,8 +200,6 @@ theorem frame_fractional (Φ : Qp → PROP) (qR qP r : Qp) {p : Bool} {R : PROP}
     _ ⊢ Φ (qR + r) := (hR.as_fractional_fractional.fractional qR r).mpr
     _ ⊢ Φ qP       := (BIBase.BiEntails.of_eq (congrArg Φ hq.frame_fractional_qp)).mpr
     _ ⊢ P          := hP.as_fractional.mpr
-
-end
 
 end Lemmas
 

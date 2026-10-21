@@ -184,13 +184,13 @@ These instances ported from Rocq `bi_later_monoid_*` in
 
 @[rocq_alias bi.bi_later_monoid_and_homomorphism]
 instance bi_later_monoid_and_homomorphism :
-    Iris.Algebra.MonoidHomomorphism (and) and iprop(True) iprop(True) (· = ·) later :=
+    Iris.Algebra.MonoidHomomorphism and and iprop(True) iprop(True) (· = ·) later :=
   MonoidHomomorphism.ofEq BI.later_ne
     later_and.to_eq later_true.to_eq
 
 @[rocq_alias bi.bi_later_monoid_or_homomorphism]
 instance bi_later_monoid_or_homomorphism :
-    Iris.Algebra.WeakMonoidHomomorphism (or) or iprop(False) iprop(False) (· = ·) later :=
+    Iris.Algebra.WeakMonoidHomomorphism or or iprop(False) iprop(False) (· = ·) later :=
   WeakMonoidHomomorphism.ofEq BI.later_ne later_or.to_eq
 
 @[rocq_alias bi.bi_later_monoid_sep_weak_homomorphism]

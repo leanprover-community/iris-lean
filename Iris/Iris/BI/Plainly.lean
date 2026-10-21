@@ -26,11 +26,9 @@ open Iris.Std
 
 variable [Sbi PROP]
 variable {P Q R : PROP}
+local bi PROP
 
 section PlainlyLaws
-
-section
-local bi PROP
 
 @[rocq_alias affinely_plainly_elim]
 theorem affinely_plainly_elim : <affine> ■ P ⊢ P :=
@@ -394,14 +392,9 @@ instance plainly_if_absorbing (P : PROP) [Absorbing P] p : Absorbing iprop(■?p
 #rocq_ignore plainly_if_flip_mono' "Use plainly_if_mono."
 #rocq_ignore plainly_if_proper "Derivable from plainly_if_ne with NonExpansive.eqv"
 
-end
-
 end PlainlyLaws
 
 section PlainLaws
-
-section
-local bi PROP
 
 @[rocq_alias Plain]
 class Plain [BI PROP] [BIBase.Plainly PROP] (P : PROP) where
@@ -464,7 +457,7 @@ section BigOp
 @[rocq_alias plainly_sep_weak_homomorphism]
 instance plainly_sep_weak_homomorphism [BIPositive PROP] [BIAffine PROP] :
     Algebra.WeakMonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) BiEntails
-    (BIBase.plainly) where
+    BIBase.plainly where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper aa' bb' := aa'.to_eq ▸ bb'.to_eq ▸ .rfl
@@ -473,7 +466,7 @@ instance plainly_sep_weak_homomorphism [BIPositive PROP] [BIAffine PROP] :
 
 instance plainly_and_weak_homomorphism :
     Algebra.WeakMonoidHomomorphism BIBase.and BIBase.and iprop(True) iprop(True) BiEntails
-    (BIBase.plainly) where
+    BIBase.plainly where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper aa' bb' := aa'.to_eq ▸ bb'.to_eq ▸ .rfl
@@ -482,7 +475,7 @@ instance plainly_and_weak_homomorphism :
 
 instance plainly_or_weak_homomorphism [SbiEmpValidExist PROP] :
     Algebra.WeakMonoidHomomorphism BIBase.or BIBase.or iprop(False) iprop(False) BiEntails
-    (BIBase.plainly) where
+    BIBase.plainly where
   rel_refl := .rfl
   rel_trans := .trans
   op_proper aa' bb' := aa'.to_eq ▸ bb'.to_eq ▸ .rfl
@@ -492,19 +485,19 @@ instance plainly_or_weak_homomorphism [SbiEmpValidExist PROP] :
 @[rocq_alias plainly_sep_homomorphism]
 instance plainly_sep_homomorphism [BIAffine PROP] :
     Algebra.MonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) BiEntails
-    (BIBase.plainly) where
+    BIBase.plainly where
   map_unit := plainly_emp
 
 @[rocq_alias plainly_and_homomorphism]
 instance plainly_and_homomorphism :
     Algebra.MonoidHomomorphism BIBase.and BIBase.and iprop(True) iprop(True) BIBase.BiEntails
-    (BIBase.plainly) where
+    BIBase.plainly where
   map_unit := plainly_pure
 
 @[rocq_alias plainly_sep_entails_weak_homomorphism]
 instance plainly_sep_entails_weak_homomorphism :
     Algebra.WeakMonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) (flip Entails)
-      (BIBase.plainly) where
+      BIBase.plainly where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
@@ -514,7 +507,7 @@ instance plainly_sep_entails_weak_homomorphism :
 @[rocq_alias plainly_sep_entails_homomorphism]
 instance plainly_sep_entails_homomorphism [BIAffine PROP] :
     Algebra.MonoidHomomorphism BIBase.sep BIBase.sep iprop(emp) iprop(emp) (flip Entails)
-      (BIBase.plainly) where
+      BIBase.plainly where
   rel_refl := .rfl
   rel_trans := flip .trans
   op_proper := sep_mono
@@ -525,7 +518,7 @@ instance plainly_sep_entails_homomorphism [BIAffine PROP] :
 @[rocq_alias plainly_or_homomorphism]
 instance plainly_or_homomorphism [SbiEmpValidExist PROP] :
     Algebra.MonoidHomomorphism BIBase.or BIBase.or iprop(False) iprop(False) BiEntails
-    (BIBase.plainly) where
+    BIBase.plainly where
   map_unit := plainly_pure
 
 @[rocq_alias big_sepL_plainly]
@@ -585,12 +578,7 @@ theorem bigSepMS_plainly [BIAffine PROP] [LawfulFiniteMultiSet MS A] (Φ : A →
 
 end BigOp
 
-end
-
 section instances
-
-section
-local bi PROP
 
 open Plain
 
@@ -933,22 +921,19 @@ theorem except0_plainly_1 (P : PROP) : ◇ ■ P ⊢ ■ ◇ P :=
     _ ⊢ ■ ▷ False ∨ ■ P := or_mono_left later_plainly.1
     _ ⊢ ■ (▷ False ∨ P) := plainly_or_mpr
 
-end
-
+local bi _ in
 @[rocq_alias except_0_plainly]
 theorem except0_plainly {P : PROP} : ◇ ■ P ⊣⊢ ■ ◇ P :=
   calc iprop(◇ <si_pure> <si_emp_valid> P)
     _ ⊣⊢ <si_pure> (◇ <si_emp_valid> P)   := siPure_except0.symm
     _ ⊣⊢        <si_pure> (<si_emp_valid> (◇ P)) := .ofMono siPure_mono siEmpValid_except0.symm
 
+local bi _ in
 @[rocq_alias only_0_plainly]
 theorem only0_plainly {P : PROP} : <only0> ■ P ⊣⊢ ■ <only0> P :=
   calc iprop(<only0> <si_pure> <si_emp_valid> P)
     _ ⊣⊢ <si_pure> (<only0> <si_emp_valid> P)   := siPure_only0.symm
     _ ⊣⊢        <si_pure> (<si_emp_valid> (<only0> P)) := .ofMono siPure_mono siEmpValid_only0.symm
-
-section
-local bi PROP
 
 @[rocq_alias later_plain]
 instance later_plain (P : PROP) [Plain P] : Plain iprop(▷ P) where
@@ -961,8 +946,6 @@ instance laterN_plain n (P : PROP) [Plain P] : Plain iprop(▷^[n] P) where
 @[rocq_alias except_0_plain]
 instance except0_plain (P : PROP) [Plain P] : Plain iprop(◇ P) where
   plain := except0_mono Plain.plain |>.trans except0_plainly.1
-
-end
 
 end instances
 
