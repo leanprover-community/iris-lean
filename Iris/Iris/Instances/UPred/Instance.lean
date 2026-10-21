@@ -886,7 +886,7 @@ theorem BUpdPlain_bupd [UORA M] (P : UPred M) : BUpdPlain P ⊢ |==> P := by
 
 @[rocq_alias bupd_alt_bupd_iff]
 theorem BUpdPlain_bupd_iff [UORA M] (P : UPred M) : BUpdPlain P ⊣⊢ |==> P :=
-  ⟨BUpdPlain_bupd P, BUpd_BUpdPlain (PROP := UPred M)⟩
+  ⟨BUpdPlain_bupd P, BUpd_BUpdPlain⟩
 
 @[rocq_alias ownM_updateP]
 theorem ownM_updateP [UORA M] {x : M} {R : UPred M} (Φ : M → Prop) (Hup : x ~~>: Φ) :

@@ -471,33 +471,33 @@ instance laterN_absorbing (n : Nat) (P : PROP) [Absorbing P] :
 
 @[rocq_alias bi.bi_laterN_and_homomorphism]
 instance bi_laterN_and_homomorphism (n : Nat) :
-    Algebra.MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·)
+    Algebra.MonoidHomomorphism and and iprop(True) iprop(True) (· = ·)
       (iprop(▷^[n] · )) :=
   MonoidHomomorphism.ofEq (laterN_ne n)
     (equiv_iff.mpr (laterN_and n)) (equiv_iff.mpr (laterN_true n))
 
 @[rocq_alias bi.bi_laterN_or_homomorphism]
 instance bi_laterN_or_homomorphism (n : Nat) :
-    Algebra.WeakMonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·)
+    Algebra.WeakMonoidHomomorphism or or iprop(False) iprop(False) (· = ·)
       (iprop(▷^[n] · )) :=
   WeakMonoidHomomorphism.ofEq (laterN_ne n) (equiv_iff.mpr (laterN_or n))
 
 @[rocq_alias bi.bi_laterN_sep_weak_homomorphism]
 instance bi_laterN_sep_weak_homomorphism (n : Nat) :
-    Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·)
+    Algebra.WeakMonoidHomomorphism sep sep emp emp (· = ·)
       (iprop(▷^[n] · )) :=
   WeakMonoidHomomorphism.ofEq (laterN_ne n) (equiv_iff.mpr (laterN_sep n))
 
 @[rocq_alias bi.bi_laterN_sep_homomorphism]
 instance bi_laterN_sep_homomorphism [BIAffine PROP] (n : Nat) :
-    Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·)
+    Algebra.MonoidHomomorphism sep sep emp emp (· = ·)
       (iprop(▷^[n] · )) :=
   MonoidHomomorphism.ofEq (laterN_ne n)
     (equiv_iff.mpr (laterN_sep n)) (equiv_iff.mpr (laterN_emp n))
 
 @[rocq_alias bi.bi_laterN_sep_entails_weak_homomorphism]
 instance bi_laterN_sep_entails_weak_homomorphism (n : Nat) :
-    Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (flip Entails)
+    Algebra.WeakMonoidHomomorphism sep sep emp emp (flip Entails)
       (iprop(▷^[n] · )) where
   rel_refl := .rfl
   rel_trans := flip .trans
@@ -507,7 +507,7 @@ instance bi_laterN_sep_entails_weak_homomorphism (n : Nat) :
 
 @[rocq_alias bi.bi_laterN_sep_entails_homomorphism]
 instance bi_laterN_sep_entails_homomorphism (n : Nat) :
-    Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (flip Entails)
+    Algebra.MonoidHomomorphism sep sep emp emp (flip Entails)
       (iprop(▷^[n] · )) where
   rel_refl := .rfl
   rel_trans := flip .trans
@@ -663,7 +663,7 @@ theorem except0_frame_right {P Q : PROP} : ◇ P ∗ Q ⊢ ◇ (P ∗ Q) :=
   (sep_mono_right except0_intro).trans except0_sep.2
 
 @[rocq_alias bi.later_affinely_1]
-theorem later_affinely_mp {P : PROP} [Timeless (PROP := PROP) emp] :
+theorem later_affinely_mp {P : PROP} [Timeless iprop(emp)] :
     ▷ <affine> P ⊢ ◇ <affine> ▷ P := calc
   _ ⊢ ▷ emp ∧ ▷ P    := later_and.mp
   _ ⊢ ◇ emp ∧ ▷ P    := and_mono_left Timeless.timeless
@@ -682,33 +682,33 @@ instance except0_absorbing (P : PROP) [Absorbing P] : Absorbing iprop(◇ P) :=
 
 @[rocq_alias bi.bi_except_0_and_homomorphism]
 instance bi_except0_and_homomorphism :
-    Algebra.MonoidHomomorphism (and (PROP := PROP)) and iprop(True) iprop(True) (· = ·)
+    Algebra.MonoidHomomorphism and and iprop(True) iprop(True) (· = ·)
       (iprop(◇ ·)) :=
   MonoidHomomorphism.ofEq except0_ne
     (equiv_iff.mpr except0_and) (equiv_iff.mpr except0_true)
 
 @[rocq_alias bi.bi_except_0_or_homomorphism]
 instance bi_except0_or_homomorphism :
-    Algebra.WeakMonoidHomomorphism (or (PROP := PROP)) or iprop(False) iprop(False) (· = ·)
+    Algebra.WeakMonoidHomomorphism or or iprop(False) iprop(False) (· = ·)
       (iprop(◇ ·)) :=
   WeakMonoidHomomorphism.ofEq except0_ne (equiv_iff.mpr except0_or)
 
 @[rocq_alias bi.bi_except_0_sep_weak_homomorphism]
 instance bi_except0_sep_weak_homomorphism :
-    Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·)
+    Algebra.WeakMonoidHomomorphism sep sep emp emp (· = ·)
       (iprop(◇ ·)) :=
   WeakMonoidHomomorphism.ofEq except0_ne (equiv_iff.mpr except0_sep)
 
 @[rocq_alias bi.bi_except_0_sep_homomorphism]
 instance bi_except0_sep_homomorphism [BIAffine PROP] :
-    Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (· = ·)
+    Algebra.MonoidHomomorphism sep sep emp emp (· = ·)
       (iprop(◇ ·)) :=
   MonoidHomomorphism.ofEq except0_ne
     (equiv_iff.mpr except0_sep) (equiv_iff.mpr except0_emp)
 
 @[rocq_alias bi.bi_except_0_sep_entails_weak_homomorphism]
 instance bi_except0_sep_entails_weak_homomorphism :
-    Algebra.WeakMonoidHomomorphism (sep (PROP := PROP)) sep emp emp (flip Entails)
+    Algebra.WeakMonoidHomomorphism sep sep emp emp (flip Entails)
       (iprop(◇ ·)) where
   rel_refl := .rfl
   rel_trans := flip .trans
@@ -718,7 +718,7 @@ instance bi_except0_sep_entails_weak_homomorphism :
 
 @[rocq_alias bi.bi_except_0_sep_entails_homomorphism]
 instance bi_except0_sep_entails_homomorphism :
-    Algebra.MonoidHomomorphism (sep (PROP := PROP)) sep emp emp (flip Entails)
+    Algebra.MonoidHomomorphism sep sep emp emp (flip Entails)
       (iprop(◇ ·)) where
   rel_refl := .rfl
   rel_trans := flip .trans
@@ -876,7 +876,7 @@ instance exists_timeless [BI PROP] {α : Type _} (Ψ : α → PROP) [∀ x, Time
     exact except0_mono (exists_intro x)
 
 @[rocq_alias bi.emp_timeless]
-instance emp_timeless [BI PROP] [BIAffine PROP] : Timeless (PROP := PROP) emp where
+instance emp_timeless [BI PROP] [BIAffine PROP] : Timeless iprop(emp) where
   timeless := later_emp.mp.trans except0_intro
 
 @[rocq_alias bi.and_timeless]
@@ -935,7 +935,7 @@ instance persistently_timeless [BI PROP] [BIPersistentlyExist PROP] {P : PROP} [
       _ ⊢ ◇ <pers> P := except0_persistently.mpr
 
 @[rocq_alias bi.affinely_timeless]
-instance affinely_timeless [BI PROP] [Timeless (PROP := PROP) emp] {P : PROP} [Timeless P] :
+instance affinely_timeless [BI PROP] [Timeless iprop(emp)] {P : PROP} [Timeless P] :
     Timeless iprop(<affine> P) := and_timeless
 
 @[rocq_alias bi.absorbingly_timeless]
@@ -949,7 +949,7 @@ instance absorbingly_timeless [BI PROP] {P : PROP} [Timeless P] :
 
 @[rocq_alias bi.intuitionistically_timeless]
 instance intuitionistically_timeless [BI PROP] [BIPersistentlyExist PROP]
-    [Timeless (PROP := PROP) emp] {P : PROP} [Timeless P] : Timeless (PROP := PROP) iprop(□ P) :=
+    [Timeless iprop(emp)] {P : PROP} [Timeless P] : Timeless iprop(□ P) :=
   affinely_timeless
 
 @[rocq_alias bi.from_option_timeless]
@@ -996,7 +996,7 @@ theorem only0_or [BILoeb PROP] {P Q : PROP} : <only0> (P ∨ Q) ⊣⊢ <only0> P
 theorem only0_pure [BILoeb PROP] {φ : Prop} : <only0> ⌜φ⌝ ⊣⊢ ⌜φ⌝ := timeless_only0
 
 @[rocq_alias bi.only_0_emp]
-theorem only0_emp [BILoeb PROP] [Timeless (PROP := PROP) emp] :
+theorem only0_emp [BILoeb PROP] [Timeless iprop(emp)] :
     <only0> emp ⊣⊢ emp := timeless_only0
 
 @[rocq_alias bi.only_0_sep]
@@ -1015,12 +1015,12 @@ theorem only0_absorbingly [BILoeb PROP] {P : PROP} :
   only0_sep.trans (sep_congr_left only0_pure)
 
 @[rocq_alias bi.only_0_affinely]
-theorem only0_affinely [BILoeb PROP] [Timeless (PROP := PROP) emp] {P : PROP} :
+theorem only0_affinely [BILoeb PROP] [Timeless iprop(emp)] {P : PROP} :
     <only0> <affine> P ⊣⊢ <affine> <only0> P :=
   only0_and.trans (and_congr_left only0_emp)
 
 @[rocq_alias bi.only_0_intuitionistically_2]
-theorem only0_intuitionistically_mpr [BILoeb PROP] [Timeless (PROP := PROP) emp] {P : PROP} :
+theorem only0_intuitionistically_mpr [BILoeb PROP] [Timeless iprop(emp)] {P : PROP} :
     □ <only0> P ⊢ <only0> □ P :=
   (affinely_mono only0_persistently_mpr).trans only0_affinely.mpr
 

@@ -378,7 +378,7 @@ theorem twp_faa_offset {off : Nat} {i1 i2 : Int} (h : vs[off]? = some hl_val(#i1
 @[rocq_alias heap_lang.wp_faa_offset]
 theorem wp_faa_offset {off : Nat} {i1 i2 : Int} (h : vs[off]? = some hl_val(#i1)) :
     {{ ▷ l ↦∗ vs }} hl(faa(#(l + off), #i2)) @ s; E
-    {{ RET hl_val(#i1); (l ↦∗ vs.set off hl_val(#(i1 + i2)) : IProp GF) }} := by
+    {{ RET hl_val(#i1); iprop(l ↦∗ vs.set off hl_val(#(i1 + i2))) }} := by
   iintro %Φ >Hl HΦ
   iapply twp.wp_step _ rfl $$ HΦ
   iapply twp_faa_offset h $$ Hl

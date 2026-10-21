@@ -127,7 +127,7 @@ local bi _ in
 instance fractional_embed {PROP' : Type _} [BI PROP'] [BiEmbed PROP PROP'] [hΦ : Fractional Φ] :
     Fractional (fun q => (iprop(⎡Φ q⎤) : PROP')) where
   fractional p q := calc
-    (iprop(⎡Φ (p + q)⎤) : PROP')
+    iprop(⎡Φ (p + q)⎤)
     _ ⊣⊢ ⎡Φ p ∗ Φ q⎤   := .ofMono embed_mono (hΦ.fractional p q)
     _ ⊣⊢ ⎡Φ p⎤ ∗ ⎡Φ q⎤ := embed_sep ..
 

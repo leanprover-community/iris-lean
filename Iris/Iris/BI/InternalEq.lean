@@ -110,7 +110,7 @@ theorem trans {A : Type _} [OFE A] {a b c : A} :
 @[rocq_alias f_equivI]
 theorem of_internalEquiv_ne {A B : Type _} [OFE A] [OFE B] (f : A → B) [hf : NonExpansive f] {x y : A} :
     x ≡ y ⊢ f x ≡ f y :=
-  letI _ : NonExpansive (fun y => (iprop(f x ≡ f y) : PROP)) := (ne_r (f x)).comp hf
+  letI _ : NonExpansive (fun y => iprop(f x ≡ f y)) := (ne_r (f x)).comp hf
   rewrite' (fun y => iprop(f x ≡ f y)) .rfl refl
 
 end internalEq
@@ -194,9 +194,9 @@ theorem prod_equivI {A B : Type _} [OFE A] [OFE B] (x y : A × B) :
     x ≡ y ⊣⊢ x.1 ≡ y.1 ∧ x.2 ≡ y.2 := by
   constructor
   · exact and_intro (of_internalEquiv_ne Prod.fst) (of_internalEquiv_ne Prod.snd)
-  · letI _ : NonExpansive (fun a => (iprop(x ≡ (a, y.2)) : PROP)) :=
+  · letI _ : NonExpansive (fun a => iprop(x ≡ (a, y.2))) :=
       (ne_r x).comp (prod_mk_ne_left y.2)
-    letI _ : NonExpansive (fun b => (iprop(x ≡ (x.1, b)) : PROP)) :=
+    letI _ : NonExpansive (fun b => iprop(x ≡ (x.1, b))) :=
       (ne_r x).comp (prod_mk_ne_right x.1)
     refine rewrite' (fun a => iprop(x ≡ (a, y.2))) and_elim_l ?_
     exact rewrite' (fun b => iprop(x ≡ (x.1, b))) and_elim_r refl
@@ -406,7 +406,7 @@ theorem prop_ext_siEmpValid_mpr (P Q : PROP) :
 theorem prop_ext_siEmpValid_equiv (P Q : PROP) :
     SiProp.internalEq P Q ⊣⊢@{SiProp} <si_emp_valid> (P ∗-∗ Q) := by
   letI _ : NonExpansive (fun Q : PROP => iprop(<si_pure> <si_emp_valid> (P ∗-∗ Q))) :=
-    ((Sbi.siPure_ne (PROP := PROP)).comp Sbi.siEmpValid_ne).comp (NonExpansive₂.ne_right wandIff P)
+    (Sbi.siPure_ne.comp Sbi.siEmpValid_ne).comp (NonExpansive₂.ne_right wandIff P)
   refine ⟨?_, prop_ext_siEmpValid⟩
   rw [← siPure_entails (PROP := PROP)]
   change P ≡ Q ⊢ <si_pure> <si_emp_valid> (P ∗-∗ Q)
@@ -439,9 +439,9 @@ local bi _ in
 theorem only0_internalEq (P Q : PROP) :
     <only0> (P ≡ Q) ⊣⊢@{PROP} iprop(<only0> P) ≡ iprop(<only0> Q) := by
   change iprop(<only0> <si_pure> (SiProp.internalEq P Q))
-    ⊣⊢@{PROP} <si_pure> (SiProp.internalEq iprop(<only0> P) iprop(<only0> Q))
+    ⊣⊢ <si_pure> (SiProp.internalEq iprop(<only0> P) iprop(<only0> Q))
   calc iprop(<only0> <si_pure> (SiProp.internalEq P Q))
-    _ ⊣⊢@{PROP} <si_pure> <only0> (SiProp.internalEq P Q) := siPure_only0.symm
+    _ ⊣⊢ <si_pure> <only0> (SiProp.internalEq P Q) := siPure_only0.symm
     _ ⊣⊢ <si_pure> <only0> <si_emp_valid> (P ∗-∗ Q) :=
         .ofMono siPure_mono (.ofMono only0_mono (prop_ext_siEmpValid_equiv P Q))
     _ ⊣⊢ <si_pure> <si_emp_valid> (<only0> (P ∗-∗ Q)) :=
