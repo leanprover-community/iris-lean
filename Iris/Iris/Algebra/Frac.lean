@@ -104,7 +104,7 @@ instance Qp.instRA : RA Qp where
     rintro H He; exact ⟨y, z, He, .rfl, .rfl⟩
   pcore_op_mono H := by rcases H
 
-instance instORAQp : CMRA Qp := ofCMRAData Qp.cmraData
+instance instCMRAQp : CMRA Qp := ofCMRAData Qp.cmraData
 
 -- TODO: A different solution to having these bridge lemmas might be to internalize
 -- positivity into the ORA's validity predicate, removing the sybtype, and having Qp
@@ -176,8 +176,6 @@ theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := by
 instance instDiscreteQp : Discrete Qp where
   discrete_0 := fun h => h
   discrete_valid := id
-  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
-
 @[rocq_alias frac_full_exclusive]
 instance instExclusiveQp1 : Exclusive (α := Qp) 1 where
   exclusive0_l x := by have := x.2; grind

@@ -124,7 +124,7 @@ instance instRA : RA DFrac where
       rcases z with z|_|z <;> simp [Op.op, op]
 
 @[rocq_alias dfracR]
-instance instORADFrac : CMRA DFrac := ofCMRAData DFrac.cmraData
+instance instCMRADFrac : CMRA DFrac := ofCMRAData DFrac.cmraData
 
 @[indexed, rocq_alias dfrac_full_exclusive]
 instance own_whole_exclusive : Exclusive (α := DFrac) (own 1) where
@@ -186,8 +186,6 @@ theorem valid_own_op_discard {q : Qp} : ✓ own q • discard ↔ q.val < 1 := b
 @[rocq_alias dfrac_cmra_discrete]
 instance : Discrete DFrac where
   discrete_valid {x} := by simp [ORA.Valid, ORA.ValidN]
-  discrete_ord := CMRA.ord_of_ord0
-
 theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨fun h => h⟩
 
 @[rocq_alias dfrac_discarded_core_id]

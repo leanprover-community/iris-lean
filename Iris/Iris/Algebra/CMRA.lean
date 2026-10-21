@@ -30,7 +30,7 @@ classes take these as instance *parameters* and never extend them:
   (`instance : ORA X where …`), or through the input records/builders, which only ask for the
   step-indexed laws: `ORA.ofCMRAData (d : CMRAData X) : CMRA X`,
   `UORA.ofUCMRAData (d : UCMRAData X) : UCMRA X` (with `[URA X] [CMRA X]`),
-  `CMRA.ofDiscrete`, `CMRA.ofDiscreteTotal`, `ORA.ofDiscrete`, `CMRA.ofIso`, ….
+  `CMRA.ofDiscrete`, `CMRA.ofDiscreteTotal`, `ORA.ofDiscreteORAData`, `CMRA.ofIso`, ….
 
 **Binder convention.** Lemmas whose statement does not mention the step index take only
 `[RA α]`/`[URA α]` (plus SI-free mixins such as `IsTotal α`); lemmas mentioning validity, the
@@ -1123,7 +1123,8 @@ variable (SI) in
 @[indexed, rocq_alias CmraDiscrete]
 class Discrete (α : Type _) [RA α] [ORA α] extends OFE.Discrete α where
   discrete_valid {x : α} : ✓{0} x → ✓ x
-  discrete_ord {x y : α} : x ≼ₒ{0} y → x ≼ₒ y
+  discrete_ord {x y : α} : x ≼ₒ{0} y → x ≼ₒ y := by
+    first | exact CMRA.ord_of_ord0 | exact fun ⟨z, hz⟩ => ⟨z, hz⟩
 export Discrete (discrete_valid discrete_ord)
 #rocq_ignore discrete_validN_instance "Use CMRA instance"
 
@@ -1136,7 +1137,7 @@ end ORA
 class UORA (SI : stepindex (Type _)) [instSI : SIdx SI] (α : Type _) [URA α]
     extends ORA α, OrderRefl α where
   unit_valid {SI} : ✓ (UnitOp.unit : α)
-#rocq_ignore Unit "Lean uses the UCMRA.unit field; no separate class needed."
+#rocq_ignore Unit "Lean uses `UnitOp.unit` from `URA`; no separate class needed."
 #rocq_ignore ucmra_cmraR "Folded into Lean's UCMRA extends CMRA."
 #rocq_ignore ucmra_ofeO "Folded into Lean's UCMRA → OFE."
 
@@ -3079,7 +3080,6 @@ instance ucmraUnit : UCMRA Unit := UORA.ofUCMRAData Unit.ucmraData
 @[rocq_alias unit_cmra_discrete]
 instance : ORA.Discrete Unit where
   discrete_valid _ := ⟨⟩
-  discrete_ord _ := ⟨(), rfl⟩
 
 end unit
 
@@ -3118,7 +3118,6 @@ instance cmraEmpty : CMRA Empty := ofCMRAData Empty.cmraData
 @[rocq_alias Empty_set_cmra_discrete]
 instance : ORA.Discrete Empty where
   discrete_valid := id
-  discrete_ord {x} := x.elim
 
 @[rocq_alias Empty_set_core_id]
 instance (x : Empty) : CoreId x where
@@ -3443,6 +3442,10 @@ theorem some_mk_ord_left {a₁ a₂ : α} {b₁ b₂ : β} (h : some (a₁, b₁
 
 theorem some_mk_ord_right {a₁ a₂ : α} {b₁ b₂ : β} (h : some (a₁, b₁) ≼ₒ some (a₂, b₂)) :
     some b₁ ≼ₒ some b₂ := (some_mk_ord h).2
+
+theorem some_op_ordN_snd {n} {x y : α × β} {c : Option (α × β)} (h : some x • c ≼ₒ{n} some y) :
+    some x.2 • c.map Prod.snd ≼ₒ{n} some y.2 := by
+  cases c <;> exact h.imp (·.2) (·.2)
 
 @[rocq_alias Some_pair_includedN]
 theorem some_mk_incN {n} {a₁ a₂ : α} {b₁ b₂ : β}
@@ -3803,39 +3806,39 @@ section OfDiscrete
 instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] [RA α] (Valid : α → Prop) h₁ h₂ :
     @Discrete _ _ α _ (ofDiscrete Valid h₁ h₂).toORA :=
   letI := ofDiscrete Valid h₁ h₂
-  { discrete_valid := id
-    discrete_ord := CMRA.ord_of_ord0 (α := α) }
+  { discrete_valid := id }
 
 end OfDiscrete
 end CMRA
 
+/-- Smart constructor for discrete ORA instances. -/
+structure DiscreteORAData (α : Type _) [RA α] where
+  Valid : α → Prop
+  Order : α → α → Prop
+  valid_op_left : ∀ x y : α, Valid (x • y) → Valid x
+  ord_trans : ∀ x y z : α, Order x y → Order y z → Order x z
+  op_mono_left : ∀ x y z : α, Order x y → Order (x • z) (y • z)
+  valid_of_ord : ∀ x y : α, Order x y → Valid y → Valid x
+  pcore_mono : ∀ x y cx : α, Order x y → PCore.pcore x = some cx →
+    ∃ cy, PCore.pcore y = some cy ∧ Order cx cy
+  pcore_order_op : ∀ x cx : α, PCore.pcore x = some cx →
+    ∀ y, ∃ cxy, PCore.pcore (x • y) = some cxy ∧ Order cx cxy
+  pcore_increasing : ∀ x cx : α, PCore.pcore x = some cx → ∀ y, Order y (cx • y)
+  increasing_closed : ∀ x y : α, (∀ z, Order z (x • z)) → Order x y → ∀ z, Order z (y • z)
+
 namespace ORA
 
-/-- Constructing an ordered resource algebra on a discrete OFE from its SI-free resource algebra
-`RA α`. Because the OFE is discrete the step-indexed laws follow from their plain counterparts,
-so only the latter are asked for. -/
-@[reducible] def ofDiscrete [OFE α] [OFE.Discrete α] [RA α]
-    (Valid : α → Prop) (Order : α → α → Prop)
-    (valid_op_left : ∀ x y : α, Valid (x • y) → Valid x)
-    (ord_trans : ∀ x y z : α, Order x y → Order y z → Order x z)
-    (op_mono_left : ∀ x y z : α, Order x y → Order (x • z) (y • z))
-    (valid_of_ord : ∀ x y : α, Order x y → Valid y → Valid x)
-    (pcore_mono : ∀ x y cx : α, Order x y → pcore x = some cx →
-      ∃ cy, pcore y = some cy ∧ Order cx cy)
-    (pcore_order_op : ∀ x cx : α, pcore x = some cx →
-      ∀ y, ∃ cxy, pcore (x • y) = some cxy ∧ Order cx cxy)
-    (pcore_increasing : ∀ x cx : α, pcore x = some cx → ∀ y, Order y (cx • y))
-    (increasing_closed : ∀ x y : α, (∀ z, Order z (x • z)) → Order x y → ∀ z, Order z (y • z)) :
+@[indexed, reducible] def ofDiscreteORAData [OFE α] [OFE.Discrete α] [RA α] (d : DiscreteORAData α) :
     ORA α :=
   letI : _root_.Iris.Valid α :=
-    { Valid
-      ValidN _ := Valid
+    { Valid := d.Valid
+      ValidN _ := d.Valid
       valid_iff_validN := (forall_const _).symm }
   letI : Ordered α :=
-    { Order
-      OrderN _ := Order
-      ordN_trans := ord_trans _ _ _
-      ord_trans := ord_trans _ _ _
+    { Order := d.Order
+      OrderN _ := d.Order
+      ordN_trans := d.ord_trans _ _ _
+      ord_trans := d.ord_trans _ _ _
       ordN_of_ord _ := id }
   { op_ne.ne _ _ _ h := (congrArg (_ • ·) (OFE.discrete h)).dist
     pcore_ne h hcx := ⟨_, (OFE.discrete h) ▸ hcx, .rfl⟩
@@ -3843,19 +3846,24 @@ so only the latter are asked for. -/
     validN_le := fun h _ => h
     ordN_ne ex ey h := (OFE.discrete ex) ▸ (OFE.discrete ey) ▸ h
     ordN_le := fun h _ => h
-    validN_op_left := valid_op_left _ _
+    validN_op_left := d.valid_op_left _ _
     extend _ h := ⟨_, _, OFE.discrete h, .rfl, .rfl⟩
-    op_monoN_left_ord z h := op_mono_left _ _ z h
-    op_mono_left_ord z h := op_mono_left _ _ z h
-    validN_of_ordN := valid_of_ord _ _
-    pcore_monoN_ord h e := pcore_mono _ _ _ h e
-    pcore_mono_ord h e := pcore_mono _ _ _ h e
-    pcore_order_op e y := pcore_order_op _ _ e y
-    pcore_increasing e := ⟨pcore_increasing _ _ e⟩
+    op_monoN_left_ord z h := d.op_mono_left _ _ z h
+    op_mono_left_ord z h := d.op_mono_left _ _ z h
+    validN_of_ordN := d.valid_of_ord _ _
+    pcore_monoN_ord h e := d.pcore_mono _ _ _ h e
+    pcore_mono_ord h e := d.pcore_mono _ _ _ h e
+    pcore_order_op e y := d.pcore_order_op _ _ e y
+    pcore_increasing e := ⟨d.pcore_increasing _ _ e⟩
     increasing_closed {_ x y} hx h := ⟨fun z => match h with
         | .inl e => (OFE.discrete e) ▸ hx.increasing z
-        | .inr ho => increasing_closed x y (fun w => hx.increasing w) ho z⟩
+        | .inr ho => d.increasing_closed x y (fun w => hx.increasing w) ho z⟩
     ordN_extend _ _ h := ⟨_, h, .rfl⟩ }
+
+instance ofDiscreteORAData_discrete [OFE α] [OFE.Discrete α] [RA α] (d : DiscreteORAData α) :
+    @Discrete _ _ α _ (ofDiscreteORAData d) :=
+  letI := ofDiscreteORAData d
+  { discrete_valid := id, discrete_ord := id }
 
 end ORA
 end CmraMixin

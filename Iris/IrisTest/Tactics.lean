@@ -3626,7 +3626,7 @@ example [BI PROP] {P Q R : PROP} : ⊢ P -∗ Q -∗ □ R -∗ R ∗ P ∗ Q :=
     `a2` and `a3` can be combined as `b` instead of `a2 • a3` as
     the former takes higher precedence. Likewise, `a1` and `b` is merged
     as `c` instead of `a1 • b`. -/
-example {F GF} [RFunctorContractive F] [RFunctorAffine F] [ElemG GF F] {γ}
+example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
     {a1 a2 a3 b c : F.ap (IProp GF)} [IsOp .merge b a2 a3] [IsOp .merge c a1 b] :
     ⊢ iOwn γ a1 -∗ iOwn γ a2 -∗ iOwn γ a3 -∗
       iOwn γ c ∗ ✓ (a2 • a3) ∗ ✓ (a1 • b) := by
@@ -3660,7 +3660,7 @@ example {GF} [ElemG GF (constOF DFrac)]
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
     instances for the authoritative ORA. -/
-example {GF A} [URA A] [UCMRA A] [ORA.Affine A] [ElemG GF (constOF (Auth A))] {γ}
+example {GF A} [URA A] [UCMRA A] [ElemG GF (constOF (Auth A))] {γ}
     {a1 a2 a3 b c : A} {q1 q2 : Qp} {dq'' dq3 dq4 : DFrac}
     [IsOp .merge b a2 a3] [IsOp .merge c a1 b]
     [IsOp .merge dq'' dq3 dq4] :

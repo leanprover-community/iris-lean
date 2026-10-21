@@ -836,8 +836,10 @@ theorem ownM_ord_mono {a b : M} (hinc : b ≼ₒ a) : ownM a ⊢ ownM b :=
 theorem ownM_mono [IncOrd M] {a b : M} (hinc : b ≼ a) : ownM a ⊢ ownM b :=
   ownM_ord_mono (IncOrd.inc_ord hinc)
 
+theorem ownM_unit_emp : ownM unit ⊣⊢@{UPred M} emp := .rfl
+
 @[rocq_alias uPred.ownM_unit']
-theorem ownM_unit' : ownM unit ⊣⊢@{UPred M} emp := .rfl
+theorem ownM_unit' [IncOrd M] : ownM unit ⊣⊢@{UPred M} True := ownM_unit_emp.trans true_emp.symm
 
 @[rocq_alias uPred.bupd_ownM_update]
 theorem bupd_ownM_update {x y : M} (hupd : x ~~> y) : ownM x ⊢ |==> ownM y := by
@@ -865,7 +867,7 @@ instance ownM_sep_homomorphism :
   rel_trans := Eq.trans
   op_proper ha hb := ha ▸ hb ▸ rfl
   map_op := (ownM_op ..).to_eq
-  map_unit := ownM_unit'.to_eq
+  map_unit := ownM_unit_emp.to_eq
 
 @[rocq_alias uPred.bupd_soundness]
 theorem bupd_soundness {P : UPred M} [Plain P] : (⊢ |==> P) → ⊢ P := fun h n x hx =>

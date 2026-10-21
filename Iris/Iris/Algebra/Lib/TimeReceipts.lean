@@ -67,11 +67,11 @@ def viewRel : ViewRel Count frag := fun _ a f =>
   ∃ a₁ a₂, a.toNat = a₁ + a₂ ∧ a₁ ≤ a₂ ∧ f.1.toNat ≤ a₁ ∧ f.2.toNat ≤ a₂
 
 @[rocq_alias time_receipt_view_rel]
-private instance : IsViewRel viewRel := .ofMonoOrd
+private instance : IsViewRel viewRel := .ofMonoInc
   (fun {n₁} {_} f₁ n₂ _ f₂ h ha hf hn => by
     obtain ⟨b₁, b₂, hb₀, hb, h₁, h₂⟩ := h
     obtain rfl := (ha : _ = _)
-    obtain ⟨⟨z, hz : f₁.1.toNat = f₂.1.toNat + z.toNat⟩, hf₂⟩ := Prod.incN_def.mp (ordN_incN hf)
+    obtain ⟨⟨z, hz : f₁.1.toNat = f₂.1.toNat + z.toNat⟩, hf₂⟩ := Prod.incN_def.mp hf
     have hle : f₂.2.toNat ≤ f₁.2.toNat := MaxNat.inc_iff.mp <| (inc_iff_incN n₂).mpr hf₂
     exact ⟨b₁, b₂, hb₀, hb, by omega, by omega⟩)
   (fun _ _ _ _ => ⟨trivial, trivial⟩)

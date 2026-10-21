@@ -378,10 +378,11 @@ instance intoExcept0_persistently [BI PROP] [BIPersistentlyExist PROP] (P Q : PR
 
 /-! ### ElimModal -/
 
+/- only for .out since `IntoExcept0` only works if `P'` is an output -/
 @[ipm_backtrack, rocq_alias elim_modal_timeless]
-instance (priority := default - 10) elimModal_timeless [BI PROP] [BIPersistentlyExist PROP] p io
+instance (priority := default - 10) elimModal_timeless [BI PROP] [BIPersistentlyExist PROP] p
     (P P' Q : PROP) [inst : IntoExcept0 P P'] [IsExcept0 Q] :
-    ElimModal True p io p P P' Q Q where
+    ElimModal True p .out p P P' Q Q where
   elim_modal _ := calc
     _ ⊢ ◇ □?p P' ∗ (□?p P' -∗ Q)   := sep_mono_left <|
         (intuitionisticallyIf_mono inst.into_except0).trans except0_intuitionisticallyIf
@@ -395,9 +396,9 @@ Fallback of `elimModal_timeless` for BIs without `BIPersistentlyExist`: the resi
 hypothesis is moved to the spatial context.
 -/
 @[ipm_backtrack]
-instance (priority := default - 11) elimModal_timeless_spatial [BI PROP] p io
+instance (priority := default - 11) elimModal_timeless_spatial [BI PROP] p
     (P P' Q : PROP) [inst : IntoExcept0 P P'] [IsExcept0 Q] :
-    ElimModal True p io false P P' Q Q where
+    ElimModal True p .out false P P' Q Q where
   elim_modal _ := calc
     _ ⊢ ◇ P' ∗ (P' -∗ Q)   := sep_mono_left <|
         intuitionisticallyIf_elim.trans inst.into_except0

@@ -108,7 +108,6 @@ attribute [local instance] instCMRA
 
 @[reducible] def instDiscrete : ORA.Discrete α where
   discrete_valid := id
-  discrete_ord := CMRA.ord_of_ord0
 attribute [local instance] instDiscrete
 #rocq_ignore nat_cmra_discrete "Use the (ℕ, +) Constant Core instance."
 #rocq_ignore Z_cmra_discrete "Use the (ℤ, +) Constant Core instance."
@@ -238,7 +237,6 @@ attribute [local instance] instCMRA
 
 @[reducible] def instDiscrete : ORA.Discrete α where
   discrete_valid := id
-  discrete_ord := CMRA.ord_of_ord0
 attribute [local instance] instDiscrete
 #rocq_ignore max_nat_cmra_discrete "Use the (ℕ, max) Universal Core instance."
 #rocq_ignore max_Z_cmra_discrete "Use the (ℤ, max) Universal Core instance."
@@ -345,7 +343,6 @@ attribute [local instance] instCMRA
 
 @[reducible] def instDiscrete : ORA.Discrete α where
   discrete_valid := id
-  discrete_ord := CMRA.ord_of_ord0
 attribute [local instance] instDiscrete
 #rocq_ignore pos_cmra_discrete "Use (PNat, +) No Core instance."
 

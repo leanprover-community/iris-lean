@@ -83,7 +83,6 @@ instance instUnital : UCMRA (LeibnizMultiSet MS) := UORA.ofUCMRAData LeibnizMult
 instance : ORA.Discrete (LeibnizMultiSet MS) where
   discrete_0 h := h
   discrete_valid := id
-  discrete_ord | ⟨z, hz⟩ => ⟨z, hz⟩
 
 @[rocq_alias gmultiset_op]
 theorem op_disjUnion (X Y : MS) : (ofSet X) • (ofSet Y) = ofSet (X ⊎ Y) := rfl

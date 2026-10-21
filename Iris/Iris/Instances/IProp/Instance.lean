@@ -73,16 +73,16 @@ section ElemG
 
 /-- `ElemG` takes functors instead of CMRAs -/
 @[rocq_alias inG]
-class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F]
-    [RFunctorAffine F] where
+class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] where
   τ : GType
+  [affine : RFunctorAffine F]
   transp : FF τ = ⟨F⟩
 
 #rocq_ignore subG_inG "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
 open OFE
 
-variable [I : RFunctorContractive F] [IA : RFunctorAffine F]
+variable [I : RFunctorContractive F]
 
 theorem ElemG.transpMap (E : ElemG GF F) : (GF E.τ).F = F := congrArg GFunctor.F E.transp
 
@@ -259,13 +259,13 @@ section iSingleton
 open IProp OFE Iris.UPred GenMap
 
 @[rocq_alias iRes_singleton]
-def iSingleton {GF} F [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F] (γ : GName)
+def iSingleton {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName)
     (v : F.ap (IProp GF)) : IResUR GF :=
   fun τ' =>
     if H : τ' = E.τ then GenMap.singleton γ (H ▸ (unfoldi (E.bundle v)))
     else GenMap.empty
 
-variable {GF F} [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F]
+variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 
 theorem iResUR_op_eval (c1 c2 : IResUR GF) : (c1 • c2) τ' γ' = (c1 τ' γ') • (c2 τ' γ') := by
   simp [op, optionOp]
@@ -542,7 +542,7 @@ theorem later_internalEq_iSingleton {a : F.ap (IProp GF)} {r : IResUR GF} :
 end iSingleton
 
 @[rocq_alias own, irreducible]
-def iOwn {GF F} [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F] (γ : GName)
+def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName)
     (v : F.ap (IProp GF)) : IProp GF :=
   UPred.ownM <| iSingleton F γ v
 
@@ -554,7 +554,7 @@ section iOwn
 
 open IProp OFE Iris.UPred BI GenMap ProofMode
 
-variable {GF F} [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F]
+variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 
 @[rocq_alias own_ne]
 instance iOwn_ne : NonExpansive (iOwn τ : F.ap (IProp GF) → IProp GF) where
@@ -584,8 +584,9 @@ theorem iOwn_ord_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ₒ a1) : iOwn γ a1 
   exact UPred.ownM_ord_mono (iSingleton_ord_mono H)
 
 @[rocq_alias own_mono]
-theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOwn γ a2 :=
-  iOwn_ord_mono (IncOrd.inc_ord H)
+theorem iOwn_mono {a1 a2 : F.ap (IProp GF)} (H : a2 ≼ a1) : iOwn γ a1 ⊢ iOwn γ a2 := by
+  obtain ⟨c, rfl⟩ := H
+  exact iOwn_op.mp.trans BI.sep_elim_left
 
 @[rocq_alias own_valid]
 theorem iOwn_cmraValid {a : F.ap (IProp GF)} : iOwn γ a ⊢ ✓ a := by
@@ -681,7 +682,7 @@ theorem alloc_update_unit {f : GName → F.ap (IProp GF)} :
   apply UpdateP.total.mpr
   intros n mf Hvalid
   replace Hvalid : ✓{n} mf := validN_ne unit_left_id.dist Hvalid
-  obtain ⟨γ, Hfresh⟩ := @IResUR.valid_exists_fresh GF F _ _ E n mf Hvalid
+  obtain ⟨γ, Hfresh⟩ := IResUR.valid_exists_fresh (F := F) Hvalid
   refine ⟨iSingleton F γ (f γ), ⟨γ, rfl⟩, ?_⟩
   apply validN_iSingleton_op Hvalid (Hf_valid _).validN Hfresh
 
@@ -903,7 +904,7 @@ section big_op_instances
 open IProp OFE Iris.UPred BI GenMap ProofMode Algebra Iris.Std
 open scoped Iris.Std.PartialMap
 
-variable {GF F} [URFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F]
+variable {GF F} [URFunctorContractive F] [E : ElemG GF F]
 
 @[rocq_alias own_cmra_sep_homomorphism]
 instance iOwn_cmra_sep_homomorphism (γ : GName) :
@@ -979,11 +980,11 @@ section own_forall
 open IProp OFE BI
 
 @[rocq_alias iRes_project]
-def iResProject {GF} F [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F] (γ : GName)
+def iResProject {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName)
     (x : IResUR GF) : Option (F.ap (IProp GF)) :=
   ((x E.τ).car γ).map fun v => E.unbundle (foldi v)
 
-variable {GF F} [RFunctorContractive F] [RFunctorAffine F] [E : ElemG GF F]
+variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 
 @[rocq_alias iRes_project_op]
 theorem iResProject_op (x y : IResUR GF) :
@@ -1168,6 +1169,7 @@ theorem iOwn_and_discrete_total [ORA.Discrete (F.ap (IProp GF))] [OrdInc (F.ap (
     [IsTotal (F.ap (IProp GF))] {a1 a2 c : F.ap (IProp GF)}
     (h : ∀ c', ✓ c' → a1 ≼ c' → a2 ≼ c' → c ≼ c') :
     (iOwn γ a1 ∧ iOwn γ a2) ⊢ iOwn γ c :=
+  have := E.affine
   iOwn_ord_and_discrete_total fun c' hv h1 h2 =>
     IncOrd.inc_ord (h c' hv (OrdInc.ord_inc h1) (OrdInc.ord_inc h2))
 

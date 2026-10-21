@@ -399,7 +399,7 @@ instance [ORA.Discrete A] : ORA.Discrete (ReservationMap A H) where
     · exact validN_disj v
   discrete_ord h := ⟨fun k => discrete_ord (h.1 k), discrete_ord h.2⟩
 
-#rocq_ignore reservation_map_empty_instance "Part of UCMRA instance"
+#rocq_ignore reservation_map_empty_instance "Part of UORA instance"
 
 @[rocq_alias reservation_map_data_core_id]
 instance instCoreIdSingleton {a : A} [CoreId a] : CoreId (singleton (H := H) k a) where

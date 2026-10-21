@@ -465,7 +465,7 @@ theorem increasing_iff {m : M V} : Increasing m ↔ ∀ k, Increasing (get? m k)
 
 open OFE in
 @[rocq_alias gmapR, rocq_alias gmap_cmra_mixin]
-instance instStoreCMRA : ORA (M V) where
+instance instStoreORA : ORA (M V) where
   toValid := raValid
   op_ne.ne _ x1 x2 H i := by
     rename_i x _
@@ -547,8 +547,8 @@ instance instStoreCMRA : ORA (M V) where
 end
 
 @[rocq_alias gmap_ucmra_mixin, rocq_alias gmapUR]
-instance instStoreUCMRA : UORA (M V) where
-  toORA := instStoreCMRA
+instance instStoreUORA : UORA (M V) where
+  toORA := instStoreORA
   unit_valid k := by rw [show get? (UnitOp.unit : M V) k = none from get?_empty k]; trivial
   ord_refl _ := fun _ => ord_refl _
 

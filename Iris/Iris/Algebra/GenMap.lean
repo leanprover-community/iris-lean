@@ -308,7 +308,7 @@ instance instORA_GenMap : ORA (GenMap β) where
 
 end
 
-instance instUCMRA_GenMap : UORA (GenMap β) where
+instance instUORA_GenMap : UORA (GenMap β) where
   toORA := instORA_GenMap β
   unit_valid := show ✓ (GenMap.empty (β := β)).car from fun _ => trivial
   ord_refl x := show x.car ≼ₒ x.car from fun k => OrderRefl.ord_refl (x.car k)

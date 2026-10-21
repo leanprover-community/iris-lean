@@ -45,7 +45,8 @@ variable (K V : Type _) (H : Type _ → Type _) [LawfulPartialMap H K] [RA V] [O
 
 #rocq_ignore gmap_view_fragUR "Inlined as the fragment type `H (DFrac × V)`"
 
-/-- The view relation for heaps: relates a model heap to a fragment heap at step index `n`. -/
+/-- The view relation for heaps: relates a model heap to a fragment heap at step index `n`.
+Generalizes Rocq's `gmap_view_rel_raw` to ORAs; for CMRAs it is the literal port `HeapRInc` (`HeapR.iff_inc`). -/
 @[indexed, rocq_alias gmap_view_rel_raw]
 def HeapR (n : SI) (m : H V) (f : H (DFrac × V)) : Prop :=
   ∀ k fv, get? f k = some fv →

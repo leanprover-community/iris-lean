@@ -24,7 +24,7 @@ local stepindex SI
 abbrev MonoZ := Auth (Option MaxInt)
 
 #rocq_ignore mono_ZR "Use the MonoZ type and View.instCMRA typeclass"
-#rocq_ignore mono_ZUR "Use the MonoZ type and View.instUCMRA typeclass"
+#rocq_ignore mono_ZUR "Use the MonoZ type and View.instUORA typeclass"
 
 namespace MonoZ
 open ORA

@@ -463,7 +463,7 @@ theorem op_inv {x y : Agree α} : valid (op x y) → x = y :=
   pcore_op_mono := fun {x cx} h y => by obtain rfl := Option.some.inj h; exact ⟨y, rfl⟩
 
 @[rocq_alias agree_cmra_mixin]
-instance instORA : CMRA (Agree α) := ofCMRAData Agree.cmraData
+instance instCMRA : CMRA (Agree α) := ofCMRAData Agree.cmraData
 
 #rocq_ignore agreeR "Use the plain Agree type with a typeclass instance instead."
 #rocq_ignore agree_op_instance "Use the CMRA instance instead."
@@ -496,7 +496,6 @@ instance instDiscrete [OFE.Discrete α] : OFE.Discrete (Agree α) where
 @[rocq_alias agree_cmra_discrete]
 instance instORADiscrete [OFE.Discrete α] : ORA.Discrete (Agree α) where
   discrete_valid {x} := x.ind fun _ => Raw.discrete_valid
-  discrete_ord := CMRA.ord_of_ord0
 
 theorem ordN {n} {x y : Agree α} : x ≼ₒ{n} y ↔ y ≡{n}≡ y • x := by
   refine ⟨fun ⟨z, h⟩ => ?_, fun h => ⟨y, h.trans op_commN⟩⟩
