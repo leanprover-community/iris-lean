@@ -25,11 +25,11 @@ variable [inst : BIBase PROP] (P Q R : PROP) (Ψ : Nat → PROP) (Φ : Nat → N
 #guard_msgs in
 #check P ⊢ Q
 
-/-- info: iprop(emp) : ?m.2 -/
+/-- info: iprop(emp) : ?m.3 -/
 #guard_msgs in
 #check iprop(emp)
 
-/-- info: iprop(⌜φ⌝) : ?m.2 -/
+/-- info: iprop(⌜φ⌝) : ?m.3 -/
 #guard_msgs in
 #check iprop(⌜φ⌝)
 
@@ -168,10 +168,10 @@ end BITelescopes
 #guard_msgs in
 #check iprop(P ∗ (<pers> Q))
 
-/-- info: iprop(True) : ?m.2 -/
+/-- info: iprop(True) : ?m.3 -/
 #guard_msgs in
 #check iprop(True)
-/-- info: iprop(False) : ?m.2 -/
+/-- info: iprop(False) : ?m.3 -/
 #guard_msgs in
 #check iprop(False)
 
