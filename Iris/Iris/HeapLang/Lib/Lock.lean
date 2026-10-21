@@ -11,6 +11,7 @@ public import Iris.HeapLang.Instances
 namespace Iris.HeapLang
 
 open BI
+local bi IProp GF
 
 @[expose] public section
 
@@ -31,7 +32,7 @@ class Lock (GF : BundledGFunctors) [IrisGS_gen hlc Exp GF] where
   isLock_iff {N} γ lk (R₁ R₂ : IProp GF) : isLock N γ lk R₁ ⊢ (▷ □ (R₁ ∗-∗ R₂)) -∗ isLock N γ lk R₂
 
   locked_timeless {N} γ : Timeless (locked N γ)
-  locked_exclusive {N} γ : locked N γ ∗ locked N γ ⊢@{IProp GF} False
+  locked_exclusive {N} γ : locked N γ ∗ locked N γ ⊢ False
 
   newlock_spec_delay_init {N} :
     {{ True }} hl(&newlock #()) {{ v γ, RET v; ∀ R E, R ={E}=∗ isLock N γ v R }}

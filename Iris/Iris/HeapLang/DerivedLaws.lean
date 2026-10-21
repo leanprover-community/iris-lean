@@ -17,6 +17,7 @@ open Iris BI ProofMode ProgramLogic Iris.Std
 variable {GF : BundledGFunctors} {hlc : HasLC} [HeapLangGS hlc GF]
 variable {s : Stuckness} {E : CoPset} {Φ : Val → IProp GF}
 variable {l : Loc} {dq : DFrac} {v : Val} {vs : List Val}
+local bi IProp GF
 
 /-- Predicate for asserting ownership over a contiguous array. -/
 @[rocq_alias heap_lang.array]
@@ -41,17 +42,17 @@ instance instAsFractionalArray {q : Qp} :
   as_fractional_fractional := instFractionalArray
 
 @[rocq_alias heap_lang.array_nil]
-theorem array_nil : (l ↦∗{dq} [] : IProp GF) ⊣⊢ emp := .rfl
+theorem array_nil : (l ↦∗{dq} []) ⊣⊢ emp := .rfl
 
 @[rocq_alias heap_lang.array_singleton]
-theorem array_singleton : (l ↦∗{dq} [v] : IProp GF) ⊣⊢ l ↦{dq} some v := by
+theorem array_singleton : (l ↦∗{dq} [v]) ⊣⊢ l ↦{dq} some v := by
   unfold array
   refine BigSepL.bigSepL_singleton.trans (.of_eq ?_)
   rw [show l + 0 = l from loc_add_zero l]
 
 @[rocq_alias heap_lang.array_app]
 theorem array_app {ws : List Val} :
-    (l ↦∗{dq} (vs ++ ws) : IProp GF) ⊣⊢ l ↦∗{dq} vs ∗ (l + vs.length) ↦∗{dq} ws := by
+    (l ↦∗{dq} (vs ++ ws)) ⊣⊢ l ↦∗{dq} vs ∗ (l + vs.length) ↦∗{dq} ws := by
   unfold array
   refine BigSepL.bigSepL_append.trans ?_
   refine (sep_congr_right (.of_eq ?_))
@@ -62,7 +63,7 @@ theorem array_app {ws : List Val} :
 
 @[rocq_alias heap_lang.array_cons]
 theorem array_cons :
-    (l ↦∗{dq} (v :: vs) : IProp GF) ⊣⊢ l ↦{dq} some v ∗ (l + (1 : Int)) ↦∗{dq} vs := by
+    (l ↦∗{dq} (v :: vs)) ⊣⊢ l ↦{dq} some v ∗ (l + (1 : Int)) ↦∗{dq} vs := by
   unfold array
   refine BigSepL.bigSepL_cons.trans ?_
   refine sep_congr (.of_eq ?_) (.of_eq (BigSepL.bigSepL_eq_of_forall_eq @fun k x => ?_))
@@ -77,7 +78,7 @@ instance (priority := high) frameArrayCons {R Q : IProp GF}
 
 @[rocq_alias heap_lang.update_array]
 theorem update_array {off : Nat} (h : vs[off]? = some v) :
-    (l ↦∗{dq} vs : IProp GF) ⊢ (l + Int.ofNat off) ↦{dq} some v ∗
+    (l ↦∗{dq} vs) ⊢ (l + Int.ofNat off) ↦{dq} some v ∗
       ∀ v', (l + Int.ofNat off) ↦{dq} some v' -∗ l ↦∗{dq} vs.set off v' :=
   BigSepL.bigSepL_insert_acc h
 
@@ -88,7 +89,7 @@ private theorem set_getElem?_self {off : Nat} (h : vs[off]? = some v) : vs.set o
 
 /-- `update_array` specialised to a read: the array is restored unchanged. -/
 private theorem update_array_read {off : Nat} (h : vs[off]? = some v) :
-    (l ↦∗{dq} vs : IProp GF) ⊢ (l + off) ↦{dq} some v ∗ ((l + off) ↦{dq} some v -∗ l ↦∗{dq} vs) := by
+    (l ↦∗{dq} vs) ⊢ (l + off) ↦{dq} some v ∗ ((l + off) ↦{dq} some v -∗ l ↦∗{dq} vs) := by
   refine (update_array h).trans ?_
   refine sep_mono_right ?_
   refine (forall_elim v).trans (wand_mono .rfl ?_)
@@ -160,7 +161,7 @@ theorem wp_allocN_vec (v : Val) {n : Int} (hn : 0 < n) :
 @[rocq_alias heap_lang.twp_load_offset]
 theorem twp_load_offset {off : Nat} (h : vs[off]? = some v) :
     [{ l ↦∗{dq} vs }] hl(!v(#(l + off))) @ s; E
-    [{ RET v; (l ↦∗{dq} vs : IProp GF) }] := by
+    [{ RET v; (l ↦∗{dq} vs) }] := by
   iintro %Φ Hl HΦ
   icases update_array_read h $$ Hl with ⟨Hpt, Hclose⟩
   iapply twp_load $$ Hpt
@@ -171,7 +172,7 @@ theorem twp_load_offset {off : Nat} (h : vs[off]? = some v) :
 @[rocq_alias heap_lang.wp_load_offset]
 theorem wp_load_offset {off : Nat} (h : vs[off]? = some v) :
     {{ ▷ l ↦∗{dq} vs }} hl(!v(#(l + off))) @ s; E
-    {{ RET v; (l ↦∗{dq} vs : IProp GF) }} := by
+    {{ RET v; (l ↦∗{dq} vs) }} := by
   iintro %Φ >Hl HΦ
   iapply twp.wp_step _ rfl $$ HΦ
   iapply twp_load_offset h $$ Hl
@@ -182,13 +183,13 @@ theorem wp_load_offset {off : Nat} (h : vs[off]? = some v) :
 @[rocq_alias heap_lang.twp_load_offset_vec]
 theorem twp_load_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
     [{ l ↦∗{dq} ws.toList }] hl(!v(#(l + off.val))) @ s; E
-    [{ RET ws[off]; (l ↦∗{dq} ws.toList : IProp GF) }] :=
+    [{ RET ws[off]; (l ↦∗{dq} ws.toList) }] :=
   twp_load_offset (by simp)
 
 @[rocq_alias heap_lang.wp_load_offset_vec]
 theorem wp_load_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
     {{ ▷ l ↦∗{dq} ws.toList }} hl(!v(#(l + off.val))) @ s; E
-    {{ RET ws[off]; (l ↦∗{dq} ws.toList : IProp GF) }} := by
+    {{ RET ws[off]; (l ↦∗{dq} ws.toList) }} := by
   iintro %Φ >Hl HΦ
   iapply twp.wp_step _ rfl $$ HΦ
   iapply twp_load_offset_vec $$ Hl
@@ -199,7 +200,7 @@ theorem wp_load_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
 @[rocq_alias heap_lang.twp_store_offset]
 theorem twp_store_offset {off : Nat} {w : Val} (h : vs[off]? = some w) :
     [{ l ↦∗ vs }] hl(v(#(l + off)) ← &v) @ s; E
-    [{ RET hl_val(#()); (l ↦∗ vs.set off v : IProp GF) }] := by
+    [{ RET hl_val(#()); (l ↦∗ vs.set off v) }] := by
   iintro %Φ Hl HΦ
   icases update_array (dq := .own 1) h $$ Hl with ⟨Hpt, Hclose⟩
   iapply twp_store $$ Hpt
@@ -210,7 +211,7 @@ theorem twp_store_offset {off : Nat} {w : Val} (h : vs[off]? = some w) :
 @[rocq_alias heap_lang.wp_store_offset]
 theorem wp_store_offset {off : Nat} {w : Val} (h : vs[off]? = some w) :
     {{ ▷ l ↦∗ vs }} hl(v(#(l + off)) ← &v) @ s; E
-    {{ RET hl_val(#()); (l ↦∗ vs.set off v : IProp GF) }} := by
+    {{ RET hl_val(#()); (l ↦∗ vs.set off v) }} := by
   iintro %Φ >Hl HΦ
   iapply twp.wp_step _ rfl $$ HΦ
   iapply twp_store_offset h $$ Hl
@@ -221,14 +222,14 @@ theorem wp_store_offset {off : Nat} {w : Val} (h : vs[off]? = some w) :
 @[rocq_alias heap_lang.twp_store_offset_vec]
 theorem twp_store_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
     [{ l ↦∗ ws.toList }] hl(v(#(l + Int.ofNat off.val)) ← &v) @ s; E
-    [{ RET hl_val(#()); (l ↦∗ (ws.set off v).toList : IProp GF) }] := by
+    [{ RET hl_val(#()); (l ↦∗ (ws.set off v).toList) }] := by
   rw [Vector.toList_set]
   exact twp_store_offset (w := ws[off]) (by simp)
 
 @[rocq_alias heap_lang.wp_store_offset_vec]
 theorem wp_store_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
     {{ ▷ l ↦∗ ws.toList }} hl(v(#(l + Int.ofNat off.val)) ← &v) @ s; E
-    {{ RET hl_val(#()); (l ↦∗ (ws.set off v).toList : IProp GF) }} := by
+    {{ RET hl_val(#()); (l ↦∗ (ws.set off v).toList) }} := by
   iintro %Φ >Hl HΦ
   iapply twp.wp_step _ rfl $$ HΦ
   iapply twp_store_offset_vec $$ Hl
@@ -239,7 +240,7 @@ theorem wp_store_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
 @[rocq_alias heap_lang.twp_xchg_offset]
 theorem twp_xchg_offset {off : Nat} {w : Val} (h : vs[off]? = some v) :
     [{ l ↦∗ vs }] hl(xchg(#(l + off), &w)) @ s; E
-    [{ RET v; (l ↦∗ vs.set off w : IProp GF) }] := by
+    [{ RET v; (l ↦∗ vs.set off w) }] := by
   iintro %Φ Hl HΦ
   icases update_array (dq := .own 1) h $$ Hl with ⟨Hpt, Hclose⟩
   iapply twp_xchg $$ Hpt
@@ -250,7 +251,7 @@ theorem twp_xchg_offset {off : Nat} {w : Val} (h : vs[off]? = some v) :
 @[rocq_alias heap_lang.wp_xchg_offset]
 theorem wp_xchg_offset {off : Nat} {w : Val} (h : vs[off]? = some v) :
     {{ ▷ l ↦∗ vs }} hl(xchg(#(l + off), &w)) @ s; E
-    {{ RET v; (l ↦∗ vs.set off w : IProp GF) }} := by
+    {{ RET v; (l ↦∗ vs.set off w) }} := by
   iintro %Φ >Hl HΦ
   iapply twp.wp_step _ rfl $$ HΦ
   iapply twp_xchg_offset h $$ Hl
@@ -261,14 +262,14 @@ theorem wp_xchg_offset {off : Nat} {w : Val} (h : vs[off]? = some v) :
 @[rocq_alias heap_lang.twp_xchg_offset_vec]
 theorem twp_xchg_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
     [{ l ↦∗ ws.toList }] hl(xchg(#(l + off.val), &v)) @ s; E
-    [{ RET ws[off]; (l ↦∗ (ws.set off v).toList : IProp GF) }] := by
+    [{ RET ws[off]; (l ↦∗ (ws.set off v).toList) }] := by
   rw [Vector.toList_set]
   exact twp_xchg_offset (by simp)
 
 @[rocq_alias heap_lang.wp_xchg_offset_vec]
 theorem wp_xchg_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
     {{ ▷ l ↦∗ ws.toList }} hl(xchg(#(l + off.val), &v)) @ s; E
-    {{ RET ws[off]; (l ↦∗ (ws.set off v).toList : IProp GF) }} := by
+    {{ RET ws[off]; (l ↦∗ (ws.set off v).toList) }} := by
   iintro %Φ >Hl HΦ
   iapply twp.wp_step _ rfl $$ HΦ
   iapply twp_xchg_offset_vec $$ Hl
@@ -280,7 +281,7 @@ theorem wp_xchg_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} :
 theorem twp_cmpXchg_true_offset {off : Nat} {v1 v2 : Val} (h : vs[off]? = some v)
     (heq : v = v1) (hsafe : v.compareSafe v1) :
     [{ l ↦∗ vs }] hl(cmpXchg(#(l + off), &v1, &v2)) @ s; E
-    [{ RET hl_val((&v, #true)); (l ↦∗ vs.set off v2 : IProp GF) }] := by
+    [{ RET hl_val((&v, #true)); (l ↦∗ vs.set off v2) }] := by
   iintro %Φ Hl HΦ
   icases update_array (dq := .own 1) h $$ Hl with ⟨Hpt, Hclose⟩
   iapply twp_cmpXchg_true heq hsafe $$ Hpt
@@ -292,7 +293,7 @@ theorem twp_cmpXchg_true_offset {off : Nat} {v1 v2 : Val} (h : vs[off]? = some v
 theorem wp_cmpXchg_true_offset {off : Nat} {v1 v2 : Val} (h : vs[off]? = some v)
     (heq : v = v1) (hsafe : v.compareSafe v1) :
     {{ ▷ l ↦∗ vs }} hl(cmpXchg(#(l + off), &v1, &v2)) @ s; E
-    {{ RET hl_val((&v, #true)); (l ↦∗ vs.set off v2 : IProp GF) }} := by
+    {{ RET hl_val((&v, #true)); (l ↦∗ vs.set off v2) }} := by
   iintro %Φ >Hl HΦ
   iapply twp.wp_step _ rfl $$ HΦ
   iapply twp_cmpXchg_true_offset h heq hsafe $$ Hl
@@ -304,7 +305,7 @@ theorem wp_cmpXchg_true_offset {off : Nat} {v1 v2 : Val} (h : vs[off]? = some v)
 theorem twp_cmpXchg_true_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {v1 v2 : Val}
     (heq : ws[off] = v1) (hsafe : ws[off].compareSafe v1) :
     [{ l ↦∗ ws.toList }] hl(cmpXchg(#(l + off.val), &v1, &v2)) @ s; E
-    [{ RET hl_val((&ws[off], #true)); (l ↦∗ (ws.set off v2).toList : IProp GF) }] := by
+    [{ RET hl_val((&ws[off], #true)); (l ↦∗ (ws.set off v2).toList) }] := by
   rw [Vector.toList_set]
   exact twp_cmpXchg_true_offset (by simp) heq hsafe
 
@@ -312,7 +313,7 @@ theorem twp_cmpXchg_true_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val s
 theorem wp_cmpXchg_true_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {v1 v2 : Val}
     (heq : ws[off] = v1) (hsafe : ws[off].compareSafe v1) :
     {{ ▷ l ↦∗ ws.toList }} hl(cmpXchg(#(l + off.val), &v1, &v2)) @ s; E
-    {{ RET hl_val((&ws[off], #true)); (l ↦∗ (ws.set off v2).toList : IProp GF) }} := by
+    {{ RET hl_val((&ws[off], #true)); (l ↦∗ (ws.set off v2).toList) }} := by
   iintro %Φ >Hl HΦ
   iapply twp.wp_step _ rfl $$ HΦ
   iapply twp_cmpXchg_true_offset_vec heq hsafe $$ Hl
@@ -324,7 +325,7 @@ theorem wp_cmpXchg_true_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz
 theorem twp_cmpXchg_fail_offset {off : Nat} {v1 v2 : Val} (h : vs[off]? = some v)
     (hne : v ≠ v1) (hsafe : v.compareSafe v1) :
     [{ l ↦∗{dq} vs }] hl(cmpXchg(#(l + off), &v1, &v2)) @ s; E
-    [{ RET hl_val((&v, #false)); (l ↦∗{dq} vs : IProp GF) }] := by
+    [{ RET hl_val((&v, #false)); (l ↦∗{dq} vs) }] := by
   iintro %Φ Hl HΦ
   icases update_array_read h $$ Hl with ⟨Hpt, Hclose⟩
   iapply twp_cmpXchg_fail hne hsafe $$ Hpt
@@ -336,7 +337,7 @@ theorem twp_cmpXchg_fail_offset {off : Nat} {v1 v2 : Val} (h : vs[off]? = some v
 theorem wp_cmpXchg_fail_offset {off : Nat} {v1 v2 : Val} (h : vs[off]? = some v)
     (hne : v ≠ v1) (hsafe : v.compareSafe v1) :
     {{ ▷ l ↦∗{dq} vs }} hl(cmpXchg(#(l + off), &v1, &v2)) @ s; E
-    {{ RET hl_val((&v, #false)); (l ↦∗{dq} vs : IProp GF) }} := by
+    {{ RET hl_val((&v, #false)); (l ↦∗{dq} vs) }} := by
   iintro %Φ >Hl HΦ
   iapply twp.wp_step _ rfl $$ HΦ
   iapply twp_cmpXchg_fail_offset h hne hsafe $$ Hl
@@ -348,14 +349,14 @@ theorem wp_cmpXchg_fail_offset {off : Nat} {v1 v2 : Val} (h : vs[off]? = some v)
 theorem twp_cmpXchg_fail_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {v1 v2 : Val}
     (hne : ws[off] ≠ v1) (hsafe : ws[off].compareSafe v1) :
     [{ l ↦∗{dq} ws.toList }] hl(cmpXchg(#(l + off.val), &v1, &v2)) @ s; E
-    [{ RET hl_val((&ws[off], #false)); (l ↦∗{dq} ws.toList : IProp GF) }] :=
+    [{ RET hl_val((&ws[off], #false)); (l ↦∗{dq} ws.toList) }] :=
   twp_cmpXchg_fail_offset (by simp) hne hsafe
 
 @[rocq_alias heap_lang.wp_cmpxchg_fail_offset_vec]
 theorem wp_cmpXchg_fail_offset_vec {sz : Nat} {off : Fin sz} {ws : Vector Val sz} {v1 v2 : Val}
     (hne : ws[off] ≠ v1) (hsafe : ws[off].compareSafe v1) :
     {{ ▷ l ↦∗{dq} ws.toList }} hl(cmpXchg(#(l + off.val), &v1, &v2)) @ s; E
-    {{ RET hl_val((&ws[off], #false)); (l ↦∗{dq} ws.toList : IProp GF) }} := by
+    {{ RET hl_val((&ws[off], #false)); (l ↦∗{dq} ws.toList) }} := by
   iintro %Φ >Hl HΦ
   iapply twp.wp_step _ rfl $$ HΦ
   iapply twp_cmpXchg_fail_offset_vec hne hsafe $$ Hl

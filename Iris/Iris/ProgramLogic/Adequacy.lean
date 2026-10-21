@@ -17,6 +17,8 @@ open Iris OFE COFE BI Iris.BI Iris.Algebra Iris.Std FromMathlib LawfulSet
 open Iris.ProgramLogic.PrimStep
 open Language.Notation
 
+local bi IProp GF
+
 @[expose] public section
 
 variable {hlc : HasLC} {Expr State Obs Val : Type _}

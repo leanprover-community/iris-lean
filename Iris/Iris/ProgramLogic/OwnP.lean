@@ -15,6 +15,8 @@ namespace Iris.ProgramLogic
 
 open BI ExclAuth Language Language.Notation Std.LawfulSet Iris.ProgramLogic.PrimStep
 
+local bi IProp GF
+
 @[expose] public section
 
 abbrev ownPRF (State : Type) : COFE.OFunctorPre := constOF (ExclAuthR (A := stateO State))
@@ -104,14 +106,14 @@ variable {s : Stuckness} {E : CoPset} {e e₁ e₂ : Expr} {Φ : Val → IProp G
 variable {σ σ₁ σ₂ : State} {ns nt : Nat} {κs : List Obs}
 
 @[rocq_alias ownP_eq]
-theorem ownP_eq : ⊢@{IProp GF} stateInterp σ₁ ns κs nt -∗ ownP σ₂ -∗ ⌜σ₁ = σ₂⌝ := by
+theorem ownP_eq : ⊢ stateInterp σ₁ ns κs nt -∗ ownP σ₂ -∗ ⌜σ₁ = σ₂⌝ := by
   simp only [stateInterp, ownP]
   iintro Hauth Hfrag
   icombine Hauth Hfrag gives %Hvalid
   ipureintro; exact DiscreteO.eqv_inj (agree Hvalid)
 
 @[rocq_alias ownP_state_twice]
-theorem ownP_state_twice : ownP σ₁ ∗ ownP σ₂ ⊢@{IProp GF} False := by
+theorem ownP_state_twice : ownP σ₁ ∗ ownP σ₂ ⊢ False := by
   unfold ownP
   iintro ⟨H₁, H₂⟩
   icombine H₁ H₂ gives %Hvalid

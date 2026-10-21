@@ -127,11 +127,12 @@ variable {GF : BundledGFunctors} {P V : Type _}
 variable {H : outParam <| Type _ → Type _} [LawfulFiniteMap H P]
 variable {S : Type _} [LawfulSet S P]
 variable [prophMapGS P V GF H]
+local bi IProp GF
 
 /-! ### General properties of `proph` -/
 
 @[rocq_alias proph_timeless]
-instance instTimelessProph (p : P) (vs : List V) : Timeless (PROP := IProp GF) (proph p vs) :=
+instance instTimelessProph (p : P) (vs : List V) : Timeless (proph p vs) :=
   inferInstanceAs (Timeless (prophMapGS.prophMapName ↪◯MAP[p] vs))
 
 @[rocq_alias proph_exclusive]

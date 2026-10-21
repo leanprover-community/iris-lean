@@ -84,6 +84,7 @@ def checkSorted : Val := hl_val%
 section Predicates
 
 variable [HeapLangGS hlc GF]
+local bi IProp GF
 
 def isList (v : Val) : List Int → IProp GF
   | [] => iprop% ⌜v = hl_val(none())⌝
@@ -102,9 +103,10 @@ end Predicates
 section Specs
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
+local bi IProp GF
 
 theorem nil_spec :
-    {{ (emp : IProp GF) }}
+    {{ emp }}
       hl(v(&nil) #())
     {{ v, RET v; isList v [] }} := by
   iintro %Φ - Hl
@@ -211,7 +213,7 @@ theorem quicksort_spec l ls :
     · grind [filter_append_perm]
 
 theorem wp_makeList (l : List Int) :
-    {{ (emp : IProp GF) }}
+    {{ emp }}
       hl(&(makeList l))
     {{ v, RET v;  isList v l }} := by
   iintro %Φ - HΦ

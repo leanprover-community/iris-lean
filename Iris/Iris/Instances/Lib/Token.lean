@@ -14,6 +14,8 @@ namespace Iris
 
 open BI ORA Excl OFE Iris.UPred IProp Iris.Std ProofMode
 
+local bi IProp GF
+
 /-! ## Token
 
 This library provides assertions that represent "unique tokens".
@@ -47,17 +49,17 @@ instance token_timeless (γ : GName) : Timeless (token (GF := GF) γ) := by
 
 @[rocq_alias token_alloc_strong]
 theorem token_alloc_strong (P : GName → Prop) (HP : PredInfinite P) :
-    ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ token γ := by
+    ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ token γ := by
   unfold token
   exact iOwn_alloc_strong _ P HP.exists_ge trivial
 
 @[rocq_alias token_alloc]
-theorem token_alloc : ⊢@{IProp GF} |==> ∃ γ, token γ := by
+theorem token_alloc : ⊢ |==> ∃ γ, token γ := by
   unfold token
   iapply iOwn_alloc (excl ()) trivial
 
 @[rocq_alias token_exclusive]
-theorem token_exclusive (γ : GName) : token γ ∗ token γ ⊢@{IProp GF} False := by
+theorem token_exclusive (γ : GName) : token γ ∗ token γ ⊢ False := by
   unfold token
   iintro ⟨H1, H2⟩
   ihave H := iOwn_op $$ [H1 H2]; (isplitl [H1] <;> iassumption)

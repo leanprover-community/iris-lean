@@ -47,6 +47,7 @@ while the invariant is open as a premise. -/
 section CounterProof
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
+local bi IProp GF
 
 /-- The shared counter invariant: the location holds `n`, tracked by the ghost state `A n`. -/
 abbrev counterInv (A : Nat → IProp GF) (l : Loc) : IProp GF := iprop%
@@ -111,6 +112,7 @@ attribute [reducible, instance] MCounterG.elemG
 section MonoProof
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [MCounterG GF] (N : Namespace)
+local bi IProp GF
 
 /-- The authoritative element of the monotone counter. -/
 abbrev mcounterAuth (γ : GName) (n : Nat) : IProp GF := iOwn (F := MCounterRF) γ (● MaxNat.ofNat n)
@@ -131,7 +133,7 @@ instance mcounter_persistent (l : Loc) (n : Nat) : Persistent (mcounter (GF := G
 
 @[rocq_alias heap_lang.newcounter_mono_spec]
 theorem newcounter_mono_spec :
-    {{ (True : IProp GF) }} hl(&newcounter #()) {{ l, RET hl_val(#l); mcounter N l 0 }} := by
+    {{ True }} hl(&newcounter #()) {{ l, RET hl_val(#l); mcounter N l 0 }} := by
   iintro %Φ _ Hφ
   wp_lam
   wp_alloc l with Hl
@@ -206,6 +208,7 @@ attribute [reducible, instance] CCounterG.elemG
 section ContribProof
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [CCounterG GF] (N : Namespace)
+local bi IProp GF
 
 /-- The authoritative element of the counter with contributions. -/
 abbrev ccounterAuth (γ : GName) (n : Nat) : IProp GF := iOwn (F := CCounterRF) γ (●F n)
@@ -227,7 +230,7 @@ theorem ccounter_op (γ : GName) (q1 q2 : Qp) (n1 n2 : Nat) :
 
 @[rocq_alias heap_lang.newcounter_contrib_spec]
 theorem newcounter_contrib_spec :
-    {{ (True : IProp GF) }} hl(&newcounter #())
+    {{ True }} hl(&newcounter #())
     {{ γ l, RET hl_val(#l); ccounterCtx N γ l ∗ ccounter γ 1 0 }} := by
   iintro %Φ _ Hφ
   wp_lam

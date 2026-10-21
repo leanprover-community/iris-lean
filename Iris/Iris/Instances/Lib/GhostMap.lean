@@ -16,6 +16,8 @@ namespace Iris
 
 open Iris.Std HeapView PartialMap Iris.Algebra ORA BI ProofMode
 
+local bi IProp GF
+
 @[rocq_alias ghost_mapG]
 class GhostMapG (GF : BundledGFunctors)
     (K V : Type _) (H : outParam <| Type _ → Type _)
@@ -106,7 +108,7 @@ theorem ghost_map_elems_unseal [DecidableEq K] γ (m : H V) dq :
 
 @[rocq_alias ghost_map_elem_valid]
 theorem ghost_map_elem_valid (γ : GName) (k : K) (dq : DFrac) (v : V) :
-    (γ ↪◯MAP[k]{dq} v) ⊢@{IProp GF} ✓ dq := by
+    (γ ↪◯MAP[k]{dq} v) ⊢ ✓ dq := by
   refine iOwn_cmraValid.trans ?_
   iintro %h
   ipureintro
@@ -114,7 +116,7 @@ theorem ghost_map_elem_valid (γ : GName) (k : K) (dq : DFrac) (v : V) :
 
 @[rocq_alias ghost_map_elem_valid_2]
 theorem ghost_map_elem_valid_2 (γ : GName) (k : K) (dq1 dq2 : DFrac) (v1 v2 : V) :
-    (γ ↪◯MAP[k]{dq1} v1) ∗ (γ ↪◯MAP[k]{dq2} v2) ⊢@{IProp GF}
+    (γ ↪◯MAP[k]{dq1} v1) ∗ (γ ↪◯MAP[k]{dq2} v2) ⊢
       ✓ (dq1 • dq2) ∧ ⌜v1 = v2⌝ := by
   unfold ghost_map_elem
   iintro ⟨H1, H2⟩
@@ -125,7 +127,7 @@ theorem ghost_map_elem_valid_2 (γ : GName) (k : K) (dq1 dq2 : DFrac) (v1 v2 : V
 
 @[rocq_alias ghost_map_elem_agree]
 theorem ghost_map_elem_agree (γ : GName) (k : K) (dq1 dq2 : DFrac) (v1 v2 : V) :
-    (γ ↪◯MAP[k]{dq1} v1) ∗ (γ ↪◯MAP[k]{dq2} v2) ⊢@{IProp GF} ⌜v1 = v2⌝ := by
+    (γ ↪◯MAP[k]{dq1} v1) ∗ (γ ↪◯MAP[k]{dq2} v2) ⊢ ⌜v1 = v2⌝ := by
   iintro H
   icases ghost_map_elem_valid_2 $$ H with ⟨-, $⟩
 
@@ -141,7 +143,7 @@ instance ghost_map_elem_combine_gives γ (k : K) (dq1 dq2 : DFrac) (v1 v2 : V) :
 
 @[rocq_alias ghost_map_elem_combine]
 theorem ghost_map_elem_combine (γ : GName) (k : K) (dq1 dq2 : DFrac) (v1 v2 : V) :
-    ⊢@{IProp GF}(γ ↪◯MAP[k]{dq1} v1) -∗ (γ ↪◯MAP[k]{dq2} v2) -∗
+    ⊢(γ ↪◯MAP[k]{dq1} v1) -∗ (γ ↪◯MAP[k]{dq2} v2) -∗
       (γ ↪◯MAP[k]{dq1 • dq2} v1) ∗ ⌜v1 = v2⌝ := by
   iintro Hl1 Hl2
   icases ghost_map_elem_agree $$ [$Hl1 $Hl2] with #%heq
@@ -161,7 +163,7 @@ instance ghost_map_elem_combine_as (γ : GName) (k : K) (dq1 dq2 : DFrac) (v1 v2
 
 @[rocq_alias ghost_map_elem_frac_ne]
 theorem ghost_map_elem_frac_ne γ (k1 k2 : K) (dq1 dq2 : DFrac) (v1 v2 : V) (Hk : ¬ ✓ (dq1 • dq2)) :
-    ⊢@{IProp GF} (γ ↪◯MAP[k1]{dq1} v1) -∗ (γ ↪◯MAP[k2]{dq2} v2) -∗ ⌜k1 ≠ k2⌝ := by
+    ⊢ (γ ↪◯MAP[k1]{dq1} v1) -∗ (γ ↪◯MAP[k2]{dq2} v2) -∗ ⌜k1 ≠ k2⌝ := by
   iintro Hl1 Hl2
   iintro %Heq; subst Heq
   icombine Hl1 Hl2 gives ⟨%_, %_⟩
@@ -169,7 +171,7 @@ theorem ghost_map_elem_frac_ne γ (k1 k2 : K) (dq1 dq2 : DFrac) (v1 v2 : V) (Hk 
 
 @[rocq_alias ghost_map_elem_ne]
 theorem ghost_map_elem_ne γ (k1 k2 : K) (dq : DFrac) (v1 v2 : V) :
-    ⊢@{IProp GF} (γ ↪◯MAP[k1] v1) -∗ (γ ↪◯MAP[k2]{dq} v2) -∗ ⌜k1 ≠ k2⌝ := by
+    ⊢ (γ ↪◯MAP[k1] v1) -∗ (γ ↪◯MAP[k2]{dq} v2) -∗ ⌜k1 ≠ k2⌝ := by
   iintro H G
   iapply ghost_map_elem_frac_ne $$ H G
   intro HContra
@@ -178,7 +180,7 @@ theorem ghost_map_elem_ne γ (k1 k2 : K) (dq : DFrac) (v1 v2 : V) :
 /-- Make an element read-only. -/
 @[rocq_alias ghost_map_elem_persist]
 theorem ghost_map_elem_persist (γ : GName) (k : K) (dq : DFrac) (v : V) :
-    ⊢@{IProp GF} (γ ↪◯MAP[k]{dq} v) ==∗ (γ ↪◯MAP[k]{.discard} v) := by
+    ⊢ (γ ↪◯MAP[k]{dq} v) ==∗ (γ ↪◯MAP[k]{.discard} v) := by
   unfold ghost_map_elem
   iintro H
   iapply iOwn_update $$ H
@@ -187,7 +189,7 @@ theorem ghost_map_elem_persist (γ : GName) (k : K) (dq : DFrac) (v : V) :
 /-- Recover fractional ownership for a read-only element. -/
 @[rocq_alias ghost_map_elem_unpersist]
 theorem ghost_map_elem_unpersist (γ : GName) (k : K) (v : V) :
-    ⊢@{IProp GF} (γ ↪◯MAP[k]{.discard} v) ==∗ ∃ q, (γ ↪◯MAP[k]{.own q} v) := by
+    ⊢ (γ ↪◯MAP[k]{.discard} v) ==∗ ∃ q, (γ ↪◯MAP[k]{.own q} v) := by
   unfold ghost_map_elem
   iintro H
   imod iOwn_updateP update_frag_acquire $$ H with ⟨%a, %Heq, G⟩
@@ -200,7 +202,7 @@ theorem ghost_map_elem_unpersist (γ : GName) (k : K) (v : V) :
 @[rocq_alias ghost_map_alloc_strong]
 theorem ghost_map_alloc_strong [DecidableEq K] (P : GName → Prop) (m : H V) :
   (∀ N, ∃ k, N ≤ k ∧ P k) →
-  ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MAP m) ∗ [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := by
+  ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MAP m) ∗ [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := by
   unfold ghost_map_elem ghost_map_auth
   iintro %Hinf
   imod iOwn_alloc_strong (E := GhostMapG.elem)
@@ -219,21 +221,21 @@ theorem ghost_map_alloc_strong [DecidableEq K] (P : GName → Prop) (m : H V) :
 @[rocq_alias ghost_map_alloc_strong_empty]
 theorem ghost_map_alloc_strong_empty [DecidableEq K] (P : GName → Prop)
     (Hinf : ∀ N, ∃ k, N ≤ k ∧ P k) :
-    ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MAP (∅ : H V)) := by
+    ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MAP (∅ : H V)) := by
   imod ghost_map_alloc_strong P (∅ : H V) Hinf with ⟨%γ, H1, H2, -⟩
   iexists γ
   iframe
 
 @[rocq_alias ghost_map_alloc]
 theorem ghost_map_alloc [DecidableEq K] (m : H V) :
-    ⊢@{IProp GF} |==> ∃ γ, (γ ↪●MAP m) ∗ [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := by
+    ⊢ |==> ∃ γ, (γ ↪●MAP m) ∗ [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := by
   imod (ghost_map_alloc_strong (fun _ => True) m) with ⟨%γ, -, H1, H2⟩
   · intro N; exists N; simp
   · iexists γ
     iframe H1 H2
 
 @[rocq_alias ghost_map_alloc_empty]
-theorem ghost_map_alloc_empty [DecidableEq K] : ⊢@{IProp GF} |==> ∃ γ, (γ ↪●MAP (∅ : H V)) := by
+theorem ghost_map_alloc_empty [DecidableEq K] : ⊢ |==> ∃ γ, (γ ↪●MAP (∅ : H V)) := by
   imod ghost_map_alloc (∅ : H V) with ⟨%γ, _, -⟩
   imodintro
   iexists γ
@@ -267,7 +269,7 @@ instance (γ : GName) (m : H V) (q : Qp) :
 
 @[rocq_alias ghost_map_auth_valid]
 theorem ghost_map_auth_valid γ (dq : DFrac) (m : H V) :
-    ⊢@{IProp GF} (γ ↪●MAP{dq} m) -∗ ⌜✓ dq⌝ := by
+    ⊢ (γ ↪●MAP{dq} m) -∗ ⌜✓ dq⌝ := by
   unfold ghost_map_auth
   iintro _
   refine iOwn_cmraValid.trans ?_
@@ -276,7 +278,7 @@ theorem ghost_map_auth_valid γ (dq : DFrac) (m : H V) :
 
 @[rocq_alias ghost_map_auth_valid_2]
 theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac} {m1 m2 : H V} :
-    ⊢@{IProp GF} (γ ↪●MAP{dq1} m1) -∗ (γ ↪●MAP{dq2} m2) -∗ ⌜✓ (dq1 • dq2) ∧ m1 = m2⌝ := by
+    ⊢ (γ ↪●MAP{dq1} m1) -∗ (γ ↪●MAP{dq2} m2) -∗ ⌜✓ (dq1 • dq2) ∧ m1 = m2⌝ := by
   unfold ghost_map_auth
   iintro H1 H2
   icombine H1 H2 gives %G
@@ -293,19 +295,19 @@ theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac} {m1 m2 : H V} :
 
 @[rocq_alias ghost_map_auth_agree]
 theorem ghost_map_auth_agree γ (dq1 dq2 : DFrac) (m1 m2 : H V) :
-    ⊢@{IProp GF} (γ ↪●MAP{dq1} m1) -∗ (γ ↪●MAP{dq2} m2) -∗ ⌜m1 = m2⌝ := by
+    ⊢ (γ ↪●MAP{dq1} m1) -∗ (γ ↪●MAP{dq2} m2) -∗ ⌜m1 = m2⌝ := by
   iintro H₁ H₂
   ihave ⟨_, $⟩ := ghost_map_auth_valid_2 $$ H₁ H₂
 
 @[rocq_alias ghost_map_auth_persist]
 theorem ghost_map_auth_persist γ dq (m : H V) :
-    ⊢@{IProp GF} (γ ↪●MAP{dq} m) ==∗ γ ↪●MAP{.discard} m := by
+    ⊢ (γ ↪●MAP{dq} m) ==∗ γ ↪●MAP{.discard} m := by
   unfold ghost_map_auth
   iapply iOwn_update auth_dfrac_discard
 
 @[rocq_alias ghost_map_auth_unpersist]
 theorem ghost_map_auth_unpersist γ (m : H V) :
-    ⊢@{IProp GF} (γ ↪●MAP{.discard} m) ==∗ ∃ q, γ ↪●MAP{.own q} m := by
+    ⊢ (γ ↪●MAP{.discard} m) ==∗ ∃ q, γ ↪●MAP{.own q} m := by
   unfold ghost_map_auth
   iintro H
   imod iOwn_updateP auth_dfrac_acquire $$ H with ⟨%a, %Heq, G⟩
@@ -317,7 +319,7 @@ theorem ghost_map_auth_unpersist γ (m : H V) :
 
 @[rocq_alias ghost_map_lookup]
 theorem ghost_map_lookup {γ dq} {m : H V} {k : K} {dq' v} :
-    ⊢@{IProp GF} (γ ↪●MAP{dq} m) -∗ (γ ↪◯MAP[k]{dq'} v) -∗ ⌜get? m k = some v⌝ := by
+    ⊢ (γ ↪●MAP{dq} m) -∗ (γ ↪◯MAP[k]{dq'} v) -∗ ⌜get? m k = some v⌝ := by
   unfold ghost_map_auth ghost_map_elem
   iintro H1 H2
   icombine H1 H2 gives %G
@@ -347,7 +349,7 @@ instance ghost_map_lookup_combine_gives_2 γ (m : H V) (k : K) (dq dq' : DFrac) 
 
 @[rocq_alias ghost_map_insert]
 theorem ghost_map_insert {γ} {m : H V} (k : K) (v : V) (Heq : get? m k = .none) :
-    ⊢@{IProp GF} (γ ↪●MAP m) ==∗ (γ ↪●MAP insert m k v) ∗ γ ↪◯MAP[k] v := by
+    ⊢ (γ ↪●MAP m) ==∗ (γ ↪●MAP insert m k v) ∗ γ ↪◯MAP[k] v := by
   unfold ghost_map_auth ghost_map_elem
   iintro H
   imod iOwn_update (update_one_alloc (k := k) (v1 := toAgree ⟨v⟩)
@@ -361,14 +363,14 @@ theorem ghost_map_insert {γ} {m : H V} (k : K) (v : V) (Heq : get? m k = .none)
 
 @[rocq_alias ghost_map_insert_persist]
 theorem ghost_map_insert_persist {γ} {m : H V} (k : K) (v : V) (Heq : get? m k = .none) :
-    ⊢@{IProp GF} (γ ↪●MAP m) ==∗ (γ ↪●MAP insert m k v) ∗ (γ ↪◯MAP[k]{.discard} v) := by
+    ⊢ (γ ↪●MAP m) ==∗ (γ ↪●MAP insert m k v) ∗ (γ ↪◯MAP[k]{.discard} v) := by
   iintro H
   imod ghost_map_insert k v Heq $$ H with ⟨$, G⟩
   iapply ghost_map_elem_persist $$ G
 
 @[rocq_alias ghost_map_delete]
 theorem ghost_map_delete {γ} {m : H V} (k : K) (v : V) :
-    ⊢@{IProp GF} (γ ↪●MAP m) -∗ (γ ↪◯MAP[k] v) ==∗ γ ↪●MAP delete m k := by
+    ⊢ (γ ↪●MAP m) -∗ (γ ↪◯MAP[k] v) ==∗ γ ↪●MAP delete m k := by
   unfold ghost_map_auth ghost_map_elem
   iintro H1 H2
   icombine H1 H2 as G
@@ -378,7 +380,7 @@ theorem ghost_map_delete {γ} {m : H V} (k : K) (v : V) :
 
 @[rocq_alias ghost_map_update]
 theorem ghost_map_update {γ} {m : H V} {k : K} {v : V} (w : V) :
-    ⊢@{IProp GF} (γ ↪●MAP m) -∗ (γ ↪◯MAP[k] v) ==∗ (γ ↪●MAP insert m k w) ∗ γ ↪◯MAP[k] w := by
+    ⊢ (γ ↪●MAP m) -∗ (γ ↪◯MAP[k] v) ==∗ (γ ↪●MAP insert m k w) ∗ γ ↪◯MAP[k] w := by
   iintro auth_m frag_kv
   ihave >aux := ghost_map_delete $$ auth_m frag_kv
   ihave >⟨aux, $⟩ := ghost_map_insert _ w (get?_delete_eq rfl) $$ aux
@@ -391,7 +393,7 @@ theorem ghost_map_update {γ} {m : H V} {k : K} {v : V} (w : V) :
 
 @[rocq_alias ghost_map_lookup_big]
 theorem ghost_map_lookup_big {γ dq} {m : H V} {dq'} m0 :
-    ⊢@{IProp GF} (γ ↪●MAP{dq} m) -∗ ([∗map] k ↦ v ∈ m0, γ ↪◯MAP[k]{dq'} v) -∗ ⌜m0 ⊆ m⌝ := by
+    ⊢ (γ ↪●MAP{dq} m) -∗ ([∗map] k ↦ v ∈ m0, γ ↪◯MAP[k]{dq'} v) -∗ ⌜m0 ⊆ m⌝ := by
   iintro H1 H2
   simp only [Subset, submap]
   iintro %k %v %Heq
@@ -400,7 +402,7 @@ theorem ghost_map_lookup_big {γ dq} {m : H V} {dq'} m0 :
 
 @[rocq_alias ghost_map_insert_big]
 theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ m) :
-  ⊢@{IProp GF} (γ ↪●MAP m) ==∗ (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k] v := by
+  ⊢ (γ ↪●MAP m) ==∗ (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k] v := by
   unfold ghost_map_auth ghost_map_elem
   iintro H
   by_cases h : m' = ∅
@@ -425,7 +427,7 @@ theorem ghost_map_insert_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ
 
 @[rocq_alias ghost_map_insert_persist_big]
 theorem ghost_map_insert_persist_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : m' ##ₘ m) :
-    ⊢@{IProp GF} (γ ↪●MAP m) ==∗ (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k]{.discard} v := by
+    ⊢ (γ ↪●MAP m) ==∗ (γ ↪●MAP (m' ∪ m)) ∗ [∗map] k ↦ v ∈ m', γ ↪◯MAP[k]{.discard} v := by
   iintro H
   imod ghost_map_insert_big m' Hdisj $$ H with ⟨$, H⟩
   iapply BigSepM.bigSepM_bupd
@@ -435,7 +437,7 @@ theorem ghost_map_insert_persist_big [DecidableEq K] {γ m} (m' : H V) (Hdisj : 
 
 @[rocq_alias ghost_map_delete_big]
 theorem ghost_map_delete_big [DecidableEq K] {γ m} (m0 : H V) :
-    ⊢@{IProp GF} (γ ↪●MAP m) -∗ ([∗map] k ↦v ∈ m0, γ ↪◯MAP[k] v) ==∗ (γ ↪●MAP (m \ m0)) := by
+    ⊢ (γ ↪●MAP m) -∗ ([∗map] k ↦v ∈ m0, γ ↪◯MAP[k] v) ==∗ (γ ↪●MAP (m \ m0)) := by
   iintro H1 H2
   imod ghost_map_elems_unseal $$ H2 with H2
   unfold ghost_map_auth
@@ -447,7 +449,7 @@ theorem ghost_map_delete_big [DecidableEq K] {γ m} (m0 : H V) :
 
 @[rocq_alias ghost_map_update_big]
 theorem ghost_map_update_big [DecidableEq K] {γ m} (m0 m1 : H V) (Heq : dom m0 = dom m1) :
-    ⊢@{IProp GF} (γ ↪●MAP m) -∗ ([∗map] k ↦v ∈ m0, γ ↪◯MAP[k] v) ==∗
+    ⊢ (γ ↪●MAP m) -∗ ([∗map] k ↦v ∈ m0, γ ↪◯MAP[k] v) ==∗
     (γ ↪●MAP (m1 ∪ m)) ∗ [∗map] k ↦ v ∈ m1, γ ↪◯MAP[k] v := by
   iintro H1 H2
   imod ghost_map_elems_unseal $$ H2 with H2

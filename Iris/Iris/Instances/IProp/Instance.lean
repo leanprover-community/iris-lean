@@ -168,6 +168,7 @@ theorem ElemG.bundle_unit {GF} (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit �
 end ElemG
 
 section Fold
+local bi IProp FF
 
 open Iris COFE Iris.UPred
 
@@ -201,7 +202,7 @@ theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x :
 
 @[rocq_alias iProp_unfold_equivI]
 theorem IProp.unfold_equivI (P Q : IProp FF) :
-    (IProp.unfold FF P ≡ IProp.unfold FF Q) ⊢@{IProp FF} P ≡ Q := by
+    (IProp.unfold FF P ≡ IProp.unfold FF Q) ⊢ P ≡ Q := by
   have h := BI.internalEq.of_internalEquiv_ne (PROP := IProp FF) (IProp.fold FF)
     (x := IProp.unfold FF P) (y := IProp.unfold FF Q)
   rw [IProp.fold_unfold, IProp.fold_unfold] at h
@@ -257,6 +258,7 @@ theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit x] :
 end Fold
 
 section iSingleton
+local bi IProp GF
 
 open IProp OFE Iris.UPred GenMap
 
@@ -387,7 +389,7 @@ theorem validN_of_iSingleton {a : F.ap (IProp GF)} (Hv : ✓{n} iSingleton F γ 
 
 @[rocq_alias iRes_singleton_validI]
 theorem iSingleton_cmraValid {a : F.ap (IProp GF)} :
-    ✓ iSingleton F γ a ⊢@{IProp GF} ✓ a :=
+    ✓ iSingleton F γ a ⊢ ✓ a :=
   internalCmraValid_entails.mpr fun _ => validN_of_iSingleton
 
 theorem iSingleton_validN_at_E_τ {a : F.ap (IProp GF)} (a_valid : ✓{n} a) :
@@ -525,7 +527,7 @@ theorem iSingleton_op_alter {r : IResUR GF} {v : GF.api E.τ (IPre GF)}
 open BI in
 @[rocq_alias later_internal_eq_iRes_singleton]
 theorem later_internalEq_iSingleton {a : F.ap (IProp GF)} {r : IResUR GF} :
-    ▷ (r ≡ iSingleton F γ a) ⊢@{IProp GF} ◇ ∃ b r', r ≡ iSingleton F γ b • r' ∧ ▷ (a ≡ b) := by
+    ▷ (r ≡ iSingleton F γ a) ⊢ ◇ ∃ b r', r ≡ iSingleton F γ b • r' ∧ ▷ (a ≡ b) := by
   refine (later_mono (internalEq.of_internalEquiv_ne fun r : IResUR GF => (r E.τ).car γ)).trans ?_
   rw [show (iSingleton F γ a E.τ).car γ = some (unfoldi (E.bundle a)) by
     simp [iSingleton, GenMap.singleton_map_in]]
@@ -985,6 +987,7 @@ theorem bigOpMS_iOwn_entail {B : Type _} {MS : Type _} [LawfulFiniteMultiSet MS 
 end big_op_instances
 
 section own_forall
+local bi IProp GF
 
 open IProp OFE BI
 
@@ -1024,32 +1027,32 @@ theorem iResProject_ord_monoN {n} {x y : IResUR GF} (h : x ≼ₒ{n} y) :
     (h E.τ γ)
 
 theorem iResProject_ord_above {z : IResUR GF} {c : F.ap (IProp GF)} :
-    iSingleton F γ c ≼ₒ z ⊢@{IProp GF} some c ≼ₒ iResProject F γ z := by
+    iSingleton F γ c ≼ₒ z ⊢ some c ≼ₒ iResProject F γ z := by
   sbi_unfold
   exact fun _ h => iResProject_iSingleton (F := F) c ▸ iResProject_ord_monoN h
 
 @[rocq_alias iRes_project_above]
 theorem iResProject_above {z : IResUR GF} {c : F.ap (IProp GF)} :
-    iSingleton F γ c ≼ z ⊢@{IProp GF} some c ≼ iResProject F γ z := by
+    iSingleton F γ c ≼ z ⊢ some c ≼ iResProject F γ z := by
   refine (internalCmraIncluded_map (iResProject F γ) iResProject_op).trans ?_
   rw [iResProject_iSingleton]
 
 theorem iResProject_none_ord_false {z : IResUR GF} (a : F.ap (IProp GF))
-    (hz : iResProject F γ z = none) : iSingleton F γ a ≼ₒ z ⊢@{IProp GF} False := by
+    (hz : iResProject F γ z = none) : iSingleton F γ a ≼ₒ z ⊢ False := by
   refine iResProject_ord_above.trans ?_
   rw [hz]
   exact some_ordI_none
 
 /-- Nothing is owned at `γ` when the projection there is `none`. -/
 theorem iResProject_none_incl_false {z : IResUR GF} (a : F.ap (IProp GF))
-    (hz : iResProject F γ z = none) : iSingleton F γ a ≼ z ⊢@{IProp GF} False := by
+    (hz : iResProject F γ z = none) : iSingleton F γ a ≼ z ⊢ False := by
   refine iResProject_above.trans ?_
   rw [hz]
   exact option_includedI.mp
 
 theorem iOwn_ord_forall {B : Type _} [Inhabited B] (γ : GName) (f : B → F.ap (IProp GF)) :
     (∀ b, iOwn γ (f b)) ⊢ ∃ c, iOwn γ c ∗ ∀ b, some (f b) ≼ₒ some c := by
-  have hforall : (∀ b, UPred.ownM (iSingleton F γ (f b))) ⊢@{IProp GF}
+  have hforall : (∀ b, UPred.ownM (iSingleton F γ (f b))) ⊢
       ∃ z, UPred.ownM z ∧ ∀ b, iSingleton F γ (f b) ≼ₒ z :=
     UPred.ownM_ord_forall _
   unfold iOwn

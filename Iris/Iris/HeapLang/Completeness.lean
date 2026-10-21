@@ -26,6 +26,7 @@ namespace Iris.HeapLang
 open Iris ProgramLogic Iris.BI Language Language.Notation Iris.Std
 
 variable {hlc : HasLC} {GF : BundledGFunctors} [HeapLangGS hlc GF]
+local bi IProp GF
 
 @[reducible] def heapCellPts (l : Loc) (vo : Option Val) : IProp GF :=
   match vo with
@@ -496,7 +497,7 @@ section Framework
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat] [TpinvGS GF Exp H]
 
 theorem wp_base_completeness {n C e₁ σ K E} :
-  ⊢@{IProp GF} ectxLangCompletenessStmt (Wp.wp Stuckness.NotStuck)
+  ⊢ ectxLangCompletenessStmt (Wp.wp Stuckness.NotStuck)
         (fun (_ : List Exp) (σ : State) => heapInv σ) n C e₁ σ K E := by
   unfold ectxLangCompletenessStmt
   iintro %Hred Htok ⟨Hheap, Htp, %_Hsafe⟩

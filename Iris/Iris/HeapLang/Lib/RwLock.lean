@@ -13,6 +13,7 @@ public import Iris.HeapLang.Instances
 namespace Iris.HeapLang
 
 open BI OFE
+local bi IProp GF
 
 @[expose] public section
 
@@ -37,9 +38,9 @@ structure RwLock (GF : BundledGFunctors) [IrisGS_gen hlc Exp GF] where
   isRwLock_iff {L} γ lk Φ Ψ : isRwLock L γ lk Φ ⊢ (▷ □ ∀ q, Φ q ∗-∗ Ψ q) -∗ isRwLock L γ lk Ψ
   readerLocked_timeless {L} γ q : Timeless (readerLocked L γ q)
   writerLocked_timeless {L} γ : Timeless (writerLocked L γ)
-  writerLocked_exclusive {L} γ : writerLocked L γ ∗ writerLocked L γ ⊢@{IProp GF} False
+  writerLocked_exclusive {L} γ : writerLocked L γ ∗ writerLocked L γ ⊢ False
   writerLocked_not_readerLocked {L} γ q :
-    writerLocked L γ ∗ readerLocked L γ q ⊢@{IProp GF} False
+    writerLocked L γ ∗ readerLocked L γ q ⊢ False
   -- Program specs
   newlock_spec {L} (Φ : Qp → IProp GF) {P ioΦ ioq} [AsFractional P ioΦ Φ ioq 1] :
     {{ P }} hl(&newlock #()) {{ lk γ, RET lk; isRwLock L γ lk Φ }}
