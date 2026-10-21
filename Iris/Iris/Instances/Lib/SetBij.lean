@@ -68,28 +68,28 @@ variable {A B S : Type _} [LawfulSet S (A × B)] [SetBijG GF A B S]
 variable {γ : GName} {dq dq₁ dq₂ : DFrac} {L L₁ L₂ : S}
 
 @[rocq_alias gset_bij_own_auth_timeless]
-instance : Timeless (PROP := IProp GF) (γ ↪●BIJ{dq} L) := by
+instance : Timeless (γ ↪●BIJ{dq} L) := by
   unfold set_bij_own_auth; infer_instance
 
 @[rocq_alias gset_bij_own_auth_persistent]
-instance : Persistent (PROP := IProp GF) (γ ↪●BIJ{.discard} L) := by
+instance : Persistent (γ ↪●BIJ{.discard} L) := by
   unfold set_bij_own_auth auth; infer_instance
 
 @[rocq_alias gset_bij_own_elem_timeless]
-instance (a : A) (b : B) : Timeless (PROP := IProp GF) (γ ↪◯BIJ⟨a, b⟩) := by
+instance (a : A) (b : B) : Timeless (γ ↪◯BIJ⟨a, b⟩) := by
   unfold set_bij_own_elem; infer_instance
 
 @[rocq_alias gset_bij_own_elem_persistent]
-instance (a : A) (b : B) : Persistent (PROP := IProp GF) (γ ↪◯BIJ⟨a, b⟩) := by
+instance (a : A) (b : B) : Persistent (γ ↪◯BIJ⟨a, b⟩) := by
   unfold set_bij_own_elem; infer_instance
 
 @[rocq_alias gset_bij_own_auth_fractional]
-instance : Fractional (PROP := IProp GF) fun q => γ ↪●BIJ{.own q} L where
+instance : Fractional fun q => γ ↪●BIJ{.own q} L where
   fractional p q :=
     .trans (.of_eq (congrArg (iOwn γ) (auth_op_auth (dq₁ := .own p) (dq₂ := .own q)).symm)) iOwn_op
 
 @[rocq_alias gset_bij_own_auth_as_fractional]
-instance (q : Qp) : AsFractional (PROP := IProp GF) (γ ↪●BIJ{.own q} L)
+instance (q : Qp) : AsFractional (γ ↪●BIJ{.own q} L)
     ioΦ (fun q => γ ↪●BIJ{.own q} L) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := inferInstance

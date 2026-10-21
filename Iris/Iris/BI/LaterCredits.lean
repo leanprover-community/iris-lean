@@ -32,9 +32,9 @@ macro_rules | `(£ $i) => ``(LaterCredits.lc (PROP := bi%) $i)
 @[rocq_alias BiLaterCredits]
 class BILaterCredits (PROP : Type _) [BI PROP] extends LaterCredits PROP where
   lc_split {n m : Nat} : £ (n + m) ⊣⊢ £ n ∗ £ m
-  lc_timeless (n : Nat) : Timeless (PROP := PROP) (£ n)
-  lc_0_persistent : Persistent (PROP := PROP) (£ 0)
-  lc_affine (n : Nat) : Affine (PROP := PROP) (£ n)
+  lc_timeless (n : Nat) : Timeless (£ n)
+  lc_0_persistent : Persistent (£ 0)
+  lc_affine (n : Nat) : Affine (£ n)
 export BILaterCredits (lc_split lc_timeless lc_0_persistent lc_affine)
 attribute [instance] lc_timeless lc_0_persistent lc_affine
 

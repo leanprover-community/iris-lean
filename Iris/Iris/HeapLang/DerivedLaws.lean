@@ -30,16 +30,16 @@ macro_rules | `($l ↦∗{ $dq } $vs) => ``((array $l $dq $vs : bi%))
 macro_rules | `($l ↦∗ $vs) => ``((array $l (DFrac.own 1) $vs : bi%))
 
 @[rocq_alias heap_lang.array_timeless]
-instance instTimelessArray : Timeless (l ↦∗{dq} vs : IProp GF) := by
+instance instTimelessArray : Timeless iprop(l ↦∗{dq} vs) := by
   unfold array; infer_instance
 
 @[rocq_alias heap_lang.array_fractional]
-instance instFractionalArray : Fractional (fun q => (l ↦∗{.own q} vs : IProp GF)) := by
+instance instFractionalArray : Fractional (fun q => iprop(l ↦∗{.own q} vs)) := by
   unfold array; infer_instance
 
 @[rocq_alias heap_lang.array_as_fractional]
 instance instAsFractionalArray {q : Qp} :
-    AsFractional (l ↦∗{.own q} vs : IProp GF) ioΦ (l ↦∗{.own ·} vs) ioq q where
+    AsFractional iprop(l ↦∗{.own q} vs) ioΦ (l ↦∗{.own ·} vs) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := instFractionalArray
 

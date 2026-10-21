@@ -53,27 +53,27 @@ notation γ " ↪◯MZ " n => lb_own γ n
 macro_rules | `($γ ↪◯MZ $n) => ``((lb_own $γ $n : bi%))
 
 @[rocq_alias mono_Z_auth_own_timeless]
-instance : Timeless (PROP := IProp GF) (γ ↪●MZ{dq} n) := by
+instance : Timeless (γ ↪●MZ{dq} n) := by
   unfold auth_own
   infer_instance
 
 @[rocq_alias mono_Z_auth_own_persistent]
-instance : Persistent (PROP := IProp GF) (γ ↪●MZ□ n) := by
+instance : Persistent (γ ↪●MZ□ n) := by
   unfold auth_own
   infer_instance
 
 @[rocq_alias mono_Z_lb_own_timeless]
-instance : Timeless (PROP := IProp GF) (γ ↪◯MZ n) := by
+instance : Timeless (γ ↪◯MZ n) := by
   unfold lb_own
   infer_instance
 
 @[rocq_alias mono_Z_lb_own_persistent]
-instance : Persistent (PROP := IProp GF) (γ ↪◯MZ n) := by
+instance : Persistent (γ ↪◯MZ n) := by
   unfold lb_own
   infer_instance
 
 @[rocq_alias mono_Z_auth_own_fractional]
-instance {γ n} : Fractional (PROP := IProp GF) (fun q : Qp => γ ↪●MZ{.own q} n) where
+instance {γ n} : Fractional (fun q : Qp => γ ↪●MZ{.own q} n) where
   fractional p q := by
     unfold auth_own
     constructor
@@ -84,7 +84,7 @@ instance {γ n} : Fractional (PROP := IProp GF) (fun q : Qp => γ ↪●MZ{.own 
       iframe %Hn
 
 @[rocq_alias mono_Z_auth_own_as_fractional]
-instance {γ n} (q : Qp) : AsFractional (PROP := IProp GF) (γ ↪●MZ{.own q} n) ioΦ
+instance {γ n} (q : Qp) : AsFractional (γ ↪●MZ{.own q} n) ioΦ
     (fun q : Qp => γ ↪●MZ{.own q} n) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := inferInstance

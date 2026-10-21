@@ -73,19 +73,19 @@ notation:max "⧖□ " n:40 => pers n
 macro_rules | `(⧖□ $n) => ``((pers $n : bi%))
 
 @[rocq_alias time_receipt_excl_timeless]
-instance {n : Nat} : Timeless (PROP := IProp GF) (⧖+ n) :=
+instance {n : Nat} : Timeless (⧖+ n) :=
   inferInstanceAs (Timeless (iOwn (E := TR.elem) TR.name _))
 
 @[rocq_alias time_receipt_excl_0_persistent]
-instance : Persistent (PROP := IProp GF) (⧖+ 0) :=
+instance : Persistent (⧖+ 0) :=
   inferInstanceAs (Persistent (iOwn (E := TR.elem) TR.name _))
 
 @[rocq_alias time_receipt_pers_timeless]
-instance {n : Nat} : Timeless (PROP := IProp GF) (⧖□ n) :=
+instance {n : Nat} : Timeless (⧖□ n) :=
   inferInstanceAs (Timeless (iOwn (E := TR.elem) TR.name _))
 
 @[rocq_alias time_receipt_pers_persistent]
-instance {n : Nat} : Persistent (PROP := IProp GF) (⧖□ n) :=
+instance {n : Nat} : Persistent (⧖□ n) :=
   inferInstanceAs (Persistent (iOwn (E := TR.elem) TR.name _))
 
 @[rocq_alias time_receipt_excl_split]
@@ -156,37 +156,37 @@ theorem supply_incr (k m n : Nat) :
 
 @[rocq_alias from_sep_time_receipt_excl_add]
 instance (priority := default) {n₁ n₂ : Nat} :
-    FromSep (PROP := IProp GF) (⧖+ (n₁ + n₂)) (⧖+ n₁) (⧖+ n₂) where
+    FromSep (⧖+ (n₁ + n₂)) (⧖+ n₁) (⧖+ n₂) where
   from_sep := (excl_split n₁ n₂).mpr
 
 @[rocq_alias from_sep_time_receipt_excl_S]
 instance (priority := default - 10) {n : Nat} :
-    FromSep (PROP := IProp GF) (⧖+ (.succ n)) (⧖+ 1) (⧖+ n) where
+    FromSep (⧖+ (.succ n)) (⧖+ 1) (⧖+ n) where
   from_sep := (excl_succ n).mpr
 
 @[rocq_alias combine_sep_time_receipt_excl_add]
 instance (priority := default) {n₁ n₂ : Nat} :
-    CombineSepAs (PROP := IProp GF) (⧖+ n₁) (⧖+ n₂) (⧖+ (n₁ + n₂)) where
+    CombineSepAs (⧖+ n₁) (⧖+ n₂) (⧖+ (n₁ + n₂)) where
   combine_sep_as := (excl_split n₁ n₂).mpr
 
 @[rocq_alias combine_sep_time_receipt_excl_S_l]
 instance (priority := default - 10) {n : Nat} :
-    CombineSepAs (PROP := IProp GF) (⧖+ n) (⧖+ 1) (⧖+ n.succ) where
+    CombineSepAs (⧖+ n) (⧖+ 1) (⧖+ n.succ) where
   combine_sep_as := (excl_split n 1).mpr
 
 @[rocq_alias into_sep_time_receipt_excl_add]
 instance (priority := default) {n₁ n₂ : Nat} :
-    IntoSep (PROP := IProp GF) (⧖+ (n₁ + n₂)) (⧖+ n₁) (⧖+ n₂) where
+    IntoSep (⧖+ (n₁ + n₂)) (⧖+ n₁) (⧖+ n₂) where
   into_sep := (excl_split n₁ n₂).mp
 
 @[rocq_alias into_sep_time_receipt_excl_S]
 instance (priority := default - 10) {n : Nat} :
-    IntoSep (PROP := IProp GF) (⧖+ (.succ n)) (⧖+ 1) (⧖+ n) where
+    IntoSep (⧖+ (.succ n)) (⧖+ 1) (⧖+ n) where
   into_sep := (excl_succ n).mp
 
 @[rocq_alias combine_sep_time_receipt_pers_max]
 instance {n₁ n₂ : Nat} :
-    CombineSepAs (PROP := IProp GF) (⧖□ n₁) (⧖□ n₂) (⧖□ (max n₁ n₂)) where
+    CombineSepAs (⧖□ n₁) (⧖□ n₂) (⧖□ (max n₁ n₂)) where
   combine_sep_as := (pers_split n₁ n₂).mpr
 
 end Rules

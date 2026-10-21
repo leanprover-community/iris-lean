@@ -62,22 +62,22 @@ notation γ " ↪◯MN " n => lb_own γ n
 macro_rules | `($γ ↪◯MN $n) => ``((lb_own $γ $n : bi%))
 
 @[rocq_alias mono_nat_auth_own_timeless]
-instance : Timeless (PROP := IProp GF) (γ ↪●MN{dq} n) := by
+instance : Timeless (γ ↪●MN{dq} n) := by
   unfold auth_own
   infer_instance
 
 @[rocq_alias mono_nat_auth_own_persistent]
-instance : Persistent (PROP := IProp GF) (γ ↪●MN□ n) := by
+instance : Persistent (γ ↪●MN□ n) := by
   unfold auth_own
   infer_instance
 
 @[rocq_alias mono_nat_lb_own_timeless]
-instance : Timeless (PROP := IProp GF) (γ ↪◯MN n) := by
+instance : Timeless (γ ↪◯MN n) := by
   unfold lb_own
   infer_instance
 
 @[rocq_alias mono_nat_lb_own_persistent]
-instance : Persistent (PROP := IProp GF) (γ ↪◯MN n) := by
+instance : Persistent (γ ↪◯MN n) := by
   unfold lb_own
   infer_instance
 
@@ -85,7 +85,7 @@ instance : IsUnit (◯MN 0 : MonoNat) := by
   infer_instance
 
 @[rocq_alias mono_nat_auth_own_fractional]
-instance {γ n} : Fractional (PROP := IProp GF) (fun q : Qp => γ ↪●MN{.own q} n) where
+instance {γ n} : Fractional (fun q : Qp => γ ↪●MN{.own q} n) where
   fractional p q := by
     unfold auth_own
     rw [←iOwn_op.to_eq]
@@ -93,7 +93,7 @@ instance {γ n} : Fractional (PROP := IProp GF) (fun q : Qp => γ ↪●MN{.own 
 
 @[rocq_alias mono_nat_auth_own_as_fractional]
 instance {γ n} (q : Qp) :
-    AsFractional (PROP := IProp GF) (γ ↪●MN{.own q} n) ioΦ (fun q : Qp => γ ↪●MN{.own q} n) ioq q where
+    AsFractional (γ ↪●MN{.own q} n) ioΦ (fun q : Qp => γ ↪●MN{.own q} n) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := inferInstance
 

@@ -45,23 +45,23 @@ notation γ " ↪VAR " a => ghost_var γ (DFrac.own 1) a
 macro_rules | `($γ ↪VAR $a) => ``((ghost_var $γ (DFrac.own 1) $a : bi%))
 
 @[rocq_alias ghost_var_timeless]
-instance (γ : GName) (dq : DFrac) (a : A) : Timeless (PROP := IProp GF) (γ ↪VAR{dq} a) := by
+instance (γ : GName) (dq : DFrac) (a : A) : Timeless (γ ↪VAR{dq} a) := by
   unfold ghost_var
   infer_instance
 
 @[rocq_alias ghost_var_persistent]
-instance (γ : GName) (a : A) : Persistent (PROP := IProp GF) (γ ↪VAR{.discard} a) := by
+instance (γ : GName) (a : A) : Persistent (γ ↪VAR{.discard} a) := by
   unfold ghost_var
   infer_instance
 
 @[rocq_alias ghost_var_fractional]
 instance ghost_var_fractional (γ : GName) (a : A) :
-    Fractional (PROP := IProp GF) (fun q : Qp => γ ↪VAR{.own q} a) where
+    Fractional (fun q : Qp => γ ↪VAR{.own q} a) where
   fractional _ _  := (BiEntails.of_eq (congrArg (iOwn γ) Frac.mk_op)).trans iOwn_op
 
 @[rocq_alias ghost_var_as_fractional]
 instance (γ : GName) (a : A) (q : Qp) :
-    AsFractional (PROP := IProp GF) (γ ↪VAR{.own q} a) ioΦ (fun q => γ ↪VAR{.own q} a) ioq q where
+    AsFractional (γ ↪VAR{.own q} a) ioΦ (fun q => γ ↪VAR{.own q} a) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := ghost_var_fractional γ a
 
@@ -103,7 +103,7 @@ instance (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFrac) :
 @[rocq_alias ghost_var_combine_as]
 instance (priority := default - 20) (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFrac)
     (dq : DFrac) [h : IsOp .merge dq dq1 dq2] :
-    CombineSepAs (PROP := IProp GF) (γ ↪VAR{dq1} a1) (γ ↪VAR{dq2} a2) (γ ↪VAR{dq} a1) where
+    CombineSepAs (γ ↪VAR{dq1} a1) (γ ↪VAR{dq2} a2) (γ ↪VAR{dq} a1) where
   combine_sep_as := by
     iintro ⟨H1, H2⟩
     icombine H1 H2 gives %⟨-, rfl⟩
@@ -157,7 +157,7 @@ theorem ghost_var_unpersist (γ : GName) (a : A) :
 
 @[rocq_alias frame_ghost_var]
 instance (p : Bool) (γ : GName) (a : A) (q1 q2 q : Qp) [FrameFractionalQp q1 q2 q] :
-    Frame (PROP := IProp GF) p (γ ↪VAR{.own q1} a) (γ ↪VAR{.own q2} a) (γ ↪VAR{.own q} a) :=
+    Frame p (γ ↪VAR{.own q1} a) (γ ↪VAR{.own q2} a) (γ ↪VAR{.own q} a) :=
   frame_fractional (fun q => γ ↪VAR{.own q} a) q1 q2 q
 
 end Iris

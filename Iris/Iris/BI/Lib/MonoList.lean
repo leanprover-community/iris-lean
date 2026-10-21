@@ -98,38 +98,38 @@ macro_rules | `($γ ↪◯ML[ $i ] $a) => ``((idx_own $γ $i $a : bi%))
 /-! ## Instances -/
 
 @[rocq_alias mono_list_auth_own_timeless]
-instance {γ dq} {l : List α} : Timeless (PROP := IProp GF) (γ ↪●ML{dq} l) := by
+instance {γ dq} {l : List α} : Timeless (γ ↪●ML{dq} l) := by
   unfold auth_own
   infer_instance
 
 @[rocq_alias mono_list_auth_own_persistent]
-instance {γ} {l : List α} : Persistent (PROP := IProp GF) (γ ↪●ML□ l) := by
+instance {γ} {l : List α} : Persistent (γ ↪●ML□ l) := by
   unfold auth_own
   infer_instance
 
 @[rocq_alias mono_list_lb_own_timeless]
-instance {γ} {l : List α} : Timeless (PROP := IProp GF) (γ ↪◯ML l) := by
+instance {γ} {l : List α} : Timeless (γ ↪◯ML l) := by
   unfold lb_own
   infer_instance
 
 @[rocq_alias mono_list_lb_own_persistent]
-instance {γ} {l : List α} : Persistent (PROP := IProp GF) (γ ↪◯ML l) := by
+instance {γ} {l : List α} : Persistent (γ ↪◯ML l) := by
   unfold lb_own
   infer_instance
 
 @[rocq_alias mono_list_idx_own_timeless]
-instance {γ i} {a : α} : Timeless (PROP := IProp GF) (γ ↪◯ML[i] a) := by
+instance {γ i} {a : α} : Timeless (γ ↪◯ML[i] a) := by
   unfold idx_own
   infer_instance
 
 @[rocq_alias mono_list_idx_own_persistent]
-instance {γ i} {a : α} : Persistent (PROP := IProp GF) (γ ↪◯ML[i] a) := by
+instance {γ i} {a : α} : Persistent (γ ↪◯ML[i] a) := by
   unfold idx_own
   infer_instance
 
 @[rocq_alias mono_list_auth_own_fractional]
 instance {γ} {l : List α} :
-    Fractional (PROP := IProp GF) (fun q : Qp => γ ↪●ML{.own q} l) where
+    Fractional (fun q : Qp => γ ↪●ML{.own q} l) where
   fractional p q := by
     unfold auth_own
     rw [← iOwn_op.to_eq]
@@ -137,7 +137,7 @@ instance {γ} {l : List α} :
 
 @[rocq_alias mono_list_auth_own_as_fractional]
 instance {γ} {l : List α} q :
-   AsFractional (PROP := IProp GF) (γ ↪●ML{.own q} l) ioΦ (γ ↪●ML{.own ·} l) ioq q where
+   AsFractional (γ ↪●ML{.own q} l) ioΦ (γ ↪●ML{.own ·} l) ioq q where
   as_fractional := .rfl
   as_fractional_fractional := inferInstance
 
