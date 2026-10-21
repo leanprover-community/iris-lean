@@ -27,6 +27,7 @@ export LaterCredits (lc)
 
 attribute [inherit_doc LaterCredits] LaterCredits.lc
 notation:max "£ " i:40 => LaterCredits.lc i
+macro_rules | `(£ $i) => ``(LaterCredits.lc (PROP := bi%) $i)
 
 @[rocq_alias BiLaterCredits]
 class BILaterCredits (PROP : Type _) [BI PROP] extends LaterCredits PROP where

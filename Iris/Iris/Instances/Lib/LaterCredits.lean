@@ -205,7 +205,7 @@ def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
 syntax:max "|==£> " term:40 : term
 
 macro_rules
-| `(iprop(|==£>%$tk $P)) => ``($(wrapIprop tk ``le_upd) iprop($P))
+| `(iprop(|==£>%$tk $P)) => ``(($(wrapIprop tk ``le_upd) iprop($P) : bi%))
 
 delab_rule le_upd
 | `($_ $P) => do ``(iprop(|==£> $(← unpackIprop P)))
@@ -471,7 +471,7 @@ def le_upd_finally [LcGS hlc GF] (P : IProp GF) : IProp GF :=
 syntax:max "|==£|> " term:40 : term
 
 macro_rules
-| `(iprop(|==£|>%$tk $P)) => ``($(wrapIprop tk ``le_upd_finally) iprop($P))
+| `(iprop(|==£|>%$tk $P)) => ``(($(wrapIprop tk ``le_upd_finally) iprop($P) : bi%))
 
 delab_rule le_upd_finally
 | `($_ $P) => do ``(iprop(|==£|> $(← unpackIprop P)))

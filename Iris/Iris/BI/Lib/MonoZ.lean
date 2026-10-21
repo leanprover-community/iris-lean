@@ -44,9 +44,13 @@ def lb_own (γ : GName) (n : Int) : IProp GF := iprop%
 #rocq_ignore mono_Z_lb_own_unseal "`mono_Z_lb_own` is defined directly without `seal`/`unseal`."
 
 notation γ " ↪●MZ{" dq "} " n => auth_own γ dq n
+macro_rules | `($γ ↪●MZ{ $dq } $n) => ``((auth_own $γ $dq $n : bi%))
 notation γ " ↪●MZ " n => auth_own γ (DFrac.own 1) n
+macro_rules | `($γ ↪●MZ $n) => ``((auth_own $γ (DFrac.own 1) $n : bi%))
 notation γ " ↪●MZ□ " n => auth_own γ DFrac.discard n
+macro_rules | `($γ ↪●MZ□ $n) => ``((auth_own $γ DFrac.discard $n : bi%))
 notation γ " ↪◯MZ " n => lb_own γ n
+macro_rules | `($γ ↪◯MZ $n) => ``((lb_own $γ $n : bi%))
 
 @[rocq_alias mono_Z_auth_own_timeless]
 instance : Timeless (PROP := IProp GF) (γ ↪●MZ{dq} n) := by

@@ -25,7 +25,9 @@ def array (l : Loc) (dq : DFrac) (vs : List Val) : IProp GF :=
   iprop% [∗list] i ↦ v ∈ vs, (l + i) ↦{dq} (v: Val)
 
 @[inherit_doc array] notation:50 l:50 " ↦∗{" dq "} " vs:50 => array l dq vs
+macro_rules | `($l ↦∗{ $dq } $vs) => ``((array $l $dq $vs : bi%))
 @[inherit_doc array] notation:50 l:50 " ↦∗ " vs:50 => array l (DFrac.own 1) vs
+macro_rules | `($l ↦∗ $vs) => ``((array $l (DFrac.own 1) $vs : bi%))
 
 @[rocq_alias heap_lang.array_timeless]
 instance instTimelessArray : Timeless (l ↦∗{dq} vs : IProp GF) := by

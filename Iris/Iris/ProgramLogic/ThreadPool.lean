@@ -172,7 +172,9 @@ public def isThread (n : Nat) (dq : DFrac) (e : Expr) : IProp GF :=
   TI.tp_name ↪◯MAP[n]{dq} e
 
 notation k " ↪thread{" dq "} " v => isThread k dq v
+macro_rules | `($k ↪thread{ $dq } $v) => ``((isThread $k $dq $v : bi%))
 notation k " ↪thread " v => isThread k (DFrac.own 1) v
+macro_rules | `($k ↪thread $v) => ``((isThread $k (DFrac.own 1) $v : bi%))
 
 public def tpInvIni : IProp GF :=
   TI.tp_name ↪●MAP (∅ : H Expr)

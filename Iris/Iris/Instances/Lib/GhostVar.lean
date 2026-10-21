@@ -40,7 +40,9 @@ def ghost_var (γ : GName) (dq : DFrac) (a : A) : IProp GF :=
 #rocq_ignore ghost_var_unseal "`ghost_var` is defined directly without `seal`/`unseal`."
 
 notation γ " ↪VAR{" dq "} " a => ghost_var γ dq a
+macro_rules | `($γ ↪VAR{ $dq } $a) => ``((ghost_var $γ $dq $a : bi%))
 notation γ " ↪VAR " a => ghost_var γ (DFrac.own 1) a
+macro_rules | `($γ ↪VAR $a) => ``((ghost_var $γ (DFrac.own 1) $a : bi%))
 
 @[rocq_alias ghost_var_timeless]
 instance (γ : GName) (dq : DFrac) (a : A) : Timeless (PROP := IProp GF) (γ ↪VAR{dq} a) := by

@@ -68,7 +68,9 @@ def supply (m : Nat) : IProp GF :=
 #rocq_ignore time_receipt_supply_eq "Not needed"
 
 notation:max "⧖+ " n:40 => excl n
+macro_rules | `(⧖+ $n) => ``((excl $n : bi%))
 notation:max "⧖□ " n:40 => pers n
+macro_rules | `(⧖□ $n) => ``((pers $n : bi%))
 
 @[rocq_alias time_receipt_excl_timeless]
 instance {n : Nat} : Timeless (PROP := IProp GF) (⧖+ n) :=

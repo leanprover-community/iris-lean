@@ -394,8 +394,11 @@ def bigOr [BIBase PROP] (Ps : List PROP) : PROP := bigOp or iprop(False) Ps
 def bigSep [BIBase PROP] (Ps : List PROP) : PROP := bigOp sep iprop(emp) Ps
 
 notation:40 "[∧] " Ps:max => bigAnd Ps
+macro_rules | `([∧] $Ps) => ``(bigAnd (PROP := bi%) $Ps)
 notation:40 "[∨] " Ps:max => bigOr Ps
+macro_rules | `([∨] $Ps) => ``(bigOr (PROP := bi%) $Ps)
 notation:40 "[∗] " Ps:max => bigSep Ps
+macro_rules | `([∗] $Ps) => ``(bigSep (PROP := bi%) $Ps)
 
 /-- Except-0 modality: `◇ P` is equivalent to `▷ False ∨ P`. -/
 @[rocq_alias bi_except_0]

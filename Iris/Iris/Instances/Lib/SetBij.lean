@@ -56,8 +56,11 @@ def set_bij_own_elem (γ : GName) (a : A) (b : B) : IProp GF :=
 end definitions
 
 notation γ " ↪●BIJ{" dq "} " L => set_bij_own_auth γ dq L
+macro_rules | `($γ ↪●BIJ{ $dq } $L) => ``((set_bij_own_auth $γ $dq $L : bi%))
 notation γ " ↪●BIJ " L => set_bij_own_auth γ (DFrac.own 1) L
+macro_rules | `($γ ↪●BIJ $L) => ``((set_bij_own_auth $γ (DFrac.own 1) $L : bi%))
 notation γ " ↪◯BIJ⟨" a ", " b "⟩" => set_bij_own_elem γ a b
+macro_rules | `($γ ↪◯BIJ⟨ $a , $b ⟩) => ``((set_bij_own_elem $γ $a $b : bi%))
 
 section lemmas
 

@@ -87,7 +87,9 @@ def genHeapInterp (σ : H V) : IProp GF := iprop%
 def pointsTo (l : L) (dq : DFrac) (v : V) : IProp GF := heapName ↪◯MAP[l]{dq} v
 
 notation:50 l:50 " ↦{" dq "} " v:50 => pointsTo l dq v
+macro_rules | `($l ↦{ $dq } $v) => ``((pointsTo $l $dq $v : bi%))
 notation:50 l:50 " ↦ " v:50 => pointsTo l (DFrac.own 1) v
+macro_rules | `($l ↦ $v) => ``((pointsTo $l (DFrac.own 1) $v : bi%))
 
 #rocq_ignore pointsto_def "Rocq unsealed definition body; use pointsTo."
 #rocq_ignore pointsto_aux "Rocq sealing auxiliary definition."

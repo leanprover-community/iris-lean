@@ -52,9 +52,13 @@ def ghost_map_elem (γ : GName) (dq : DFrac) (k : K) (v : V) : IProp GF :=
 end definitions
 
 notation γ " ↪●MAP{" dq "} " m => ghost_map_auth γ dq m
+macro_rules | `($γ ↪●MAP{ $dq } $m) => ``((ghost_map_auth $γ $dq $m : bi%))
 notation γ " ↪●MAP " m => ghost_map_auth γ (DFrac.own 1) m
+macro_rules | `($γ ↪●MAP $m) => ``((ghost_map_auth $γ (DFrac.own 1) $m : bi%))
 notation γ " ↪◯MAP[" k "]{" dq "} " v => ghost_map_elem γ dq k v
+macro_rules | `($γ ↪◯MAP[ $k ]{ $dq } $v) => ``((ghost_map_elem $γ $dq $k $v : bi%))
 notation γ " ↪◯MAP[" k "] " v => ghost_map_elem γ (DFrac.own 1) k v
+macro_rules | `($γ ↪◯MAP[ $k ] $v) => ``((ghost_map_elem $γ (DFrac.own 1) $k $v : bi%))
 
 section lemmas
 

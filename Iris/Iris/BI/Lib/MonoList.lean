@@ -80,15 +80,20 @@ def lb_own (γ : GName) (l : List α) : IProp GF :=
 #rocq_ignore mono_list_lb_own_unseal "Not needed"
 
 notation γ " ↪●ML{" dq "} " l => auth_own γ dq l
+macro_rules | `($γ ↪●ML{ $dq } $l) => ``((auth_own $γ $dq $l : bi%))
 notation γ " ↪●ML " l => auth_own γ (DFrac.own 1) l
+macro_rules | `($γ ↪●ML $l) => ``((auth_own $γ (DFrac.own 1) $l : bi%))
 notation γ " ↪●ML□ " l => auth_own γ DFrac.discard l
+macro_rules | `($γ ↪●ML□ $l) => ``((auth_own $γ DFrac.discard $l : bi%))
 notation γ " ↪◯ML " l => lb_own γ l
+macro_rules | `($γ ↪◯ML $l) => ``((lb_own $γ $l : bi%))
 
 @[rocq_alias mono_list_idx_own]
 def idx_own (γ : GName) (i : Nat) (a : α) : IProp GF := iprop%
   ∃ l, ⌜l[i]? = some a⌝ ∗ lb_own γ l
 
 notation γ " ↪◯ML[" i "] " a => idx_own γ i a
+macro_rules | `($γ ↪◯ML[ $i ] $a) => ``((idx_own $γ $i $a : bi%))
 
 /-! ## Instances -/
 

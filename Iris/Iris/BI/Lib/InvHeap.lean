@@ -123,7 +123,9 @@ def invPointsTo (l : L) (I : V → Prop) : IProp GF :=
 end definitions
 
 notation:50 l:50 " ↦_" I:max v:50 => invPointsToOwn l v I
+macro_rules | `($l ↦_ $I $v) => ``((invPointsToOwn $l $v $I : bi%))
 notation:50 l:50 " ↦_" I:max "□" => invPointsTo l I
+macro_rules | `($l ↦_ $I □) => ``((invPointsTo $l $I : bi%))
 
 section lemmas
 
