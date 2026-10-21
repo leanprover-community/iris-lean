@@ -5,6 +5,7 @@ Authors: Markus de Medeiros
 -/
 module
 
+import Iris.Init
 public meta import Lean.Elab.Command
 public meta import Lean.Elab.Term
 
@@ -40,3 +41,4 @@ meta def elabBiCmd : CommandElab := fun stx => do
   biExt.add T .local
 
 end
+end Iris
