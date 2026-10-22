@@ -353,4 +353,94 @@ variable (p : ProphId) (w : Val) (e : Exp)
 
 end test
 
+/-! Associativity and precedence of binops, in the same order as the Iris-Rocq tests:
+`quot`, `rem`, `≪`, `≫` are `/`, `%`, `<<<`, `>>>`. -/
+section assoc
+
+variable (a b c d : Exp)
+
+-- left/right assoc of each binop
+example : hl(&a + &b + &c) = hl((&a + &b) + &c) := rfl
+example : hl(&a +ₗ &b +ₗ &c) = hl((&a +ₗ &b) +ₗ &c) := rfl
+example : hl(&a - &b - &c) = hl((&a - &b) - &c) := rfl
+example : hl(&a * &b * &c) = hl((&a * &b) * &c) := rfl
+example : hl(&a / &b / &c) = hl((&a / &b) / &c) := rfl
+example : hl(&a % &b % &c) = hl((&a % &b) % &c) := rfl
+example : hl(&a <<< &b <<< &c) = hl((&a <<< &b) <<< &c) := rfl
+example : hl(&a >>> &b >>> &c) = hl((&a >>> &b) >>> &c) := rfl
+example : hl(&a && &b && &c) = hl((&a && &b) && &c) := rfl
+example : hl(&a || &b || &c) = hl((&a || &b) || &c) := rfl
+-- mixing at the same level
+example : hl(&a + &b +ₗ &c - &d) = hl(((&a + &b) +ₗ &c) - &d) := rfl
+-- differs from Rocq: `a * ((b / c) % d)`
+example : hl(&a * &b / &c % &d) = hl(((&a * &b) / &c) % &d) := rfl
+example : hl(&a <<< &b >>> &c) = hl((&a <<< &b) >>> &c) := rfl
+-- differs from Rocq: `(a % b) <<< c`
+example : hl(&a % &b <<< &c) = hl(&a % (&b <<< &c)) := rfl
+example : hl(&a <<< &b % &c) = hl((&a <<< &b) % &c) := rfl
+-- precedence between levels
+example : hl(&a + &b * &c) = hl(&a + (&b * &c)) := rfl
+example : hl(&a * &b + &c) = hl((&a * &b) + &c) := rfl
+example : hl(&a +ₗ &b * &c) = hl(&a +ₗ (&b * &c)) := rfl
+example : hl(&a + &b <<< &c) = hl(&a + (&b <<< &c)) := rfl
+example : hl(&a <<< &b + &c) = hl((&a <<< &b) + &c) := rfl
+example : hl(&a * &b <<< &c) = hl(&a * (&b <<< &c)) := rfl
+example : hl(&a <<< &b * &c) = hl((&a <<< &b) * &c) := rfl
+example : hl(&a / &b * &c) = hl((&a / &b) * &c) := rfl
+-- differs from Rocq: `a * (b / c)`
+example : hl(&a * &b / &c) = hl((&a * &b) / &c) := rfl
+example : hl(&a + &b = &c + &d) = hl((&a + &b) = (&c + &d)) := rfl
+-- `&&` and `||` sit below the comparisons, unlike Rocq
+example : hl(&a && &b || &c && &d) = hl((&a && &b) || (&c && &d)) := rfl
+example : hl(&a || &b && &c) = hl(&a || (&b && &c)) := rfl
+example : hl(&a + &b || &c) = hl((&a + &b) || &c) := rfl
+-- differs from Rocq: `(a || b) + c`
+example : hl(&a || &b + &c) = hl(&a || (&b + &c)) := rfl
+example : hl(&a * &b && &c) = hl((&a * &b) && &c) := rfl
+-- differs from Rocq: `(a && b) * c`
+example : hl(&a && &b * &c) = hl(&a && (&b * &c)) := rfl
+-- differs from Rocq: `a + (b && c)`
+example : hl(&a + &b && &c) = hl((&a + &b) && &c) := rfl
+-- differs from Rocq: `a < (b || c)`
+example : hl(&a < &b || &c) = hl((&a < &b) || &c) := rfl
+-- differs from Rocq: `(a || b) < c`
+example : hl(&a || &b < &c) = hl(&a || (&b < &c)) := rfl
+-- unary operators
+example : hl(-&a + &b) = hl((-&a) + &b) := rfl
+example : hl(-&a * &b) = hl((-&a) * &b) := rfl
+-- differs from Rocq: `~ (a + b)`
+example : hl(~&a + &b) = hl((~&a) + &b) := rfl
+-- differs from Rocq: `~ (a = b)`
+example : hl(~&a = &b) = hl((~&a) = &b) := rfl
+
+-- differs from Rocq, where `&&` binds tighter than `=` so this does not parse
+example : hl(&a = &b && &c = &d) = hl((&a = &b) && (&c = &d)) := rfl
+-- comparison chains: expected to fail
+/-- info: false -/
+#guard_msgs in
+#eval return (Lean.Parser.runParserCategory (← Lean.getEnv) `term "hl(&a < &b < &c)").toBool
+/-- info: false -/
+#guard_msgs in
+#eval return (Lean.Parser.runParserCategory (← Lean.getEnv) `term "hl(&a ≤ &b ≤ &c)").toBool
+/-- info: false -/
+#guard_msgs in
+#eval return (Lean.Parser.runParserCategory (← Lean.getEnv) `term "hl(&a = &b = &c)").toBool
+/-- info: false -/
+#guard_msgs in
+#eval return (Lean.Parser.runParserCategory (← Lean.getEnv) `term "hl(&a ≤ &b < &c)").toBool
+-- explicit parentheses are fine
+/-- info: hl((&a ≤ (&b ≤ (&c < (&d = &a))))) : Exp -/
+#guard_msgs in
+#check hl(&a ≤ (&b ≤ (&c < (&d = &a))))
+
+/-! Operators without a Rocq counterpart. -/
+example : hl(&a &&& &b &&& &c) = hl((&a &&& &b) &&& &c) := rfl
+example : hl(&a ||| &b ||| &c) = hl((&a ||| &b) ||| &c) := rfl
+example : hl(&a ^^^ &b ^^^ &c) = hl((&a ^^^ &b) ^^^ &c) := rfl
+/-- info: false -/
+#guard_msgs in
+#eval return (Lean.Parser.runParserCategory (← Lean.getEnv) `term "hl(&a <= &b < &c)").toBool
+
+end assoc
+
 end IrisTest.HeapLang
