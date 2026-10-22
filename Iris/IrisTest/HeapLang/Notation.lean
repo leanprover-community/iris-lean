@@ -353,7 +353,7 @@ variable (p : ProphId) (w : Val) (e : Exp)
 
 end test
 
-/-! Associativity and precedence of binops, in the same order as the Iris-Rocq tests:
+/-! Associativity and precedence of binops
 `quot`, `rem`, `≪`, `≫` are `/`, `%`, `<<<`, `>>>`. -/
 section assoc
 
