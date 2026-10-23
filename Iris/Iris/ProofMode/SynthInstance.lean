@@ -194,6 +194,10 @@ def synthInstanceCore? (type : Expr) (maxResultSize? : Option Nat := none) :
     transparency := TransparencyMode.instances,
     foApprox := true, ctxApprox := true, constApprox := false,
     univApprox := false }) do
+  -- we set this option to false since it causes weird errors for elimModalFupdWp
+  -- (see https://github.com/leanprover-community/iris-lean/pull/718#issuecomment-6176111809)
+  -- an alternative to this might be to tryResolve and remove the call to markInstanceTyped in it
+  withOptions (·.set `backward.isDefEq.respectTransparency.instanceSearchTypes false) do
   withInTypeClassResolution do
     let type ← instantiateMVars type
     -- TODO: if it becomes necessary, run whnf under the ∀ quantifiers of type
