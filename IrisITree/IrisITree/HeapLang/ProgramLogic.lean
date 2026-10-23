@@ -136,12 +136,12 @@ theorem wp_later_weaken {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
     (H2 := heaplangH (StepMod.later (PROP := IProp GF))))
   iexact Hwp
 
--- theorem wp_bind (K : List ECtxItem) (e : Exp) (Φ : Val → IProp GF) :
---     WP e @ m; ⊤ {{ v,
---       WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) v)) @ m; ⊤ {{ Φ }}
---     }} -∗
---     WP (ProgramLogic.fill K e) @ m; ⊤ {{ Φ }} := by
---   sorry
+theorem wp_bind (K : List ECtxItem) (e : Exp) (Φ : Val → IProp GF) :
+    WP e @ m; ⊤ {{ v,
+      WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) v)) @ m; ⊤ {{ Φ }}
+    }} -∗
+    WP (ProgramLogic.fill K e) @ m; ⊤ {{ Φ }} := by
+  sorry
 
 theorem wp_wand {M : CoPset} (e : Exp) (Φ Ψ : Val → IProp GF) :
     WP e @ m ; M {{ Φ }} -∗
