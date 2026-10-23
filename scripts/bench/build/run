@@ -23,7 +23,7 @@ LAKE_OVERRIDE_LEAN=true \
   WRAPPER_OUT="$OUTPUT_FILE" \
   WRAPPER_PREFIX="$BENCH_DIR/build/fake-root" \
   "$BENCH_DIR/measure.py" -t build -d -a -o "$OUTPUT_FILE" -- \
-  lakeprof record lake build --no-cache
+  lakeprof record lake build Iris IrisTest --no-cache
 
 # Analyze lakeprof data
 "$BENCH_DIR/build/lakeprof_measurements.py" "$OUTPUT_FILE"
