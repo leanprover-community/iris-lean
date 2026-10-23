@@ -7,6 +7,8 @@ module
 
 public import Iris.ProgramLogic.Atomic
 
+local stepindex Nat
+
 @[expose] public section
 
 namespace IrisTest
@@ -17,7 +19,7 @@ telescopes parses, elaborates to the corresponding `atomic_update`/`atomic_acc` 
 prints back in notation form. -/
 
 section atomicNotation
-variable {PROP : Type} [BI PROP] [BIFUpdate PROP] (Eo Ei : CoPset) (P Q : PROP)
+variable {PROP : Type} [BI PROP] [BIStepIndexed PROP] [BIFUpdate PROP] (Eo Ei : CoPset) (P Q : PROP)
   (α : Nat → PROP) (β : Nat → Bool → PROP) (Ψ : Nat → Bool → PROP)
 
 /-! Both telescopes non-empty. -/
@@ -103,11 +105,10 @@ example (AU AACC : Nat) : Nat := AU + AACC
 
 /-! The notation elaborates to exactly the terms the lemmas about `atomic_update` and
 `atomic_acc` are stated with. -/
-example : (AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>) ⊢
+example := (aupd_aacc : (AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>) ⊢
     AACC <{ ∃∃ x, α x,
         ABORT AU <{ ∃∃ x, α x }> @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }> }>
-      @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }> :=
-  aupd_aacc
+      @ Eo, Ei <{ ∀∀ y, β x y, COMM Ψ x y }>)
 
 end atomicNotation
 
@@ -183,7 +184,7 @@ example : (<<{ ∀∀ x, α x }>> e @ E <<{ ∃∃ y, β x y | RET w }>>) ⊢
 end atomicWpNotation
 section ProofModeTactics
 
-variable {PROP : Type u} [instBI : BI PROP] [instBIFUpd : BIFUpdate PROP] {TA TB : Tele}
+variable {PROP : Type u} [instBI : BI PROP] [BIStepIndexed PROP] [instBIFUpd : BIFUpdate PROP] {TA TB : Tele}
 variable {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP}
 
 /--

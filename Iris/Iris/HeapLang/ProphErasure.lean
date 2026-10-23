@@ -14,6 +14,8 @@ public import Iris.ProgramLogic.Adequacy
 public import Iris.Std.PartialMap
 
 @[expose] public section
+
+local stepindex Nat
 namespace Iris.HeapLang
 
 open Iris.Std Iris.ProgramLogic Iris.ProgramLogic.Language Iris.ProgramLogic.PrimStep

@@ -11,6 +11,7 @@ public import Iris.BI.Notation
 public meta section
 
 namespace Iris.ProofMode
+
 open Lean Elab Tactic Meta Qq
 
 /--

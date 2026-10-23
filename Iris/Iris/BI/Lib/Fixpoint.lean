@@ -10,31 +10,36 @@ public import Iris.ProofMode
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris
 open Iris.Std BI OFE
 
 
-@[rocq_alias BiMonoPred]
-class BIMonoPred [BI PROP] [OFE A] (F : (A → PROP) → (A → PROP)) where
+@[indexed, rocq_alias BiMonoPred]
+class BIMonoPred (SI : stepindex (Type _)) [SIdx SI] [BI PROP] [BIStepIndexed PROP] [OFE A] (F : (A → PROP) → (A → PROP)) where
   mono_pred {Φ Ψ : A → PROP} [NonExpansive Φ] [NonExpansive Ψ] :
     ⊢ □ (∀ x, Φ x -∗ Ψ x) -∗ ∀ x, F Φ x -∗ F Ψ x
   mono_pred_ne {Φ : A → PROP} [NonExpansive Φ] : NonExpansive (F Φ)
 export BIMonoPred (mono_pred mono_pred_ne)
+attribute [indexed] BIMonoPred.mono_pred
 attribute [instance] mono_pred_ne
 
 -- PORTING NOTE: This is an `abbrev` because of typeclass inference
-@[rocq_alias bi_least_fixpoint]
-abbrev bi_least_fixpoint [BI PROP] [OFE A] (F : (A → PROP) → (A → PROP)) (x : A) : PROP :=
+@[indexed, rocq_alias bi_least_fixpoint]
+abbrev bi_least_fixpoint [BI PROP] [BIStepIndexed PROP] [OFE A] (F : (A → PROP) → (A → PROP)) (x : A) : PROP :=
   iprop(∀ (Φ : A -n> PROP), □ (∀ x, F Φ x -∗ Φ x) -∗ Φ x)
 
-@[rocq_alias bi_greatest_fixpoint]
-abbrev bi_greatest_fixpoint [BI PROP] [OFE A] (F : (A → PROP) → (A → PROP)) (x : A) : PROP :=
+@[indexed, rocq_alias bi_greatest_fixpoint]
+abbrev bi_greatest_fixpoint [BI PROP] [BIStepIndexed PROP] [OFE A] (F : (A → PROP) → (A → PROP)) (x : A) : PROP :=
   iprop(∃ (Φ : A -n> PROP), □ (∀ x, Φ x -∗ F Φ x) ∗ Φ x)
 
 /-- Porting note: The Rocq version of this theorem has an additional
   `∀ Φ, NonExpansive Φ → NonExpansive (F Φ)` hypothesis. Not sure why! -/
 @[rocq_alias least_fixpoint_ne']
-instance [BI PROP] [OFE A] {F : (A → PROP) → (A → PROP)} :
+instance [BI PROP] [BIStepIndexed PROP] [OFE A] {F : (A → PROP) → (A → PROP)} :
     NonExpansive (bi_least_fixpoint F) where
   ne {_ _ _} Hx := by
     refine forall_ne fun _ => ?_
@@ -45,7 +50,7 @@ instance [BI PROP] [OFE A] {F : (A → PROP) → (A → PROP)} :
 #rocq_ignore least_fixpoint_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias greatest_fixpoint_ne']
-instance [BI PROP] [OFE A] {F : (A → PROP) → (A → PROP)} :
+instance [BI PROP] [BIStepIndexed PROP] [OFE A] {F : (A → PROP) → (A → PROP)} :
     NonExpansive (bi_greatest_fixpoint F) where
   ne {_ _ _} Hx := by
     refine exists_ne fun _ => ?_
@@ -57,7 +62,7 @@ instance [BI PROP] [OFE A] {F : (A → PROP) → (A → PROP)} :
 
 section LeastFixpoint
 
-variable [BI PROP] [OFE A] (F : (A → PROP) → (A → PROP))
+variable [BI PROP] [BIStepIndexed PROP] [OFE A] (F : (A → PROP) → (A → PROP))
 
 @[rocq_alias least_fixpoint_unfold_2]
 theorem least_fixpoint_unfold_mpr [BIMonoPred F] {x} :
@@ -153,7 +158,7 @@ instance least_fixpoint_persistent_absorbing [BIMonoPred F]
     iintro !> %y #HF !>
     iapply (least_fixpoint_unfold ..).to_bi
     iapply mono_pred (Φ := fun x => iprop(<pers> bi_least_fixpoint F x)) $$ [] HF
-    letI _ := @least_fixpoint_absorbing _ _ _ _ _ _ Habsorb
+    letI _ := @least_fixpoint_absorbing _ _ SI _ _ _ _ F _ Habsorb
     iintro !> %x #H
     iexact H
 
@@ -231,11 +236,11 @@ end LeastFixpoint
 
 section GreatestFixpoint
 
-variable [BI PROP] [OFE A] (F : (A → PROP) → (A → PROP))
+variable [BI PROP] [BIStepIndexed PROP] [OFE A] (F : (A → PROP) → (A → PROP))
 
 @[rocq_alias greatest_fixpoint_ne_outer]
 theorem greatest_fixpoint_ne_outer {F1 F2 : (A → PROP) → (A → PROP)}
-    (HF : ∀ Φ x n, F1 Φ x ≡{n}≡ F2 Φ x) (Hx : x1 ≡{n}≡ x2) :
+    {n} (HF : ∀ Φ x (n), F1 Φ x ≡{n}≡ F2 Φ x) (Hx : x1 ≡{n}≡ x2) :
     bi_greatest_fixpoint F1 x1 ≡{n}≡ bi_greatest_fixpoint F2 x2 := by
   refine exists_ne fun _ => ?_
   refine sep_ne.ne ?_ (NonExpansive.ne Hx)

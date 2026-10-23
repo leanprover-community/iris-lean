@@ -7,45 +7,81 @@ module
 
 public import Iris.Algebra.OFE
 public import Iris.Algebra.Monoid
+public import Iris.Algebra.StepIndexFinite
 
 @[expose] public section
+
+/-!
+# Resource algebras
+
+Following the module style, the step-index-free part of a resource algebra is separated from the
+step-indexed part. The data classes `Op α` and `PCore α` carry their own SI-free laws; `RA α`
+adds the law relating them (`pcore_op_left`) and `URA α` the unit and its laws. The step-indexed
+classes take these as instance *parameters* and never extend them:
+`ORA α [RA α]`, `CMRA α [RA α]`, `UORA α [URA α]`, `UCMRA α [URA α]`.
+
+**Building instances.** A model declares the SI-free part first, then the step-indexed part:
+* `instance : RA X where op := …; pcore := …; assoc := …; comm := …; pcore_idem := …;
+  pcore_op_left := …`. If `Op X`/`PCore X` instances already exist, write only
+  `instance : RA X where pcore_op_left := …`: the structure instance fills the missing parents
+  `toOp`/`toPCore` by instance synthesis. `URA X` likewise (`where unit := …; unit_left_id := …;
+  pcore_unit := …`, with `toRA` synthesized).
+* The step-indexed instance is built from `[RA X]`: either directly
+  (`instance : ORA X where …`), or through the input records/builders, which only ask for the
+  step-indexed laws: `ORA.ofCMRAData (d : CMRAData X) : CMRA X`,
+  `UORA.ofUCMRAData (d : UCMRAData X) : UCMRA X` (with `[URA X] [CMRA X]`),
+  `CMRA.ofDiscrete`, `CMRA.ofDiscreteTotal`, `ORA.ofDiscreteORAData`, `CMRA.ofIso`, ….
+
+**Binder convention.** Lemmas whose statement does not mention the step index take only
+`[RA α]`/`[URA α]` (plus SI-free mixins such as `IsTotal α`); lemmas mentioning validity, the
+order or the distance take `[RA α] [ORA α]` (resp. `[URA α] [UORA α]`, …). No ``
+pins are needed for SI-free laws.
+-/
 
 namespace Iris
 open OFE
 
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
+
 /-- The underlying operation of a resource. -/
 @[rocq_alias Op]
-class Op (α : Type _) [OFE α] where
+class Op (α : Type _) where
   /-- The composition operation. -/
   op : α → α → α
-  op_ne : NonExpansive (op x)
   assoc : op x (op y z) = op (op x y) z
   comm : op x y = op y x
 
 namespace Op
 
-@[inherit_doc] infix:60 " • " => op
+@[inherit_doc op] infix:60 (priority := high) " • " => op
 
-variable [OFE α] [Op α]
+variable [Op α]
 
 /-- The composition operation with an optional right argument. -/
 @[rocq_alias opM]
 def op? (x : α) : Option α → α
   | some y => x • y
   | none => x
-@[inherit_doc] infix:60 " •? " => op?
+@[inherit_doc op?] infix:60 " •? " => op?
 
 end Op
 
+variable (SI) in
+/-- Non-expansiveness of the operation (Prop mixin; the data class `Op` carries no step index). -/
+@[indexed]
+class OpNE (α : Type _) [OFE α] [Op α] : Prop where
+  op_ne {x : α} : OFE.NonExpansive (Op.op x)
+export OpNE (op_ne)
+
 /-- The partial core operator for a resource algebra. -/
 @[rocq_alias PCore]
-class PCore (α : Type _) [OFE α] where
+class PCore (α : Type _) where
   pcore : α → Option α
-  pcore_ne : x ≡{n}≡ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≡{n}≡ cy
   pcore_idem : pcore x = some cx → pcore cx = some cx
 
 namespace PCore
-variable [OFE α] [PCore α]
+variable [PCore α]
 
 /-- The total core operation. -/
 @[rocq_alias core]
@@ -53,77 +89,131 @@ def core (x : α) := (pcore x).getD x
 
 end PCore
 
+variable (SI) in
+/-- Non-expansiveness of the partial core (Prop mixin). -/
+@[indexed]
+class PCoreNE (α : Type _) [OFE α] [PCore α] : Prop where
+  pcore_ne {n} {x y cx : α} : x ≡{n}≡ y → PCore.pcore x = some cx → ∃ cy, PCore.pcore y = some cy ∧ cx ≡{n}≡ cy
+export PCoreNE (pcore_ne)
+
 /-- A resource algebra whose core is total. -/
 @[rocq_alias CmraTotal]
-class IsTotal (α : Type _) [OFE α] [PCore α] : Prop where
+class IsTotal (α : Type _) [PCore α] : Prop where
   total (x : α) : ∃ cx, PCore.pcore x = some cx
+
+theorem IsTotal.core_idem [PCore α] [IsTotal α] (x : α) : PCore.core (PCore.core x) = PCore.core x := by
+  obtain ⟨cx, h⟩ := IsTotal.total x
+  simp [PCore.core, h, PCore.pcore_idem h]
 #rocq_ignore cmra_total_mixin "Use CMRA + IsTotal"
+
+/-- A resource algebra without validity or step index: composition and partial core together
+with the law relating them. The step-indexed structure lives in the mixin `ORA α`, which takes
+`RA α` as a parameter. -/
+class RA (α : Type _) extends Op α, PCore α where
+  pcore_op_left {x cx : α} : pcore x = some cx → cx • x = x
+
+/-- The unit of a unital resource algebra (parameter-free data). -/
+class UnitOp (α : Type _) where
+  unit : α
+
+/-- A unital resource algebra without validity or step index. Its core is total (`IsTotal`): in
+Iris this follows from the monotonicity of the core, which is not an SI-free law. -/
+class URA (α : Type _) extends RA α, UnitOp α, IsTotal α where
+  unit_left_id {x : α} : unit • x = x
+  pcore_unit : pcore unit = some unit
 
 -- NOTE: The linter here complains that `Valid` is duplicted here.
 set_option linter.iris.dupNamespace false in
 /-- The validity predicates of a resource algebra.  -/
-@[rocq_alias Valid]
-class Valid (α : Type _) [OFE α] where
+@[indexed, rocq_alias Valid]
+class Valid (SI : stepindex (Type _)) (α : Type _) where
   /-- The step-indexed validity predicate. -/
-  ValidN : Nat → α → Prop
+  ValidN : SI → α → Prop
   /-- The validity predicate. -/
-  Valid : α → Prop
-  validN_ne : x ≡{n}≡ y → ValidN n x → ValidN n y
+  Valid {SI} : α → Prop
   valid_iff_validN : Valid x ↔ ∀ n, ValidN n x
-  validN_succ : ValidN n.succ x → ValidN n x
+attribute [indexed] Valid.ValidN
 
 #rocq_ignore ValidN "Merged into the `Valid` type class"
 
 namespace Valid
 
-@[inherit_doc] prefix:50 "✓ " => Valid.Valid
-@[inherit_doc] notation:50 "✓{" n "} " x:51 => Valid.ValidN n x
+@[inherit_doc Valid.Valid] notation:50 "✓[" S "] " x:51 => Valid.Valid (SI := S) x
+@[inherit_doc Valid.Valid] notation:50 "✓ " x:50 => Valid.Valid (SI := stepindex%) x
+@[inherit_doc Valid.ValidN] notation:50 "✓{" n "} " x:51 => Valid.ValidN n x
 
 end Valid
 
+variable (SI) in
+/-- Non-expansiveness and downward closure of validity (Prop mixin). -/
+@[indexed]
+class ValidNE (α : Type _) [OFE α] [Valid α] : Prop where
+  validN_ne {n} {x y : α} : x ≡{n}≡ y → Valid.ValidN n x → Valid.ValidN n y
+  validN_le {n n'} {x : α} : Valid.ValidN n x → n' ≤ n → Valid.ValidN n' x
+export ValidNE (validN_ne validN_le)
+
 /-- The ordering predicate on a resource algebra. -/
-class Ordered (α : Type _) [OFE α] where
+@[indexed]
+class Ordered (SI : stepindex (Type _)) (α : Type _) where
   /-- The indexed ordering predicate. This is the generic ORA order predicate; if your ORA is
   `OrdInc`, the lemma `ordN_incN` converts it to the extension order typical of Iris CMRAs. -/
-  OrderN : Nat → α → α → Prop
+  OrderN : SI → α → α → Prop
   /-- The ordering predicate. This is the generic ORA order predicate; if your ORA is `OrdInc`,
-  the lemma `ord_inc` converts it to the extension order typical of Iris CMRAs. -/
-  Order : α → α → Prop
-  ordN_ne {n} {x x' y y' : α} : x ≡{n}≡ x' → y ≡{n}≡ y' → OrderN n x y → OrderN n x' y'
-  ordN_succ {n} {x y : α} : OrderN n.succ x y → OrderN n x y
+  the {SI} lemma `ord_inc` converts it to the extension order typical of Iris CMRAs. -/
+  Order {SI} : α → α → Prop
   ordN_trans {n} {x y z : α} : OrderN n x y → OrderN n y z → OrderN n x z
-  ord_trans {x y z : α} : Order x y → Order y z → Order x z
+  ord_trans {SI} {x y z : α} : Order x y → Order y z → Order x z
   ordN_of_ord {x y : α} (n) : Order x y → OrderN n x y
+attribute [indexed] Ordered.Order Ordered.OrderN
+
+variable (SI) in
+/-- Non-expansiveness and downward closure of the order (Prop mixin). -/
+@[indexed]
+class OrderedNE (α : Type _) [OFE α] [Ordered α] : Prop where
+  ordN_ne {n} {x x' y y' : α} : x ≡{n}≡ x' → y ≡{n}≡ y' → Ordered.OrderN n x y →
+    Ordered.OrderN n x' y'
+  ordN_le {n n'} {x y : α} : Ordered.OrderN n x y → n' ≤ n → Ordered.OrderN n' x y
+export OrderedNE (ordN_ne ordN_le)
 
 namespace Ordered
 
-@[inherit_doc] notation:50 x " ≼ₒ{" n "} " y:51 => OrderN n x y
-@[inherit_doc] infix:50 " ≼ₒ " => Order
+@[inherit_doc OrderN] notation:50 x " ≼ₒ{" n "} " y:51 => OrderN n x y
+@[inherit_doc Order] notation:50 x " ≼ₒ[" S "] " y:51 => Order (SI := S) x y
+@[inherit_doc Ordered.Order] notation:50 x:51 " ≼ₒ " y:51 => Ordered.Order (SI := stepindex%) x y
 
-variable [OFE α] [Ordered α]
+variable [OFE α] [Ordered SI α]
 
 /-- The reflexive closure of the step-indexed order. -/
-def OrderNR (n : Nat) (x y : α) : Prop := x ≡{n}≡ y ∨ x ≼ₒ{n} y
-@[inherit_doc] notation:50 x " ≼ₒ*{" n "} " y:51 => OrderNR n x y
+@[indexed]
+def OrderNR (n : SI) (x y : α) : Prop := x ≡{n}≡ y ∨ x ≼ₒ{n} y
+@[inherit_doc OrderNR] notation:50 x " ≼ₒ*{" n "} " y:51 => OrderNR n x y
 
 /-- The reflexive closure of the order. -/
 def OrderR (x y : α) : Prop := x = y ∨ x ≼ₒ y
-@[inherit_doc] infix:50 " ≼ₒ* " => OrderR
+@[inherit_doc OrderR] notation:50 x " ≼ₒ*[" S "] " y:51 => OrderR (SI := S) x y
+@[inherit_doc Ordered.OrderR] notation:50 x:51 " ≼ₒ* " y:51 => Ordered.OrderR (SI := stepindex%) x y
 
 theorem OrderN.ordNR {n} {x y : α} : x ≼ₒ{n} y → x ≼ₒ*{n} y := .inr
+omit [OFE α] instSI in
 theorem Order.ordR {x y : α} : x ≼ₒ y → x ≼ₒ* y := .inr
 
 @[refl] theorem OrderNR.rfl {n} {x : α} : x ≼ₒ*{n} x := .inl .rfl
+omit [OFE α] instSI in
 @[refl] theorem OrderR.rfl {x : α} : x ≼ₒ* x := .inl (Eq.refl x)
+
+variable [OrderedNE α]
 
 theorem OrderNR.ne {n} {x x' y y' : α} (ex : x ≡{n}≡ x') (ey : y ≡{n}≡ y') :
     x ≼ₒ*{n} y → x' ≼ₒ*{n} y'
   | .inl e => .inl (ex.symm.trans (e.trans ey))
   | .inr h => .inr (ordN_ne ex ey h)
 
-theorem OrderNR.succ {n} {x y : α} : x ≼ₒ*{n.succ} y → x ≼ₒ*{n} y
-  | .inl e => .inl (e.le (Nat.le_succ n))
-  | .inr h => .inr (ordN_succ h)
+theorem OrderNR.le {n n'} {x y : α} (le : n' ≤ n) : x ≼ₒ*{n} y → x ≼ₒ*{n'} y
+  | .inl e => .inl (e.le le)
+  | .inr h => .inr (ordN_le h le)
+
+theorem OrderNR.succ [SIdxSucc] {n} {x y : α} : x ≼ₒ*{succᵢ n} y → x ≼ₒ*{n} y :=
+  OrderNR.le SIdx.le_succ_diag_r
 
 theorem OrderNR.trans {n} {x y z : α} : x ≼ₒ*{n} y → y ≼ₒ*{n} z → x ≼ₒ*{n} z
   | .inl e₁, .inl e₂ => .inl (e₁.trans e₂)
@@ -131,11 +221,13 @@ theorem OrderNR.trans {n} {x y z : α} : x ≼ₒ*{n} y → y ≼ₒ*{n} z → x
   | .inr h₁, .inl e₂ => .inr (ordN_ne .rfl e₂ h₁)
   | .inr h₁, .inr h₂ => .inr (ordN_trans h₁ h₂)
 
+omit [OFE α] [OrderedNE α] instSI in
 theorem OrderR.trans {x y z : α} : x ≼ₒ* y → y ≼ₒ* z → x ≼ₒ* z
   | .inl e₁, h₂ => e₁ ▸ h₂
   | h₁, .inl e₂ => e₂ ▸ h₁
   | .inr h₁, .inr h₂ => .inr (ord_trans h₁ h₂)
 
+omit [OrderedNE α] in
 theorem OrderR.ordNR (n) {x y : α} : x ≼ₒ* y → x ≼ₒ*{n} y
   | .inl e => .inl (e ▸ .rfl)
   | .inr h => .inr (ordN_of_ord n h)
@@ -144,41 +236,50 @@ end Ordered
 
 /-- Reflexivity of the order: the order law of unital algebras (`UORA`), also enjoyed by
 total algebras under their extension inclusion. -/
-class OrderRefl (α : Type _) [OFE α] [Ordered α] : Prop where
+@[indexed]
+class OrderRefl (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [Ordered α] : Prop where
   ord_refl (x : α) : x ≼ₒ x
+attribute [indexed] OrderRefl.ord_refl
 
 /-- An element `x` is increasing if composing with it never shrinks a resource. Cores and units
 are increasing; in an affine algebra every element is. -/
-class Increasing {α : Type _} [OFE α] [Op α] [Ordered α] (x : α) : Prop where
+@[indexed]
+class Increasing (SI : stepindex (Type _)) [SIdx SI] {α : Type _} [Op α] [Ordered α] (x : α) : Prop where
   increasing (y : α) : y ≼ₒ x • y
 
 /-- The step-indexed extension inclusion: `y` is `x` composed with some frame. This is the
 inclusion of classical resource algebras. -/
-@[rocq_alias includedN]
-def IncludedN {α : Type _} [OFE α] [Op α] (n : Nat) (x y : α) : Prop := ∃ z : α, y ≡{n}≡ x • z
-@[inherit_doc] notation:50 x " ≼{" n "} " y:51 => IncludedN n x y
+@[indexed, rocq_alias includedN]
+def IncludedN {α : Type _} [HasDist α] [Op α] (n : SI) (x y : α) : Prop := ∃ z : α, y ≡{n}≡ x • z
+@[inherit_doc IncludedN] notation:50 x " ≼{" n "} " y:51 => IncludedN n x y
 
 /-- The extension inclusion: `y` is `x` composed with some frame. -/
 @[rocq_alias included]
-def Included {α : Type _} [OFE α] [Op α] (x y : α) : Prop := ∃ z : α, y = x • z
-@[inherit_doc] infix:50 " ≼ " => Included
+def Included {α : Type _} [Op α] (x y : α) : Prop := ∃ z : α, y = x • z
+@[inherit_doc Included] infix:50 " ≼ " => Included
 
 /-- The extension inclusion is contained in the order: every element is increasing. -/
-class IncOrd (α : Type _) [OFE α] [Op α] [Ordered α] : Prop where
+@[indexed]
+class IncOrd (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [HasDist α] [Op α] [Ordered α] : Prop where
   inc_ord {x y : α} : x ≼ y → x ≼ₒ y
 
-@[reducible] def ORA.Affine (α : Type _) [OFE α] [Op α] [Ordered α] : Prop := IncOrd α
+@[indexed, reducible] def ORA.Affine (α : Type _) [HasDist α] [Op α] [Ordered α] : Prop := IncOrd α
 
 /-- The order is contained in the extension inclusion: every ordered pair has a frame. -/
-class OrdInc (α : Type _) [OFE α] [Op α] [Ordered α] : Prop where
+@[indexed]
+class OrdInc (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [HasDist α] [Op α] [Ordered α] : Prop where
   ord_inc {x y : α} : x ≼ₒ y → x ≼ y
   ordN_incN {n} {x y : α} : x ≼ₒ{n} y → x ≼{n} y
 
 /-- The order is the extension inclusion. -/
-class IsInc (α : Type _) [OFE α] [Op α] [Ordered α] : Prop extends IncOrd α, OrdInc α
+@[indexed]
+class IsInc (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [HasDist α] [Op α] [Ordered α] : Prop
+    extends IncOrd α, OrdInc α
+
+attribute [indexed] IncOrd.inc_ord OrdInc.ord_inc OrdInc.ordN_incN
 
 section
-variable {α : Type _} [OFE α] [Op α] [Ordered α]
+variable {α : Type _} [OFE α] [Op α] [Ordered SI α]
 
 theorem IncOrd.increasing [IncOrd α] (x : α) : Increasing x :=
   ⟨fun _ => IncOrd.inc_ord ⟨x, Op.comm⟩⟩
@@ -191,50 +292,63 @@ instance instIncreasingOfIncOrd [IncOrd α] (x : α) : Increasing x := IncOrd.in
 theorem inc_iff_ord [IncOrd α] [OrdInc α] {x y : α} : x ≼ y ↔ x ≼ₒ y :=
   ⟨IncOrd.inc_ord, OrdInc.ord_inc⟩
 
-theorem IncOrd.incN_ordN [IncOrd α] {n} {x y : α} : x ≼{n} y → x ≼ₒ{n} y
-  | ⟨z, hz⟩ => Ordered.ordN_ne .rfl hz.symm (Ordered.ordN_of_ord n (IncOrd.inc_ord ⟨z, rfl⟩))
+theorem IncOrd.incN_ordN [OrderedNE α] [IncOrd α] {n} {x y : α} : x ≼{n} y → x ≼ₒ{n} y
+  | ⟨z, hz⟩ => OrderedNE.ordN_ne .rfl hz.symm (Ordered.ordN_of_ord n (IncOrd.inc_ord ⟨z, rfl⟩))
 
-theorem incN_iff_ordN [IncOrd α] [OrdInc α] {n} {x y : α} : x ≼{n} y ↔ x ≼ₒ{n} y :=
+theorem incN_iff_ordN [OrderedNE α] [IncOrd α] [OrdInc α] {n} {x y : α} : x ≼{n} y ↔ x ≼ₒ{n} y :=
   ⟨IncOrd.incN_ordN, OrdInc.ordN_incN⟩
+
+/-! The `IncOrd`/`OrdInc` laws restated with instance-implicit binders: the projections take their
+`SIdx`/`HasDist` instances implicitly and get stuck when only the order fixes them. -/
+theorem inc_ord [IncOrd α] {x y : α} (h : x ≼ y) : x ≼ₒ y :=
+  IncOrd.inc_ord h
+theorem ord_inc [OrdInc α] {x y : α} (h : x ≼ₒ y) : x ≼ y :=
+  OrdInc.ord_inc h
+theorem ordN_incN [OrdInc α] {n} {x y : α} (h : x ≼ₒ{n} y) : x ≼{n} y :=
+  OrdInc.ordN_incN h
 
 end
 
 /-! ## Order-free theory -/
 
 namespace ORA
-variable [OFE α] [Op α]
+variable [OFE α] [Op α] [OpNE α]
 
-export Op (op op? op_ne assoc comm)
-export PCore (pcore pcore_ne pcore_idem core)
-export Valid (Valid ValidN validN_ne valid_iff_validN validN_succ)
+export Op (op op? assoc comm)
+export PCore (pcore pcore_idem core)
+export Valid (Valid ValidN valid_iff_validN)
 export IsTotal (total)
 
 /-! ## Op -/
 
+omit [OFE α] [OpNE α] in
 @[rocq_alias cmra_comm]
 theorem comm' {x y : α} : x • y = y • x := comm
 
+omit [OFE α] [OpNE α] in
 @[rocq_alias cmra_assoc]
 theorem assoc' {x y z : α} : x • (y • z) = (x • y) • z := assoc
 
-theorem op_right_dist (x : α) {y z : α} (e : y ≡{n}≡ z) : x • y ≡{n}≡ x • z :=
+theorem op_right_dist {n} (x : α) {y z : α} (e : y ≡{n}≡ z) : x • y ≡{n}≡ x • z :=
   op_ne.ne e
-theorem _root_.Iris.OFE.Dist.op_r {x y z : α} : y ≡{n}≡ z → x • y ≡{n}≡ x • z := op_right_dist _
+theorem _root_.Iris.OFE.Dist.op_r {n} {x y z : α} : y ≡{n}≡ z → x • y ≡{n}≡ x • z := op_right_dist _
 
-theorem op_commN {x y : α} : x • y ≡{n}≡ y • x := Dist.of_eq comm
+omit [OpNE α] in
+theorem op_commN {n} {x y : α} : x • y ≡{n}≡ y • x := Dist.of_eq comm
 
-theorem op_assocN {x y z : α} : x • (y • z) ≡{n}≡ (x • y) • z := Dist.of_eq assoc
+omit [OpNE α] in
+theorem op_assocN {n} {x y z : α} : x • (y • z) ≡{n}≡ (x • y) • z := Dist.of_eq assoc
 
-theorem op_left_dist {x y : α} (z : α) (e : x ≡{n}≡ y) : x • z ≡{n}≡ y • z :=
+theorem op_left_dist {n} {x y : α} (z : α) (e : x ≡{n}≡ y) : x • z ≡{n}≡ y • z :=
   op_commN.trans <| e.op_r.trans op_commN
-theorem _root_.Iris.OFE.Dist.op_l {x y z : α} : x ≡{n}≡ y → x • z ≡{n}≡ y • z := op_left_dist _
+theorem _root_.Iris.OFE.Dist.op_l {n} {x y z : α} : x ≡{n}≡ y → x • z ≡{n}≡ y • z := op_left_dist _
 
-theorem _root_.Iris.OFE.Dist.op {x x' y y' : α}
+theorem _root_.Iris.OFE.Dist.op {n} {x x' y y' : α}
     (ex : x ≡{n}≡ x') (ey : y ≡{n}≡ y') : x • y ≡{n}≡ x' • y' := ex.op_l.trans ey.op_r
 
 #rocq_ignore cmra_op_proper' "OFE is Leibniz; use equality"
 
-theorem _root_.Iris.OFE.Dist.opM {x₁ x₂ : α} {y₁ y₂ : Option α}
+theorem _root_.Iris.OFE.Dist.opM {n} {x₁ x₂ : α} {y₁ y₂ : Option α}
     (H1 : x₁ ≡{n}≡ x₂) (H2 : y₁ ≡{n}≡ y₂) : x₁ •? y₁ ≡{n}≡ x₂ •? y₂ :=
   match y₁, y₂, H2 with
   | none, none, _ => H1
@@ -245,52 +359,56 @@ theorem opM_left_dist {n} {x y : α} (z : Option α) (e : x ≡{n}≡ y) : x •
 theorem opM_right_dist {n} (x : α) {y z : Option α} (e : y ≡{n}≡ z) : x •? y ≡{n}≡ x •? z :=
   Dist.rfl.opM e
 
+omit [OFE α] [OpNE α] in
 @[rocq_alias cmra_op_opM_assoc]
 theorem op_opM_assoc (x y : α) (mz : Option α) : (x • y) •? mz = x • (y •? mz) := by
   unfold op?; cases mz <;> simp [assoc]
 
-theorem op_opM_assoc_dist (x y : α) (mz : Option α) : (x • y) •? mz ≡{n}≡ x • (y •? mz) := by
+omit [OpNE α] in
+theorem op_opM_assoc_dist {n} (x y : α) (mz : Option α) : (x • y) •? mz ≡{n}≡ x • (y •? mz) := by
   unfold op?; cases mz <;> simp [op_assocN, Dist.symm]
 
 theorem incN_ne {n} {x x' y y' : α} (ex : x ≡{n}≡ x') (ey : y ≡{n}≡ y') :
     x ≼{n} y → x' ≼{n} y'
   | ⟨z, hz⟩ => ⟨z, ey.symm.trans (hz.trans ex.op_l)⟩
 
-theorem incN_of_incN_of_dist (h : (a : α) ≼{n} b) (e : b ≡{n}≡ c) : a ≼{n} c := incN_ne .rfl e h
+theorem incN_of_incN_of_dist {n} (h : (a : α) ≼{n} b) (e : b ≡{n}≡ c) : a ≼{n} c := incN_ne .rfl e h
 
-instance {n : Nat} : Trans (IncludedN (α := α) n) (Dist n) (IncludedN n) where
+instance {n} : Trans (IncludedN (α := α) n) (Dist n) (IncludedN n) where
   trans := incN_of_incN_of_dist
 
-theorem incN_of_dist_of_incN (e : (a : α) ≡{n}≡ b) (h : b ≼{n} c) : a ≼{n} c :=
+theorem incN_of_dist_of_incN {n} (e : (a : α) ≡{n}≡ b) (h : b ≼{n} c) : a ≼{n} c :=
   incN_ne e.symm .rfl h
 
-instance {n : Nat} : Trans (Dist (α := α) n) (IncludedN n) (IncludedN n) where
+instance {n} : Trans (Dist (α := α) n) (IncludedN n) (IncludedN n) where
   trans := incN_of_dist_of_incN
 
+omit [OpNE α] in
 @[rocq_alias cmra_included_includedN]
 theorem incN_of_inc (n) {x y : α} : x ≼ y → x ≼{n} y
   | ⟨z, hz⟩ => ⟨z, hz.dist⟩
 
 #rocq_ignore cmra_included_proper "OFE is Leibniz; use equality"
 
-theorem incN_iff_left (e : (a : α) ≡{n}≡ b) : a ≼{n} c ↔ b ≼{n} c :=
+theorem incN_iff_left {n} (e : (a : α) ≡{n}≡ b) : a ≼{n} c ↔ b ≼{n} c :=
   ⟨incN_ne e .rfl, incN_ne e.symm .rfl⟩
-theorem _root_.Iris.OFE.Dist.incN_l : (a : α) ≡{n}≡ b → (a ≼{n} c ↔ b ≼{n} c) := incN_iff_left
+theorem _root_.Iris.OFE.Dist.incN_l {n} : (a : α) ≡{n}≡ b → (a ≼{n} c ↔ b ≼{n} c) := incN_iff_left
 
-theorem incN_iff_right (e : (b : α) ≡{n}≡ c) : a ≼{n} b ↔ a ≼{n} c :=
+theorem incN_iff_right {n} (e : (b : α) ≡{n}≡ c) : a ≼{n} b ↔ a ≼{n} c :=
   ⟨incN_ne .rfl e, incN_ne .rfl e.symm⟩
-theorem _root_.Iris.OFE.Dist.incN_r : (b : α) ≡{n}≡ c → (a ≼{n} b ↔ a ≼{n} c) := incN_iff_right
+theorem _root_.Iris.OFE.Dist.incN_r {n} : (b : α) ≡{n}≡ c → (a ≼{n} b ↔ a ≼{n} c) := incN_iff_right
 
 @[rocq_alias cmra_includedN_ne]
-theorem incN_dist_iff (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n}≡ b') :
+theorem incN_dist_iff {n} (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n}≡ b') :
     a ≼{n} b ↔ a' ≼{n} b' :=
   ⟨incN_ne ea eb, incN_ne ea.symm eb.symm⟩
-theorem _root_.Iris.OFE.Dist.incN :
+theorem _root_.Iris.OFE.Dist.incN {n} :
     (a : α) ≡{n}≡ a' → b ≡{n}≡ b' → (a ≼{n} b ↔ a' ≼{n} b') :=
   incN_dist_iff
 
 #rocq_ignore cmra_includedN_proper "OFE is Leibniz; use equality"
 
+omit [OFE α] [OpNE α] in
 @[rocq_alias cmra_included_trans]
 theorem inc_trans {x y z : α} : x ≼ y → y ≼ z → x ≼ z
   | ⟨w, hw⟩, ⟨t, ht⟩ => ⟨w • t, ht.trans (hw ▸ assoc.symm)⟩
@@ -299,45 +417,54 @@ instance : Trans (Included (α := α)) Included Included where
   trans := inc_trans
 
 @[rocq_alias cmra_includedN_trans]
-theorem incN_trans {x y z : α} : x ≼{n} y → y ≼{n} z → x ≼{n} z
+theorem incN_trans {n} {x y z : α} : x ≼{n} y → y ≼{n} z → x ≼{n} z
   | ⟨w, hw⟩, ⟨t, ht⟩ => ⟨w • t, ht.trans (hw.op_l.trans op_assocN.symm)⟩
 
-instance : Trans (IncludedN (α := α) n) (IncludedN n) (IncludedN n) where
+instance {n} : Trans (IncludedN (α := α) n) (IncludedN n) (IncludedN n) where
   trans := incN_trans
 
+omit [OpNE α] in
 @[rocq_alias cmra_includedN_le]
 theorem incN_of_incN_le {n n'} {x y : α} (l1 : n' ≤ n) : x ≼{n} y → x ≼{n'} y
   | ⟨z, hz⟩ => ⟨z, Dist.le hz l1⟩
-theorem inc0_of_incN {n} {x y : α} : x ≼{n} y → x ≼{0} y := incN_of_incN_le (Nat.zero_le n)
+omit [OpNE α] in
+theorem inc0_of_incN {n} {x y : α} : x ≼{n} y → x ≼{0} y := incN_of_incN_le SIdx.le_0_l
 
+omit [OpNE α] in
 @[rocq_alias cmra.cmra_includedN_S]
-theorem incN_of_incN_succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y :=
-  incN_of_incN_le (Nat.le_succ n)
+theorem incN_of_incN_succ [SIdxSucc] {n} {x y : α} : x ≼{succᵢ n} y → x ≼{n} y :=
+  incN_of_incN_le SIdx.le_succ_diag_r
 
+omit [OpNE α] in
 @[rocq_alias cmra_includedN_l]
 theorem incN_op_left (n) (x y : α) : x ≼{n} x • y := ⟨y, Dist.rfl⟩
 
+omit [OFE α] [OpNE α] in
 @[rocq_alias cmra_included_l]
 theorem inc_op_left (x y : α) : x ≼ x • y := ⟨y, rfl⟩
 
+omit [OFE α] [OpNE α] in
 @[rocq_alias cmra_included_r]
 theorem inc_op_right (x y : α) : y ≼ x • y := ⟨x, comm⟩
 
+omit [OpNE α] in
 @[rocq_alias cmra_includedN_r]
 theorem incN_op_right (n) (x y : α) : y ≼{n} x • y := ⟨x, op_commN⟩
 
+omit [OFE α] [OpNE α] in
 @[rocq_alias cmra_mono_l]
 theorem op_mono_right {x y} (z : α) : x ≼ y → z • x ≼ z • y
   | ⟨w, hw⟩ => ⟨w, (congrArg (z • ·) hw).trans assoc⟩
 
 @[rocq_alias cmra_monoN_l]
-theorem op_monoN_right {n x y} (z : α) : x ≼{n} y → z • x ≼{n} z • y
+theorem op_monoN_right {n} {x y} (z : α) : x ≼{n} y → z • x ≼{n} z • y
   | ⟨w, hw⟩ => ⟨w, hw.op_r.trans op_assocN⟩
 
 @[rocq_alias cmra_monoN_r]
-theorem op_monoN_left {n x y} (z : α) (h : x ≼{n} y) : x • z ≼{n} y • z :=
+theorem op_monoN_left {n} {x y} (z : α) (h : x ≼{n} y) : x • z ≼{n} y • z :=
   (op_commN.incN op_commN).1 (op_monoN_right z h)
 
+omit [OFE α] [OpNE α] in
 @[rocq_alias cmra_mono_r]
 theorem op_mono_left {x y} (z : α) (h : x ≼ y) : x • z ≼ y • z := by
   rw [comm' (x := x) (y := z), comm' (x := y) (y := z)]; exact op_mono_right z h
@@ -349,6 +476,7 @@ theorem op_monoN {n} {x x' y y' : α} (hx : x ≼{n} x') (hy : y ≼{n} y') :
 
 #rocq_ignore cmra_monoN' "Use cmra_monoN"
 
+omit [OFE α] [OpNE α] in
 @[rocq_alias cmra_mono]
 theorem op_mono {x x' y y' : α} (hx : x ≼ x') (hy : y ≼ y') :
     x • y ≼ x' • y' :=
@@ -356,17 +484,18 @@ theorem op_mono {x x' y y' : α} (hx : x ≼ x') (hy : y ≼ y') :
 
 #rocq_ignore cmra_mono' "Use cmra_mono"
 
-@[reducible] def extOrdered : Ordered α where
+@[indexed, reducible] def extOrdered : Ordered α where
   OrderN := IncludedN
   Order := Included
-  ordN_ne := incN_ne
-  ordN_succ := incN_of_incN_succ
   ordN_trans := incN_trans
   ord_trans := inc_trans
   ordN_of_ord n h := incN_of_inc n h
 
+theorem extOrderedNE : @OrderedNE _ _ α _ extOrdered :=
+  @OrderedNE.mk _ _ α _ extOrdered incN_ne (fun h le => incN_of_incN_le le h)
+
 section pcore
-variable [PCore α]
+variable [PCore α] [PCoreNE α]
 
 @[rocq_alias cmra_pcore_ne']
 instance : NonExpansive (pcore (α := α)) where
@@ -392,7 +521,7 @@ instance : NonExpansive (pcore (α := α)) where
 section total
 variable [IsTotal α]
 
-omit [Op α] in
+omit [Op α] [OpNE α] [PCoreNE α] in
 @[rocq_alias cmra_pcore_core]
 theorem pcore_eq_core (x : α) : pcore x = some (core x) := by
   unfold core
@@ -406,50 +535,59 @@ end ORA
 
 /-! ## Ordered resource algebras -/
 
-/-- An ordered resource algebra: composition, core and validity together with the laws relating
-them, and a step-indexed order that they respect. The order is neither required to be reflexive
+/-- An ordered resource algebra: the step-indexed mixin over a resource algebra `RA α`, giving
+validity together with the laws relating it to composition and core, and a step-indexed order
+that they respect. The order is neither required to be reflexive
 (`OrderRefl`) nor to contain the extension inclusion (`IncOrd`). -/
-class ORA (α : Type _) extends OFE α, Op α, PCore α, Valid α, Ordered α where
-  validN_op_left {n} {x y : α} : ✓{n} (x • y) → ✓{n} x
-  pcore_op_left {x cx : α} : pcore x = some cx → cx • x = x
-  extend {n} {x y₁ y₂ : α} : ✓{n} x → x ≡{n}≡ y₁ • y₂ →
+@[indexed]
+class ORA (SI : stepindex (Type _)) [instSI : SIdx SI] (α : Type _) [RA α]
+    extends OFE α, Valid α, Ordered α,
+      OpNE α, PCoreNE α, ValidNE α, OrderedNE α where
+  validN_op_left {SI} {n} {x y : α} : ✓{n} (x • y) → ✓{n} x
+  extend {SI} {n} {x y₁ y₂ : α} : ✓{n} x → x ≡{n}≡ y₁ • y₂ →
     Σ' z₁ z₂ : α, x = z₁ • z₂ ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂
-  op_monoN_left_ord {n} {x y : α} (z : α) : x ≼ₒ{n} y → x • z ≼ₒ{n} y • z
-  op_mono_left_ord {x y : α} (z : α) : x ≼ₒ y → x • z ≼ₒ y • z
-  validN_of_ordN {n} {x y : α} : x ≼ₒ{n} y → ✓{n} y → ✓{n} x
-  pcore_monoN_ord {n} {x y cx : α} : x ≼ₒ{n} y → pcore x = some cx →
-    ∃ cy, pcore y = some cy ∧ cx ≼ₒ{n} cy
-  pcore_mono_ord {x y cx : α} : x ≼ₒ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ₒ cy
-  pcore_order_op {x cx : α} : pcore x = some cx → ∀ y, ∃ cxy, pcore (x • y) = some cxy ∧ cx ≼ₒ cxy
-  pcore_increasing {x cx : α} : pcore x = some cx → Increasing cx
-  increasing_closed {n} {x y : α} : Increasing x → x ≼ₒ*{n} y → Increasing y
-  ordN_extend {n} {x y : α} : ✓{n} y → x ≼ₒ{n} y → ∃ z, z ≼ₒ{n.succ} y ∧ z ≡{n}≡ x
-
+  op_monoN_left_ord {SI} {n} {x y : α} (z : α) : x ≼ₒ{n} y → x • z ≼ₒ{n} y • z
+  op_mono_left_ord {SI} {x y : α} (z : α) : x ≼ₒ y → x • z ≼ₒ y • z
+  validN_of_ordN {SI} {n} {x y : α} : x ≼ₒ{n} y → ✓{n} y → ✓{n} x
+  pcore_monoN_ord {SI} {n} {x y cx : α} : x ≼ₒ{n} y → PCore.pcore x = some cx →
+    ∃ cy, PCore.pcore y = some cy ∧ cx ≼ₒ{n} cy
+  pcore_mono_ord {SI} {x y cx : α} : x ≼ₒ y → PCore.pcore x = some cx → ∃ cy, PCore.pcore y = some cy ∧ cx ≼ₒ cy
+  pcore_order_op {SI} {x cx : α} : PCore.pcore x = some cx → ∀ y, ∃ cxy, PCore.pcore (x • y) = some cxy ∧ cx ≼ₒ cxy
+  pcore_increasing {SI} {x cx : α} : PCore.pcore x = some cx → Increasing cx
+  increasing_closed {SI} {n} {x y : α} : Increasing x → x ≼ₒ*{n} y → Increasing y
+  ordN_extend {SI} {n sn} {x y : α} : IsSucc n sn → ✓{n} y → x ≼ₒ{n} y → ∃ z, z ≼ₒ{sn} y ∧ z ≡{n}≡ x
+attribute [indexed] ORA.op_mono_left_ord ORA.pcore_order_op
 #rocq_ignore cmra_mixin_of' "Not needed."
+
 #rocq_ignore cmra_ofeO "Not needed."
 #rocq_ignore RAMixin
-  "Bundled record of RA laws; Lean passes them as arguments to `CMRA.ofDiscrete`."
+  "Bundled record of RA laws; Lean uses the SI-free class `RA`."
 
 namespace ORA
-variable [ORA α]
+export RA (pcore_op_left)
+variable [RA α] [ORA α]
 
+/-- Core-identity is a property of the core alone, so it takes only `[PCore α]` (no step index). -/
 @[rocq_alias CoreId]
-class CoreId (x : α) where
+class CoreId {α : Type _} [PCore α] (x : α) where
   core_id : pcore x = some x
 export CoreId (core_id)
 
-@[rocq_alias Exclusive]
+variable (SI) in
+@[indexed, rocq_alias Exclusive]
 class Exclusive (x : α) where
   exclusive0_l y : ¬✓{0} x • y
 export Exclusive (exclusive0_l)
 
-@[rocq_alias Cancelable]
+variable (SI) in
+@[indexed, rocq_alias Cancelable]
 class Cancelable (x : α) where
-  cancelableN : ✓{n} x • y → x • y ≡{n}≡ x • z → y ≡{n}≡ z
+  cancelableN {n} {y z : α} : ✓{n} x • y → x • y ≡{n}≡ x • z → y ≡{n}≡ z
 export Cancelable (cancelableN)
 #rocq_ignore Cancelable_proper "Derived from nonexpansivity"
 
-@[rocq_alias IdFree]
+variable (SI) in
+@[indexed, rocq_alias IdFree]
 class IdFree (x : α) where
   id_free0_r y : ✓{0} x → ¬x • y ≡{0}≡ x
 export IdFree (id_free0_r)
@@ -471,7 +609,7 @@ def extend' {n} {x y₁ y₂ : α} (v : ✓{n} x) (e : x ≡{n}≡ y₁ • y₂
 theorem validN_op_l {n} {x y : α} : ✓{n} (x • y) → ✓{n} x := validN_op_left
 
 @[rocq_alias cmra_valid_validN]
-theorem valid_validN {x : α} : ✓ x ↔ ∀ n, ✓{n} x := valid_iff_validN
+theorem valid_validN {x : α} : ✓ x ↔ ∀ (n), ✓{n} x := valid_iff_validN
 
 @[rocq_alias cmra_op_ne]
 theorem op_ne' {x : α} : NonExpansive (x • ·) := op_ne
@@ -504,29 +642,34 @@ instance : NonExpansive₂ (op? (α := α)) where
 
 -- NOTE: The linter complains about this name, but it is correct.
 set_option linter.iris.dupNamespace false in
-theorem _root_.Iris.Valid.Valid.validN : ✓ (x : α) → ✓{n} x := (valid_iff_validN.1 · _)
-protected theorem Valid.validN : ✓ (x : α) → ✓{n} x := Iris.Valid.Valid.validN
+theorem _root_.Iris.Valid.Valid.validN {n} : ✓ (x : α) → ✓{n} x := (valid_iff_validN.1 · _)
+protected theorem Valid.validN {n} : ✓ (x : α) → ✓{n} x := Iris.Valid.Valid.validN
 
-theorem valid_mapN {x y : α} (f : ∀ n, ✓{n} x → ✓{n} y) (v : ✓ x) : ✓ y :=
+theorem valid_mapN {x y : α} (f : ∀ (n), ✓{n} x → ✓{n} y) (v : ✓ x) : ✓ y :=
   valid_iff_validN.mpr fun n => f n v.validN
 
 @[rocq_alias cmra_validN_ne']
-theorem validN_dist_iff {x y : α} (e : x ≡{n}≡ y) : ✓{n} x ↔ ✓{n} y :=
+theorem validN_dist_iff {n} {x y : α} (e : x ≡{n}≡ y) : ✓{n} x ↔ ✓{n} y :=
   ⟨validN_ne e, validN_ne e.symm⟩
-theorem _root_.Iris.OFE.Dist.validN : (x : α) ≡{n}≡ y → (✓{n} x ↔ ✓{n} y) := validN_dist_iff
+theorem _root_.Iris.OFE.Dist.validN {n} : (x : α) ≡{n}≡ y → (✓{n} x ↔ ✓{n} y) := validN_dist_iff
 
 #rocq_ignore cmra_validN_proper "OFE is Leibniz; use equality"
 #rocq_ignore cmra_valid_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias cmra_validN_le]
 theorem validN_of_le {n n'} {x : α} (le : n' ≤ n) : ✓{n} x → ✓{n'} x :=
-  le.recOn id fun  _ ih vs => ih (validN_succ vs)
+  (validN_le · le)
 
 @[rocq_alias cmra_validN_lt]
 theorem validN_of_lt {n n'} {x : α} (lt : n' < n) : ✓{n} x → ✓{n'} x :=
-  validN_of_le (Nat.le_of_lt lt)
+  validN_of_le (SIdx.lt_le_incl lt)
 
-theorem valid0_of_validN {n} {x : α} : ✓{n} x → ✓{0} x := validN_of_le (Nat.zero_le n)
+/-- The successor form of `validN_of_le`; a field of `Valid` before the step index was
+generalized, since it does not imply `validN_le` at limit indices. -/
+theorem validN_succ [SIdxSucc] {n} {x : α} : ✓{succᵢ n} x → ✓{n} x :=
+  validN_of_le SIdx.le_succ_diag_r
+
+theorem valid0_of_validN {n} {x : α} : ✓{n} x → ✓{0} x := validN_of_le SIdx.le_0_l
 
 @[rocq_alias cmra_validN_op_r]
 theorem validN_op_right {n} {x y : α} : ✓{n} (x • y) → ✓{n} y :=
@@ -535,17 +678,17 @@ theorem validN_op_right {n} {x y : α} : ✓{n} (x • y) → ✓{n} y :=
 @[rocq_alias cmra_valid_op_r]
 theorem valid_op_right (x y : α) : ✓ (x • y) → ✓ y := valid_mapN fun _ => validN_op_right
 
-@[rocq_alias cmra_valid_op_l]
+@[indexed, rocq_alias cmra_valid_op_l]
 theorem valid_op_left {x y : α} : ✓ (x • y) → ✓ x :=
   fun v => valid_op_right y x (comm' (x := x) (y := y) ▸ v)
 
-theorem validN_opM {x : α} {my : Option α} : ✓{n} (x •? my) → ✓{n} x := match my with
+theorem validN_opM {n} {x : α} {my : Option α} : ✓{n} (x •? my) → ✓{n} x := match my with
   | none => id  | some _ => validN_op_left
 
 theorem valid_opM {x : α} {my : Option α} : ✓ (x •? my) → ✓ x := match my with
   | none => id  | some _ => valid_op_left
 
-theorem validN_op_opM_left {mz : Option α} : ✓{n} (x • y : α) •? mz → ✓{n} x •? mz := match mz with
+theorem validN_op_opM_left {n} {mz : Option α} : ✓{n} (x • y : α) •? mz → ✓{n} x •? mz := match mz with
   | .none => validN_op_left
   | .some z => fun h =>
     have := calc
@@ -554,7 +697,7 @@ theorem validN_op_opM_left {mz : Option α} : ✓{n} (x • y : α) •? mz → 
       _           ≡{n}≡ (x • z) • y := op_assocN
     validN_op_left ((Dist.validN this).mp h)
 
-theorem validN_op_opM_right {mz : Option α} (h : ✓{n} (x • y : α) •? mz) : ✓{n} y •? mz :=
+theorem validN_op_opM_right {n} {mz : Option α} (h : ✓{n} (x • y : α) •? mz) : ✓{n} y •? mz :=
   validN_op_opM_left (validN_ne (opM_left_dist mz op_commN) h)
 
 /-! ## Core -/
@@ -605,7 +748,7 @@ theorem CoreId.of_pcore_eq_some {x y : α} (e : pcore x = some y) : CoreId y whe
 
 @[rocq_alias exclusiveN_l]
 theorem not_valid_exclN_op_left {n} {x : α} [Exclusive x] {y} : ¬✓{n} (x • y) :=
-  n.recOn (Exclusive.exclusive0_l _) fun _ ih => ih ∘ validN_succ
+  fun h => Exclusive.exclusive0_l _ (validN_of_le SIdx.le_0_l h)
 
 @[rocq_alias exclusiveN_r]
 theorem not_valid_exclN_op_right {n} {x : α} [Exclusive x] {y} : ¬✓{n} (y • x) :=
@@ -635,8 +778,8 @@ theorem op_core (x : α) : x • core x = x := pcore_op_right (pcore_eq_core x)
 @[rocq_alias cmra_core_l]
 theorem core_op (x : α) : core x • x = x := comm'.trans (op_core x)
 
-theorem op_core_dist (x : α) : x • core x ≡{n}≡ x := Dist.of_eq (op_core x)
-theorem core_op_dist (x : α) : core x • x ≡{n}≡ x := Dist.of_eq (core_op x)
+theorem op_core_dist {n} (x : α) : x • core x ≡{n}≡ x := Dist.of_eq (op_core x)
+theorem core_op_dist {n} (x : α) : core x • x ≡{n}≡ x := Dist.of_eq (core_op x)
 
 @[rocq_alias cmra_core_dup]
 theorem core_op_core {x : α} : core x • core x = core x := pcore_op_self (pcore_eq_core x)
@@ -689,17 +832,22 @@ theorem discrete_op {x y : α} (Hv : ✓{0} x • y) [Hx : DiscreteE x] [Hy : Di
 end ORA
 
 namespace ORA
-export Ordered (OrderN Order ordN_ne ordN_succ ordN_trans ord_trans ordN_of_ord)
-export OrderRefl (ord_refl)
+export Ordered (OrderN Order ordN_trans ord_trans ordN_of_ord)
+
+/-- `OrderRefl.ord_refl` restated with instance-implicit binders (the projection takes its `SIdx`
+instance implicitly, so it gets stuck when nothing else fixes it). -/
+@[indexed]
+theorem ord_refl {α : Type _} [Ordered α] [OrderRefl α] (x : α) : x ≼ₒ x :=
+  OrderRefl.ord_refl x
 end ORA
 
 /-! ## The extension inclusion -/
 
 namespace ORA
 
-variable [ORA α]
+variable [RA α] [ORA α]
 
-@[rocq_alias cmra_valid_included]
+@[indexed, rocq_alias cmra_valid_included]
 theorem valid_of_inc {x y : α} : x ≼ y → ✓ y → ✓ x
   | ⟨_, hz⟩, v => valid_op_left (hz ▸ v)
 
@@ -734,17 +882,17 @@ theorem not_valid_of_exclN_inc {n} {x : α} [Exclusive x] {y} : x ≼{n} y → �
 theorem not_valid_of_excl_inc {x : α} [Exclusive x] {y} : x ≼ y → ¬✓ y
   | ⟨_, hz⟩, v => Exclusive.exclusive0_l _ <| hz ▸ v.validN
 
-theorem incN_extend {n} {x y : α} (v : ✓{n} y) :
-    x ≼{n} y → ∃ z, z ≼{n.succ} y ∧ z ≡{n}≡ x
+theorem incN_extend {n sn} {x y : α} (_ : IsSucc n sn) (v : ✓{n} y) :
+    x ≼{n} y → ∃ z, z ≼{sn} y ∧ z ≡{n}≡ x
   | ⟨_, hw⟩ =>
     let ⟨z₁, z₂, hy, hz₁, _⟩ := extend v hw
     ⟨z₁, ⟨z₂, hy.dist⟩, hz₁⟩
 
-theorem incN_map {β : Type _} [ORA β] (f : α → β) [NonExpansive f]
+theorem incN_map {β : Type _} [RA β] [ORA β] (f : α → β) [NonExpansive f]
     (hop : ∀ x y, f (x • y) = f x • f y) {n} {x y : α} : x ≼{n} y → f x ≼{n} f y
   | ⟨z, hz⟩ => ⟨f z, (NonExpansive.ne hz).trans (hop x z).dist⟩
 
-theorem inc_map {β : Type _} [ORA β] (f : α → β)
+theorem inc_map {β : Type _} [RA β] (f : α → β)
     (hop : ∀ x y, f (x • y) = f x • f y) {x y : α} : x ≼ y → f x ≼ f y
   | ⟨z, hz⟩ => ⟨f z, (congrArg f hz).trans (hop x z)⟩
 
@@ -753,7 +901,7 @@ variable [IsTotal α]
 
 theorem inc_refl (x : α) : x ≼ x := ⟨core x, (op_core x).symm⟩
 
-theorem incN_refl (x : α) : x ≼{n} x := incN_of_inc _ (inc_refl _)
+theorem incN_refl {n} (x : α) : x ≼{n} x := incN_of_inc _ (inc_refl _)
 
 #rocq_ignore cmra_included_preorder
   "Reflexivity is inc_refl; transitivity is the Trans instance"
@@ -799,130 +947,138 @@ end ORA
 relating them, and the monotonicity of the partial core along frames. It is not itself an
 ordered resource algebra; `ORA.ofCMRAData` makes one of it, taking the order to be the extension
 inclusion. -/
-@[rocq_alias CmraMixin]
-class CMRAData (α : Type _) [OFE α] extends Op α, PCore α, Valid α where
+@[indexed, rocq_alias CmraMixin]
+structure CMRAData (α : Type _) [OFE α] [RA α]
+    extends Valid α, OpNE α, PCoreNE α, ValidNE α where
   validN_op_left {n} {x y : α} : ✓{n} (x • y) → ✓{n} x
-  pcore_op_left {x cx : α} : pcore x = some cx → cx • x = x
   extend {n} {x y₁ y₂ : α} : ✓{n} x → x ≡{n}≡ y₁ • y₂ →
     Σ' z₁ z₂ : α, x = z₁ • z₂ ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂
-  pcore_op_mono {x cx : α} : pcore x = some cx → ∀ y, ∃ cy : α, pcore (x • y) = some (cx • cy)
+  pcore_op_mono {x cx : α} : PCore.pcore x = some cx → ∀ y, ∃ cy : α, PCore.pcore (x • y) = some (cx • cy)
 
 namespace CMRAData
 open ORA
 
 /-- The frame law follows from monotonicity of the partial core along the extension inclusion,
 the form of the law in Iris-Rocq (`cmra_pcore_mono`). -/
-theorem pcore_op_mono_of_pcore_mono [OFE α] [Op α] [PCore α]
+theorem pcore_op_mono_of_pcore_mono [Op α] [PCore α]
     (h : ∀ {x y cx : α}, x ≼ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ cy)
     {x cx : α} (e : pcore x = some cx) (y) : ∃ cy : α, pcore (x • y) = some (cx • cy) :=
   let ⟨_, hcy, z, hz⟩ := h (inc_op_left _ y) e
   ⟨z, hcy.trans (congrArg some hz)⟩
 
-theorem pcore_op_mono_of_core_mono [OFE α] [Op α] [PCore α] [IsTotal α]
+theorem pcore_op_mono_of_core_mono [Op α] [PCore α] [IsTotal α]
     (h : ∀ x y : α, x ≼ y → core x ≼ core y)
     {x cx : α} (e : pcore x = some cx) (y) : ∃ cy : α, pcore (x • y) = some (cx • cy) :=
   pcore_op_mono_of_pcore_mono (fun {x y cx} hxy e =>
     have hcx : cx = core x := Option.some.inj (e.symm.trans (pcore_eq_core x))
     ⟨core y, pcore_eq_core y, hcx ▸ h x y hxy⟩) e y
 
-variable [OFE α] [CMRAData α]
+/-- Converse of `pcore_op_mono_of_pcore_mono`: the frame law gives monotonicity of the partial core. -/
+theorem pcore_mono_of_pcore_op_mono [Op α] [PCore α]
+    (h : ∀ {x cx : α}, pcore x = some cx → ∀ y, ∃ cy : α, pcore (x • y) = some (cx • cy))
+    {x y cx : α} : x ≼ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ cy
+  | ⟨z, hw⟩, e =>
+    let ⟨w, hw'⟩ := h e z
+    ⟨cx • w, hw ▸ hw', w, rfl⟩
 
+theorem core_op_mono_of_pcore_op_mono [Op α] [PCore α] [IsTotal α]
+    (h : ∀ {x cx : α}, pcore x = some cx → ∀ y, ∃ cy : α, pcore (x • y) = some (cx • cy))
+    (x y : α) : core x ≼ core (x • y) :=
+  let ⟨cy, hcy⟩ := h (pcore_eq_core x) y
+  ⟨cy, Option.some.inj ((pcore_eq_core _).symm.trans hcy)⟩
+
+theorem core_mono_of_pcore_op_mono [Op α] [PCore α] [IsTotal α]
+    (h : ∀ {x cx : α}, pcore x = some cx → ∀ y, ∃ cy : α, pcore (x • y) = some (cx • cy))
+    {x y : α} : x ≼ y → core x ≼ core y
+  | ⟨z, hz⟩ => hz ▸ core_op_mono_of_pcore_op_mono h x z
+
+/-! The constructions below take the laws of a `CMRAData` record as hypotheses, so they need no instance
+of it (Mathlib-style constructors); `ORA.ofCMRAData` instantiates them. -/
+
+section build
+variable [OFE α] [RA α] [Valid SI α] [OpNE α] [PCoreNE α] [ValidNE α]
+variable (hv : ∀ {n : SI} {x y : α}, ✓{n} (x • y) → ✓{n} x)
+variable (hpm : ∀ {x cx : α}, pcore x = some cx → ∀ y, ∃ cy : α, pcore (x • y) = some (cx • cy))
+
+omit [OpNE α] [PCoreNE α] in
+include hv in
 theorem validN_of_incN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x
-  | ⟨_, hz⟩, v => validN_op_left (validN_ne hz v)
+  | ⟨_, hz⟩, v => hv (validN_ne hz v)
 
-theorem incN_extend {n} {x y : α} (v : ✓{n} y) :
-    x ≼{n} y → ∃ z, z ≼{n.succ} y ∧ z ≡{n}≡ x
+omit [OpNE α] [PCoreNE α] [ValidNE α] in
+theorem incN_extend
+    (he : ∀ {n} {x y₁ y₂ : α}, ✓{n} x → x ≡{n}≡ y₁ • y₂ →
+      Σ' z₁ z₂ : α, x = z₁ • z₂ ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂)
+    {n sn} {x y : α} (_ : IsSucc n sn) (v : ✓{n} y) :
+    x ≼{n} y → ∃ z, z ≼{sn} y ∧ z ≡{n}≡ x
   | ⟨_, hw⟩ =>
-    let ⟨z₁, z₂, hy, hz₁, _⟩ := extend v hw
+    let ⟨z₁, z₂, hy, hz₁, _⟩ := he v hw
     ⟨z₁, ⟨z₂, hy.dist⟩, hz₁⟩
 
-theorem pcore_mono {x y : α} :
-    x ≼ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ cy
-  | ⟨_, hw⟩, e =>
-    have ⟨z, hz⟩ := pcore_op_mono e _
-    let ⟨t, ht, et⟩ := OFE.equiv_some ((congrArg pcore hw).trans hz)
-    ⟨t, ht, z, et⟩
-
-theorem pcore_mono' {x y : α} {cx} (le : x ≼ y) (e : pcore x = some cx) :
-    ∃ cy, pcore y = some cy ∧ cx ≼ cy :=
-  pcore_mono le e
-
+omit [Valid α] [ValidNE α] in
+include hpm in
 theorem pcore_monoN' {n} {x y : α} {cx} :
     x ≼{n} y → pcore x ≡{n}≡ some cx → ∃ cy, pcore y = some cy ∧ cx ≼{n} cy
   | ⟨z, hz⟩, e =>
     let ⟨_, hw, ew⟩ := OFE.dist_some e
-    let ⟨t, ht⟩ := pcore_op_mono hw z
-    let ⟨r, hr, er⟩ := PCore.pcore_ne hz.symm ht
+    let ⟨t, ht⟩ := hpm hw z
+    let ⟨r, hr, er⟩ := PCoreNE.pcore_ne hz.symm ht
     ⟨r, hr, incN_ne ew.symm er (incN_op_left n _ t)⟩
 
+omit [Valid α] [ValidNE α] in
+include hpm in
 theorem pcore_monoN {n} {x y : α} {cx} (h : x ≼{n} y) (e : pcore x = some cx) :
     ∃ cy, pcore y = some cy ∧ cx ≼{n} cy :=
-  pcore_monoN' h (Dist.of_eq e)
+  pcore_monoN' hpm h (Dist.of_eq e)
 
-section total
-variable [IsTotal α]
-
-theorem core_incN_core {n} {x y : α} (le : x ≼{n} y) : core x ≼{n} core y :=
-  let ⟨_, hcy, icy⟩ := pcore_monoN' le (Dist.of_eq (pcore_eq_core x))
-  Option.some.inj ((pcore_eq_core y).symm.trans hcy) ▸ icy
-
-theorem core_op_mono (x y : α) : core x ≼ core (x • y) := by
-  have ⟨cy, hcy⟩ := pcore_op_mono (pcore_eq_core x) y
-  simp [pcore_eq_core] at hcy
-  exact ⟨_, hcy⟩
-
-theorem core_mono {x y : α} (Hinc : x ≼ y) : core x ≼ core y := by
-  have ⟨z, hz⟩ := Hinc
-  rw [hz]; exact core_op_mono x z
-
-theorem inc_refl (x : α) : x ≼ x := ⟨core x, (Op.comm.trans (pcore_op_left (pcore_eq_core x))).symm⟩
-
-end total
+end build
 
 section extOrder
 attribute [local instance] extOrdered
 
-theorem increasing (x : α) : Increasing x where
+theorem increasing [OFE α] [Op α] [OpNE α] (x : α) : Increasing x where
   increasing y := inc_op_right x y
 
-instance instOrderRefl [IsTotal α] : OrderRefl α where
-  ord_refl := inc_refl
-
-@[reducible] def toORA : ORA α where
-  toOrdered := extOrdered
-  validN_op_left := validN_op_left
-  pcore_op_left := pcore_op_left
-  extend := extend
-  op_monoN_left_ord := op_monoN_left
+/-- The ordered resource algebra of a `CMRAData` record: the order is the extension inclusion. -/
+@[reducible] def toORA [OFE α] [RA α] (d : CMRAData α) : ORA α where
+  toValid := d.toValid
+  toOpNE := d.toOpNE
+  toPCoreNE := d.toPCoreNE
+  toValidNE := d.toValidNE
+  toOrdered := letI := d.toOpNE; extOrdered (α := α)
+  toOrderedNE := letI := d.toOpNE; extOrderedNE (α := α)
+  validN_op_left := d.validN_op_left
+  extend := d.extend
+  op_monoN_left_ord := letI := d.toOpNE; op_monoN_left
   op_mono_left_ord := op_mono_left
-  validN_of_ordN := validN_of_incN
-  pcore_monoN_ord := pcore_monoN
-  pcore_mono_ord := pcore_mono
-  pcore_order_op {_ cx} e y :=
-    let ⟨cy, hcy⟩ := pcore_op_mono e y
+  validN_of_ordN := letI := d.toValid; letI := d.toOpNE; letI := d.toPCoreNE; letI := d.toValidNE
+    validN_of_incN d.validN_op_left
+  pcore_monoN_ord := letI := d.toOpNE; letI := d.toPCoreNE; pcore_monoN d.pcore_op_mono
+  pcore_mono_ord := pcore_mono_of_pcore_op_mono d.pcore_op_mono
+  pcore_order_op := fun {_ cx} e y =>
+    let ⟨cy, hcy⟩ := d.pcore_op_mono e y
     ⟨cx • cy, hcy, inc_op_left cx cy⟩
-  pcore_increasing _ := increasing _
-  increasing_closed _ _ := increasing _
-  ordN_extend := incN_extend
-
-theorem isInc : @IsInc α _ _ (toORA (α := α)).toOrdered :=
-  { inc_ord := id, ord_inc := id, ordN_incN := id }
+  pcore_increasing := fun _ => letI := d.toOpNE; increasing _
+  increasing_closed := fun _ _ => letI := d.toOpNE; increasing _
+  ordN_extend := letI := d.toValid; letI := d.toOpNE; letI := d.toPCoreNE; letI := d.toValidNE
+    incN_extend d.extend
 
 end extOrder
 
 end CMRAData
 
-@[rocq_alias cmra]
-class CMRA (α : Type _) extends ORA α, IsInc α
+variable (SI) in
+@[indexed, rocq_alias cmra]
+class CMRA (α : Type _) [RA α] extends ORA α, IsInc α
+instance (priority := low) CMRA.ofIsInc [RA α] [ORA α] [IsInc α] : CMRA α := {}
 
-instance (priority := low) CMRA.ofIsInc [ORA α] [IsInc α] : CMRA α := {}
-
-@[reducible] def ORA.ofCMRAData [OFE α] (d : CMRAData α) : CMRA α :=
-  { toORA := @CMRAData.toORA α _ d, toIsInc := @CMRAData.isInc α _ d }
+@[reducible] def ORA.ofCMRAData [OFE α] [RA α] (d : CMRAData α) : CMRA α :=
+  letI := CMRAData.toORA d
+  { inc_ord := id, ord_inc := id, ordN_incN := id }
 
 namespace CMRA
 open ORA
-variable [CMRA α]
+variable [RA α] [CMRA α]
 
 theorem ord_of_ord0 [OFE.Discrete α] {x y : α} (h : x ≼ₒ{0} y) : x ≼ₒ y :=
   inc_iff_ord.mp (inc_of_inc0 (incN_iff_ordN.mpr h))
@@ -931,19 +1087,22 @@ end CMRA
 
 section
 open ORA
-variable [OFE α] [Op α]
+variable [OFE α] [Op α] [OpNE α]
 
+omit [OpNE α] in
 theorem Included.incN {n} {x y : α} : x ≼ y → x ≼{n} y := incN_of_inc _
 theorem Included.trans : (x : α) ≼ y → y ≼ z → x ≼ z := inc_trans
-theorem IncludedN.trans : (x : α) ≼{n} y → y ≼{n} z → x ≼{n} z := incN_trans
+theorem IncludedN.trans {n} : (x : α) ≼{n} y → y ≼{n} z → x ≼{n} z := incN_trans
+omit [OpNE α] in
 theorem IncludedN.le {n n'} {x y : α} : n' ≤ n → x ≼{n} y → x ≼{n'} y := incN_of_incN_le
-theorem IncludedN.succ {n} {x y : α} : x ≼{n.succ} y → x ≼{n} y := incN_of_incN_succ
+omit [OpNE α] in
+theorem IncludedN.succ [SIdxSucc] {n} {x y : α} : x ≼{succᵢ n} y → x ≼{n} y := incN_of_incN_succ
 
 end
 
 section
 open ORA
-variable [ORA α]
+variable [RA α] [ORA α]
 
 theorem Included.validN {n} {x y : α} : x ≼ y → ✓{n} y → ✓{n} x := validN_of_inc
 theorem IncludedN.validN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x := validN_of_incN
@@ -951,17 +1110,18 @@ theorem IncludedN.validN {n} {x y : α} : x ≼{n} y → ✓{n} y → ✓{n} x :
 variable [IsTotal α]
 
 @[refl] theorem Included.rfl {x : α} : x ≼ x := inc_refl x
-@[refl] theorem IncludedN.rfl {x : α} : x ≼{n} x := incN_refl x
+@[refl] theorem IncludedN.rfl {n} {x : α} : x ≼{n} x := incN_refl x
 
 end
 
 /-! ## Discrete and affine algebras -/
 
 namespace ORA
-variable [ORA α]
+variable [RA α] [ORA α]
 
-@[rocq_alias CmraDiscrete]
-class Discrete (α : Type _) [ORA α] extends OFE.Discrete α where
+variable (SI) in
+@[indexed, rocq_alias CmraDiscrete]
+class Discrete (α : Type _) [RA α] [ORA α] extends OFE.Discrete α where
   discrete_valid {x : α} : ✓{0} x → ✓ x
   discrete_ord {x y : α} : x ≼ₒ{0} y → x ≼ₒ y := by
     first | exact CMRA.ord_of_ord0 | exact fun ⟨z, hz⟩ => ⟨z, hz⟩
@@ -972,110 +1132,123 @@ end ORA
 
 /-! ## Unital algebras -/
 
-/-- A unital ordered resource algebra: an ordered resource algebra with a unit, whose order is
-reflexive. -/
-class UORA (α : Type _) extends ORA α, OrderRefl α where
-  unit : α
-  unit_valid : ✓ unit
-  unit_left_id : unit • x = x
-  pcore_unit : pcore unit = some unit
-
-#rocq_ignore Unit "Lean uses the UORA.unit field; no separate class needed."
+/-- An ordered unital resource algebra: the step-indexed mixin over `URA α`. -/
+@[indexed]
+class UORA (SI : stepindex (Type _)) [instSI : SIdx SI] (α : Type _) [URA α]
+    extends ORA α, OrderRefl α where
+  unit_valid {SI} : ✓ (UnitOp.unit : α)
+#rocq_ignore Unit "Lean uses `UnitOp.unit` from `URA`; no separate class needed."
 #rocq_ignore ucmra_cmraR "Folded into Lean's UCMRA extends CMRA."
 #rocq_ignore ucmra_ofeO "Folded into Lean's UCMRA → OFE."
 
-/-- The unit of a classical unital resource algebra; the input of `UORA.ofUCMRAData`. -/
-@[rocq_alias UcmraMixin]
-class UCMRAData (α : Type _) [CMRA α] where
-  unit : α
-  unit_valid : ✓ unit
-  unit_left_id : unit • x = x
-  pcore_unit : ORA.pcore unit = some unit
+/-- The validity of the unit of a classical unital resource algebra; the input of
+`UORA.ofUCMRAData` (the unit and its SI-free laws live in `URA α`). -/
+@[indexed, rocq_alias UcmraMixin]
+structure UCMRAData (α : Type _) [URA α] [CMRA α] : Prop where
+  unit_valid : ✓ (UnitOp.unit : α)
 
-@[rocq_alias ucmra]
-class UCMRA (α : Type _) extends CMRA α, UORA α
+variable (SI) in
+@[indexed, rocq_alias ucmra]
+class UCMRA (α : Type _) [URA α] extends CMRA α, UORA α
+instance (priority := low) UCMRA.ofIsInc [URA α] [UORA α] [IsInc α] : UCMRA α := {}
 
-instance (priority := low) UCMRA.ofIsInc [UORA α] [IsInc α] : UCMRA α := {}
-
-@[reducible] def UORA.ofUCMRAData [CMRA α] (d : UCMRAData α) : UCMRA α where
-  unit := d.unit
+@[reducible] def UORA.ofUCMRAData [URA α] [CMRA α] (d : UCMRAData α) : UCMRA α where
   unit_valid := d.unit_valid
-  unit_left_id := d.unit_left_id
-  pcore_unit := d.pcore_unit
-  ord_refl _ := IncOrd.inc_ord ⟨d.unit, (Op.comm.trans d.unit_left_id).symm⟩
+  ord_refl _ := IncOrd.inc_ord ⟨UnitOp.unit, (Op.comm.trans URA.unit_left_id).symm⟩
 
-class IsUnit [ORA α] (ε : α) : Prop where
-  unit_valid : ✓ ε
+/-- `ε` is a left identity with core `ε` (SI-free part of a unit). -/
+class IsRAUnit [RA α] (ε : α) : Prop where
   unit_left_id : ε • x = x
-  pcore_unit : ORA.pcore ε = some ε
+  pcore_unit : PCore.pcore ε = some ε
 
-instance [UORA α] : IsUnit (UORA.unit : α) where
+variable (SI) in
+/-- `ε` is a valid unit: `IsRAUnit ε` plus validity, which is step-indexed. -/
+@[indexed]
+class IsUnit [RA α] [ORA α] (ε : α) [IsRAUnit ε] : Prop where
+  unit_valid : ✓ ε
+
+instance [URA α] : IsRAUnit (UnitOp.unit : α) where
+  unit_left_id := URA.unit_left_id
+  pcore_unit := URA.pcore_unit
+
+instance [URA α] [UORA α] : IsUnit (UnitOp.unit : α) where
   unit_valid := UORA.unit_valid
-  unit_left_id := UORA.unit_left_id
-  pcore_unit := UORA.pcore_unit
+
+export UnitOp (unit)
 
 namespace ORA
-variable [ORA α]
+export URA (unit_left_id pcore_unit)
 
-export UORA (unit unit_valid unit_left_id pcore_unit)
+/-- `UORA.unit_valid` restated with instance-implicit binders. -/
+theorem unit_valid [URA α] [UORA α] : ✓ (unit : α) := UORA.unit_valid
+
+variable [RA α] [ORA α]
 
 /-! ## Order -/
 
 section orderN
-omit [ORA α]
-variable [OFE α] [Ordered α]
+omit [RA α] [ORA α]
+variable [OFE α] [Ordered SI α] [OrderedNE α]
 
-theorem ordN_of_ordN_of_dist (h : (a : α) ≼ₒ{n} b) (e : b ≡{n}≡ c) : a ≼ₒ{n} c := ordN_ne .rfl e h
+theorem ordN_of_ordN_of_dist {n} (h : (a : α) ≼ₒ{n} b) (e : b ≡{n}≡ c) : a ≼ₒ{n} c := ordN_ne .rfl e h
 
-instance instTransOrderNDist {n : Nat} : Trans (OrderN (α := α) n) (Dist n) (OrderN n) where
+instance instTransOrderNDist {n} : Trans (OrderN (α := α) n) (Dist n) (OrderN n) where
   trans := ordN_of_ordN_of_dist
 
-theorem ordN_of_dist_of_ordN (e : (a : α) ≡{n}≡ b) (h : b ≼ₒ{n} c) : a ≼ₒ{n} c :=
+theorem ordN_of_dist_of_ordN {n} (e : (a : α) ≡{n}≡ b) (h : b ≼ₒ{n} c) : a ≼ₒ{n} c :=
   ordN_ne e.symm .rfl h
 
-instance {n : Nat} : Trans (Dist (α := α) n) (OrderN n) (OrderN n) where
+instance {n} : Trans (Dist (α := α) n) (OrderN n) (OrderN n) where
   trans := ordN_of_dist_of_ordN
 
+omit [OFE α] [OrderedNE α] instSI in
 theorem _root_.Iris.Ordered.Order.ordN {n} {x y : α} : x ≼ₒ y → x ≼ₒ{n} y := ordN_of_ord _
 
-theorem ordN_iff_left (e : (a : α) ≡{n}≡ b) : a ≼ₒ{n} c ↔ b ≼ₒ{n} c :=
+theorem ordN_iff_left {n} (e : (a : α) ≡{n}≡ b) : a ≼ₒ{n} c ↔ b ≼ₒ{n} c :=
   ⟨ordN_ne e .rfl, ordN_ne e.symm .rfl⟩
-theorem _root_.Iris.OFE.Dist.ordN_l : (a : α) ≡{n}≡ b → (a ≼ₒ{n} c ↔ b ≼ₒ{n} c) := ordN_iff_left
+theorem _root_.Iris.OFE.Dist.ordN_l {n} : (a : α) ≡{n}≡ b → (a ≼ₒ{n} c ↔ b ≼ₒ{n} c) := ordN_iff_left
 
-theorem ordN_iff_right (e : (b : α) ≡{n}≡ c) : a ≼ₒ{n} b ↔ a ≼ₒ{n} c :=
+theorem ordN_iff_right {n} (e : (b : α) ≡{n}≡ c) : a ≼ₒ{n} b ↔ a ≼ₒ{n} c :=
   ⟨ordN_ne .rfl e, ordN_ne .rfl e.symm⟩
-theorem _root_.Iris.OFE.Dist.ordN_r : (b : α) ≡{n}≡ c → (a ≼ₒ{n} b ↔ a ≼ₒ{n} c) := ordN_iff_right
+theorem _root_.Iris.OFE.Dist.ordN_r {n} : (b : α) ≡{n}≡ c → (a ≼ₒ{n} b ↔ a ≼ₒ{n} c) := ordN_iff_right
 
-theorem ordN_dist_iff (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n}≡ b') : a ≼ₒ{n} b ↔ a' ≼ₒ{n} b' :=
+theorem ordN_dist_iff {n} (ea : (a : α) ≡{n}≡ a') (eb : (b : α) ≡{n}≡ b') : a ≼ₒ{n} b ↔ a' ≼ₒ{n} b' :=
   ⟨ordN_ne ea eb, ordN_ne ea.symm eb.symm⟩
-theorem _root_.Iris.OFE.Dist.ordN :
+theorem _root_.Iris.OFE.Dist.ordN {n} :
     (a : α) ≡{n}≡ a' → b ≡{n}≡ b' → (a ≼ₒ{n} b ↔ a' ≼ₒ{n} b') := ordN_dist_iff
 
+omit [OFE α] [OrderedNE α] instSI in
 theorem _root_.Iris.Ordered.Order.trans : (x : α) ≼ₒ y → y ≼ₒ z → x ≼ₒ z := ord_trans
 
-instance instTransOrder : Trans (Order (α := α)) Order Order where
+instance instTransOrder : Trans (Order (α := α)) (Order) (Order) where
   trans := ord_trans
 
-theorem _root_.Iris.Ordered.OrderN.trans : (x : α) ≼ₒ{n} y → y ≼ₒ{n} z → x ≼ₒ{n} z := ordN_trans
+omit [OFE α] [OrderedNE α] instSI in
+theorem _root_.Iris.Ordered.OrderN.trans {n} : (x : α) ≼ₒ{n} y → y ≼ₒ{n} z → x ≼ₒ{n} z := ordN_trans
 
-instance instTransOrderN : Trans (OrderN (α := α) n) (OrderN n) (OrderN n) where
+instance instTransOrderN {n} : Trans (OrderN (α := α) n) (OrderN n) (OrderN n) where
   trans := ordN_trans
 
 theorem ordN_of_ordN_le {n n'} {x y : α} (l1 : n' ≤ n) : x ≼ₒ{n} y → x ≼ₒ{n'} y :=
-  l1.recOn id fun _ ih h => ih (ordN_succ h)
-theorem ord0_of_ordN {n} {x y : α} : x ≼ₒ{n} y → x ≼ₒ{0} y := ordN_of_ordN_le (Nat.zero_le n)
+  (ordN_le · l1)
+theorem ord0_of_ordN {n} {x y : α} : x ≼ₒ{n} y → x ≼ₒ{0} y := ordN_of_ordN_le SIdx.le_0_l
 theorem _root_.Iris.Ordered.OrderN.le {n n'} {x y : α} :
     n' ≤ n → x ≼ₒ{n} y → x ≼ₒ{n'} y := ordN_of_ordN_le
 
-theorem ordN_of_ordN_succ {n} {x y : α} : x ≼ₒ{n.succ} y → x ≼ₒ{n} y := ordN_succ
-theorem _root_.Iris.Ordered.OrderN.succ {n} {x y : α} : x ≼ₒ{n.succ} y → x ≼ₒ{n} y := ordN_succ
+theorem ordN_of_ordN_succ [SIdxSucc] {n} {x y : α} : x ≼ₒ{succᵢ n} y → x ≼ₒ{n} y :=
+  ordN_of_ordN_le SIdx.le_succ_diag_r
+theorem _root_.Iris.Ordered.OrderN.succ [SIdxSucc] {n} {x y : α} : x ≼ₒ{succᵢ n} y → x ≼ₒ{n} y :=
+  ordN_of_ordN_succ
 
 section ordRefl
 variable [OrderRefl α]
 
-theorem ordN_refl (x : α) : x ≼ₒ{n} x := (ord_refl x).ordN
+omit [OFE α] [OrderedNE α] in
+theorem ordN_refl {n} (x : α) : x ≼ₒ{n} x := (ord_refl x).ordN
+omit [OFE α] [OrderedNE α] in
 @[refl] theorem _root_.Iris.Ordered.Order.rfl {x : α} : x ≼ₒ x := ord_refl x
-@[refl] theorem _root_.Iris.Ordered.OrderN.rfl {x : α} : x ≼ₒ{n} x := ordN_refl x
+omit [OFE α] [OrderedNE α] in
+@[refl] theorem _root_.Iris.Ordered.OrderN.rfl {n} {x : α} : x ≼ₒ{n} x := ordN_refl x
 
 theorem ordN_of_dist {n} {x y : α} (h : x ≡{n}≡ y) : x ≼ₒ{n} y := ordN_ne .rfl h (ordN_refl x)
 theorem _root_.Iris.OFE.Dist.to_ordN {n} {x y : α} : x ≡{n}≡ y → x ≼ₒ{n} y := ordN_of_dist
@@ -1104,7 +1277,7 @@ theorem pcore_monoN_ord' {n} {x y : α} {cx} (h : x ≼ₒ{n} y) (e : pcore x �
   let ⟨cy, hcy, hi⟩ := pcore_monoN_ord h hw
   ⟨cy, hcy, ordN_of_dist_of_ordN ew hi⟩
 
-@[rocq_alias cmra_pcore_mono]
+@[indexed, rocq_alias cmra_pcore_mono]
 theorem pcore_mono [OrdInc α] {x y : α} :
     x ≼ y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx ≼ cy
   | ⟨z, hz⟩, e =>
@@ -1125,13 +1298,14 @@ theorem pcore_monoN' [OrdInc α] {n} {x y : α} {cx} :
     let ⟨r, hr, er⟩ := pcore_ne' hz.symm ht
     ⟨r, hr, incN_ne ew.symm er (incN_of_inc n (OrdInc.ord_inc o))⟩
 
+@[indexed]
 theorem pcore_op_mono [OrdInc α] {x cx : α} (e : pcore x = some cx) (y : α) :
     ∃ cy, pcore (x • y) = some (cx • cy) :=
   let ⟨_, h, o⟩ := pcore_order_op e y
   let ⟨z, hz⟩ := OrdInc.ord_inc o
   ⟨z, h.trans (congrArg some hz)⟩
 
-theorem op_monoN_right_ord {n x y} (z : α) (h : x ≼ₒ{n} y) : z • x ≼ₒ{n} z • y :=
+theorem op_monoN_right_ord {n} {x y} (z : α) (h : x ≼ₒ{n} y) : z • x ≼ₒ{n} z • y :=
   (op_commN.ordN op_commN).1 (op_monoN_left_ord z h)
 
 theorem op_mono_right_ord {x y} (z : α) (h : x ≼ₒ y) : z • x ≼ₒ z • y := by
@@ -1171,10 +1345,10 @@ theorem _root_.Iris.Ordered.OrderR.validN {n} {x y : α} : x ≼ₒ* y → ✓{n
   | .inl e, v => e ▸ v
   | .inr h, v => validN_of_ord h v
 
-theorem op_extend_ord {n} {x y₁ y₂ : α} (v : ✓{n} x) (h : y₁ • y₂ ≼ₒ{n} x) :
-    ∃ z₁ z₂ : α, z₁ • z₂ ≼ₒ{n.succ} x ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂ :=
-  let ⟨_, hx', e⟩ := ordN_extend v h
-  let ⟨z₁, z₂, hz, hz₁, hz₂⟩ := extend (validN_of_ordN (ordN_succ hx') v) e
+theorem op_extend_ord {n sn} {x y₁ y₂ : α} (hs : IsSucc n sn) (v : ✓{n} x) (h : y₁ • y₂ ≼ₒ{n} x) :
+    ∃ z₁ z₂ : α, z₁ • z₂ ≼ₒ{sn} x ∧ z₁ ≡{n}≡ y₁ ∧ z₂ ≡{n}≡ y₂ :=
+  let ⟨_, hx', e⟩ := ordN_extend hs v h
+  let ⟨z₁, z₂, hz, hz₁, hz₂⟩ := extend (validN_of_ordN (ordN_of_ordN_le (SIdx.lt_le_incl hs.lt) hx') v) e
   ⟨z₁, z₂, hz ▸ hx', hz₁, hz₂⟩
 
 end ORA
@@ -1183,7 +1357,7 @@ end ORA
 
 section
 open ORA
-variable [ORA α]
+variable [RA α] [ORA α]
 
 namespace Increasing
 
@@ -1215,19 +1389,22 @@ instance instIncreasingOfCoreId (x : α) [CoreId x] : Increasing x := pcore_incr
 end
 
 namespace ORA
-variable [ORA α]
+variable [RA α] [ORA α]
 
 section total
 variable [IsTotal α]
 
+@[indexed]
 theorem core_ordN_core {n} {x y : α} (le : x ≼ₒ{n} y) : core x ≼ₒ{n} core y :=
   let ⟨_, hcy, icy⟩ := pcore_monoN_ord le (pcore_eq_core x)
   Option.some.inj (hcy.symm.trans (pcore_eq_core y)) ▸ icy
 
+@[indexed]
 theorem core_mono_ord {x y : α} (le : x ≼ₒ y) : core x ≼ₒ core y :=
   let ⟨_, hcy, icy⟩ := pcore_mono_ord le (pcore_eq_core x)
   Option.some.inj (hcy.symm.trans (pcore_eq_core y)) ▸ icy
 
+@[indexed]
 theorem core_op_mono_ord (x y : α) : core x ≼ₒ core (x • y) :=
   let ⟨_, hcxy, h⟩ := pcore_order_op (pcore_eq_core x) y
   Option.some.inj (hcxy.symm.trans (pcore_eq_core _)) ▸ h
@@ -1237,6 +1414,7 @@ theorem core_incN_core [OrdInc α] {n} {x y : α} (le : x ≼{n} y) : core x ≼
   let ⟨_, hcy, icy⟩ := pcore_monoN' le (Dist.of_eq (pcore_eq_core x))
   Option.some.inj (hcy.symm.trans (pcore_eq_core y)) ▸ icy
 
+@[indexed]
 theorem core_op_mono [OrdInc α] (x y : α) : core x ≼ core (x • y) :=
   OrdInc.ord_inc (core_op_mono_ord x y)
 
@@ -1270,11 +1448,11 @@ section discreteORA
 
 @[rocq_alias cmra_discrete_valid_iff]
 theorem valid_iff_validN' [Discrete α] (n) {x : α} : ✓ x ↔ ✓{n} x :=
-  ⟨Valid.validN, fun v => discrete_valid <| validN_of_le (Nat.zero_le n) v⟩
+  ⟨Valid.validN, fun v => discrete_valid <| validN_of_le SIdx.le_0_l v⟩
 
 @[rocq_alias cmra_discrete_valid_iff_0]
 theorem valid_0_iff_validN [Discrete α] (n) {x : α} : ✓{0} x ↔ ✓{n} x :=
-  ⟨Valid.validN ∘ discrete_valid, validN_of_le (Nat.zero_le n)⟩
+  ⟨Valid.validN ∘ discrete_valid, validN_of_le SIdx.le_0_l⟩
 
 theorem ord_iff_ordN [Discrete α] (n) {x y : α} : x ≼ₒ y ↔ x ≼ₒ{n} y :=
   ⟨ordN_of_ord _, fun h => discrete_ord (ord0_of_ordN h)⟩
@@ -1297,7 +1475,7 @@ theorem discrete_cancelable {x : α} [Discrete α]
 
 @[rocq_alias cancelable_op]
 instance cancelable_op {x y : α} [Cancelable x] [Cancelable y] : Cancelable (x • y) where
-  cancelableN {n w _} v e :=
+  cancelableN {n} {w _} v e :=
     have v1 : ✓{n} x • (y • w) := validN_ne op_assocN.symm v
     have v2 := validN_op_right v1
     cancelableN v2 <| cancelableN v1 <| op_assocN.trans <| e.trans op_assocN.symm
@@ -1308,7 +1486,7 @@ instance exclusive_cancelable {x : α} [Exclusive x] : Cancelable x where
 
 #rocq_ignore cancelable_proper "OFE is Leibniz; use equality"
 
-theorem op_opM_cancel_dist {x y z : α} [Cancelable x]
+theorem op_opM_cancel_dist {n} {x y z : α} [Cancelable x]
     (vxy : ✓{n} x • y) (h : x • y ≡{n}≡ (x • z) •? mw) : y ≡{n}≡ z •? mw :=
   match mw with
   | none => cancelableN vxy h
@@ -1320,7 +1498,7 @@ section idFreeElements
 
 theorem IdFree.of_dist {x₁ x₂ : α} {n} (e : x₁ ≡{n}≡ x₂) (h : IdFree x₁) : IdFree x₂ where
   id_free0_r z v := fun h₂ =>
-    have ee := Dist.le e (Nat.zero_le _)
+    have ee := Dist.le e SIdx.le_0_l
     have := calc
       x₁ • z ≡{0}≡ x₂ • z := op_left_dist z ee
       _      ≡{0}≡ x₂ := h₂
@@ -1328,14 +1506,14 @@ theorem IdFree.of_dist {x₁ x₂ : α} {n} (e : x₁ ≡{n}≡ x₂) (h : IdFre
     h.id_free0_r _ ((validN_dist_iff ee).mpr v) this
 
 @[rocq_alias id_free_ne]
-theorem _root_.Iris.OFE.Dist.idFree {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) : IdFree x₁ ↔ IdFree x₂ :=
+theorem _root_.Iris.OFE.Dist.idFree {n} {x₁ x₂ : α} (e : x₁ ≡{n}≡ x₂) : IdFree x₁ ↔ IdFree x₂ :=
   ⟨.of_dist e, .of_dist e.symm⟩
 
 #rocq_ignore id_free_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias id_freeN_r]
 theorem id_freeN_r {n n'} {x : α} [IdFree x] {y} (v : ✓{n} x) : ¬(x • y ≡{n'}≡ x) :=
-  id_free0_r _ (validN_of_le (Nat.zero_le _) v) |>.imp (·.le (Nat.zero_le _))
+  id_free0_r _ (validN_of_le SIdx.le_0_l v) |>.imp (·.le SIdx.le_0_l)
 
 @[rocq_alias id_freeN_l]
 theorem id_freeN_l {n n'} {x : α} [IdFree x] {y} (v : ✓{n} x) : ¬(y • x ≡{n'}≡ x) :=
@@ -1370,7 +1548,7 @@ end idFreeElements
 
 section ucmra
 
-variable {α : Type _} [UORA α]
+variable {α : Type _} [URA α] [UORA α]
 
 @[rocq_alias ucmra_unit_validN]
 theorem unit_validN {n} : ✓{n} (unit : α) := valid_iff_validN.mp (unit_valid) n
@@ -1380,7 +1558,7 @@ theorem unit_left_id_dist {n} (x : α) : unit • x ≡{n}≡ x := unit_left_id.
 @[rocq_alias ucmra_unit_right_id]
 theorem unit_right_id {x : α} : x • unit = x := comm'.trans unit_left_id
 
-theorem unit_right_id_dist (x : α) : x • unit ≡{n}≡ x := comm'.dist.trans (unit_left_id_dist x)
+theorem unit_right_id_dist {n} (x : α) : x • unit ≡{n}≡ x := comm'.dist.trans (unit_left_id_dist x)
 
 @[rocq_alias ucmra_unit_leastN]
 theorem incN_unit {n} {x : α} : unit ≼{n} x := ⟨x, unit_left_id.symm.dist⟩
@@ -1393,14 +1571,11 @@ instance unit_CoreId : CoreId (unit : α) where
   core_id := pcore_unit
 
 @[rocq_alias cmra_unit_cmra_total]
-instance unit_total : IsTotal α where
-  total x :=
-    let ⟨cx, hcx, _⟩ := pcore_order_op (pcore_unit (α := α)) x
-    ⟨cx, unit_left_id (x := x) ▸ hcx⟩
+theorem unit_total : IsTotal α := inferInstance
 
 @[rocq_alias empty_cancelable]
 instance empty_cancelable : Cancelable (unit : α) where
-  cancelableN {n w t} _ e := calc
+  cancelableN {n} {w t} _ e := calc
     w ≡{n}≡ unit • w := unit_left_id.dist.symm
     _ ≡{n}≡ unit • t := e
     _ ≡{n}≡ t := unit_left_id.dist
@@ -1442,8 +1617,7 @@ theorem ord_unit {x : α} [Increasing x] : unit ≼ₒ x := unit_left_id (x := x
 end increasing
 
 @[rocq_alias cmra_monoid]
-instance ucmraMonoidOps {α : Type _} [UORA α] : Algebra.MonoidOps (op (α := α)) unit where
-  op_ne := ⟨fun _ _ _ hx _ _ hy => hx.op hy⟩
+instance ucmraMonoidOps {α : Type _} [URA α] : Algebra.MonoidOps (op (α := α)) unit where
   op_assoc := assoc.symm
   op_comm := comm
   op_left_id := unit_left_id
@@ -1509,7 +1683,7 @@ end Leibniz
 
 section UORA
 
-variable {α : Type _} [UORA α]
+variable {α : Type _} [URA α] [UORA α]
 
 @[rocq_alias ucmra_unit_valid]
 theorem ucmra_unit_valid : ✓ (unit : α) := unit_valid
@@ -1532,33 +1706,35 @@ end ORA
 
 /-- A morphism between CMRAs is defined to be a non-expansive function which
 preserves `validN`, `pcore` and `op`. -/
-@[rocq_alias CmraMorphism]
+@[indexed, rocq_alias CmraMorphism]
 structure CMRA.Hom (α β : Type _) [OFE α] [Op α] [PCore α] [Valid α]
     [OFE β] [Op β] [PCore β] [Valid β] extends OFE.Hom α β where
-  protected validN {n x} : ✓{n} x → ✓{n} (f x)
+  protected validN {n} {x} : ✓{n} x → ✓{n} (f x)
   protected pcore x : (PCore.pcore x).map f = PCore.pcore (f x)
   protected op x y : f (x • y) = f x • f y
 
 namespace ORA
-variable [ORA α]
+variable [RA α] [ORA α]
 
 section Hom
 
 /-- A morphism between ORAs, written `α -C> β`, is defined to be a non-expansive function which
 preserves `validN`, `pcore`, `op`, the order and increasing elements. -/
-@[ext]
-structure Hom (α β : Type _) [ORA α] [ORA β] extends toCMRAHom : CMRA.Hom α β where
-  protected monoN_ord {n x₁ x₂} : x₁ ≼ₒ{n} x₂ → f x₁ ≼ₒ{n} f x₂
+@[indexed, ext]
+structure Hom (α β : Type _) [RA α] [ORA α] [RA β] [ORA β] extends toCMRAHom : CMRA.Hom α β where
+  protected monoN_ord {n} {x₁ x₂} : x₁ ≼ₒ{n} x₂ → f x₁ ≼ₒ{n} f x₂
   protected mono_ord {x₁ x₂} : x₁ ≼ₒ x₂ → f x₁ ≼ₒ f x₂
   protected increasing {x} : Increasing x → Increasing (f x)
 
-@[inherit_doc]
-infixr:25 " -C> " => Hom
+/-- ORA morphisms, `α -C> β`. -/
+notation:25 α:26 " -C>[" S "] " β:25 => Iris.ORA.Hom (SI := S) α β
+@[inherit_doc Iris.ORA.Hom]
+notation:25 α:26 " -C> " β:25 => Iris.ORA.Hom (SI := stepindex%) α β
 
-instance [ORA β] : CoeFun (α -C> β) (fun _ => α → β) := ⟨fun F => F.f⟩
+instance [RA β] [ORA β] : CoeFun (α -C> β) (fun _ => α → β) := ⟨fun F => F.f⟩
 
-instance [ORA β] : OFE (α -C> β) where
-  Dist n f g := f.toHom ≡{n}≡ g.toHom
+instance [RA β] [ORA β] : OFE (α -C> β) where
+  dist n f g := f.toHom ≡{n}≡ g.toHom
   dist_eqv := {
     refl _ := dist_eqv.refl _
     symm h := dist_eqv.symm h
@@ -1568,7 +1744,7 @@ instance [ORA β] : OFE (α -C> β) where
   dist_lt := dist_lt
 
 @[rocq_alias cmra_morphism_id]
-protected def Hom.id [ORA α] : α -C> α where
+protected def Hom.id [RA α] [ORA α] : α -C> α where
   toHom := OFE.Hom.id
   validN := id
   pcore x := by dsimp; cases pcore x <;> rfl
@@ -1578,7 +1754,7 @@ protected def Hom.id [ORA α] : α -C> α where
   increasing := id
 
 @[rocq_alias cmra_morphism_compose]
-protected def Hom.comp [ORA β] [ORA γ] (g : β -C> γ) (f : α -C> β) : α -C> γ where
+protected def Hom.comp [RA β] [ORA β] [RA γ] [ORA γ] (g : β -C> γ) (f : α -C> β) : α -C> γ where
   toHom := OFE.Hom.comp g.toHom f.toHom
   validN v := g.validN (f.validN v)
   pcore x := ((Option.map_map ..).symm.trans (congrArg _ (f.pcore x))).trans (g.pcore (f x))
@@ -1590,23 +1766,23 @@ protected def Hom.comp [ORA β] [ORA γ] (g : β -C> γ) (f : α -C> β) : α -C
 #rocq_ignore cmra_morphism_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias cmra_morphism_core]
-protected theorem Hom.core [ORA β] (f : α -C> β) {x : α} : core (f x) = f (core x) := by
+protected theorem Hom.core [RA β] [ORA β] (f : α -C> β) {x : α} : core (f x) = f (core x) := by
   have h := f.pcore x
   unfold core
   cases hx : pcore x <;> rw [hx] at h <;> simp only [Option.map] at h <;> simp [← h]
 
 @[rocq_alias cmra_morphism_mono]
-protected theorem Hom.mono [ORA β] (f : α -C> β) {x₁ x₂ : α} :
+protected theorem Hom.mono [RA β] [ORA β] (f : α -C> β) {x₁ x₂ : α} :
     x₁ ≼ x₂ → f x₁ ≼ f x₂ :=
   inc_map f.f f.op
 
 @[rocq_alias cmra_morphism_monoN]
-protected theorem Hom.monoN [ORA β] (f : α -C> β) n {x₁ x₂ : α} :
+protected theorem Hom.monoN [RA β] [ORA β] (f : α -C> β) (n) {x₁ x₂ : α} :
     x₁ ≼{n} x₂ → f x₁ ≼{n} f x₂ :=
   incN_map f.f f.op
 
 @[rocq_alias cmra_morphism_valid]
-protected theorem Hom.valid [ORA β] (f : α -C> β) {x : α} (H : ✓ x) : ✓ f x :=
+protected theorem Hom.valid [RA β] [ORA β] (f : α -C> β) {x : α} (H : ✓ x) : ✓ f x :=
   valid_iff_validN.mpr fun _ => f.validN H.validN
 
 end Hom
@@ -1614,7 +1790,7 @@ end ORA
 
 section HomExt
 open ORA
-variable [ORA α] [ORA β] [OrdInc α] [IncOrd β]
+variable [RA α] [ORA α] [RA β] [ORA β] [OrdInc α] [IncOrd β]
 
 /-- A morphism between classical resource algebras needs only the classical fields: under the
 extension order, `monoN_ord`, `mono_ord` and `increasing` follow from `op`. -/
@@ -1628,8 +1804,10 @@ end HomExt
 
 section rFunctor
 
-@[rocq_alias rFunctor]
+variable (SI) in
+@[indexed, rocq_alias rFunctor]
 class RFunctor (F : COFE.OFunctorPre) where
+  [ra [COFE α] [COFE β] : RA (F α β)]
   [cmra [COFE α] [COFE β] : ORA (F α β)]
   map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
@@ -1640,12 +1818,13 @@ class RFunctor (F : COFE.OFunctorPre) where
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
 
-@[rocq_alias rFunctorContractive]
+variable (SI) in
+@[indexed, rocq_alias rFunctorContractive]
 class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
   map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-attribute [reducible, instance] RFunctor.cmra
+attribute [reducible, instance] RFunctor.ra RFunctor.cmra
 
 #rocq_ignore rFunctor_apply "Just apply the underlying `OFunctorPre`"
 
@@ -1667,8 +1846,10 @@ end rFunctor
 section urFunctor
 open ORA
 
-@[rocq_alias urFunctor]
+variable (SI) in
+@[indexed, rocq_alias urFunctor]
 class URFunctor (F : COFE.OFunctorPre) where
+  [ura [COFE α] [COFE β] : URA (F α β)]
   [cmra [COFE α] [COFE β] : UORA (F α β)]
   map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     (α₂ -n> α₁) → (β₁ -n> β₂) → F α₁ β₁ -C> F α₂ β₂
@@ -1679,15 +1860,18 @@ class URFunctor (F : COFE.OFunctorPre) where
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
 
-@[rocq_alias urFunctorContractive]
+variable (SI) in
+@[indexed, rocq_alias urFunctorContractive]
 class URFunctorContractive (F : COFE.OFunctorPre) extends URFunctor F where
   map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
 
-attribute [reducible, instance] URFunctor.cmra
+attribute [reducible, instance] URFunctor.ura URFunctor.cmra
 
 #rocq_ignore urFunctor_apply "Just apply the underlying `OFunctorPre`"
 
+variable (SI) in
+@[indexed]
 class RFunctorAffine (F : COFE.OFunctorPre) [RFunctor F] : Prop where
   affine [COFE α] [COFE β] : IncOrd (F α β)
 
@@ -1695,6 +1879,7 @@ attribute [instance] RFunctorAffine.affine
 
 @[rocq_alias urFunctor_to_rFunctor]
 instance URFunctor.toRFunctor [UF : URFunctor F] : RFunctor F where
+  ra       := URFunctor.ura.toRA
   cmra     := URFunctor.cmra.toORA
   map f g  := URFunctor.map f g
   map_ne   := URFunctor.map_ne
@@ -1729,6 +1914,7 @@ variable {F₁ F₂ : OFunctorPre} [OFunctor F₂] [∀ α β, [COFE α] → [CO
 open OFunctor in
 @[rocq_alias rFunctor_oFunctor_compose]
 instance rFunctorComposeOF [RFunctor F₁] : RFunctor (ComposeOF F₁ F₂) where
+  ra := RFunctor.ra (F := F₁)
   cmra := RFunctor.cmra (F := F₁)
   map f g := RFunctor.map (F := F₁) (map (F := F₂) g f) (map (F := F₂) f g)
   map_ne.ne _ _ _ hf _ _ hg _ :=
@@ -1744,6 +1930,7 @@ instance rFunctorComposeOF [RFunctor F₁] : RFunctor (ComposeOF F₁ F₂) wher
 open OFunctor in
 @[rocq_alias urFunctor_oFunctor_compose]
 instance urFunctorComposeOF [URFunctor F₁] : URFunctor (ComposeOF F₁ F₂) where
+  ura := URFunctor.ura (F := F₁)
   cmra := URFunctor.cmra (F := F₁)
   map f g := URFunctor.map (F := F₁) (map (F := F₂) g f) (map (F := F₂) f g)
   map_ne.ne _ _ _ hf _ _ hg _ :=
@@ -1809,22 +1996,22 @@ section Id
 open ORA
 
 @[rocq_alias constRF]
-instance COFE.OFunctor.constOF_RFunctor [ORA B] : RFunctor (constOF B) where
+instance COFE.OFunctor.constOF_RFunctor [RA B] [ORA B] : RFunctor (constOF B) where
   cmra := inferInstance
   map _ _ := (Hom.id : B -C> B)
   map_ne.ne _ _ _ _ _ _ _ := .rfl
   map_id _ := rfl
   map_comp _ _ _ _ _ := rfl
 
-instance COFE.OFunctor.constOF_RFunctorAffine [ORA B] [IncOrd B] : RFunctorAffine (constOF B) where
+instance COFE.OFunctor.constOF_RFunctorAffine [RA B] [ORA B] [IncOrd B] : RFunctorAffine (constOF B) where
   affine := inferInstance
 
 @[rocq_alias constRF_contractive]
-instance OFunctor.constOF_RFunctorContractive [ORA B] : RFunctorContractive (constOF B) where
+instance OFunctor.constOF_RFunctorContractive [RA B] [ORA B] : RFunctorContractive (constOF B) where
   map_contractive.1 := fun _ => .rfl
 
 @[rocq_alias constURF]
-instance COFE.OFunctor.constOF_URFunctor [UORA B] : URFunctor (constOF B) where
+instance COFE.OFunctor.constOF_URFunctor [URA B] [UORA B] : URFunctor (constOF B) where
   cmra := inferInstance
   map _ _ := (Hom.id : B -C> B)
   map_ne.ne _ _ _ _ _ _ _ := .rfl
@@ -1832,7 +2019,7 @@ instance COFE.OFunctor.constOF_URFunctor [UORA B] : URFunctor (constOF B) where
   map_comp _ _ _ _ _ := rfl
 
 @[rocq_alias constURF_contractive]
-instance OFunctor.constOF_URFunctorContractive [UORA B] : URFunctorContractive (constOF B) where
+instance OFunctor.constOF_URFunctorContractive [URA B] [UORA B] : URFunctorContractive (constOF B) where
   map_contractive.1 _ := .rfl
 
 end Id
@@ -1866,17 +2053,44 @@ namespace DiscreteFun
 
 variable {α : Type _} {β : α → Type _}
 
-section
-variable [∀ x, ORA (β x)]
-
-@[reducible] def raOrdered : Ordered (∀ x, β x) where
+@[reducible] def raOrdered [∀ x, Ordered (β x)] : Ordered (∀ x, β x) where
   OrderN n f g := ∀ x, f x ≼ₒ{n} g x
   Order f g := ∀ x, f x ≼ₒ g x
-  ordN_ne ef eg h x := ordN_ne (ef x) (eg x) (h x)
-  ordN_succ h x := ordN_succ (h x)
   ordN_trans h₁ h₂ x := ordN_trans (h₁ x) (h₂ x)
   ord_trans h₁ h₂ x := ord_trans (h₁ x) (h₂ x)
   ordN_of_ord n h x := ordN_of_ord n (h x)
+
+@[reducible, rocq_alias discrete_fun_op_instance]
+instance raOp [∀ x, Op (β x)] : Op (∀ x, β x) where
+  op f g x := f x • g x
+  assoc := funext fun _ => assoc
+  comm := funext fun _ => comm
+
+@[reducible, rocq_alias discrete_fun_pcore_instance]
+instance raPCore [∀ x, PCore (β x)] [∀ x, IsTotal (β x)] : PCore (∀ x, β x) where
+  pcore f := some fun x => core (f x)
+  pcore_idem := by
+    rintro f _ ⟨⟩; exact congrArg some (funext fun x => IsTotal.core_idem (f x))
+
+instance raIsTotal [∀ x, PCore (β x)] [∀ x, IsTotal (β x)] : IsTotal (∀ x, β x) where
+  total _ := ⟨_, rfl⟩
+
+instance raRA [∀ x, RA (β x)] [∀ x, IsTotal (β x)] : RA (∀ x, β x) where
+  pcore_op_left := by rintro f _ ⟨⟩; exact funext fun x => core_op (f x)
+
+instance raURA [∀ x, URA (β x)] : URA (∀ x, β x) where
+  unit _ := unit
+  unit_left_id := funext fun _ => URA.unit_left_id
+  pcore_unit := congrArg some (funext fun _ => core_eqv_self _)
+
+@[reducible, rocq_alias discrete_fun_valid_instance, rocq_alias discrete_fun_validN_instance]
+def raValid [∀ x, _root_.Iris.Valid (β x)] : _root_.Iris.Valid (∀ x, β x) where
+  ValidN n f := ∀ x, ✓{n} f x
+  Valid f := ∀ x, ✓ f x
+  valid_iff_validN {g} := by simpa [valid_iff_validN] using forall_comm
+
+section
+variable [∀ x, RA (β x)] [∀ x, ORA (β x)]
 
 attribute [local instance] raOrdered
 
@@ -1884,28 +2098,6 @@ theorem ordNR_apply {n} {f g : ∀ x, β x} (h : f ≼ₒ*{n} g) (x : α) : f x 
   h.imp (· x) (· x)
 
 variable [∀ x, IsTotal (β x)]
-
-@[reducible, rocq_alias discrete_fun_op_instance]
-def raOp : Op (∀ x, β x) where
-  op f g x := f x • g x
-  op_ne.ne _ _ _ H y := (H y).op_r
-  assoc := funext fun _ => assoc
-  comm := funext fun _ => comm
-
-@[reducible, rocq_alias discrete_fun_pcore_instance]
-def raPCore : PCore (∀ x, β x) where
-  pcore f := some fun x => core (f x)
-  pcore_ne {n f g _} H := by rintro ⟨⟩; exact ⟨_, rfl, fun x => (H _).core⟩
-  pcore_idem := by
-    rintro f _ ⟨⟩; exact congrArg some (funext fun x => core_idem (f x))
-
-@[reducible, rocq_alias discrete_fun_valid_instance, rocq_alias discrete_fun_validN_instance]
-def raValid : _root_.Iris.Valid (∀ x, β x) where
-  ValidN n f := ∀ x, ✓{n} f x
-  Valid f := ∀ x, ✓ f x
-  validN_ne {n x y} H H1 y := (H y).validN.mp (H1 y)
-  valid_iff_validN {g} := by simpa [valid_iff_validN] using forall_comm
-  validN_succ H _ := validN_succ (H _)
 
 attribute [local instance] raOp raPCore raValid
 
@@ -1928,18 +2120,21 @@ end DiscreteFun
 
 section
 open DiscreteFun
-variable {α : Type _} {β : α → Type _} [∀ x, ORA (β x)] [∀ x, IsTotal (β x)]
+variable {α : Type _} {β : α → Type _} [∀ x, RA (β x)] [∀ x, ORA (β x)] [∀ x, IsTotal (β x)]
 attribute [local instance] raOp raPCore raValid raOrdered
 
 variable (β) in
 @[rocq_alias discrete_funR]
 instance cmraDiscreteFunO : ORA (∀ x, β x) where
-  toOp := raOp
-  toPCore := raPCore
   toValid := raValid
+  op_ne.ne _ _ _ H y := (H y).op_r
+  pcore_ne {n} {f g _} H := by rintro ⟨⟩; exact ⟨_, rfl, fun x => (H _).core⟩
+  validN_ne {n} {x y} H H1 y := (H y).validN.mp (H1 y)
+  validN_le H le x := validN_le (H x) le
+  ordN_ne ef eg h x := ordN_ne (ef x) (eg x) (h x)
+  ordN_le h le x := ordN_le (h x) le
   validN_op_left H _ := validN_op_left (H _)
-  pcore_op_left := by rintro f _ ⟨⟩; exact funext fun x => core_op (f x)
-  extend {n f f1 f2} Hv He := by
+  extend {n} {f f1 f2} Hv He := by
     let F x := extend (Hv x) (He x)
     exact ⟨fun x => (F x).1, fun x => (F x).2.1,
       funext fun x => (F x).2.2.1, fun x => (F x).2.2.2.1, fun x => (F x).2.2.2.2⟩
@@ -1953,8 +2148,8 @@ instance cmraDiscreteFunO : ORA (∀ x, β x) where
   pcore_increasing := by rintro f _ ⟨⟩; exact increasing_iff.mpr fun x => inferInstance
   increasing_closed H₁ H₂ :=
     increasing_iff.mpr fun x => increasing_closed (increasing_apply H₁ x) (ordNR_apply H₂ x)
-  ordN_extend V H :=
-    let ⟨z, hz⟩ := Classical.skolem.mp fun x => ordN_extend (V x) (H x)
+  ordN_extend hs V H :=
+    let ⟨z, hz⟩ := Classical.skolem.mp fun x => ordN_extend hs (V x) (H x)
     ⟨z, fun x => (hz x).1, fun x => (hz x).2⟩
 
 end
@@ -1963,12 +2158,9 @@ end
 #rocq_ignore discrete_fun_ucmra_mixin "Use UCMRA instance"
 
 @[rocq_alias discrete_funUR]
-instance ucmraDiscreteFunO {α : Type _} (β : α → Type _) [∀ x, UORA (β x)] :
+instance ucmraDiscreteFunO {α : Type _} (β : α → Type _) [∀ x, URA (β x)] [∀ x, UORA (β x)] :
     UORA (∀ x, β x) where
-  unit _ := unit
   unit_valid _ := unit_valid
-  unit_left_id := funext fun _ => unit_left_id
-  pcore_unit := congrArg some (funext fun _ => core_eqv_self _)
   ord_refl f x := ord_refl (f x)
 
 namespace DiscreteFun
@@ -1976,21 +2168,21 @@ namespace DiscreteFun
 variable {α : Type _} {β : α → Type _}
 
 @[rocq_alias discrete_fun_lookup_op]
-theorem op_apply [∀ x, ORA (β x)] [∀ x, IsTotal (β x)] (f g : ∀ x, β x) (x : α) :
+theorem op_apply [∀ x, RA (β x)] (f g : ∀ x, β x) (x : α) :
     (f • g) x = f x • g x := rfl
 
 @[rocq_alias discrete_fun_lookup_core]
-theorem core_apply [∀ x, ORA (β x)] [∀ x, IsTotal (β x)] (f : ∀ x, β x) (x : α) :
+theorem core_apply [∀ x, RA (β x)] [∀ x, IsTotal (β x)] (f : ∀ x, β x) (x : α) :
     core f x = core (f x) := rfl
 
 @[rocq_alias discrete_fun_lookup_empty]
-theorem unit_apply [∀ x, UORA (β x)] (x : α) : (unit : ∀ x, β x) x = unit := rfl
+theorem unit_apply [∀ x, URA (β x)] (x : α) : (unit : ∀ x, β x) x = unit := rfl
 
 @[rocq_alias discrete_fun_unit_discrete]
-instance [∀ x, UORA (β x)] [∀ x, OFE.DiscreteE (unit : β x)] : OFE.DiscreteE (unit : ∀ x, β x) where
+instance [∀ x, URA (β x)] [∀ x, UORA (β x)] [∀ x, OFE.DiscreteE (unit : β x)] : OFE.DiscreteE (unit : ∀ x, β x) where
   discrete h := funext fun x => OFE.DiscreteE.discrete (h x)
 
-variable [∀ x, ORA (β x)] [∀ x, IsTotal (β x)]
+variable [∀ x, RA (β x)] [∀ x, ORA (β x)] [∀ x, IsTotal (β x)]
 
 theorem ord_apply {f g : ∀ x, β x} (h : f ≼ₒ g) (x : α) : f x ≼ₒ g x := h x
 
@@ -1998,10 +2190,12 @@ theorem ord_iff {f g : ∀ x, β x} : f ≼ₒ g ↔ ∀ x, f x ≼ₒ g x := .r
 
 theorem ordN_iff {n} {f g : ∀ x, β x} : f ≼ₒ{n} g ↔ ∀ x, f x ≼ₒ{n} g x := .rfl
 
+omit [∀ x, IsTotal (β x)] in
 @[rocq_alias discrete_fun_included_spec_1]
 theorem inc_apply {f g : ∀ x, β x} : f ≼ g → ∀ x, f x ≼ g x
   | ⟨h, hh⟩, x => ⟨h x, congrFun hh x⟩
 
+omit [∀ x, IsTotal (β x)] in
 /-- Note: The finiteness assumption from Iris-Rocq is removed using choice. -/
 @[rocq_alias discrete_fun_included_spec]
 theorem inc_iff {f g : ∀ x, β x} : f ≼ g ↔ ∀ x, f x ≼ g x := by
@@ -2009,9 +2203,11 @@ theorem inc_iff {f g : ∀ x, β x} : f ≼ g ↔ ∀ x, f x ≼ g x := by
   obtain ⟨z, hz⟩ := Classical.skolem.mp h
   exact ⟨z, funext hz⟩
 
+omit [∀ x, IsTotal (β x)] in
 theorem incN_apply {n} {f g : ∀ x, β x} : f ≼{n} g → ∀ x, f x ≼{n} g x
   | ⟨h, hh⟩, x => ⟨h x, hh x⟩
 
+omit [∀ x, IsTotal (β x)] in
 /-- Note: The finiteness assumption from Iris-Rocq is removed using choice. -/
 theorem incN_iff {n} {f g : ∀ x, β x} : f ≼{n} g ↔ ∀ x, f x ≼{n} g x :=
   ⟨incN_apply, Classical.skolem.mp⟩
@@ -2032,7 +2228,7 @@ end DiscreteFun
 
 @[rocq_alias discrete_fun_map_cmra_morphism]
 def mapCodHomC {α : Type _} {β₁ β₂ : α → Type _}
-    [∀ x, UORA (β₁ x)] [∀ x, UORA (β₂ x)]
+    [∀ x, URA (β₁ x)] [∀ x, UORA (β₁ x)] [∀ x, URA (β₂ x)] [∀ x, UORA (β₂ x)]
     (F : ∀ x, β₁ x -C> β₂ x) : (∀ x, β₁ x) -C> (∀ x, β₂ x) where
   toHom := mapCodHom fun x => (F x).toHom
   validN h x := (F x).validN (h x)
@@ -2082,24 +2278,24 @@ section option
 
 open ORA Iris.Option Iris.OFE.Option
 
-variable [ORA α]
+@[simp]
+def optionCore [PCore α] (x : Option α) : Option α := x.bind pcore
 
 @[simp]
-def optionCore (x : Option α) : Option α := x.bind pcore
-
-@[simp]
-def optionOp (x y : Option α) : Option α :=
+def optionOp [Op α] (x y : Option α) : Option α :=
   match x, y with
   | some x', some y' => some (op x' y')
   | none, _ => y
   | _, none => x
 
+variable [RA α] [ORA α]
+
 @[simp]
-def optionValidN (n : Nat) : Option α → Prop
+def optionValidN (n : SI) : Option α → Prop
   | some x => ✓{n} x
   | none => True
 
-@[simp]
+@[indexed, simp]
 def optionValid : Option α → Prop
   | some x => ✓ x
   | none => True
@@ -2107,13 +2303,13 @@ def optionValid : Option α → Prop
 /-- The step-indexed order on `Option α`: `none` lies below `none` and below every increasing
 element, `some` is monotone up to `n`-equivalence, and nothing but `none` lies below `none`. -/
 @[simp]
-def optionOrderN (n : Nat) : Option α → Option α → Prop
+def optionOrderN (n : SI) : Option α → Option α → Prop
   | none, none => True
   | none, some y => Increasing y
   | some x, some y => x ≼ₒ*{n} y
   | some _, none => False
 
-@[simp]
+@[indexed, simp]
 def optionOrder : Option α → Option α → Prop
   | none, none => True
   | none, some y => Increasing y
@@ -2123,56 +2319,43 @@ def optionOrder : Option α → Option α → Prop
 namespace Option
 
 @[reducible, rocq_alias option_op_instance]
-def raOp : Op (Option α) where
+instance raOp [Op α] : Op (Option α) where
   op := optionOp
-  op_ne.ne n x1 x2 H := by
-    rename_i x
-    rcases x1, x2, x with ⟨_|_, _|_, _|_⟩ <;> simp_all [op_right_dist]
   assoc {x y z} := by
     rcases x, y, z with ⟨_|_, _|_, _|_⟩ <;> first | rfl | exact congrArg some assoc
   comm {x y} := by
     rcases x, y with ⟨_|_, _|_⟩ <;> first | rfl | exact congrArg some comm
 
 @[reducible, rocq_alias option_pcore_instance]
-def raPCore : PCore (Option α) where
+instance raPCore [PCore α] : PCore (Option α) where
   pcore x := some (optionCore x)
-  pcore_ne {n} x y cx H := by
-    simp only [Option.some.injEq]; rintro rfl
-    rcases x, y with ⟨_|x, _|y⟩ <;> simp_all [Dist, Option.Forall₂]
-    cases Hv : pcore x <;> cases Hv' : pcore y <;> simp only []
-    · cases pcore_ne H.symm Hv'; simp_all
-    · cases pcore_ne H Hv; simp_all
-    · obtain ⟨w, Hw1, Hw2⟩ := pcore_ne H.symm Hv'
-      cases Hv.symm.trans Hw1
-      exact Hw2.symm
   pcore_idem := by
     rintro (_|x) <;> simp
     rcases H : pcore x with _|y <;> simp
     exact pcore_idem H
 
+instance raRA : RA (Option α) where
+  pcore_op_left {x cx} := by
+    rcases x, cx with ⟨_|_, _|_⟩ <;> simp_all [Op.op, optionOp, PCore.pcore, optionCore]
+    intro h; exact pcore_op_left h
+
+instance raURA : URA (Option α) where
+  unit := none
+  unit_left_id := by rintro ⟨⟩ <;> rfl
+  pcore_unit := by rfl
+  total _ := ⟨_, rfl⟩
+
 @[reducible, rocq_alias option_valid_instance, rocq_alias option_validN_instance]
 def raValid : _root_.Iris.Valid (Option α) where
   ValidN := optionValidN
   Valid := optionValid
-  validN_ne {n} x y H := by
-    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Dist, Option.Forall₂]
-    exact Dist.validN H |>.mp
   valid_iff_validN {x} := by
     rcases x with ⟨_|_⟩ <;> simp [valid_iff_validN]
-  validN_succ {x n} := by
-    rcases x with ⟨_|_⟩ <;> simp_all [validN_succ]
 
 @[reducible] def raOrdered : Ordered (Option α) where
   OrderN := optionOrderN
   Order := optionOrder
-  ordN_ne {n x x' y y'} ex ey h := by
-    rcases x, x', y, y' with ⟨_|x, _|x', _|y, _|y'⟩ <;> simp_all [Dist, Option.Forall₂]
-    · exact h.of_dist ey
-    · exact Ordered.OrderNR.ne ex ey h
-  ordN_succ {n x y} h := by
-    rcases x, y with ⟨_|x, _|y⟩ <;> simp_all
-    exact Ordered.OrderNR.succ h
-  ordN_trans {n x y z} h₁ h₂ := by
+  ordN_trans {n} {x y z} h₁ h₂ := by
     rcases x, y, z with ⟨_|x, _|y, _|z⟩ <;> simp_all
     · exact h₁.of_ordNR h₂
     · exact Ordered.OrderNR.trans h₁ h₂
@@ -2184,8 +2367,19 @@ def raValid : _root_.Iris.Valid (Option α) where
     rcases x, y with ⟨_|x, _|y⟩ <;> simp_all
     exact Ordered.OrderR.ordNR n h
 
+attribute [local instance] raOrdered in
+theorem raOrderedNE : OrderedNE (Option α) where
+  ordN_ne {n} {x x' y y'} ex ey h := by
+    rcases x, x', y, y' with ⟨_|x, _|x', _|y, _|y'⟩ <;>
+      simp_all [Dist, HasDist.dist, Option.Forall₂, Ordered.OrderN]
+    · exact h.of_dist ey
+    · exact Ordered.OrderNR.ne ex ey h
+  ordN_le {n n'} {x y} h le := by
+    rcases x, y with ⟨_|x, _|y⟩ <;> simp_all [Ordered.OrderN]
+    exact Ordered.OrderNR.le le h
+
 section
-attribute [local instance] raOp raPCore raValid raOrdered
+attribute [local instance] raOp raPCore raValid raOrdered raOrderedNE
 
 theorem some_ordN_some_iff {n} {a b : α} : some a ≼ₒ{n} some b ↔ a ≡{n}≡ b ∨ a ≼ₒ{n} b := .rfl
 
@@ -2253,18 +2447,30 @@ end Option
 
 section
 attribute [local instance] Option.raOp Option.raPCore Option.raValid Option.raOrdered
+  Option.raOrderedNE
 
 @[rocq_alias optionR, rocq_alias option_cmra_mixin]
 instance cmraOption : ORA (Option α) where
-  toOp := Option.raOp
-  toPCore := Option.raPCore
   toValid := Option.raValid
-  validN_op_left {n x y} := by
+  op_ne.ne n x1 x2 H := by
+    rename_i x
+    rcases x1, x2, x with ⟨_|_, _|_, _|_⟩ <;> simp_all [Op.op, optionOp, op_right_dist]
+  pcore_ne {n} {x y cx} H := by
+    simp only [PCore.pcore, Option.some.injEq]; rintro rfl
+    refine ⟨optionCore y, rfl, ?_⟩
+    match x, y, H with
+    | none, none, _ => exact Dist.rfl
+    | some x, some y, (H : x ≡{n}≡ y) => exact NonExpansive.ne (f := pcore) H
+  validN_ne {n} {x y} H := by
+    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Dist, HasDist.dist, Option.Forall₂, Valid.ValidN]
+    exact Dist.validN H |>.mp
+  validN_le {n n'} {x} := by
+    rcases x with ⟨_|_⟩ <;> simp_all [Valid.ValidN]
+    exact fun h le => validN_le h le
+  toOrderedNE := Option.raOrderedNE
+  validN_op_left {n} {x y} := by
     rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Op.op, optionOp, Valid.ValidN, optionValidN]
     apply validN_op_left
-  pcore_op_left {x cx} := by
-    rcases x, cx with ⟨_|_, _|_⟩ <;> simp_all [Op.op, optionOp, PCore.pcore, optionCore]
-    intro h; exact pcore_op_left h
   extend {n} := by
     rintro (_|x) (_|mb1) (_|mb2) Hx Hx' <;> simp [Op.op, optionOp] at Hx' ⊢
     · exists none, none
@@ -2273,7 +2479,7 @@ instance cmraOption : ORA (Option α) where
     · rcases extend Hx Hx' with ⟨mc1, mc2, hx, h1, h2⟩
       exact ⟨some mc1, some mc2, congrArg some hx, h1, h2⟩
   toOrdered := Option.raOrdered
-  op_monoN_left_ord {n x y} z h := match x, y, z, h with
+  op_monoN_left_ord {n} {x y} z h := match x, y, z, h with
     | none, none, _, _ => .rfl
     | none, some _, none, h => h
     | none, some _, some z, h => Or.inr (Increasing.ordN h z)
@@ -2287,11 +2493,11 @@ instance cmraOption : ORA (Option α) where
     | some _, none, _, h => False.elim h
     | some _, some _, none, h => h
     | some _, some _, some z, h => Ordered.OrderR.op_left z h
-  validN_of_ordN {n x y} h v := match x, y, h with
+  validN_of_ordN {n} {x y} h v := match x, y, h with
     | none, _, _ => trivial
     | some _, none, h => False.elim h
     | some _, some _, h => Ordered.OrderNR.validN h v
-  pcore_monoN_ord {n x y _} h := by
+  pcore_monoN_ord {n} {x y _} h := by
     rintro ⟨⟩
     refine ⟨_, rfl, ?_⟩
     match x, y, h with
@@ -2320,7 +2526,7 @@ instance cmraOption : ORA (Option α) where
     match x with
     | none => exact (inferInstance : Increasing (none : Option α))
     | some x => exact increasing_pcore x
-  increasing_closed {n x y} h h' := match x, y, h' with
+  increasing_closed {n} {x y} h h' := match x, y, h' with
     | none, none, _ => inferInstance
     | none, some _, .inl e => False.elim e
     | none, some _, .inr i => increasing_some_iff.mpr i
@@ -2328,13 +2534,13 @@ instance cmraOption : ORA (Option α) where
     | some _, none, .inr i => False.elim i
     | some _, some _, h' =>
       increasing_some_iff.mpr ((increasing_some_iff.mp h).of_ordNR (h'.elim .inl id))
-  ordN_extend {n x y} v h := match x, y, h with
+  ordN_extend {n} {sn} {x y} hs v h := match x, y, h with
     | none, none, _ => ⟨none, trivial, .rfl⟩
     | none, some _, h => ⟨none, h, .rfl⟩
     | some _, none, h => False.elim h
     | some _, some y, .inl e => ⟨some y, Or.inl .rfl, e.symm⟩
     | some _, some _, .inr i =>
-      let ⟨z, hz, ez⟩ := ordN_extend v i
+      let ⟨z, hz, ez⟩ := ordN_extend hs v i
       ⟨some z, Or.inr hz, ez⟩
 
 #rocq_ignore option_unit_instance "Use UCMRA instance"
@@ -2342,10 +2548,7 @@ instance cmraOption : ORA (Option α) where
 
 @[rocq_alias optionUR]
 instance ucmraOption : UORA (Option α) where
-  unit := none
   unit_valid := trivial
-  unit_left_id := by rintro ⟨⟩ <;> rfl
-  pcore_unit := by rfl
   ord_refl := ord_refl
 
 end
@@ -2371,9 +2574,13 @@ theorem some_core [IsTotal α] (a : α) : some (core a) = core (some a) := by
   obtain ⟨c, hc⟩ := IsTotal.total a
   simp [hc]
 
+omit [ORA α] in
+/-- SI-free: core-identity only involves the core. -/
 @[rocq_alias Some_core_id]
-instance some_core_id (a : α) [CoreId a] : CoreId (some a : Option α) where
-  core_id := by simp [pcore_some]; exact CoreId.core_id
+instance some_core_id [PCore α] (a : α) [CoreId a] : CoreId (some a : Option α) where
+  core_id := by
+    change some (optionCore (some a)) = some (some a)
+    simp [optionCore, CoreId.core_id (x := a)]
 
 instance none_core_id : CoreId (none : Option α) := ⟨rfl⟩
 
@@ -2433,7 +2640,7 @@ theorem opM_opM_swap {x : α} {y z : Option α} : (x •? y) •? z = (x •? z)
 theorem opM_map_some {ma₁ ma₂ : Option α} : ma₁ •? ma₂.map some = ma₁ • ma₂ := by
   rcases ma₁, ma₂ with ⟨_|_, _|_⟩ <;> rfl
 
-theorem op_some_opM_assoc_dist {x y : α} {mz : Option α} : (x • y) •? mz ≡{n}≡ x •? (some y • mz) :=
+theorem op_some_opM_assoc_dist {n} {x y : α} {mz : Option α} : (x • y) •? mz ≡{n}≡ x •? (some y • mz) :=
   match mz with | none => .rfl | some _ => assoc.dist.symm
 
 theorem exists_op_some_eqv_some (x : Option α) (y : α) : ∃ z, x • some y = some z :=
@@ -2567,7 +2774,7 @@ theorem dist_of_ord_exclusive [OrdInc α] [Exclusive (a : α)] {n} {b : α}
     (H : some a ≼ₒ{n} some b) (Hv : ✓{n} b) : a ≡{n}≡ b :=
   H.elim id fun h => (not_valid_of_exclN_inc (OrdInc.ordN_incN h) Hv).elim
 
-theorem map_mono_ord {β : Type _} [ORA β] [IncOrd β] (f : α → β) {ma mb : Option α}
+theorem map_mono_ord {β : Type _} [RA β] [ORA β] [IncOrd β] (f : α → β) {ma mb : Option α}
     (hf : ∀ x y : α, x ≼ₒ y → f x ≼ₒ f y) (h : ma ≼ₒ mb) :
     ma.map f ≼ₒ mb.map f :=
   match ma, mb, h with
@@ -2744,7 +2951,7 @@ theorem some_inc_some_iff_is_total [IsTotal α] {a b : α} :
   ⟨inc_of_some_inc_some, some_inc_some_of_inc⟩
 
 @[rocq_alias option_fmap_mono]
-theorem map_mono {β : Type _} [ORA β] (f : α → β) {ma mb : Option α}
+theorem map_mono {β : Type _} [RA β] (f : α → β) {ma mb : Option α}
     (hf : ∀ x y : α, x ≼ y → f x ≼ f y) (h : ma ≼ mb) :
     ma.map f ≼ mb.map f := by
   rcases inc_iff.mp h with rfl | ⟨a, b, rfl, rfl, hab⟩
@@ -2763,8 +2970,8 @@ instance {a : α} [IdFree a] [Cancelable a] : Cancelable (some a) := by
   refine ⟨@fun n b c Hv He => ?_⟩
   rcases b, c with ⟨_|b, _|c⟩
   · trivial
-  · exact id_free0_r c (valid0_of_validN Hv) (He.symm.le <| n.zero_le)
-  · refine id_free0_r b ?_ (He.le <| n.zero_le)
+  · exact id_free0_r c (valid0_of_validN Hv) (He.symm.le SIdx.le_0_l)
+  · refine id_free0_r b ?_ (He.le SIdx.le_0_l)
     exact valid0_of_validN (He.validN.mp Hv)
   · exact cancelableN (α := α) Hv He
 
@@ -2834,21 +3041,27 @@ open ORA
 #rocq_ignore unit_cancelable "Subsumed by empty_cancelable"
 #rocq_ignore unit_core_id "Subsumed by unit_CoreId"
 
-@[instance_reducible] def Unit.cmraData : CMRAData Unit where
+instance Unit.instURA : URA Unit where
   pcore _ := some ()
   op _ _ := ()
+  assoc := rfl
+  comm := rfl
+  pcore_op_left _ := rfl
+  pcore_idem _ := rfl
+  unit := ()
+  unit_left_id := rfl
+  pcore_unit := rfl
+  total _ := ⟨(), rfl⟩
+
+@[reducible] def Unit.cmraData : CMRAData Unit where
   ValidN _ _ := True
   Valid _ := True
   op_ne.ne _ _ _ := id
   pcore_ne _ _ := ⟨(), rfl, .rfl⟩
   validN_ne _ := id
   valid_iff_validN := ⟨fun _ _ => ⟨⟩, fun _ => ⟨⟩⟩
-  validN_succ := id
+  validN_le := fun h _ => h
   validN_op_left := id
-  assoc := rfl
-  comm := rfl
-  pcore_op_left _ := rfl
-  pcore_idem _ := rfl
   extend _ _ := ⟨(), (), rfl, .rfl, .rfl⟩
   pcore_op_mono _ _ := ⟨.unit, rfl⟩
 
@@ -2858,11 +3071,8 @@ instance cmraUnit : CMRA Unit := ofCMRAData Unit.cmraData
 #rocq_ignore unit_unit_instance "Use UCMRA instance"
 #rocq_ignore unit_ucmra_mixin "Use UCMRA instance"
 
-@[instance_reducible] def Unit.ucmraData : UCMRAData Unit where
-  unit := ()
+theorem Unit.ucmraData : UCMRAData Unit where
   unit_valid := ⟨⟩
-  unit_left_id := rfl
-  pcore_unit := rfl
 
 @[rocq_alias unitUR]
 instance ucmraUnit : UCMRA Unit := UORA.ofUCMRAData Unit.ucmraData
@@ -2882,21 +3092,23 @@ open ORA
 #rocq_ignore Empty_set_validN_instance "Use CMRA instance"
 #rocq_ignore Empty_set_cmra_mixin "Use CMRA instance"
 
-@[instance_reducible] def Empty.cmraData : CMRAData Empty where
+instance Empty.instRA : RA Empty where
   pcore x := some x
   op x _ := x
+  assoc {x} := x.elim
+  comm {x} := x.elim
+  pcore_op_left {x} := x.elim
+  pcore_idem {x} := x.elim
+
+@[reducible] def Empty.cmraData : CMRAData Empty where
   ValidN _ _ := False
   Valid _ := False
   op_ne.ne _ _ _ _ := .rfl
   pcore_ne {_ x} := x.elim
   validN_ne _ := id
   valid_iff_validN {x} := x.elim
-  validN_succ := id
+  validN_le := fun h _ => h
   validN_op_left := id
-  assoc {x} := x.elim
-  comm {x} := x.elim
-  pcore_op_left {x} := x.elim
-  pcore_idem {x} := x.elim
   extend {_ x} := x.elim
   pcore_op_mono {x} := x.elim
 
@@ -2920,76 +3132,74 @@ end empty
 namespace Prod
 open ORA
 
-variable {α β : Type _} [ORA α] [ORA β]
+variable {α β : Type _}
 
-abbrev pcore (x : α × β) : Option (α × β) := (ORA.pcore x.fst).bind fun a =>
+abbrev pcore [PCore α] [PCore β] (x : α × β) : Option (α × β) := (ORA.pcore x.fst).bind fun a =>
   (ORA.pcore x.snd).bind fun b =>
   return (a, b)
 
-abbrev op (x y : α × β) : α × β :=
+abbrev op [Op α] [Op β] (x y : α × β) : α × β :=
   (x.1 • y.1, x.2 • y.2)
 
-abbrev ValidN n (x : α × β) := ✓{n} x.fst ∧ ✓{n} x.snd
-
-abbrev Valid (x : α × β) := ✓ x.fst ∧ ✓ x.snd
-
-abbrev OrderN n (x y : α × β) := x.fst ≼ₒ{n} y.fst ∧ x.snd ≼ₒ{n} y.snd
-
-abbrev Order (x y : α × β) := x.fst ≼ₒ y.fst ∧ x.snd ≼ₒ y.snd
-
 @[reducible, rocq_alias prod_op_instance]
-def raOp : Op (α × β) where
+instance raOp [Op α] [Op β] : Op (α × β) where
   op := op
-  op_ne.ne _ _ _ h := dist_prod_ext (Dist.op_r <| dist_fst h) (Dist.op_r <| dist_snd h)
-  assoc := equiv_prod_ext assoc assoc
-  comm := equiv_prod_ext comm comm
+  assoc := Prod.ext assoc assoc
+  comm := Prod.ext comm comm
 
 @[reducible, rocq_alias prod_pcore_instance]
-def raPCore : PCore (α × β) where
+instance raPCore [PCore α] [PCore β] : PCore (α × β) where
   pcore := pcore
-  pcore_ne {n x y cx} h ph := by
-    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some_iff.mp ph
-    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some_iff.mp this
-    have ⟨cy₁, hcy₁, hxy₁⟩ := pcore_ne (dist_fst h) hcx₁
-    have ⟨cy₂, hcy₂, hxy₂⟩ := pcore_ne (dist_snd h) hcx₂
-    suffices g : cx ≡{n}≡ (cy₁, cy₂) by simp [hcy₁, hcy₂, g, pcore]
-    calc
-      cx ≡{n}≡ (cx₁, cx₂) := Dist.of_eq (Option.some.inj hcx).symm
-      _  ≡{n}≡ (cy₁, cy₂) := dist_prod_ext hxy₁ hxy₂
   pcore_idem {x cx} h := by
     have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some_iff.mp h
     have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some_iff.mp this
-    have ⟨a, ha, ea⟩ := equiv_some (pcore_idem hcx₁)
-    have ⟨b, hb, eb⟩ := equiv_some (pcore_idem hcx₂)
-    have g : (a, b) = (cx₁, cx₂) := equiv_prod_ext ea eb
     rw [Option.some.inj hcx.symm]
-    simp only [ha, hb, pcore]
-    exact congrArg some g
+    have h₁ : PCore.pcore cx₁ = some cx₁ := PCore.pcore_idem hcx₁
+    have h₂ : PCore.pcore cx₂ = some cx₂ := PCore.pcore_idem hcx₂
+    simp [pcore, h₁, h₂]
+
+instance raRA [RA α] [RA β] : RA (α × β) where
+  pcore_op_left h :=
+    let ⟨_, ha, ho⟩ := Option.bind_eq_some_iff.mp h
+    let ⟨_, hb, hh⟩ := Option.bind_eq_some_iff.mp ho
+    (Option.some.inj hh) ▸ (equiv_prod_ext (RA.pcore_op_left ha) (RA.pcore_op_left hb))
+
+variable [RA α] [ORA α] [RA β] [ORA β]
+
+abbrev ValidN (n) (x : α × β) := ✓{n} x.fst ∧ ✓{n} x.snd
+
+@[indexed]
+abbrev Valid (x : α × β) := ✓ x.fst ∧ ✓ x.snd
+
+abbrev OrderN (n) (x y : α × β) := x.fst ≼ₒ{n} y.fst ∧ x.snd ≼ₒ{n} y.snd
+
+abbrev Order (x y : α × β) := x.fst ≼ₒ y.fst ∧ x.snd ≼ₒ y.snd
 
 @[reducible, rocq_alias prod_valid_instance, rocq_alias prod_validN_instance]
 def raValid : _root_.Iris.Valid (α × β) where
   ValidN := ValidN
   Valid := Valid
-  validN_ne {_} x y H := fun ⟨vx1, vx2⟩ => ⟨H.1.validN.mp vx1, H.2.validN.mp vx2⟩
   valid_iff_validN {x} := by
     refine ⟨fun ⟨va, vb⟩ n => ⟨va.validN, vb.validN⟩, fun h => ⟨?_, ?_⟩⟩
     · exact valid_iff_validN.mpr fun n => (h n).left
     · exact valid_iff_validN.mpr fun n => (h n).right
-  validN_succ {x n} := fun ⟨va, vb⟩ => ⟨validN_succ va, validN_succ vb⟩
 
 @[reducible] def raOrdered : Ordered (α × β) where
   OrderN := OrderN
   Order := Order
-  ordN_ne ex ey h :=
-    ⟨ordN_ne (dist_fst ex) (dist_fst ey) h.1, ordN_ne (dist_snd ex) (dist_snd ey) h.2⟩
-  ordN_succ h := ⟨ordN_succ h.1, ordN_succ h.2⟩
   ordN_trans h₁ h₂ := ⟨ordN_trans h₁.1 h₂.1, ordN_trans h₁.2 h₂.2⟩
   ord_trans h₁ h₂ := ⟨ord_trans h₁.1 h₂.1, ord_trans h₁.2 h₂.2⟩
   ordN_of_ord n h := ⟨ordN_of_ord n h.1, ordN_of_ord n h.2⟩
 
+attribute [local instance] raOrdered in
+theorem raOrderedNE : OrderedNE (α × β) where
+  ordN_ne ex ey h :=
+    ⟨ordN_ne (dist_fst ex) (dist_fst ey) h.1, ordN_ne (dist_snd ex) (dist_snd ey) h.2⟩
+  ordN_le h le := ⟨ordN_le h.1 le, ordN_le h.2 le⟩
+
 section
 open ORA
-attribute [local instance] raOp raPCore raValid raOrdered
+attribute [local instance] raOp raPCore raValid raOrdered raOrderedNE
 
 @[rocq_alias prod_pcore_Some, rocq_alias prod_pcore_Some']
 theorem pcore_eq_some {x cx : α × β} :
@@ -3010,14 +3220,21 @@ theorem ordNR_snd {n} {x y : α × β} (h : x ≼ₒ*{n} y) : x.2 ≼ₒ*{n} y.2
 
 @[rocq_alias prodR, rocq_alias prod_cmra_mixin]
 instance cmraProd : ORA (α × β) where
-  toOp := raOp
-  toPCore := raPCore
   toValid := raValid
+  op_ne.ne _ _ _ h := dist_prod_ext (Dist.op_r <| dist_fst h) (Dist.op_r <| dist_snd h)
+  pcore_ne {n} {x y cx} h ph := by
+    have ⟨cx₁, hcx₁, this⟩ := Option.bind_eq_some_iff.mp ph
+    have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some_iff.mp this
+    have ⟨cy₁, hcy₁, hxy₁⟩ := pcore_ne (dist_fst h) hcx₁
+    have ⟨cy₂, hcy₂, hxy₂⟩ := pcore_ne (dist_snd h) hcx₂
+    suffices g : cx ≡{n}≡ (cy₁, cy₂) by simp [hcy₁, hcy₂, g, pcore, PCore.pcore]
+    calc
+      cx ≡{n}≡ (cx₁, cx₂) := Dist.of_eq (Option.some.inj hcx).symm
+      _  ≡{n}≡ (cy₁, cy₂) := dist_prod_ext hxy₁ hxy₂
+  validN_ne {_ x y} H := fun ⟨vx1, vx2⟩ => ⟨H.1.validN.mp vx1, H.2.validN.mp vx2⟩
+  validN_le {n n'} {x} := fun ⟨va, vb⟩ le => ⟨validN_le va le, validN_le vb le⟩
+  toOrderedNE := raOrderedNE
   validN_op_left := fun ⟨va, vb⟩ => ⟨validN_op_left va, validN_op_left vb⟩
-  pcore_op_left h :=
-    let ⟨_, ha, ho⟩ := Option.bind_eq_some_iff.mp h
-    let ⟨_, hb, hh⟩ := Option.bind_eq_some_iff.mp ho
-    (Option.some.inj hh) ▸ (equiv_prod_ext (pcore_op_left ha) (pcore_op_left hb))
   extend := fun ⟨vx₁, vx₂⟩ e =>
     let ⟨z₁, w₁, hx₁, hz₁, hw₁⟩ := extend vx₁ (OFE.dist_fst e)
     let ⟨z₂, w₂, hx₂, hz₂, hw₂⟩ := extend vx₂ (OFE.dist_snd e)
@@ -3047,9 +3264,9 @@ instance cmraProd : ORA (α × β) where
   increasing_closed h h' :=
     let ⟨h₁, h₂⟩ := increasing_iff.mp h
     increasing_iff.mpr ⟨increasing_closed h₁ (ordNR_fst h'), increasing_closed h₂ (ordNR_snd h')⟩
-  ordN_extend v h :=
-    let ⟨z₁, h₁, e₁⟩ := ordN_extend v.1 h.1
-    let ⟨z₂, h₂, e₂⟩ := ordN_extend v.2 h.2
+  ordN_extend hs v h :=
+    let ⟨z₁, h₁, e₁⟩ := ordN_extend hs v.1 h.1
+    let ⟨z₂, h₂, e₂⟩ := ordN_extend hs v.2 h.2
     ⟨(z₁, z₂), ⟨h₁, h₂⟩, dist_prod_ext e₁ e₂⟩
 
 end
@@ -3131,9 +3348,14 @@ instance instOrdInc [OrdInc α] [OrdInc β] : OrdInc (α × β) where
 
 instance instIsInc [IsInc α] [IsInc β] : IsInc (α × β) := {}
 
+omit [ORA α] [ORA β] in
+/-- SI-free: core-identity only involves the cores. -/
 @[rocq_alias pair_core_id]
-instance instCoreIdPair {x : α} {y : β} [CoreId x] [CoreId y] : CoreId (x, y) where
-  core_id := pcore_eq_some.mpr ⟨CoreId.core_id, CoreId.core_id⟩
+instance instCoreIdPair [PCore α] [PCore β] {x : α} {y : β} [CoreId x] [CoreId y] :
+    CoreId (x, y) where
+  core_id := by
+    change Prod.pcore (x, y) = some (x, y)
+    simp [Prod.pcore, CoreId.core_id (x := x), CoreId.core_id (x := y)]
 
 @[rocq_alias pair_exclusive_l]
 instance instExclusivePairLeft {x : α} [Exclusive x] {y : β} : Exclusive (x, y) where
@@ -3161,17 +3383,20 @@ section ProdUnit
 namespace Prod
 open ORA
 
-variable {α β : Type _} [UORA α] [UORA β]
+instance raURA {α β : Type _} [URA α] [URA β] : URA (α × β) where
+  unit := (unit, unit)
+  unit_left_id := Prod.ext URA.unit_left_id URA.unit_left_id
+  pcore_unit := pcore_eq_some.mpr ⟨URA.pcore_unit, URA.pcore_unit⟩
+  total x := ⟨(core x.1, core x.2), pcore_eq_some.mpr ⟨pcore_eq_core _, pcore_eq_core _⟩⟩
+
+variable {α β : Type _} [URA α] [UORA α] [URA β] [UORA β]
 
 #rocq_ignore prod_unit_instance "Use UCMRA instance"
 #rocq_ignore prod_ucmra_mixin "Use UCMRA instance"
 
 @[rocq_alias prodUR]
 instance ucmraProd : UORA (α × β) where
-  unit := (unit, unit)
   unit_valid := ⟨unit_valid, unit_valid⟩
-  unit_left_id := Prod.ext unit_left_id unit_left_id
-  pcore_unit := pcore_eq_some.mpr ⟨pcore_unit, pcore_unit⟩
 
 @[rocq_alias pair_split, rocq_alias pair_split_L]
 theorem mk_split (a : α) (b : β) : (a, b) = ((a, unit) : α × β) • (unit, b) :=
@@ -3194,7 +3419,7 @@ section OptionProd
 
 open ORA Iris.Option Iris.OFE.Option
 
-variable {α β : Type _} [ORA α] [ORA β]
+variable {α β : Type _} [RA α] [ORA α] [RA β] [ORA β]
 
 namespace Option
 
@@ -3259,7 +3484,7 @@ theorem some_mk_incN_total_snd [IsTotal β] {n} {a₁ a₂ : α} {b₁ b₂ : β
 theorem some_mk_inc {a₁ a₂ : α} {b₁ b₂ : β}
     (h : some (a₁, b₁) ≼ some (a₂, b₂)) :
     some a₁ ≼ some a₂ ∧ some b₁ ≼ some b₂ := by
-  rcases some_inc_some_iff.mp h with he | hi
+  rcases (some_inc_some_iff (α := α × β)).mp h with he | hi
   · exact ⟨some_inc_some_of_eq (congrArg Prod.fst he),
       some_inc_some_of_eq (congrArg Prod.snd he)⟩
   · have ⟨h₁, h₂⟩ := Prod.inc_def.mp hi
@@ -3296,7 +3521,7 @@ section OptionMor
 
 open ORA
 
-variable {α β : Type _} [ORA α] [ORA β]
+variable {α β : Type _} [RA α] [ORA α] [RA β] [ORA β]
 
 @[rocq_alias option_fmap_cmra_morphism]
 def Option.mapC (f : α -C> β) : Option α -C> Option β where
@@ -3307,7 +3532,7 @@ def Option.mapC (f : α -C> β) : Option α -C> Option β where
   op x y := by
     cases x <;> cases y <;> try rfl
     exact congrArg some (f.op ..)
-  monoN_ord {n x y} h := match x, y, h with
+  monoN_ord {n} {x y} h := match x, y, h with
     | none, none, _ => trivial
     | none, some _, h => f.increasing h
     | some _, some _, h => h.imp (f.ne.ne ·) f.monoN_ord
@@ -3325,13 +3550,13 @@ section ProdMor
 
 open ORA
 
-variable [ORA A] [ORA A'] [ORA B] [ORA B']
+variable [RA A] [ORA A] [RA A'] [ORA A'] [RA B] [ORA B] [RA B'] [ORA B']
 
 @[rocq_alias prod_map_cmra_morphism]
 def Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
   f := Prod.map f g
   ne := inferInstance
-  validN {n x} := fun ⟨h1, h2⟩ => ⟨f.validN h1, g.validN h2⟩
+  validN {n} {x} := fun ⟨h1, h2⟩ => ⟨f.validN h1, g.validN h2⟩
   pcore x := by
     simp [Option.map, Prod.map, ORA.pcore, pcore]
     have h2 := g.pcore x.snd
@@ -3437,39 +3662,35 @@ composition with other elements; validity restriction must prove that if the com
 two elements is valid, then so are both of the elements. The "domain" is the image of `g` in
 `α`, or equivalently the part of `α` where `f` returns `some`. -/
 @[reducible, rocq_alias inj_cmra_mixin_restrict_validity]
-def ofInjRestrictValidity [CMRA α] [OFE β]
-    (pcore : β → Option β) (op : β → β → β) (Valid : β → Prop) (ValidN : Nat → β → Prop)
+def ofInjRestrictValidity [RA α] [CMRA α] [OFE β] [RA β]
+    (Valid : β → Prop) (ValidN : SI → β → Prop)
     (f : α → Option β) (g : β → α)
     -- `g` is non-expansive and injective w.r.t. OFE equality
-    (g_dist : ∀ n (y₁ y₂ : β), y₁ ≡{n}≡ y₂ ↔ g y₁ ≡{n}≡ g y₂)
+    (g_dist : ∀ (n) (y₁ y₂ : β), y₁ ≡{n}≡ y₂ ↔ g y₁ ≡{n}≡ g y₂)
     -- `g` is surjective into the part of `α` where `f` returns `some`, and `f` is its inverse
-    (gf_dist : ∀ (x : α) (y : β) n, f x ≡{n}≡ some y ↔ g y ≡{n}≡ x)
+    (gf_dist : ∀ (x : α) (y : β) (n), f x ≡{n}≡ some y ↔ g y ≡{n}≡ x)
     -- `g` commutes with `pcore` (where it is defined) and with `op`
-    (g_pcore_dist : ∀ (y cy : β) n, pcore y ≡{n}≡ some cy ↔ ORA.pcore (g y) ≡{n}≡ some (g cy))
-    (g_op : ∀ y₁ y₂, g (op y₁ y₂) = g y₁ • g y₂)
+    (g_pcore_dist : ∀ (y cy : β) (n), PCore.pcore y ≡{n}≡ some cy ↔ ORA.pcore (g y) ≡{n}≡ some (g cy))
+    (g_op : ∀ y₁ y₂, g (y₁ • y₂) = g y₁ • g y₂)
     -- `g` commutes with `opM` when the right-hand side is produced by `f`, cancelling it
-    (g_opM_f : ∀ (x : α) (y : β), g ((f x).elim y (op y)) = g y • x)
+    (g_opM_f : ∀ (x : α) (y : β), g ((f x).elim y (y • ·)) = g y • x)
     -- the validity predicate on `β` restricts the one on `α`
-    (g_validN : ∀ n (y : β), ValidN n y → ✓{n} (g y))
+    (g_validN : ∀ (n) (y : β), ValidN n y → ✓{n} (g y))
     -- the validity predicate on `β` satisfies the laws of validity
-    (validN_ne : ∀ n (y₁ y₂ : β), y₁ ≡{n}≡ y₂ → ValidN n y₁ → ValidN n y₂)
+    (validN_ne : ∀ (n) (y₁ y₂ : β), y₁ ≡{n}≡ y₂ → ValidN n y₁ → ValidN n y₂)
     (valid_validN : ∀ y : β, Valid y ↔ ∀ n, ValidN n y)
     (validN_le : ∀ n n' (y : β), ValidN n y → n' ≤ n → ValidN n' y)
-    (validN_op_left : ∀ n (y₁ y₂ : β), ValidN n (op y₁ y₂) → ValidN n y₁) :
+    (validN_op_left : ∀ n (y₁ y₂ : β), ValidN n (y₁ • y₂) → ValidN n y₁) :
     CMRA β :=
   have g_ne : ∀ {n} {y₁ y₂ : β}, y₁ ≡{n}≡ y₂ → g y₁ ≡{n}≡ g y₂ := (g_dist ..).mp
   have g_eq : ∀ {y₁ y₂ : β}, y₁ = y₂ ↔ g y₁ = g y₂ :=
     eq_dist.trans <| (forall_congr' fun n => g_dist n _ _).trans eq_dist.symm
-  have g_pcore : ∀ {y cy : β}, pcore y = some cy ↔ ORA.pcore (g y) = some (g cy) :=
+  have g_pcore : ∀ {y cy : β}, PCore.pcore y = some cy ↔ ORA.pcore (g y) = some (g cy) :=
     eq_dist.trans <| (forall_congr' fun n => g_pcore_dist _ _ n).trans eq_dist.symm
   have gf : ∀ {x : α} {y : β}, f x = some y ↔ g y = x :=
     eq_dist.trans <| (forall_congr' fun n => gf_dist _ _ n).trans eq_dist.symm
-  have pcore_idem' : ∀ {y cy : β}, pcore y = some cy → pcore cy = some cy :=
-    fun h => g_pcore.mpr <| pcore_idem (g_pcore.mp h)
-  have pcore_op_left' : ∀ {y cy : β}, pcore y = some cy → op cy y = y :=
-    fun h => g_eq.mpr <| (g_op ..).trans <| pcore_op_left (g_pcore.mp h)
   ofCMRAData {
-    pcore, op, Valid, ValidN
+    Valid, ValidN
     op_ne.ne _ _ _ h := (g_dist ..).mpr <|
       (g_op ..).dist.trans <| (g_ne h).op_r.trans (g_op ..).symm.dist
     pcore_ne h hcy :=
@@ -3477,14 +3698,8 @@ def ofInjRestrictValidity [CMRA α] [OFE β]
       dist_some <| (g_pcore_dist ..).mpr <| hc.dist.trans <| some_dist_some.mpr hcd.symm
     validN_ne h hv := validN_ne _ _ _ h hv
     valid_iff_validN := valid_validN _
-    validN_succ hv := validN_le _ _ _ hv (Nat.le_succ _)
+    validN_le hv le := validN_le _ _ _ hv le
     validN_op_left hv := validN_op_left _ _ _ hv
-    assoc := g_eq.mpr <| by
-      simp only [g_op]
-      exact assoc
-    comm := g_eq.mpr <| (g_op ..).trans <| comm.trans (g_op ..).symm
-    pcore_op_left := pcore_op_left'
-    pcore_idem := pcore_idem'
     extend := fun hv he => by
       obtain ⟨x₁, x₂, hx, hx₁, hx₂⟩ :=
         extend (g_validN _ _ hv) (((g_dist ..).mp he).trans (g_op ..).dist)
@@ -3495,38 +3710,38 @@ def ofInjRestrictValidity [CMRA α] [OFE β]
       exact hx
     pcore_op_mono := fun {y cy} h z => by
       obtain ⟨c, hc⟩ := ORA.pcore_op_mono (g_pcore.mp h) (g z)
-      obtain ⟨w, hw⟩ : ∃ w, (f c).elim cy (op cy) = op cy w := match f c with
+      obtain ⟨w, hw⟩ : ∃ w, (f c).elim cy (cy • ·) = cy • w := match f c with
         | some w => ⟨w, rfl⟩
-        | none => ⟨cy, (pcore_op_left' (pcore_idem' h)).symm⟩
+        | none => ⟨cy, (pcore_op_left (pcore_idem h)).symm⟩
       rw [← g_op, ← g_opM_f c cy, hw] at hc
       exact ⟨w, g_pcore.mpr hc⟩ }
 
 /-- Constructing a CMRA through an isomorphism that may restrict validity. -/
 @[reducible, rocq_alias iso_cmra_mixin_restrict_validity]
-def ofIsoRestrictValidity [CMRA α] [OFE β]
-    (pcore : β → Option β) (op : β → β → β) (Valid : β → Prop) (ValidN : Nat → β → Prop)
+def ofIsoRestrictValidity [RA α] [CMRA α] [OFE β] [RA β]
+    (Valid : β → Prop) (ValidN : SI → β → Prop)
     (f : α → β) (g : β → α)
     -- `g` is non-expansive and injective w.r.t. OFE equality
-    (g_dist : ∀ n (y₁ y₂ : β), y₁ ≡{n}≡ y₂ ↔ g y₁ ≡{n}≡ g y₂)
+    (g_dist : ∀ (n) (y₁ y₂ : β), y₁ ≡{n}≡ y₂ ↔ g y₁ ≡{n}≡ g y₂)
     -- `g` is surjective, and `f` is its inverse
     (gf : ∀ x : α, g (f x) = x)
     -- `g` commutes with `pcore` and with `op`
-    (g_pcore : ∀ y : β, ORA.pcore (g y) = (pcore y).map g)
-    (g_op : ∀ y₁ y₂, g (op y₁ y₂) = g y₁ • g y₂)
+    (g_pcore : ∀ y : β, ORA.pcore (g y) = (PCore.pcore y).map g)
+    (g_op : ∀ y₁ y₂, g (y₁ • y₂) = g y₁ • g y₂)
     -- the validity predicate on `β` restricts the one on `α`
-    (g_validN : ∀ n (y : β), ValidN n y → ✓{n} (g y))
+    (g_validN : ∀ (n) (y : β), ValidN n y → ✓{n} (g y))
     -- the validity predicate on `β` satisfies the laws of validity
-    (validN_ne : ∀ n (y₁ y₂ : β), y₁ ≡{n}≡ y₂ → ValidN n y₁ → ValidN n y₂)
+    (validN_ne : ∀ (n) (y₁ y₂ : β), y₁ ≡{n}≡ y₂ → ValidN n y₁ → ValidN n y₂)
     (valid_validN : ∀ y : β, Valid y ↔ ∀ n, ValidN n y)
     (validN_le : ∀ n n' (y : β), ValidN n y → n' ≤ n → ValidN n' y)
-    (validN_op_left : ∀ n (y₁ y₂ : β), ValidN n (op y₁ y₂) → ValidN n y₁) :
+    (validN_op_left : ∀ n (y₁ y₂ : β), ValidN n (y₁ • y₂) → ValidN n y₁) :
     CMRA β :=
-  ofInjRestrictValidity pcore op Valid ValidN (fun x => some (f x)) g g_dist
+  ofInjRestrictValidity Valid ValidN (fun x => some (f x)) g g_dist
     (fun x y n => ⟨fun h => ((g_dist ..).mp h.symm).trans (gf x).dist,
       fun h => (g_dist ..).mpr <| (gf x).dist.trans h.symm⟩)
     (fun y cy n => by
       rw [g_pcore]
-      cases pcore y with
+      cases PCore.pcore y with
       | none => simp
       | some z => exact g_dist n z cy)
     g_op (fun x y => (g_op y (f x)).trans <| congrArg (g y • ·) (gf x))
@@ -3534,20 +3749,20 @@ def ofIsoRestrictValidity [CMRA α] [OFE β]
 
 /-- Constructing a CMRA through an isomorphism. -/
 @[reducible, rocq_alias iso_cmra_mixin]
-def ofIso [CMRA α] [OFE β]
-    (pcore : β → Option β) (op : β → β → β) (Valid : β → Prop) (ValidN : Nat → β → Prop)
+def ofIso [RA α] [CMRA α] [OFE β] [RA β]
+    (Valid : β → Prop) (ValidN : SI → β → Prop)
     (f : α → β) (g : β → α)
     -- `g` is non-expansive and injective w.r.t. OFE equality
-    (g_dist : ∀ n (y₁ y₂ : β), y₁ ≡{n}≡ y₂ ↔ g y₁ ≡{n}≡ g y₂)
+    (g_dist : ∀ (n) (y₁ y₂ : β), y₁ ≡{n}≡ y₂ ↔ g y₁ ≡{n}≡ g y₂)
     -- `g` is surjective, and `f` is its inverse
     (gf : ∀ x : α, g (f x) = x)
     -- `g` commutes with `pcore`, `op`, `Valid` and `ValidN`
-    (g_pcore : ∀ y : β, ORA.pcore (g y) = (pcore y).map g)
-    (g_op : ∀ y₁ y₂, g (op y₁ y₂) = g y₁ • g y₂)
+    (g_pcore : ∀ y : β, ORA.pcore (g y) = (PCore.pcore y).map g)
+    (g_op : ∀ y₁ y₂, g (y₁ • y₂) = g y₁ • g y₂)
     (g_valid : ∀ y : β, ✓ (g y) ↔ Valid y)
-    (g_validN : ∀ n (y : β), ✓{n} (g y) ↔ ValidN n y) :
+    (g_validN : ∀ (n) (y : β), ✓{n} (g y) ↔ ValidN n y) :
     CMRA β :=
-  ofIsoRestrictValidity pcore op Valid ValidN f g g_dist gf g_pcore g_op
+  ofIsoRestrictValidity Valid ValidN f g g_dist gf g_pcore g_op
     (fun n y => (g_validN n y).mpr)
     (fun n y₁ y₂ h hv =>
       (g_validN n y₂).mp <| validN_ne ((g_dist ..).mp h) <| (g_validN n y₁).mpr hv)
@@ -3555,112 +3770,83 @@ def ofIso [CMRA α] [OFE β]
       valid_iff_validN.trans <| forall_congr' fun n => g_validN n y)
     (fun n n' y hv hle => (g_validN n' y).mp <| validN_of_le hle <| (g_validN n y).mpr hv)
     (fun n y₁ y₂ hv => (g_validN n y₁).mp <| validN_op_left <|
-      g_op y₁ y₂ ▸ (g_validN n (op y₁ y₂)).mpr hv)
+      g_op y₁ y₂ ▸ (g_validN n (y₁ • y₂)).mpr hv)
 
-@[reducible, rocq_alias discrete_cmra_mixin]
-def ofDiscrete [OFE α] [OFE.Discrete α]
-    (pcore : α → Option α) (op : α → α → α) (Valid : α → Prop)
-    (assoc : ∀ x y z : α, op x (op y z) = op (op x y) z)
-    (comm : ∀ x y : α, op x y = op y x)
-    (pcore_op_left : ∀ x cx : α, pcore x = some cx → op cx x = x)
-    (pcore_idem : ∀ x cx : α, pcore x = some cx → pcore cx = some cx)
-    (valid_op_left : ∀ x y : α, Valid (op x y) → Valid x)
-    (pcore_op_mono : ∀ x cx : α, pcore x = some cx → ∀ y, ∃ cy, pcore (op x y) = some (op cx cy)) :
+/-- Constructing a CMRA on a discrete OFE from its SI-free resource algebra `RA α`: only the
+validity predicate and its laws are asked for. -/
+@[indexed, reducible, rocq_alias discrete_cmra_mixin]
+def ofDiscrete [OFE α] [OFE.Discrete α] [RA α] (Valid : α → Prop)
+    (valid_op_left : ∀ x y : α, Valid (x • y) → Valid x)
+    (pcore_op_mono : ∀ x cx : α, pcore x = some cx → ∀ y, ∃ cy, pcore (x • y) = some (cx • cy)) :
     CMRA α := ofCMRAData {
-  pcore := pcore
-  op := op
   ValidN _ := Valid
   Valid := Valid
-  op_ne.ne _ _ _ h := (congrArg (op _) (OFE.discrete h)).dist
+  op_ne.ne _ _ _ h := (congrArg (_ • ·) (OFE.discrete h)).dist
   pcore_ne h hcx := ⟨_, (OFE.discrete h) ▸ hcx, .rfl⟩
   validN_ne h hv := (OFE.discrete h) ▸ hv
-  valid_iff_validN := (forall_const Nat).symm
-  validN_succ := id
+  valid_iff_validN := (forall_const _).symm
+  validN_le := fun h _ => h
   validN_op_left := valid_op_left _ _
-  assoc := assoc ..
-  comm := comm ..
-  pcore_op_left := pcore_op_left _ _
-  pcore_idem := pcore_idem _ _
   extend _ h := ⟨_, _, OFE.discrete h, .rfl, .rfl⟩
   pcore_op_mono := pcore_op_mono _ _ }
 
+/-- `ofDiscrete` for a resource algebra with a total core. -/
 @[reducible, rocq_alias ra_total_mixin]
-def ofDiscreteTotal [OFE α] [OFE.Discrete α]
-    (core : α → α) (op : α → α → α) (Valid : α → Prop)
-    (assoc : ∀ x y z : α, op x (op y z) = op (op x y) z)
-    (comm : ∀ x y : α, op x y = op y x)
-    (core_op_left : ∀ x : α, op (core x) x = x)
-    (core_idem : ∀ x : α, core (core x) = core x)
-    (valid_op_left : ∀ x y : α, Valid (op x y) → Valid x)
-    (core_op_mono : ∀ x y : α, ∃ cy, core (op x y) = op (core x) cy) :
+def ofDiscreteTotal [OFE α] [OFE.Discrete α] [RA α] [IsTotal α] (Valid : α → Prop)
+    (valid_op_left : ∀ x y : α, Valid (x • y) → Valid x)
+    (core_op_mono : ∀ x y : α, ∃ cy, core (x • y) = core x • cy) :
     CMRA α :=
-  ofDiscrete (fun x => some (core x)) op Valid assoc comm
-    (fun _ _ h => Option.some.inj h ▸ core_op_left _)
-    (fun _ _ h => Option.some.inj h ▸ congrArg some (core_idem _))
-    valid_op_left
-    (fun _ _ h y => Option.some.inj h ▸ (core_op_mono _ y).imp fun _ e => congrArg some e)
+  ofDiscrete Valid valid_op_left fun x _ h y => by
+    cases (pcore_eq_core x).symm.trans h
+    exact (core_op_mono x y).imp fun _ e => (pcore_eq_core _).trans (congrArg some e)
 
 section OfDiscrete
 
 @[rocq_alias discrete_cmra_discrete]
-instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option α)
-    (op : α → α → α) (Valid : α → Prop) h₁ h₂ h₃ h₄ h₅ h₆ :
-    @Discrete α (ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆).toORA :=
-  letI := ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆
+instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] [RA α] (Valid : α → Prop) h₁ h₂ :
+    @Discrete _ _ α _ (ofDiscrete Valid h₁ h₂).toORA :=
+  letI := ofDiscrete Valid h₁ h₂
   { discrete_valid := id }
 
 end OfDiscrete
 end CMRA
 
 /-- Smart constructor for discrete ORA instances. -/
-class DiscreteORAData (α : Type _) where
-  pcore : α → Option α
-  op : α → α → α
+structure DiscreteORAData (α : Type _) [RA α] where
   Valid : α → Prop
   Order : α → α → Prop
-  assoc : ∀ x y z : α, op x (op y z) = op (op x y) z
-  comm : ∀ x y : α, op x y = op y x
-  pcore_op_left : ∀ x cx : α, pcore x = some cx → op cx x = x
-  pcore_idem : ∀ x cx : α, pcore x = some cx → pcore cx = some cx
-  valid_op_left : ∀ x y : α, Valid (op x y) → Valid x
+  valid_op_left : ∀ x y : α, Valid (x • y) → Valid x
   ord_trans : ∀ x y z : α, Order x y → Order y z → Order x z
-  op_mono_left : ∀ x y z : α, Order x y → Order (op x z) (op y z)
+  op_mono_left : ∀ x y z : α, Order x y → Order (x • z) (y • z)
   valid_of_ord : ∀ x y : α, Order x y → Valid y → Valid x
-  pcore_mono : ∀ x y cx : α, Order x y → pcore x = some cx →
-    ∃ cy, pcore y = some cy ∧ Order cx cy
-  pcore_order_op : ∀ x cx : α, pcore x = some cx →
-    ∀ y, ∃ cxy, pcore (op x y) = some cxy ∧ Order cx cxy
-  pcore_increasing : ∀ x cx : α, pcore x = some cx → ∀ y, Order y (op cx y)
-  increasing_closed : ∀ x y : α, (∀ z, Order z (op x z)) → Order x y → ∀ z, Order z (op y z)
+  pcore_mono : ∀ x y cx : α, Order x y → PCore.pcore x = some cx →
+    ∃ cy, PCore.pcore y = some cy ∧ Order cx cy
+  pcore_order_op : ∀ x cx : α, PCore.pcore x = some cx →
+    ∀ y, ∃ cxy, PCore.pcore (x • y) = some cxy ∧ Order cx cxy
+  pcore_increasing : ∀ x cx : α, PCore.pcore x = some cx → ∀ y, Order y (cx • y)
+  increasing_closed : ∀ x y : α, (∀ z, Order z (x • z)) → Order x y → ∀ z, Order z (y • z)
 
 namespace ORA
 
-@[reducible] def ofDiscreteORAData [OFE α] [OFE.Discrete α] (d : DiscreteORAData α) : ORA α :=
-  letI : Op α :=
-    { op := d.op
-      op_ne.ne _ _ _ h := (congrArg (d.op _) (OFE.discrete h)).dist
-      assoc := d.assoc ..
-      comm := d.comm .. }
-  letI : PCore α :=
-    { pcore := d.pcore
-      pcore_ne h hcx := ⟨_, (OFE.discrete h) ▸ hcx, .rfl⟩
-      pcore_idem := d.pcore_idem _ _ }
+@[indexed, reducible] def ofDiscreteORAData [OFE α] [OFE.Discrete α] [RA α] (d : DiscreteORAData α) :
+    ORA α :=
   letI : _root_.Iris.Valid α :=
     { Valid := d.Valid
       ValidN _ := d.Valid
-      validN_ne h hv := (OFE.discrete h) ▸ hv
-      valid_iff_validN := (forall_const Nat).symm
-      validN_succ := id }
+      valid_iff_validN := (forall_const _).symm }
   letI : Ordered α :=
     { Order := d.Order
       OrderN _ := d.Order
-      ordN_ne ex ey h := (OFE.discrete ex) ▸ (OFE.discrete ey) ▸ h
-      ordN_succ := id
       ordN_trans := d.ord_trans _ _ _
       ord_trans := d.ord_trans _ _ _
       ordN_of_ord _ := id }
-  { validN_op_left := d.valid_op_left _ _
-    pcore_op_left := d.pcore_op_left _ _
+  { op_ne.ne _ _ _ h := (congrArg (_ • ·) (OFE.discrete h)).dist
+    pcore_ne h hcx := ⟨_, (OFE.discrete h) ▸ hcx, .rfl⟩
+    validN_ne h hv := (OFE.discrete h) ▸ hv
+    validN_le := fun h _ => h
+    ordN_ne ex ey h := (OFE.discrete ex) ▸ (OFE.discrete ey) ▸ h
+    ordN_le := fun h _ => h
+    validN_op_left := d.valid_op_left _ _
     extend _ h := ⟨_, _, OFE.discrete h, .rfl, .rfl⟩
     op_monoN_left_ord z h := d.op_mono_left _ _ z h
     op_mono_left_ord z h := d.op_mono_left _ _ z h
@@ -3672,13 +3858,33 @@ namespace ORA
     increasing_closed {_ x y} hx h := ⟨fun z => match h with
         | .inl e => (OFE.discrete e) ▸ hx.increasing z
         | .inr ho => d.increasing_closed x y (fun w => hx.increasing w) ho z⟩
-    ordN_extend _ h := ⟨_, h, .rfl⟩ }
+    ordN_extend _ _ h := ⟨_, h, .rfl⟩ }
 
-instance ofDiscreteORAData_discrete [OFE α] [OFE.Discrete α] (d : DiscreteORAData α) :
-    @Discrete α (ofDiscreteORAData d) :=
+instance ofDiscreteORAData_discrete [OFE α] [OFE.Discrete α] [RA α] (d : DiscreteORAData α) :
+    @Discrete _ _ α _ (ofDiscreteORAData d) :=
   letI := ofDiscreteORAData d
   { discrete_valid := id, discrete_ord := id }
 
 end ORA
 end CmraMixin
 end Iris
+
+
+/-! Printing of the step-index-free notations (see `Iris.Algebra.StepIndex`). -/
+namespace Iris.StepIndexSugar
+
+
+@[app_unexpander Valid.Valid] meta def unexpandValid : Lean.PrettyPrinter.Unexpander
+  | `($_ $x) => `(✓ $x)
+  | _ => throw ()
+@[app_unexpander Ordered.Order] meta def unexpandOrder : Lean.PrettyPrinter.Unexpander
+  | `($_ $x $y) => `($x ≼ₒ $y)
+  | _ => throw ()
+@[app_unexpander Ordered.OrderR] meta def unexpandOrderR : Lean.PrettyPrinter.Unexpander
+  | `($_ $x $y) => `($x ≼ₒ* $y)
+  | _ => throw ()
+@[app_unexpander Iris.ORA.Hom] meta def unexpandORAHom : Lean.PrettyPrinter.Unexpander
+  | `($_ $a $b) => `($a -C> $b)
+  | _ => throw ()
+
+end Iris.StepIndexSugar

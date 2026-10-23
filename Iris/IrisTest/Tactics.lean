@@ -20,6 +20,8 @@ public import Iris.Instances.Lib.NaInvariants
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
 
+local stepindex Nat
+
 @[expose] public section
 
 namespace IrisTest
@@ -2373,7 +2375,7 @@ example [BI PROP] (P : PROP) : □ P ∗ □ P ⊢ □ P := by
   imodintro
 
 /-- Tests `imodintro` for plain (intuitionistic: .forall Plain, spatial: clear). -/
-example [Sbi PROP] (P : PROP) [Plain P] : □ P ∗ P ⊢ ■ P := by
+example [BI PROP] [BIPlainly PROP] (P : PROP) [Plain P] : □ P ∗ P ⊢ ■ P := by
   iintro ⟨#HP1, HP2⟩
   imodintro
   iexact HP1
@@ -3008,7 +3010,7 @@ end timeReceipts
 
 section irewrite
 
-variable {PROP : Type _} [Sbi PROP]
+variable {PROP : Type _} [BI PROP] [BIStepIndexed PROP] [Sbi PROP]
 variable {A B : Type _} [OFE A] [OFE B]
 
 /- Tests `irewrite` rewriting in goal. -/
@@ -3658,7 +3660,7 @@ example {GF} [ElemG GF (constOF DFrac)]
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
     instances for the authoritative ORA. -/
-example {GF A} [UCMRA A] [ElemG GF (constOF (Auth A))] {γ}
+example {GF A} [URA A] [UCMRA A] [ElemG GF (constOF (Auth A))] {γ}
     {a1 a2 a3 b c : A} {q1 q2 : Qp} {dq'' dq3 dq4 : DFrac}
     [IsOp .merge b a2 a3] [IsOp .merge c a1 b]
     [IsOp .merge dq'' dq3 dq4] :

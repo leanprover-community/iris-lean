@@ -12,6 +12,10 @@ public import Iris.BI.InternalEq
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 /-!
 # Generic ORA validity in a BI logic
 
@@ -24,16 +28,29 @@ open BI OFE SiProp ORA Sbi
 
 section CmraValid
 
-variable [Sbi PROP] [ORA A]
+variable [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [RA A] [ORA A]
 
-@[rocq_alias internal_cmra_valid]
+@[indexed, rocq_alias internal_cmra_valid]
 def internalCmraValid (a : A) : PROP := siPure (cmraValid a)
 
 macro_rules
-  | `(iprop(✓%$tk $a)) => ``($(wrapIprop tk ``internalCmraValid) $a)
+  | `(iprop(✓[%$tk $si] $a)) => ``($(wrapIprop tk ``internalCmraValid) (SI := $si) $a)
 
-delab_rule internalCmraValid
-  | `($_ $a) => ``(iprop(✓ $a))
+namespace StepIndexSugar
+macro_rules
+  | `(iprop(✓%$tk $a)) => ``($(wrapIprop tk ``internalCmraValid) (SI := stepindex%) $a)
+end StepIndexSugar
+
+open scoped Iris.StepIndexSugar in
+open Lean PrettyPrinter Delaborator SubExpr in
+/-- Print `internalCmraValid` as `iprop(✓ a)`, recovering the step index argument. -/
+@[app_delab internalCmraValid] meta def delabInternalCmraValid : Delab :=
+  whenPPOption getPPNotation do
+    let e ← getExpr
+    guard (e.getAppNumArgs ≥ 2)
+    let si ← withNaryArg 2 delab
+    let a ← withNaryArg (e.getAppNumArgs - 1) delab
+    if ← StepIndexSugar.isSectionSI si then `(iprop(✓ $a)) else `(iprop(✓[$si] $a))
 
 @[rocq_alias internal_cmra_valid_ne]
 instance internalCmraValid_ne : NonExpansive (internalCmraValid (PROP := PROP) (A := A)) where
@@ -61,7 +78,7 @@ theorem internalCmraValid_weaken {a b : A} :
   siPure_mono cmraValid_weaken
 
 @[rocq_alias internal_cmra_valid_entails]
-theorem internalCmraValid_entails [ORA B] {a : A} {b : B} :
+theorem internalCmraValid_entails [RA B] [ORA B] {a : A} {b : B} :
     (✓ a ⊢@{PROP} ✓ b) ↔ ∀ n, ✓{n} a → ✓{n} b :=
   siPure_entails.trans cmraValid_entails_iff
 
@@ -75,7 +92,7 @@ theorem persistently_internalCmraValid {a : A} :
   persistently_siPure
 
 @[rocq_alias plainly_internal_cmra_valid]
-theorem plainly_internalCmraValid (a : A) :
+theorem plainly_internalCmraValid [BIPlainly PROP] [BIPlainlySbi PROP] (a : A) :
     ■ ✓ a ⊣⊢@{PROP} ✓ a :=
   plainly_siPure
 
@@ -101,34 +118,50 @@ instance internalCmraValid_absorbing (a : A) :
   siPure_absorbing _
 
 @[rocq_alias internal_cmra_valid_plain]
-instance internalCmraValid_plain (a : A) :
+instance internalCmraValid_plain [BIPlainly PROP] [BIPlainlySbi PROP] (a : A) :
     Plain (PROP := PROP) iprop(✓ a) where
   plain := plainly_internalCmraValid a |>.mpr
 
 @[rocq_alias internal_cmra_valid_timeless]
 instance internalCmraValid_timeless [ORA.Discrete A] (a : A) :
-    Timeless (PROP := PROP) iprop(✓ a) := by
-  unfold internalCmraValid; infer_instance
+    Timeless (PROP := PROP) iprop(✓ a) :=
+  siPure_timeless _
 
 end CmraValid
 
 section CmraOrder
 
-variable [Sbi PROP] [ORA A]
+variable [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [RA A] [ORA A]
 
 /-! ### The internal extension inclusion -/
 
 /-- The internal extension inclusion `∃ c, b ≡ a • c`, the relation frame-based
 constructions (views, local updates) are stated with; see `internalCmraOrder` for the
 internal order. -/
-@[rocq_alias internal_included]
-def internalCmraIncluded (a b : A) : PROP := siPure (∃ c, iprop(b ≡ (a • c)))
+@[indexed, rocq_alias internal_included]
+def internalCmraIncluded (a b : A) : PROP := siPure ((∃ c, iprop(b ≡ (a • c))) : SiProp)
 
+/-- Internal inclusion `a ≼[S] b` inside `iprop(…)`, with the step index `S` explicit. -/
+syntax:50 term:51 " ≼[" term "] " term:51 : term
 macro_rules
-  | `(iprop($a ≼ $b)) => ``(internalCmraIncluded $a $b)
+  | `(iprop($a ≼[%$tk $si] $b)) => ``($(wrapIprop tk ``internalCmraIncluded) (SI := $si) $a $b)
 
-delab_rule internalCmraIncluded
-  | `($_ $a $b) => ``(iprop($a ≼ $b))
+namespace StepIndexSugar
+macro_rules
+  | `(iprop($a ≼%$tk $b)) => ``($(wrapIprop tk ``internalCmraIncluded) (SI := stepindex%) $a $b)
+end StepIndexSugar
+
+open scoped Iris.StepIndexSugar in
+open Lean PrettyPrinter Delaborator SubExpr in
+/-- Print `internalCmraIncluded` as `iprop(a ≼ b)`, recovering the step index argument. -/
+@[app_delab internalCmraIncluded] meta def delabInternalCmraIncluded : Delab :=
+  whenPPOption getPPNotation do
+    let e ← getExpr
+    guard (e.getAppNumArgs ≥ 3)
+    let si ← withNaryArg 2 delab
+    let a ← withNaryArg (e.getAppNumArgs - 2) delab
+    let b ← withNaryArg (e.getAppNumArgs - 1) delab
+    if ← StepIndexSugar.isSectionSI si then `(iprop($a ≼ $b)) else `(iprop($a ≼[$si] $b))
 
 @[rocq_alias internal_included_nonexpansive]
 instance internalCmraIncluded_ne :
@@ -149,11 +182,11 @@ theorem internalCmraIncluded_intro {P : PROP} {a b : A} (h : a ≼ b) :
     _ ⊢ a ≼ b := siPure_mono (BI.exists_intro_trans c (internalEq.of_equiv hc))
 
 /-- The `SiProp` underlying the internal `≼` holds at `n` exactly when `a ≼{n} b`. -/
-private theorem inc_holds {a b : A} {n : Nat} :
+private theorem inc_holds {a b : A} {n} :
     ((∃ c, iprop(b ≡ (a • c))) : SiProp).holds n ↔ a ≼{n} b := SiProp.exists_holds
 
 /-- Two internal extension inclusions agree when they agree at every step index. -/
-theorem internalCmraIncluded_iff [ORA B] {a b : A} {a' b' : B}
+theorem internalCmraIncluded_iff [RA B] [ORA B] {a b : A} {a' b' : B}
     (h : ∀ n, a ≼{n} b ↔ a' ≼{n} b') : a ≼ b ⊣⊢@{PROP} a' ≼ b' :=
   siPure_mono_bi ⟨fun n hn => inc_holds.mpr ((h n).mp (inc_holds.mp hn)),
     fun n hn => inc_holds.mpr ((h n).mpr (inc_holds.mp hn))⟩
@@ -166,7 +199,7 @@ theorem internalCmraIncluded_pure {a b : A} {φ : Prop} (h : ∀ n, a ≼{n} b �
 
 @[rocq_alias si_pure_internal_included]
 theorem siPure_internalCmraIncluded {a b : A} :
-    <si_pure> a ≼ b ⊣⊢@{PROP} a ≼ b :=
+    <si_pure> (iprop(a ≼ b) : SiProp) ⊣⊢@{PROP} a ≼ b :=
   persistently_iff.symm.trans persistently_siPure
 
 @[rocq_alias persistently_internal_included]
@@ -175,7 +208,7 @@ theorem persistently_internalCmraIncluded {a b : A} :
   persistently_siPure
 
 @[rocq_alias plainly_internal_included]
-theorem plainly_internalCmraIncluded {a b : A} :
+theorem plainly_internalCmraIncluded [BIPlainly PROP] [BIPlainlySbi PROP] {a b : A} :
     ■ a ≼ b ⊣⊢@{PROP} a ≼ b :=
   plainly_siPure
 
@@ -215,7 +248,7 @@ theorem internalCmraIncluded_trans {a b c : A} :
   exact and_intro and_elim_r (and_elim_left_trans (BI.internalEq_entails.mpr (fun n heq => op_left_dist _ heq)))
 
 /-- The internal `≼` is monotone under any nonexpansive map commuting with `•`. -/
-theorem internalCmraIncluded_map {B : Type _} [ORA B] (g : A → B) [NonExpansive g]
+theorem internalCmraIncluded_map {B : Type _} [RA B] [ORA B] (g : A → B) [NonExpansive g]
     (hg : ∀ x y : A, g (x • y) = g x • g y) {a b : A} :
     a ≼ b ⊢@{PROP} g a ≼ g b :=
   siPure_mono <| BI.exists_elim fun c => BI.exists_intro_trans (g c) <| by
@@ -229,7 +262,7 @@ instance internalCmraIncluded_timeless {a b : A} [ORA.Discrete A] :
   infer_instance
 
 @[rocq_alias internal_included_plain]
-instance internalCmraIncluded_plain {a b : A} :
+instance internalCmraIncluded_plain [BIPlainly PROP] [BIPlainlySbi PROP] {a b : A} :
     Plain (PROP := PROP) iprop(a ≼ b) where
   plain := plainly_internalCmraIncluded.mpr
 
@@ -245,26 +278,40 @@ instance internalCmraIncluded_absorbing {a b : A} :
 
 /-! ### The internal order -/
 
+@[indexed]
 def _root_.SiProp.cmraOrder (a b : A) : SiProp where
   holds n := a ≼ₒ{n} b
   closed h hle := h.le hle
 
 instance _root_.SiProp.cmraOrder_timeless [ORA.Discrete A] {a b : A} :
     Timeless (SiProp.cmraOrder a b) where
-  timeless := fun n h => by
-    cases n with
-    | zero => left; trivial
-    | succ n => right; exact ordN_of_ord _ (discrete_ord (ord0_of_ordN h))
+  timeless := fun _ h =>
+    ordN_of_ord _ (discrete_ord (h 0 SIdx.le_0_l fun k hk => absurd hk (SIdx.not_lt_zero k)))
 
 /-- The internal order `a ≼ₒ b`, holding at step index `n` when `a ≼ₒ{n} b`; ownership is
 monotone along it (`ownM_mono`). -/
+@[indexed]
 def internalCmraOrder (a b : A) : PROP := siPure (SiProp.cmraOrder a b)
 
 macro_rules
-  | `(iprop($a ≼ₒ $b)) => ``(internalCmraOrder $a $b)
+  | `(iprop($a ≼ₒ[%$tk $si] $b)) => ``($(wrapIprop tk ``internalCmraOrder) (SI := $si) $a $b)
 
-delab_rule internalCmraOrder
-  | `($_ $a $b) => ``(iprop($a ≼ₒ $b))
+namespace StepIndexSugar
+macro_rules
+  | `(iprop($a ≼ₒ%$tk $b)) => ``($(wrapIprop tk ``internalCmraOrder) (SI := stepindex%) $a $b)
+end StepIndexSugar
+
+open scoped Iris.StepIndexSugar in
+open Lean PrettyPrinter Delaborator SubExpr in
+/-- Print `internalCmraOrder` as `iprop(a ≼ₒ b)`, recovering the step index argument. -/
+@[app_delab internalCmraOrder] meta def delabInternalCmraOrder : Delab :=
+  whenPPOption getPPNotation do
+    let e ← getExpr
+    guard (e.getAppNumArgs ≥ 3)
+    let si ← withNaryArg 2 delab
+    let a ← withNaryArg (e.getAppNumArgs - 2) delab
+    let b ← withNaryArg (e.getAppNumArgs - 1) delab
+    if ← StepIndexSugar.isSectionSI si then `(iprop($a ≼ₒ $b)) else `(iprop($a ≼ₒ[$si] $b))
 
 instance internalCmraOrder_ne :
     NonExpansive₂ (internalCmraOrder (PROP := PROP) (A := A)) where
@@ -277,7 +324,7 @@ theorem internalCmraOrder_intro {P : PROP} {a b : A} (h : a ≼ₒ b) : P ⊢ a 
     _ ⊢ a ≼ₒ b := siPure_mono fun n _ => ordN_of_ord n h
 
 /-- Two internal orders agree when they agree at every step index. -/
-theorem internalCmraOrder_iff [ORA B] {a b : A} {a' b' : B}
+theorem internalCmraOrder_iff [RA B] [ORA B] {a b : A} {a' b' : B}
     (h : ∀ n, a ≼ₒ{n} b ↔ a' ≼ₒ{n} b') : a ≼ₒ b ⊣⊢@{PROP} a' ≼ₒ b' :=
   siPure_mono_bi ⟨fun n => (h n).mp, fun n => (h n).mpr⟩
 
@@ -287,13 +334,13 @@ theorem internalCmraOrder_pure {a b : A} {φ : Prop} (h : ∀ n, a ≼ₒ{n} b �
   ⟨.trans (siPure_mono (Qi := SiProp.pure φ) fun n => (h n).mp) siPure_pure.mp,
    .trans siPure_pure.mpr (siPure_mono (Pi := SiProp.pure φ) fun n => (h n).mpr)⟩
 
-theorem siPure_internalCmraOrder {a b : A} : <si_pure> a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b :=
+theorem siPure_internalCmraOrder {a b : A} : <si_pure> (iprop(a ≼ₒ b) : SiProp) ⊣⊢@{PROP} a ≼ₒ b :=
   persistently_iff.symm.trans persistently_siPure
 
 theorem persistently_internalCmraOrder {a b : A} : <pers> a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b :=
   persistently_siPure
 
-theorem plainly_internalCmraOrder {a b : A} : ■ a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b := plainly_siPure
+theorem plainly_internalCmraOrder [BIPlainly PROP] [BIPlainlySbi PROP] {a b : A} : ■ a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b := plainly_siPure
 
 theorem intuitionistically_internalCmraOrder [BIAffine PROP] {a b : A} :
     □ a ≼ₒ b ⊣⊢@{PROP} a ≼ₒ b :=
@@ -310,7 +357,7 @@ theorem internalCmraOrder_trans {a b c : A} : ⊢@{PROP} a ≼ₒ b -∗ b ≼�
   BI.entails_wand <| BI.wand_intro <| siPure_and_sep.mpr.trans <|
     siPure_mono fun _ h => ordN_trans h.1 h.2
 
-theorem internalCmraOrder_map {B : Type _} [ORA B] (g : A -C> B) {a b : A} :
+theorem internalCmraOrder_map {B : Type _} [RA B] [ORA B] (g : A -C> B) {a b : A} :
     a ≼ₒ b ⊢@{PROP} g a ≼ₒ g b :=
   siPure_mono fun _ => g.monoN_ord
 
@@ -325,11 +372,10 @@ theorem internalCmraIncluded_iff_internalCmraOrder [IncOrd A] [OrdInc A] {a b : 
     fun _ hn => inc_holds.mpr (incN_iff_ordN.mpr hn)⟩
 
 instance internalCmraOrder_timeless {a b : A} [ORA.Discrete A] :
-    Timeless (PROP := PROP) iprop(a ≼ₒ b) := by
-  unfold internalCmraOrder
-  infer_instance
+    Timeless (PROP := PROP) iprop(a ≼ₒ b) :=
+  siPure_timeless _
 
-instance internalCmraOrder_plain {a b : A} : Plain (PROP := PROP) iprop(a ≼ₒ b) where
+instance internalCmraOrder_plain [BIPlainly PROP] [BIPlainlySbi PROP] {a b : A} : Plain (PROP := PROP) iprop(a ≼ₒ b) where
   plain := plainly_internalCmraOrder.mpr
 
 instance internalCmraOrder_persistent {a b : A} : Persistent (PROP := PROP) iprop(a ≼ₒ b) where

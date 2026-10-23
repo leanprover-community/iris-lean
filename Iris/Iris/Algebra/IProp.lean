@@ -10,9 +10,12 @@ public import Iris.Algebra.OFE
 public import Iris.Algebra.UPred
 public import Iris.Algebra.GenMap
 public import Iris.Algebra.COFESolver
+public import Iris.Algebra.StepIndexFinite
 public import Init.Data.Vector
 
 @[expose] public section
+
+local stepindex Nat
 
 namespace Iris
 
@@ -24,7 +27,7 @@ set_option linter.checkUnivs false in
 /-- A resource functor admissible in the global ghost state: contractive, with affine algebras. -/
 @[rocq_alias gFunctor]
 structure GFunctor.{u, v, w} where
-  F : OFunctorPre.{u, v, w}
+  F : OFunctorPre.{_, u, v, w}
   [contractive : RFunctorContractive F]
   [affine : RFunctorAffine F]
 
@@ -76,6 +79,9 @@ instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix _))
 def IResUR.{u} : Type u := (i : GType) → GenMap ((GF i).F (IPre GF) (IPre GF))
 
 #rocq_ignore iResUR "Sealed copy of `iProp_solution.iResUR`; not needed since Lean does not seal it."
+
+instance : URA (IResUR GF) :=
+  DiscreteFun.raURA (β := fun (i : GType) => GenMap ((GF i).F (IPre GF) (IPre GF)))
 
 instance : UORA (IResUR GF) :=
   ucmraDiscreteFunO (β := fun (i : GType) => GenMap ((GF i).F (IPre GF) (IPre GF)))

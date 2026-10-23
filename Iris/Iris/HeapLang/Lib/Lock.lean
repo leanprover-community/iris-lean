@@ -14,6 +14,8 @@ open BI
 
 @[expose] public section
 
+local stepindex Nat
+
 @[rocq_alias heap_lang.lock]
 class Lock (GF : BundledGFunctors) [IrisGS_gen hlc Exp GF] where
   newlock : Val

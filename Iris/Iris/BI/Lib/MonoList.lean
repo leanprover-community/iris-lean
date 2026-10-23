@@ -22,6 +22,8 @@ Wraps the `MonoList` RA, providing three assertions:
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open BI MonoList

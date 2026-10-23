@@ -17,6 +17,8 @@ public import Iris.ProgramLogic.EctxiLanguage
 public import Iris.ProgramLogic.Lifting
 public import Lean.Elab.Tactic.Simp
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 
 open Lean hiding Expr

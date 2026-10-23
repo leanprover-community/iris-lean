@@ -17,7 +17,10 @@ public import Iris.Algebra.Numbers
 
 namespace Iris
 
-@[rocq_alias mono_Z]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
+
+@[indexed, rocq_alias mono_Z]
 abbrev MonoZ := Auth (Option MaxInt)
 
 #rocq_ignore mono_ZR "Use the MonoZ type and View.instCMRA typeclass"
@@ -46,7 +49,7 @@ instance {l : MaxInt} : CoreId (●MZ□ l : MonoZ) := by
   unfold auth
   infer_instance
 
-@[rocq_alias mono_Z_auth_dfrac_op]
+@[indexed, rocq_alias mono_Z_auth_dfrac_op]
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (n : MaxInt) :
     (●MZ{dq1 • dq2} n : MonoZ) = (●MZ{dq1} n) • (●MZ{dq2} n) := by
   unfold auth
@@ -96,6 +99,7 @@ theorem both_dfrac_valid (dq : DFrac) (n m : MaxInt) :
   unfold auth lb
   rw [assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete, ← Option.some_op,
     Option.some_inc_some_iff_is_total, MaxInt.inc_iff]
+  have hop : (n • m).toInt = max n.toInt m.toInt := rfl
   exact ⟨fun ⟨hdq, hle, _⟩ => ⟨hdq, by grind⟩, fun ⟨hdq, hle⟩ => ⟨hdq, by grind, trivial⟩⟩
 
 @[rocq_alias mono_Z_both_valid]
@@ -131,7 +135,7 @@ theorem auth_unpersist (n : MaxInt) :
 set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mono_Z_auth_dfrac_is_op]
 instance {dq dq1 dq2 : DFrac} {n : MaxInt} [h : IsOp d dq dq1 dq2] :
-    IsOp d (●MZ{dq} n) (●MZ{dq1} n) (●MZ{dq2} n) where
+    IsOp d (●MZ{dq} n : MonoZ) (●MZ{dq1} n) (●MZ{dq2} n) where
   is_op := by rw [h.is_op]; exact auth_dfrac_op ..
 
 @[rocq_alias mono_Z_lb_max_is_op]

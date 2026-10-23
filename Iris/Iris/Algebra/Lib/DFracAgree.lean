@@ -19,14 +19,17 @@ convenience definitions and lemmas.
 
 namespace Iris
 
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
+
 open OFE ORA DFrac
 
 namespace DFracAgree
 
-@[rocq_alias dfrac_agreeR]
+@[indexed, nolint unusedArguments, rocq_alias dfrac_agreeR]
 abbrev DFracAgreeR (A : Type _) [OFE A] := DFrac × Agree A
 
-@[rocq_alias to_dfrac_agree]
+@[indexed, rocq_alias to_dfrac_agree]
 def mk [OFE A] (d : DFrac) (a : A) : DFracAgreeR A := (d, toAgree a)
 
 variable {A : Type _} [OFE A]
@@ -51,7 +54,7 @@ instance mk_discrete {d : DFrac} {a : A} [DiscreteE a] : DiscreteE (mk d a) :=
   ⟨fun h => Prod.ext (is_discrete.discrete h.1) (Agree.toAgree.is_discrete.discrete h.2)⟩
 
 @[rocq_alias to_dfrac_agree_injN]
-theorem mk_injN {d₁ d₂ : DFrac} {a₁ a₂ : A} (h : mk d₁ a₁ ≡{n}≡ mk d₂ a₂) : d₁ ≡{n}≡ d₂ ∧ a₁ ≡{n}≡ a₂ :=
+theorem mk_injN {n} {d₁ d₂ : DFrac} {a₁ a₂ : A} (h : mk d₁ a₁ ≡{n}≡ mk d₂ a₂) : d₁ ≡{n}≡ d₂ ∧ a₁ ≡{n}≡ a₂ :=
   ⟨h.1, toAgree.inj h.2⟩
 
 @[rocq_alias to_dfrac_agree_inj]
@@ -70,7 +73,7 @@ theorem op_valid {d₁ d₂ : DFrac} {a₁ a₂ : A} : ✓ (mk d₁ a₁ • mk 
 #rocq_ignore dfrac_agree_op_valid_L "Use op_valid"
 
 @[rocq_alias dfrac_agree_op_validN]
-theorem op_validN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
+theorem op_validN {n} {d₁ d₂ : DFrac} {a₁ a₂ : A} :
     ✓{n} (mk d₁ a₁ • mk d₂ a₂) ↔ ✓ (d₁ • d₂) ∧ a₁ ≡{n}≡ a₂ := by
   change Prod.ValidN n (Prod.op (mk d₁ a₁) (mk d₂ a₂)) ↔ _
   simp only [Prod.ValidN, mk]
@@ -88,12 +91,12 @@ theorem included {d₁ d₂ : DFrac} {a₁ a₂ : A} :
 
 #rocq_ignore dfrac_agree_included_L "Use included"
 
-theorem ordN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
+theorem ordN {n} {d₁ d₂ : DFrac} {a₁ a₂ : A} :
     mk d₁ a₁ ≼ₒ{n} mk d₂ a₂ ↔ (d₁ ≼ₒ d₂) ∧ a₁ ≡{n}≡ a₂ :=
   and_congr (ord_iff_ordN (α := DFrac) n).symm Agree.toAgree_ordN
 
 @[rocq_alias dfrac_agree_includedN]
-theorem includedN {d₁ d₂ : DFrac} {a₁ a₂ : A} :
+theorem includedN {n} {d₁ d₂ : DFrac} {a₁ a₂ : A} :
     mk d₁ a₁ ≼{n} mk d₂ a₂ ↔ (d₁ ≼ d₂) ∧ a₁ ≡{n}≡ a₂ :=
   incN_iff_ordN.trans ordN
 
@@ -103,8 +106,8 @@ theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .
   calc
     _ = (own (1 : Qp), toAgree a₁ • toAgree a₂) := hd ▸ rfl
     _ ~~> mk d₁ a' • mk d₂ a' :=
-      @Update.exclusive _ _ _ _ one_exclusive_left
-        (op_valid.mpr ⟨hd ▸ valid_own_one, rfl⟩)
+      have := one_exclusive_left (v := toAgree a₁ • toAgree a₂)
+      Update.exclusive (op_valid.mpr ⟨hd ▸ valid_own_one, rfl⟩)
 
 @[rocq_alias dfrac_agree_persist]
 theorem persist {d : DFrac} {a : A} : mk d a ~~> mk .discard a := by
@@ -129,7 +132,7 @@ theorem unpersist {a : A} :
 
 namespace Frac
 
-@[rocq_alias to_frac_agree]
+@[indexed, rocq_alias to_frac_agree]
 def mk [OFE A] (q : Qp) (a : A) : DFracAgreeR A := DFracAgree.mk (.own q) a
 
 variable {A : Type _} [OFE A]
@@ -145,7 +148,7 @@ theorem op_valid {q₁ q₂ : Qp} {a₁ a₂ : A} :
 #rocq_ignore frac_agree_op_valid_L "Use op_valid"
 
 @[rocq_alias frac_agree_op_validN]
-theorem op_validN {q₁ q₂ : Qp} {a₁ a₂ : A} :
+theorem op_validN {n} {q₁ q₂ : Qp} {a₁ a₂ : A} :
     ✓{n} (mk q₁ a₁ • mk q₂ a₂) ↔ (q₁ + q₂).val ≤ 1 ∧ a₁ ≡{n}≡ a₂ :=
   DFracAgree.op_validN
 
@@ -158,11 +161,11 @@ theorem included {q₁ q₂ : Qp} {a₁ a₂ : A} :
 
 #rocq_ignore frac_agree_included_L "Use included"
 
-theorem ordN {q₁ q₂ : Qp} {a₁ a₂ : A} :
+theorem ordN {n} {q₁ q₂ : Qp} {a₁ a₂ : A} :
     mk q₁ a₁ ≼ₒ{n} mk q₂ a₂ ↔ (own q₁ ≼ₒ own q₂) ∧ a₁ ≡{n}≡ a₂ := DFracAgree.ordN
 
 @[rocq_alias frac_agree_includedN]
-theorem includedN {q₁ q₂ : Qp} {a₁ a₂ : A} :
+theorem includedN {n} {q₁ q₂ : Qp} {a₁ a₂ : A} :
     mk q₁ a₁ ≼{n} mk q₂ a₂ ↔ (own q₁ ≼ own q₂) ∧ a₁ ≡{n}≡ a₂ := DFracAgree.includedN
 
 @[rocq_alias frac_agree_update_2]
@@ -175,7 +178,7 @@ end Frac
 /-! ## Functors -/
 
 @[rocq_alias dfrac_agreeRF]
-abbrev DFracAgreeRF (T : COFE.OFunctorPre) [COFE.OFunctor T] : COFE.OFunctorPre :=
+abbrev DFracAgreeRF (T : COFE.OFunctorPre) : COFE.OFunctorPre :=
   ProdOF (constOF DFrac) (AgreeRF T)
 
 #rocq_ignore dfrac_agreeRF_contractive "Found by typeclass inference"

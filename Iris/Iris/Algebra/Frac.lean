@@ -19,6 +19,9 @@ This version follows Iris Rocq in fixing the underlying type of fractions to be 
 
 @[expose] public section
 
+variable {SI : stepindex (Type _)} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 namespace Rat
 
 /-- ## Helper lemmas for Rat -/
@@ -71,24 +74,32 @@ def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
 
 instance instCOFEQp : COFE Qp := COFE.ofDiscrete _
 
-@[instance_reducible] def Qp.cmraData : CMRAData Qp where
-  pcore _ := none
+/-- Fraction addition as a step-index-free data instance (Mathlib-style). -/
+instance Qp.instOp : Op Qp where
   op x y := x + y
+  assoc := Subtype.ext (Rat.add_assoc ..).symm
+  comm := Subtype.ext (Rat.add_comm ..)
+
+/-- Fractions have no core. -/
+instance Qp.instPCore : PCore Qp where
+  pcore _ := none
+  pcore_idem H := by rcases H
+
+instance Qp.instRA : RA Qp where
+  pcore_op_left H := by rcases H
+
+@[reducible] def Qp.cmraData : CMRAData Qp where
   ValidN _ x := x.val ≤ 1
   Valid x := x.val ≤ 1
   op_ne.ne n x1 x2 H := by rw [(H : x1 = x2)]
   pcore_ne _ H := by rcases H
   validN_ne H := by rw [(H : _ = _)]; exact id
   valid_iff_validN := .symm (forall_const _)
-  validN_succ := id
-  validN_op_left {n x y} h := by
+  validN_le := fun h _ => h
+  validN_op_left {n} {x y} h := by
     show x.val ≤ 1
     have h' : x.val + y.val ≤ 1 := h
     grind
-  assoc := Subtype.ext (Rat.add_assoc ..).symm
-  comm := Subtype.ext (Rat.add_comm ..)
-  pcore_op_left H := by rcases H
-  pcore_idem H := by rcases H
   extend {_ x y z} := by
     rintro H He; exact ⟨y, z, He, .rfl, .rfl⟩
   pcore_op_mono H := by rcases H
@@ -114,7 +125,7 @@ instance instCMRAQp : CMRA Qp := ofCMRAData Qp.cmraData
 @[simp, grind =] theorem Qp.lt_iff {x y : Qp} : x < y ↔ x.val < y.val := Iff.rfl
 @[simp] theorem Qp.ext_iff {x y : Qp} : x = y ↔ x.val = y.val := Subtype.ext_iff
 @[simp] theorem Qp.dist_iff {n} {x y : Qp} : x ≡{n}≡ y ↔ x.val = y.val := Subtype.ext_iff
-@[simp, rocq_alias frac_valid_1] theorem Qp.valid_one : ✓ (1 : Qp) := by grind
+@[indexed, simp, rocq_alias frac_valid_1] theorem Qp.valid_one : ✓ (1 : Qp) := by grind
 @[simp, grind =] theorem Qp.half_add_half (q : Qp) : q.half + q.half = q := Subtype.ext (by grind)
 @[grind =] theorem Qp.add_left_comm (x y z : Qp) : x + (y + z) = y + (x + z) := by grind
 @[simp, grind =] theorem Qp.quarter_add_threeQuarters : Qp.quarter + Qp.threeQuarters = 1 := by
@@ -150,13 +161,16 @@ theorem Frac.ord_iff {p q : Qp} : p ≼ₒ q ↔ p < q := by
   · exact ⟨⟨q.val - p.val, by grind⟩, by simp only [Qp.ext_iff, Qp.val_op]; grind⟩
 
 @[rocq_alias frac_included]
-theorem Frac.inc_iff {p q : Qp} : p ≼ q ↔ p < q := inc_iff_ord.trans ord_iff
+theorem Frac.inc_iff {p q : Qp} : p ≼ q ↔ p < q :=
+  ⟨fun ⟨r, h⟩ => Qp.lt_iff_exists_add.mpr ⟨r, h.symm⟩,
+   fun h => let ⟨c, hc⟩ := Qp.lt_iff_exists_add.mp h; ⟨c, hc.symm⟩⟩
 
 theorem Frac.le_of_ord {p q : Qp} (H : p ≼ₒ q) : p ≤ q := by
   have := ord_iff.mp H; grind
 
 @[rocq_alias frac_included_weak]
-theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := le_of_ord (inc_iff_ord.mp H)
+theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := by
+  have := Frac.inc_iff.mp H; simp only [Qp.lt_iff, Qp.le_iff] at *; grind
 
 @[rocq_alias frac_cmra_discrete]
 instance instDiscreteQp : Discrete Qp where
@@ -168,7 +182,7 @@ instance instExclusiveQp1 : Exclusive (α := Qp) 1 where
 
 @[rocq_alias frac_cancelable]
 instance instCancelableQp {a : Qp} : Cancelable (α := Qp) a where
-  cancelableN {n x y} _ (H : a • x = a • y) := by
+  cancelableN {n} {x y} _ (H : a • x = a • y) := by
     simp only [Qp.dist_iff, Qp.ext_iff, Qp.val_op] at *; grind
 
 @[rocq_alias frac_id_free]

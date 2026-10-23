@@ -605,6 +605,17 @@ structure IrisGoal where
   hyps : Hyps bi e
   goal : Q($prop)
 
+/-- Recover the `BI` instance behind a `BIBase` instance (as found in the proof-mode classes,
+which only take `BIBase`): either it is syntactically `BI.toBIBase bi`, or a `BI` instance
+is synthesized and checked to project to it. -/
+def parseBIBase? (biBase : Expr) : MetaM (Option Expr) := do
+  let biBase ← instantiateMVars biBase
+  if biBase.isAppOfArity ``BI.toBIBase 2 then return some biBase.appArg!
+  let_expr BI.BIBase prop ← (← whnfR (← inferType biBase)) | return none
+  let some bi ← synthInstance? (← mkAppM ``BI #[prop]) | return none
+  unless ← isDefEq (← mkAppOptM ``BI.toBIBase #[prop, bi]) biBase do return none
+  return some bi
+
 def isIrisGoal (expr : Expr) : Bool := isAppOfArity expr ``Entails' 4
 
 def parseIrisGoal? (expr : Expr) : Option IrisGoal := do

@@ -19,6 +19,9 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+variable {SI : stepindex (Type _)} [instSI : Iris.SIdx SI]
+local stepindex SI
+
 open Iris Std
 
 section OFE
@@ -29,7 +32,7 @@ namespace PartialMap
 
 @[rocq_alias gmap_ofe_mixin, rocq_alias gmapO]
 instance instOFE [LawfulPartialMap M K] [OFE V] : OFE (M V) where
-  Dist n s0 s1 := get? s0 ≡{n}≡ get? s1
+  dist n s0 s1 := get? s0 ≡{n}≡ get? s1
   dist_eqv     := ⟨fun _ => .of_eq rfl, (·.symm), (·.trans ·)⟩
   eq_dist' {s0 s1} := by
     rw [← LawfulPartialMap.equiv_iff_eq]
@@ -59,7 +62,7 @@ instance getD_ne [LawfulPartialMap M K] [OFE V] (k : K) (d : V) :
   ne {_ m₁ m₂} Ht := by
     have h := Ht k
     rcases h₁ : get? m₁ k with _ | v <;> rcases h₂ : get? m₂ k with _ | w <;>
-      simp_all [PartialMap.getD, OFE.Dist, Option.Forall₂]
+      simp_all [PartialMap.getD, OFE.Dist, HasDist.dist, Option.Forall₂]
 
 @[rocq_alias insert_ne]
 instance [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive₂ (insert · k · : M V → V → M V) where
@@ -68,8 +71,8 @@ instance [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive₂ (insert · k �
     · simp [get?_insert_eq h, Ht]
     · simp [get?_insert_ne h, Hv k']
 
-theorem eqv_of_Equiv [OFE V] [LawfulPartialMap M K] {t1 t2 : M V} (H : PartialMap.equiv t1 t2) : t1 = t2 :=
-  eq_dist_2 fun _ k => Dist.of_eq (H k)
+theorem eqv_of_Equiv [LawfulPartialMap M K] {t1 t2 : M V} (H : PartialMap.equiv t1 t2) : t1 = t2 :=
+  LawfulPartialMap.equiv_iff_eq.mp H
 
 instance [LawfulPartialMap M K] [OFE V] (op : K → V → V → V) [∀ k, NonExpansive₂ (op k)] :
     NonExpansive₂ (merge (M := M) op) where
@@ -85,20 +88,20 @@ instance [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive (delete · k : M 
 
 /-- `bindAlter` is non-expansive in both the alteration and the map. -/
 @[rocq_alias partial_alter_ne, rocq_alias alter_ne]
-theorem bindAlter_dist [LawfulPartialMap M K] [OFE V] [OFE V'] {n : Nat}
+theorem bindAlter_dist [LawfulPartialMap M K] [OFE V] [OFE V'] {n}
     {f g : K → V → Option V'} {m₁ m₂ : M V}
     (Hf : ∀ {k v w}, v ≡{n}≡ w → f k v ≡{n}≡ g k w) (Hm : m₁ ≡{n}≡ m₂) :
     bindAlter f m₁ ≡{n}≡ bindAlter g m₂ := by
   intro k
   specialize Hm k
   revert Hm
-  simp only [OFE.Dist, Option.Forall₂, get?_bindAlter]
+  simp only [OFE.Dist, HasDist.dist, Option.Forall₂, get?_bindAlter]
   cases get? m₁ k <;> cases get? m₂ k <;> simp_all
   exact Hf
 
 /-- `merge` is non-expansive in both the merge function and the maps. -/
 @[rocq_alias merge_ne, rocq_alias union_with_ne]
-theorem merge_dist [LawfulPartialMap M K] [OFE V] {n : Nat} {f g : K → V → V → V}
+theorem merge_dist [LawfulPartialMap M K] [OFE V] {n} {f g : K → V → V → V}
     {m₁ m₁' m₂ m₂' : M V}
     (Hf : ∀ {k v v' w w'}, v ≡{n}≡ v' → w ≡{n}≡ w' → f k v w ≡{n}≡ g k v' w')
     (H₁ : m₁ ≡{n}≡ m₁') (H₂ : m₂ ≡{n}≡ m₂') : merge f m₁ m₂ ≡{n}≡ merge g m₁' m₂' := by
@@ -106,12 +109,12 @@ theorem merge_dist [LawfulPartialMap M K] [OFE V] {n : Nat} {f g : K → V → V
   specialize H₁ k
   specialize H₂ k
   revert H₁ H₂
-  simp only [OFE.Dist, Option.Forall₂, get?_merge, Option.merge]
+  simp only [OFE.Dist, HasDist.dist, Option.Forall₂, get?_merge, Option.merge]
   cases get? m₁ k <;> cases get? m₁' k <;> cases get? m₂ k <;> cases get? m₂' k <;> simp_all
 
 /-- `zipWith` is non-expansive in both the combining function and the maps. -/
 @[rocq_alias map_zip_with_ne]
-theorem zipWith_dist [LawfulPartialMap M K] [OFE V] [OFE V'] [OFE V''] {n : Nat}
+theorem zipWith_dist [LawfulPartialMap M K] [OFE V] [OFE V'] [OFE V''] {n}
     {f g : V → V' → V''} {m₁ m₁' : M V} {m₂ m₂' : M V'}
     (Hf : ∀ {v v' w w'}, v ≡{n}≡ v' → w ≡{n}≡ w' → f v w ≡{n}≡ g v' w')
     (H₁ : m₁ ≡{n}≡ m₁') (H₂ : m₂ ≡{n}≡ m₂') :
@@ -119,13 +122,13 @@ theorem zipWith_dist [LawfulPartialMap M K] [OFE V] [OFE V'] [OFE V''] {n : Nat}
   bindAlter_dist (fun {k _ _} Hv => by
     have h := H₂ k
     revert h
-    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, Option.Forall₂]) H₁
+    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, HasDist.dist, Option.Forall₂]) H₁
 
-theorem isSome_get?_eq_of_dist [LawfulPartialMap M K] [OFE V] {n : Nat} {m₁ m₂ : M V}
+theorem isSome_get?_eq_of_dist [LawfulPartialMap M K] [OFE V] {n} {m₁ m₂ : M V}
     (H : m₁ ≡{n}≡ m₂) (k : K) : (get? m₁ k).isSome = (get? m₂ k).isSome := by
   specialize H k
   revert H
-  cases get? m₁ k <;> cases get? m₂ k <;> simp_all [OFE.Dist, Option.Forall₂]
+  cases get? m₁ k <;> cases get? m₂ k <;> simp_all [OFE.Dist, HasDist.dist, Option.Forall₂]
 
 @[rocq_alias gmap_union_ne]
 instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· ∪ ·) : M V → M V → M V) where
@@ -133,7 +136,7 @@ instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· ∪ ·) : M V →
 
 /-- `intersectionWith` is non-expansive in the combining function and in both maps. -/
 @[rocq_alias intersection_with_ne]
-theorem intersectionWith_dist [LawfulPartialMap M K] [OFE V] {n : Nat}
+theorem intersectionWith_dist [LawfulPartialMap M K] [OFE V] {n}
     {f g : K → V → V → Option V} {m₁ m₁' m₂ m₂' : M V}
     (Hf : ∀ {k v v' w w'}, v ≡{n}≡ v' → w ≡{n}≡ w' → f k v w ≡{n}≡ g k v' w')
     (H₁ : m₁ ≡{n}≡ m₁') (H₂ : m₂ ≡{n}≡ m₂') :
@@ -141,11 +144,11 @@ theorem intersectionWith_dist [LawfulPartialMap M K] [OFE V] {n : Nat}
   bindAlter_dist (fun {k _ _} Hv => by
     have h := H₂ k
     revert h
-    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, Option.Forall₂]) H₁
+    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, HasDist.dist, Option.Forall₂]) H₁
 
 /-- `differenceWith` is non-expansive in the combining function and in both maps. -/
 @[rocq_alias difference_with_ne]
-theorem differenceWith_dist [LawfulPartialMap M K] [OFE V] {n : Nat}
+theorem differenceWith_dist [LawfulPartialMap M K] [OFE V] {n}
     {f g : K → V → V → Option V} {m₁ m₁' m₂ m₂' : M V}
     (Hf : ∀ {k v v' w w'}, v ≡{n}≡ v' → w ≡{n}≡ w' → f k v w ≡{n}≡ g k v' w')
     (H₁ : m₁ ≡{n}≡ m₁') (H₂ : m₂ ≡{n}≡ m₂') :
@@ -153,7 +156,7 @@ theorem differenceWith_dist [LawfulPartialMap M K] [OFE V] {n : Nat}
   bindAlter_dist (fun {k _ _} Hv => by
     have h := H₂ k
     revert h
-    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, Option.Forall₂]) H₁
+    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, HasDist.dist, Option.Forall₂]) H₁
 
 @[rocq_alias gmap_intersection_ne]
 instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· ∩ ·) : M V → M V → M V) where
@@ -164,7 +167,7 @@ instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· \ ·) : M V → M
   ne _ {_ _} H₁ {_ _} H₂ := differenceWith_dist (fun _ _ => .of_eq rfl) H₁ H₂
 
 @[rocq_alias gmap_disjoint_ne]
-theorem disjoint_dist_iff [LawfulPartialMap M K] [OFE V] {n : Nat} {m₁ m₁' m₂ m₂' : M V}
+theorem disjoint_dist_iff [LawfulPartialMap M K] [OFE V] {n} {m₁ m₁' m₂ m₂' : M V}
     (H₁ : m₁ ≡{n}≡ m₁') (H₂ : m₂ ≡{n}≡ m₂') :
     PartialMap.disjoint m₁ m₂ ↔ PartialMap.disjoint m₁' m₂' :=
   forall_congr' fun k => not_congr <| and_congr
@@ -172,7 +175,7 @@ theorem disjoint_dist_iff [LawfulPartialMap M K] [OFE V] {n : Nat} {m₁ m₁' m
 
 open Classical in
 @[rocq_alias gmap_union_dist_eq]
-theorem union_dist_iff [LawfulPartialMap M K] [OFE V] {n : Nat} {m m₁ m₂ : M V} :
+theorem union_dist_iff [LawfulPartialMap M K] [OFE V] {n} {m m₁ m₂ : M V} :
     m ≡{n}≡ m₁ ∪ m₂ ↔ ∃ m₁' m₂', m = m₁' ∪ m₂' ∧ m₁' ≡{n}≡ m₁ ∧ m₂' ≡{n}≡ m₂ := by
   refine ⟨fun hm => ⟨PartialMap.filter (fun k _ => (get? m₁ k).isSome) m,
       PartialMap.zipWith (fun v _ => v) m₂ m₁ ∪ PartialMap.filter (fun k _ => (get? m₂ k).isSome) m,
@@ -181,14 +184,15 @@ theorem union_dist_iff [LawfulPartialMap M K] [OFE V] {n : Nat} {m m₁ m₂ : M
   all_goals
     specialize hm k
     revert hm
-    simp only [OFE.Dist, Option.Forall₂, LawfulPartialMap.get?_union,
+    simp only [OFE.Dist, HasDist.dist, Option.Forall₂, LawfulPartialMap.get?_union,
       LawfulPartialMap.get?_filter, LawfulPartialMap.get?_zipWith]
     cases get? m k <;> cases get? m₁ k <;> cases get? m₂ k <;> simp_all
 
 open Iris.Algebra in
 @[rocq_alias big_opM_ne_2]
-theorem bigOpM_dist_2 [LawfulFiniteMap M' K] [OFE M] [MonoidOps op unit] [OFE V]
-    {Φ Ψ : K → V → M} {m₁ m₂ : M' V} {n : Nat} (hm : m₁ ≡{n}≡ m₂)
+theorem bigOpM_dist_2 [LawfulFiniteMap M' K] [OFE M] {op : M → M → M} {unit : M}
+    [MonoidOps op unit] [NonExpansive₂ op] [OFE V]
+    {Φ Ψ : K → V → M} {m₁ m₂ : M' V} {n} (hm : m₁ ≡{n}≡ m₂)
     (hf : ∀ {k y₁ y₂}, get? m₁ k = some y₁ → get? m₂ k = some y₂ → y₁ ≡{n}≡ y₂ →
       Φ k y₁ ≡{n}≡ Ψ k y₂) :
     ([^ op map] k ↦ y ∈ m₁, Φ k y) ≡{n}≡ ([^ op map] k ↦ y ∈ m₂, Ψ k y) :=
@@ -199,7 +203,7 @@ theorem bigOpM_dist_2 [LawfulFiniteMap M' K] [OFE M] [MonoidOps op unit] [OFE V]
       exact OFE.some_dist_some.mp hmk
 
 @[rocq_alias gmap_dom_ne]
-theorem dom_eq_of_dist [LawfulPartialMap M K] [OFE V] {n : Nat} {m₁ m₂ : M V}
+theorem dom_eq_of_dist [LawfulPartialMap M K] [OFE V] {n} {m₁ m₂ : M V}
     (H : m₁ ≡{n}≡ m₂) : PartialMap.dom m₁ = PartialMap.dom m₂ :=
   funext fun k => congrArg (· = true) (isSome_get?_eq_of_dist H k)
 
@@ -225,13 +229,16 @@ theorem chain_get [LawfulPartialMap M K] [OFE V] (k : K) (c : Chain (M V)) :
 end PartialMap
 
 @[rocq_alias gmap_compl, rocq_alias gmap_cofe]
-instance Heap.instCOFE [LawfulPartialMap M K] [COFE V] : COFE (M V) where
+instance Heap.instCOFE [SIdxFinite] [LawfulPartialMap M K] [COFE V] : COFE (M V) where
   compl c := bindAlter (fun _ => COFE.compl <| c.map ⟨_, PartialMap.get?_ne ·⟩) (c 0)
   conv_compl {_ c} k := by
     rw [get?_bindAlter]
     rcases H : get? (c.chain 0) k
     · simp [← PartialMap.chain_get, Chain.chain_none_const (c := PartialMap.chain k c) (n := 0) (H▸rfl)]
     · exact IsCOFE.conv_compl
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
 #rocq_ignore gmap_compl "Included in COFE instance"
 
@@ -263,7 +270,7 @@ instance instDiscreteEEmpty [LawfulPartialMap M K] [OFE V] : DiscreteE (∅ : M 
     simp [LawfulPartialMap.get?_empty]
 
 @[rocq_alias singleton_ne]
-theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V] {n : Nat} {x y : V}
+theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V] {n} {x y : V}
     (h : x ≡{n}≡ y) (k : K) : PartialMap.singleton (M := M) k x ≡{n}≡ PartialMap.singleton k y := by
   intro k'
   simp only [LawfulPartialMap.get?_singleton]
@@ -271,7 +278,7 @@ theorem singleton_dist [LawfulPartialMap M K] [DecidableEq K] [OFE V] {n : Nat} 
 
 open Classical in
 @[rocq_alias insert_idN]
-theorem insert_idN [LawfulPartialMap M K] [OFE V] {n : Nat} {m : M V} {i : K} {x : V}
+theorem insert_idN [LawfulPartialMap M K] [OFE V] {n} {m : M V} {i : K} {x : V}
     (h : get? m i ≡{n}≡ some x) : insert m i x ≡{n}≡ m := fun k => by
   by_cases hk : i = k
   · subst hk
@@ -286,7 +293,7 @@ instance instDiscreteEGet? [LawfulPartialMap M K] [OFE V] {m : M V} [DiscreteE m
   discrete {y} h := by
     rcases y with _ | v
     · revert h
-      cases get? m i <;> simp_all [OFE.Dist, Option.Forall₂]
+      cases get? m i <;> simp_all [OFE.Dist, HasDist.dist, Option.Forall₂]
     · refine (congrArg (get? · i)
         (DiscreteE.discrete (y := insert m i v) fun k => ?_)).trans (get?_insert_eq rfl)
       by_cases hk : i = k
@@ -318,18 +325,96 @@ namespace Heap
 
 open PartialMap
 
-variable [LawfulPartialMap M K] [ORA V]
+variable [LawfulPartialMap M K]
 
 @[simp, rocq_alias gmap_op_instance, rocq_alias gmap_op]
-def op (s1 s2 : M V) : M V := merge (fun _ => ORA.op) s1 s2
+def op [Op V] (s1 s2 : M V) : M V := merge (fun _ => Op.op) s1 s2
 @[simp, rocq_alias gmap_unit_instance]
 def unit : M V := ∅
 @[simp, rocq_alias gmap_pcore_instance]
-def pcore (s : M V) : Option (M V) := some <| bindAlter (fun _ => ORA.pcore) s
+def pcore [PCore V] (s : M V) : Option (M V) := some <| bindAlter (fun _ => PCore.pcore) s
+
+@[reducible]
+instance raOp [Op V] : Op (M V) where
+  op := op
+  assoc {x y z} := LawfulPartialMap.equiv_iff_eq.mp fun k => by
+    simp only [op, get?_merge]
+    cases get? x k <;> cases get? y k <;> cases get? z k <;> simp [Option.merge]
+    exact Op.assoc
+  comm {x y} := LawfulPartialMap.equiv_iff_eq.mp fun k => by
+    simp only [op, get?_merge]
+    cases get? x k <;> cases get? y k <;> simp [Option.merge]
+    exact Op.comm
+
+@[reducible]
+instance raPCore [PCore V] : PCore (M V) where
+  pcore := pcore
+  pcore_idem {x cx} H := by
+    simp only [pcore, Option.some.injEq] at H
+    simp only [pcore, ← H, Option.some.injEq]
+    refine LawfulPartialMap.equiv_iff_eq.mp fun k => ?_
+    simp [get?_bindAlter]
+    rcases get? x k with (_|v) <;> simp
+    cases HY : PCore.pcore v; simp
+    exact PCore.pcore_idem HY
+
+/-- `MonoidOps` for heaps over any `Op V` (`ucmraMonoidOps` would need `URA V`). -/
+instance instMonoidOps [Op V] : Algebra.MonoidOps (Op.op (α := M V)) ∅ where
+  op_assoc := Op.assoc.symm
+  op_comm := Op.comm
+  op_left_id {m} := LawfulPartialMap.equiv_iff_eq.mp fun k => by
+    simp only [Op.op, op, get?_merge, get?_empty]
+    cases get? m k <;> rfl
+
+@[rocq_alias lookup_op]
+theorem get?_op [Op V] (x y : M V) : get? (x • y) i = get? x i • get? y i := by
+  simp only [ORA.op, op, get?_merge, Option.merge, optionOp]
+  grind
+
+@[rocq_alias lookup_core]
+theorem get?_core [PCore V] (m : M V) (i : K) : get? (core m) i = core (get? m i) := by
+  simp only [core, ORA.pcore, pcore, Option.getD_some, get?_bindAlter, optionCore]
+
+instance raRA [RA V] : RA (M V) where
+  pcore_op_left {x cx} H := LawfulPartialMap.equiv_iff_eq.mp fun k => by
+    simp only [← Option.getD_some (a := cx) (b := cx), ORA.op, op, get?_merge]
+    cases Hcx : get? cx k <;> cases hx : get? x k <;>
+      simp <;>
+      simp only [ORA.pcore, pcore, Option.some.injEq] at H
+    · rw [← H, get?_bindAlter, hx] at Hcx
+      cases Hcx
+    · refine pcore_op_left ?_
+      simp [← Hcx, ← H, get?_bindAlter, hx]
+
+instance raURA [RA V] : URA (M V) where
+  unit := unit
+  unit_left_id := LawfulPartialMap.equiv_iff_eq.mp fun k => by
+    simp [ORA.op, get?_merge, get?_empty]
+  pcore_unit := congrArg some <| LawfulPartialMap.equiv_iff_eq.mp fun k => by
+    simp [get?_bindAlter, get?_empty]
+  total _ := Option.isSome_iff_exists.mp rfl
+
+@[rocq_alias lookup_included]
+theorem lookup_inc [Op V] {m1 m2 : M V} :
+    (∃ (z : M V), m2 = op m1 z) ↔
+    ∀ i, (∃ z, (get? m2 i) = (get? m1 i) • z) := by
+  refine ⟨fun ⟨z, Hz⟩ i => ?_, fun H => ?_⟩
+  · refine ⟨get? z i, ?_⟩
+    refine .trans (congrArg (get? · i) Hz) ?_
+    simp only [ORA.op, op, get?_merge]
+    cases get? m1 i <;> cases get? z i <;> simp
+  · obtain ⟨f, Hf⟩ := Classical.axiomOfChoice H
+    exists bindAlter (fun k _ => f k) m2
+    refine LawfulPartialMap.equiv_iff_eq.mp fun i => (Hf i).trans ?_
+    specialize Hf i; revert Hf
+    simp [ORA.op, optionOp, get?_merge, get?_bindAlter]
+    cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
+
+variable [RA V] [ORA V]
 @[simp, rocq_alias gmap_valid_instance]
 def valid (s : M V) : Prop := ∀ k, ✓ get? s k
 @[simp, rocq_alias gmap_validN_instance]
-def validN (n : Nat) (s : M V) : Prop := ∀ k, ✓{n} get? s k
+def validN (n : SI) (s : M V) : Prop := ∀ k, ✓{n} get? s k
 
 @[rocq_alias lookup_includedN]
 theorem lookup_incN {n} {m1 m2 : M V} :
@@ -347,92 +432,28 @@ theorem lookup_incN {n} {m1 m2 : M V} :
     simp [ORA.op, get?_merge, get?_bindAlter]
     cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
 
-@[rocq_alias lookup_included]
-theorem lookup_inc {m1 m2 : M V} :
-    (∃ (z : M V), m2 = op m1 z) ↔
-    ∀ i, (∃ z, (get? m2 i) = (get? m1 i) • z) := by
-  refine ⟨fun ⟨z, Hz⟩ i => ?_, fun H => ?_⟩
-  · refine ⟨get? z i, ?_⟩
-    refine .trans (congrArg (get? · i) Hz) ?_
-    simp only [ORA.op, op, get?_merge]
-    cases get? m1 i <;> cases get? z i <;> simp
-  · obtain ⟨f, Hf⟩ := Classical.axiomOfChoice H
-    exists bindAlter (fun k _ => f k) m2
-    refine OFE.eq_dist_2 fun n i => ((Hf i).trans ?_).dist
-    specialize Hf i; revert Hf
-    simp [ORA.op, optionOp, get?_merge, get?_bindAlter]
-    cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
-
-open OFE in
-@[reducible]
-def raOp : Op (M V) where
-  op := op
-  op_ne.ne _ x1 x2 H i := by
-    rename_i x _
-    specialize H i; revert H
-    simp [get?_merge]
-    cases get? x1 i <;> cases get? x2 i <;> cases get? x i <;> simp
-    apply op_right_dist
-  assoc {x y z} := eq_dist_2 fun _ k => by
-    simp only [op, get?_merge]
-    cases get? x k <;> cases get? y k <;> cases get? z k <;> simp
-    exact assoc.dist
-  comm {x y} := eq_dist_2 fun _ k => by
-    simp [op, get?_merge]
-    cases get? x k <;> cases get? y k <;> simp
-    exact comm.dist
-
-open OFE in
-@[reducible]
-def raPCore : PCore (M V) where
-  pcore := pcore
-  pcore_ne {n x y _} H := by
-    simp only [pcore, Option.some.injEq, exists_eq_left']
-    refine (· ▸ fun k => ?_); specialize H k; revert H
-    rw [get?_bindAlter, get?_bindAlter]
-    cases get? x k <;> cases get? y k <;> simp
-    exact (NonExpansive.ne ·)
-  pcore_idem {x cx} H := eq_dist_2 <| by
-    simp only [pcore, Option.some.injEq] at H
-    simp only [pcore, ← H]
-    intro n k
-    simp [get?_bindAlter]
-    rcases get? x k with (_|v) <;> simp
-    cases HY : ORA.pcore v; simp
-    exact (pcore_idem HY).dist
-
-open OFE in
 @[reducible]
 def raValid : _root_.Iris.Valid (M V) where
   ValidN := validN
   Valid := valid
-  validN_ne Hx H k :=
-    validN_ne (NonExpansive.ne (f := (get? · k : M V → Option V)) Hx) (H k)
   valid_iff_validN :=
     ⟨fun H n k => valid_iff_validN.mp (H k) n,
      fun H k => valid_iff_validN.mpr (H · k)⟩
-  validN_succ H k := validN_succ (H k)
 
 @[reducible] def raOrdered : Ordered (M V) where
   OrderN n m m' := ∀ k, get? m k ≼ₒ{n} get? m' k
   Order m m' := ∀ k, get? m k ≼ₒ get? m' k
-  ordN_ne em em' h k := ordN_ne ((get?_ne k).ne em) ((get?_ne k).ne em') (h k)
-  ordN_succ h k := ordN_succ (h k)
   ordN_trans h₁ h₂ k := ordN_trans (h₁ k) (h₂ k)
   ord_trans h₁ h₂ k := ord_trans (h₁ k) (h₂ k)
   ordN_of_ord n h k := ordN_of_ord n (h k)
 
+attribute [local instance] raOrdered in
+theorem raOrderedNE : OrderedNE (M V) where
+  ordN_ne em em' h k := ordN_ne ((get?_ne k).ne em) ((get?_ne k).ne em') (h k)
+  ordN_le h le k := ordN_le (h k) le
+
 section
-attribute [local instance] raOp raPCore raValid raOrdered
-
-@[rocq_alias lookup_op]
-theorem get?_op (x y : M V) : get? (x • y) i = get? x i • get? y i := by
-  simp only [ORA.op, op, get?_merge, Option.merge, optionOp]
-  grind
-
-@[rocq_alias lookup_core]
-theorem get?_core (m : M V) (i : K) : get? (core m) i = core (get? m i) := by
-  simp only [core, ORA.pcore, pcore, Option.getD_some, get?_bindAlter, optionCore]
+attribute [local instance] raValid raOrdered raOrderedNE
 
 theorem increasing_get? {m : M V} (h : Increasing m) (k : K) : Increasing (get? m k) where
   increasing
@@ -445,24 +466,29 @@ theorem increasing_iff {m : M V} : Increasing m ↔ ∀ k, Increasing (get? m k)
 open OFE in
 @[rocq_alias gmapR, rocq_alias gmap_cmra_mixin]
 instance instStoreORA : ORA (M V) where
-  toOp := raOp
-  toPCore := raPCore
   toValid := raValid
-  validN_op_left {n x1 x2} H k := by
+  op_ne.ne _ x1 x2 H i := by
+    rename_i x _
+    specialize H i; revert H
+    simp [Op.op, get?_merge]
+    cases get? x1 i <;> cases get? x2 i <;> cases get? x i <;> simp
+    apply op_right_dist
+  pcore_ne {n} {x y _} H := by
+    simp only [PCore.pcore, pcore, Option.some.injEq, exists_eq_left']
+    refine (· ▸ fun k => ?_); specialize H k; revert H
+    rw [get?_bindAlter, get?_bindAlter]
+    cases get? x k <;> cases get? y k <;> simp
+    exact (NonExpansive.ne ·)
+  validN_ne {n} {x y} Hx H k :=
+    validN_ne (NonExpansive.ne (f := (get? · k : M V → Option V)) Hx) (H k)
+  validN_le H le k := validN_le (H k) le
+  toOrderedNE := raOrderedNE
+  validN_op_left {n} {x1 x2} H k := by
     refine validN_op_left (y := get? x2 k) ?_
     specialize H k; revert H
     simp only [ORA.op, op, get?_merge, Option.merge]
     cases get? x1 k <;> cases get? x2 k <;> simp [optionOp]
-  pcore_op_left {x cx} H := eq_dist_2 fun _ k => by
-    simp only [← Option.getD_some (a := cx) (b := cx), ORA.op, op, get?_merge]
-    cases Hcx : get? cx k <;> cases hx : get? x k <;>
-      simp <;>
-      simp only [ORA.pcore, pcore, Option.some.injEq] at H
-    · rw [← H, get?_bindAlter, hx] at Hcx
-      cases Hcx
-    · refine (pcore_op_left ?_).dist
-      simp [← Hcx, ← H, get?_bindAlter, hx]
-  extend {n x y1 y2} Hm Heq := by
+  extend {n} {x y1 y2} Hm Heq := by
     have Hslice i : get? x i ≡{n}≡ get? y1 i • get? y2 i := by
       refine (get?_ne i |>.ne Heq).trans ?_
       simp [ORA.op, get?_merge, optionOp]
@@ -471,7 +497,7 @@ instance instStoreORA : ORA (M V) where
     exists bindAlter (fun k (_ : V) => extendF k |>.fst) y1
     exists bindAlter (fun k (_ : V) => extendF k |>.snd.fst) y2
     simp [ORA.op, op]
-    refine ⟨eq_dist_2 fun _ i => ?_, fun i => ?_, fun i => ?_⟩
+    refine ⟨eq_dist_2 fun (_) i => ?_, fun i => ?_, fun i => ?_⟩
     all_goals rcases hF : extendF i with ⟨z1, z2, Hm, Hz1, Hz2⟩
     · refine Hm.dist.trans ?_
       simp [get?_merge, ORA.op, optionOp, Option.merge, get?_bindAlter]
@@ -508,8 +534,8 @@ instance instStoreORA : ORA (M V) where
     increasing_iff.mpr fun k => (get?_core x k).symm ▸ increasing_core _
   increasing_closed h h' := increasing_iff.mpr fun k =>
       increasing_closed (increasing_get? h k) (h'.imp (fun e => (get?_ne k).ne e) (· k))
-  ordN_extend {n x y} v h :=
-    let ⟨f, hf⟩ := Classical.axiomOfChoice fun k => ordN_extend (v k) (h k)
+  ordN_extend {n} {sn} {x y} hs v h :=
+    let ⟨f, hf⟩ := Classical.axiomOfChoice fun k => ordN_extend hs (v k) (h k)
     have hfx : ∀ k, get? (bindAlter (fun k _ => f k) x) k = f k := fun k => by
       rw [get?_bindAlter]
       cases hx : get? x k
@@ -523,20 +549,17 @@ end
 @[rocq_alias gmap_ucmra_mixin, rocq_alias gmapUR]
 instance instStoreUORA : UORA (M V) where
   toORA := instStoreORA
-  unit := unit
-  unit_valid := by simp [ORA.Valid, get?_empty]
-  unit_left_id := OFE.eq_dist_2 fun _ k => by simp [ORA.op, get?_merge, get?_empty]
-  pcore_unit := OFE.eq_dist_2 fun _ => by
-    refine OFE.some_dist_some.mpr fun k => ?_
-    simp [get?_bindAlter, get?_empty]
+  unit_valid k := by rw [show get? (UnitOp.unit : M V) k = none from get?_empty k]; trivial
   ord_refl _ := fun _ => ord_refl _
 
 instance instIncOrd [IncOrd V] : IncOrd (M V) :=
   IncOrd.of_increasing fun _ => increasing_iff.mpr fun _ => IncOrd.increasing _
 
 instance instOrdInc [OrdInc V] : OrdInc (M V) where
-  ord_inc h := lookup_inc.mpr fun i => OrdInc.ord_inc (h i)
-  ordN_incN h := lookup_incN.mpr fun i => OrdInc.ordN_incN (h i)
+  ord_inc h := lookup_inc.mpr fun i =>
+    ord_inc (h i)
+  ordN_incN h := lookup_incN.mpr fun i =>
+    ordN_incN (h i)
 
 instance instIsInc [IsInc V] : IsInc (M V) := {}
 
@@ -550,9 +573,6 @@ theorem op_empty_left {m : M V} : (∅ : M V) • m = m := unit_left_id_L
 @[rocq_alias gmap_op_empty_r]
 theorem op_empty_right {m : M V} : m • (∅ : M V) = m := unit_right_id_L
 
-instance instIsTotalHeap : IsTotal (M V) where
-  total _ := Option.isSome_iff_exists.mp rfl
-
 end Heap
 end ORA
 
@@ -560,7 +580,7 @@ namespace Heap
 
 open PartialMap LawfulPartialMap
 
-variable {K V : Type _} [LawfulPartialMap M K] [ORA V]
+variable {K V : Type _} [LawfulPartialMap M K] [RA V] [ORA V]
 
 open ORA
 
@@ -575,11 +595,10 @@ theorem get?_opM (m : M V) (mm : Option (M V)) (i : K) :
 
 @[rocq_alias lookup_op_homomorphism]
 instance (i : K) : Algebra.MonoidHomomorphism (ORA.op (α := M V)) (ORA.op (α := Option V))
-    UORA.unit UORA.unit (· = ·) (get? · i) where
+    ∅ none (· = ·) (get? · i) where
   rel_refl := rfl
   rel_trans := Eq.trans
   op_proper h₁ h₂ := h₁ ▸ h₂ ▸ rfl
-  map_ne := get?_ne i
   map_op := get?_op ..
   map_unit := get?_empty i
 
@@ -587,12 +606,12 @@ theorem valid_empty : ✓ (∅ : M V) :=
   fun k => by simp [ORA.Valid, show get? ∅ k = none from get?_empty (M := M) k]
 
 @[rocq_alias lookup_validN_Some]
-theorem validN_get?_validN {m : M V} (Hv : ✓{n} m) (He : get? m i ≡{n}≡ some x) : ✓{n} x := by
+theorem validN_get?_validN {n} {m : M V} (Hv : ✓{n} m) (He : get? m i ≡{n}≡ some x) : ✓{n} x := by
   specialize Hv i; revert Hv
   rcases h : get? m i <;> simp [h] at He
   exact OFE.Dist.validN He |>.mp
 
-theorem validN_get? {m : M V} (v : ✓{n} m) : ✓{n} get? m i :=
+theorem validN_get? {n} {m : M V} (v : ✓{n} m) : ✓{n} get? m i :=
   match hh : get? m i with
   | none => ⟨⟩
   | some z => show ✓{n} z from validN_get?_validN v (OFE.Dist.of_eq hh)
@@ -606,7 +625,7 @@ theorem valid_get? {m : M V} (v : ✓ m) : ✓ get? m i :=
 
 open Classical in
 @[rocq_alias insert_validN]
-theorem insert_validN {m : M V} (Hx : ✓{n} x) (Hm : ✓{n} m) : ✓{n} (insert m i x) := by
+theorem insert_validN {n} {m : M V} (Hx : ✓{n} x) (Hm : ✓{n} m) : ✓{n} (insert m i x) := by
   intro k
   rw [get?_insert]; split
   · exact Hx
@@ -625,14 +644,14 @@ theorem singleton_valid_iff : ✓ (singleton i x : M V) ↔ ✓ x := by
 
 open Classical in
 @[rocq_alias singleton_validN]
-theorem singleton_validN_iff : ✓{n} (singleton i x : M V) ↔ ✓{n} x := by
+theorem singleton_validN_iff {n} : ✓{n} (singleton i x : M V) ↔ ✓{n} x := by
   refine ⟨fun H => ?_, fun H k => ?_⟩
   · specialize H i; rw [get?_singleton_eq rfl] at H; trivial
   · rw [get?_singleton]; split <;> trivial
 
 open Classical in
 @[rocq_alias delete_validN]
-theorem delete_validN {m : M V} (Hv : ✓{n} m) : ✓{n} (delete m i) := by
+theorem delete_validN {n} {m : M V} (Hv : ✓{n} m) : ✓{n} (delete m i) := by
   intro k
   rw [get?_delete]; split
   · trivial
@@ -656,8 +675,8 @@ theorem insert_eq_singleton_op_singleton {m : M V} (Hemp : get? m i = none) :
     insert m i x = singleton i x • m :=
   equiv_iff_eq.mp (insert_equiv_singleton_op_singleton Hemp)
 
-theorem core_empty : core (∅ : M V) = ∅ := OFE.eq_dist_2 <| by
-  intro n k
+theorem core_empty : core (∅ : M V) = ∅ := equiv_iff_eq.mp <| by
+  intro k
   simp [core, ORA.pcore, get?_empty, get?_bindAlter]
 
 open Classical in
@@ -696,8 +715,7 @@ instance {d : IsOp.Direction} {i : K} {x x₁ x₂ : V} [h : IsOp d x x₁ x₂]
 open Classical in
 @[rocq_alias gmap_core_id]
 theorem coreId_of_get? {m : M V} (h : ∀ {i x}, get? m i = some x → CoreId x) : CoreId m where
-  core_id := OFE.eq_dist_2 fun _ => by
-    refine OFE.some_dist_some.mpr fun k => ?_
+  core_id := congrArg some <| equiv_iff_eq.mp fun k => by
     rw [get?_bindAlter]
     rcases hk : get? m k with _ | v
     · simp
@@ -705,23 +723,21 @@ theorem coreId_of_get? {m : M V} (h : ∀ {i x}, get? m i = some x → CoreId x)
 
 @[rocq_alias gmap_core_id']
 instance {m : M V} [I : ∀ x : V, CoreId x] : CoreId m where
-  core_id := OFE.eq_dist_2 fun _ => by
-    refine OFE.some_dist_some.mpr fun k => ?_
+  core_id := congrArg some <| equiv_iff_eq.mp fun k => by
     rw [get?_bindAlter]
     cases get? m k <;> simp
-    exact core_id.dist
+    exact core_id
 
 open Classical in
 @[rocq_alias gmap_singleton_core_id]
 instance [CoreId (x : V)] : CoreId (singleton i x : M V) where
-  core_id := OFE.eq_dist_2 fun _ => by
-    refine OFE.some_dist_some.mpr fun k => ?_
+  core_id := congrArg some <| equiv_iff_eq.mp fun k => by
     simp [get?_bindAlter, get?_singleton]
     split <;> simp
-    exact core_id.dist
+    exact core_id
 
 open Classical in
-theorem singleton_ordN_singleton_iff :
+theorem singleton_ordN_singleton_iff {n} :
     (singleton i x : M V) ≼ₒ{n} (singleton i y : M V) ↔ some x ≼ₒ{n} some y := by
   refine ⟨fun h => by simpa [get?_singleton_eq rfl] using h i, fun h k => ?_⟩
   by_cases hk : i = k
@@ -745,7 +761,7 @@ theorem total_singleton_ord_singleton_iff [OrderRefl V] :
   singleton_ord_singleton_iff.trans Option.some_ord_some_iff_orderRefl
 
 open Classical in
-theorem singleton_ordN_iff [IncOrd V] {m : M V} :
+theorem singleton_ordN_iff {n} [IncOrd V] {m : M V} :
     (singleton i x) ≼ₒ{n} m ↔ ∃ y, (get? m i ≡{n}≡ some y) ∧ some x ≼ₒ{n} some y := by
   refine ⟨fun h => ?_, fun ⟨y, Hy, Hxy⟩ k => ?_⟩
   · have ⟨y, hy, hxy⟩ := Option.exists_of_some_ordN (get?_singleton_eq (M := M) rfl ▸ h i)
@@ -768,7 +784,7 @@ theorem ord_dom_ord {m1 m2 : M V} (Hinc : m1 ≼ₒ m2) : Set.Included (dom m1) 
 
 open Classical in
 @[rocq_alias singleton_includedN_l]
-theorem singleton_incN_iff {m : M V} :
+theorem singleton_incN_iff {n} {m : M V} :
     (singleton i x) ≼{n} m ↔ ∃ y, (get? m i ≡{n}≡ some y) ∧ some x ≼{n} some y := by
   refine ⟨fun ⟨z, Hz⟩ => ?_, fun ⟨y, Hy, z, Hz⟩ => ?_⟩
   · specialize Hz i; revert Hz
@@ -807,28 +823,27 @@ theorem singleton_inc_iff {m : M V} :
   · replace Hz := congrArg (get? · i) Hz; revert Hz
     simp only [ORA.op, Heap.op, get?_merge, get?_singleton_eq rfl]
     rcases get? z i with (_|v)
-    · intro _
-      exists x
+    · exact (⟨x, ·, none, rfl⟩)
     · refine (⟨x • v, ·, ?_⟩)
       exists v
   · cases z
     · exists (PartialMap.delete m i)
-      refine OFE.eq_dist_2 fun _ j => ?_
+      refine equiv_iff_eq.mp fun j => ?_
       simp [ORA.op, get?_merge, get?_singleton, get?_delete]
       split
       · rename_i h
         simp
-        refine ((h ▸ Hy).trans <| Hz.trans ?_).dist
+        refine (h ▸ Hy).trans <| Hz.trans ?_
         simp [ORA.op]
       · simp
     · rename_i z
       exists (PartialMap.insert m i z)
-      refine OFE.eq_dist_2 fun _ j => ?_
+      refine equiv_iff_eq.mp fun j => ?_
       simp [ORA.op, get?_merge, get?_singleton, get?_insert]
       split
       · rename_i h
         simp
-        refine ((h ▸ Hy).trans <| Hz.trans ?_).dist
+        refine (h ▸ Hy).trans <| Hz.trans ?_
         simp [ORA.op]
       · simp
 
@@ -836,9 +851,9 @@ theorem singleton_inc_iff {m : M V} :
 theorem exclusive_singleton_inc_iff {m : M V} (He : Exclusive x) (Hv : ✓ m) :
     (singleton i x) ≼ m ↔ (get? m i = some x) := by
   refine singleton_inc_iff.trans ⟨fun ⟨y, Hy, Hxy⟩ => ?_, fun _ => ?_⟩
-  · suffices x = y by exact Hy.trans <| OFE.some_eqv_some.mpr this.symm
+  · suffices x = y by exact Hy.trans <| (OFE.some_eqv_some).mpr this.symm
     exact Option.eqv_of_inc_exclusive Hxy <| valid_get?_valid Hv Hy
-  · exists x
+  · exact ⟨x, ‹_›, none, rfl⟩
 
 @[rocq_alias singleton_included]
 theorem singleton_inc_singleton_iff :
@@ -866,7 +881,7 @@ theorem singleton_inc_singleton_mono (Hinc : x ≼ y) :
 open Classical in
 @[rocq_alias singleton_cancelable]
 instance [H : Cancelable (some x)] : Cancelable (singleton i x : M V) where
-  cancelableN {n m1 m2} Hv He j := by
+  cancelableN {n} {m1 m2} Hv He j := by
     specialize Hv j; revert Hv
     specialize He j; revert He
     simp only [ORA.op, Heap.op, get?_merge, Option.merge, get?_singleton]
@@ -880,7 +895,7 @@ instance [H : Cancelable (some x)] : Cancelable (singleton i x : M V) where
 
 @[rocq_alias gmap_cancelable]
 instance {m : M V} [Hid : ∀ x : V, IdFree x] [Hc : ∀ x : V, Cancelable x] : Cancelable m where
-  cancelableN {n m1 m2} Hv He i := by
+  cancelableN {n} {m1 m2} Hv He i := by
     apply cancelableN (x := get? m i)
     · specialize Hv i; revert Hv
       simp [ORA.op, Heap.op, get?_merge, optionOp]
@@ -939,12 +954,12 @@ theorem inc_dom_inc {m1 m2 : M V} (Hinc : m1 ≼ m2) : Set.Included (dom m1) (do
   revert Hz
   cases get? m1 i <;> cases get? m2 i <;> cases z <;> simp [ORA.op, optionOp]
 
-theorem map_mono_ord [ORA V'] [IncOrd V'] (f : V → V') (hf : ∀ x y : V, x ≼ₒ y → f x ≼ₒ f y)
+theorem map_mono_ord [RA V'] [ORA V'] [IncOrd V'] (f : V → V') (hf : ∀ x y : V, x ≼ₒ y → f x ≼ₒ f y)
     {m1 m2 : M V} (Hinc : m1 ≼ₒ m2) : PartialMap.map f m1 ≼ₒ PartialMap.map f m2 :=
   lookup_ord.mpr fun i => by rw [get?_map, get?_map]; exact Option.map_mono_ord f hf (Hinc i)
 
 @[rocq_alias gmap_fmap_mono]
-theorem map_mono [ORA V'] (f : V → V') (hf : ∀ x y : V, x ≼ y → f x ≼ f y) {m1 m2 : M V}
+theorem map_mono [RA V'] (f : V → V') (hf : ∀ x y : V, x ≼ y → f x ≼ f y) {m1 m2 : M V}
     (Hinc : m1 ≼ m2) : PartialMap.map f m1 ≼ PartialMap.map f m2 := by
   refine lookup_inc.mpr fun i => ?_
   obtain ⟨z, hz⟩ := Option.map_mono f hf (lookup_inc.mp Hinc i)
@@ -954,7 +969,7 @@ open Iris.Algebra in
 open Classical in
 @[rocq_alias big_opM_singletons]
 theorem bigOpM_singletons {M' : Type _ → Type _} {K V : Type _}
-    [LawfulFiniteMap M' K] [ORA V] (m : M' V) :
+    [LawfulFiniteMap M' K] [RA V] (m : M' V) :
     ([^ ORA.op map] k ↦ x ∈ m, PartialMap.singleton k x) = m := by
   induction m using LawfulFiniteMap.induction_on with
   | hemp => exact BigOpM.bigOpM_empty _
@@ -966,12 +981,11 @@ open Iris.Algebra in
 open Classical in
 @[rocq_alias big_opS_gset_to_gmap, rocq_alias big_opS_gset_to_gmap_L]
 theorem bigOpS_ofSet {A S : Type _} [LawfulFiniteSet S A] {M' : Type _ → Type _}
-    {V : Type _} [LawfulFiniteMap M' A] [ORA V] (a : V) (s : S) :
+    {V : Type _} [LawfulFiniteMap M' A] [RA V] (a : V) (s : S) :
     ([^ ORA.op set] k ∈ s, (PartialMap.singleton k a : M' V)) = FiniteMap.ofSet a s := by
   induction s using FiniteSet.set_ind with
   | hemp =>
     rw [BigOpS.bigOpS_empty, LawfulFiniteMap.ofSet_empty]
-    rfl
   | hadd x X hx ih =>
     refine (BigOpS.bigOpS_insert hx).trans ?_
     rw [ih, LawfulFiniteMap.ofSet_insert]
@@ -1055,7 +1069,7 @@ variable [LawfulFiniteMap M K]
 
 namespace Heap
 
-variable [ORA V]
+variable [RA V] [ORA V]
 
 open Classical in
 @[rocq_alias alloc_updateP_strong_dep]
@@ -1125,7 +1139,7 @@ section Properties
 
 open ORA PartialMap LawfulPartialMap
 
-variable [LawfulPartialMap M K] [ORA V]
+variable [LawfulPartialMap M K] [RA V] [ORA V]
 
 namespace Heap
 
@@ -1172,7 +1186,7 @@ theorem alloc_unit_singleton_update {u : V} {i : K} {y : V}
 theorem local_update {m1 m2 m1' m2' : M V}
     (h : ∀ i, (get? m1 i, get? m2 i) ~l~> (get? m1' i, get? m2' i)) :
     ((m1, m2) : M V × M V) ~l~> (m1', m2') := by
-  refine local_update_unital.mpr fun n z hv he => ?_
+  refine (local_update_unital).mpr fun n z hv he => ?_
   have he' i : get? m1 i ≡{n}≡ get? m2 i •? some (get? z i) :=
     (he i).trans (.of_eq (get?_op m2 z))
   exact ⟨fun i => (h i n _ (hv i) (he' i)).1,
@@ -1274,14 +1288,14 @@ section UnitalProperties
 
 open ORA PartialMap LawfulPartialMap
 
-variable [LawfulPartialMap M K] [UORA V]
+variable [LawfulPartialMap M K] [URA V] [UORA V]
 
 namespace Heap
 
 open Classical in
 @[rocq_alias insert_alloc_local_update]
 theorem insert_alloc_local_update {m1 m2 : M V} {i : K} {x x' y' : V}
-    (hi1 : get? m1 i = some x) (hi2 : get? m2 i = none) (h : (x, UORA.unit) ~l~> (x', y')) :
+    (hi1 : get? m1 i = some x) (hi2 : get? m2 i = none) (h : (x, UnitOp.unit) ~l~> (x', y')) :
     ((m1, m2) : M V × M V) ~l~> (insert m1 i x', insert m2 i y') := by
   refine local_update fun j => ?_
   by_cases hj : i = j
@@ -1306,14 +1320,14 @@ def map (f : α → β) : H α → H β := PartialMap.bindAlter (fun _ a => some
 @[rocq_alias map_fmap_ne, rocq_alias gmap_fmap_ne]
 instance [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonExpansive (map H f) where
   ne := by
-    simp only [OFE.Dist, Option.Forall₂, map, get?_bindAlter, Option.bind]
+    simp only [OFE.Dist, HasDist.dist, Option.Forall₂, map, get?_bindAlter, Option.bind]
     refine fun n m1 m2 => forall_imp fun k => ?_
     cases get? m1 k <;> cases get? m2 k <;> simp
     apply OFE.NonExpansive.ne
 
-theorem map_id [OFE α] (a : H α) :
-    PartialMap.map H id a = a := OFE.eq_dist_2 <| by
-  intro n x
+theorem map_id (a : H α) :
+    PartialMap.map H id a = a := LawfulPartialMap.equiv_iff_eq.mp <| by
+  intro x
   simp [PartialMap.map, get?_bindAlter, Option.bind]
   rcases get? a x <;> simp
 
@@ -1323,15 +1337,15 @@ def mapO [OFE α] [OFE β] (f : α -n> β) : OFE.Hom (H α) (H β) where
   ne := inferInstance
 
 @[rocq_alias gmap_fmap_ne_ext, rocq_alias gmapO_map_ne]
-theorem map_ne [OFE α] [OFE β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H f m ≡{n}≡ map H g m := by
-  simp [OFE.Dist, Option.Forall₂, map, get?_bindAlter]
+theorem map_ne {n} [OFE β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H f m ≡{n}≡ map H g m := by
+  simp [OFE.Dist, HasDist.dist, Option.Forall₂, map, get?_bindAlter]
   intro k
   cases get? m k <;> simp
   exact heq _
 
-theorem map_compose [OFE α] [OFE β] [OFE γ] (f : α -> β) (g : β -> γ) m :
-    map H (g.comp f) m = map H g (map H f m) := OFE.eq_dist_2 <| by
-  intro n k
+theorem map_compose (f : α -> β) (g : β -> γ) m :
+    map H (g.comp f) m = map H g (map H f m) := LawfulPartialMap.equiv_iff_eq.mp <| by
+  intro k
   simp [map, get?_bindAlter]
   cases get? m k <;> simp
 
@@ -1340,10 +1354,10 @@ theorem get?_map (f : α → β) (m : H α) (k : K) : get? (map H f m) k = (get?
   cases get? m k <;> rfl
 
 @[rocq_alias gmap_fmap_cmra_morphism]
-def mapC [ORA α] [ORA β] (f : α -C> β) : Hom (H α) (H β) where
+def mapC [RA α] [ORA α] [RA β] [ORA β] (f : α -C> β) : Hom (H α) (H β) where
   f := PartialMap.map H f
   ne := inferInstance
-  validN {n x} := by
+  validN {n} {x} := by
     simp only [map, ValidN, Heap.validN, optionValidN]
     apply forall_imp
     intro k
@@ -1383,7 +1397,7 @@ instance {F} [COFE.OFunctor F] : COFE.OFunctor (PartialMapOF H F) where
     apply COFE.OFunctor.map_ne.ne <;> simp_all
   map_id x := by
     refine .trans ?_ (map_id H x)
-    exact congrArg (map H · x) (funext fun a => COFE.OFunctor.map_id a)
+    exact congrArg (map H · x) (funext fun a => COFE.OFunctor.map_id (F := F) a)
   map_comp f g f' g' m := OFE.eq_dist_2 <| by
     simp [mapO, map]
     intro n x
@@ -1407,7 +1421,7 @@ instance {F} [RFunctor F] : URFunctor (PartialMapOF H F) where
     apply RFunctor.map_ne.ne <;> simp_all
   map_id x := by
     refine .trans ?_ (map_id H x)
-    exact congrArg (map H · x) (funext fun a => RFunctor.map_id a)
+    exact congrArg (map H · x) (funext fun a => RFunctor.map_id (F := F) a)
   map_comp f g f' g' m := OFE.eq_dist_2 <| by
     simp [mapC, map]
     intro n x

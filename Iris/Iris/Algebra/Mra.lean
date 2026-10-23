@@ -21,6 +21,9 @@ coincides with `R`.
 
 namespace Iris
 
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
+
 open ORA Iris.Std OFE
 
 namespace Mra
@@ -111,17 +114,9 @@ theorem append_idem (x : Mra R) : append x x = x := by
 #rocq_ignore mra_op "Replaced by the `op` field of the CMRA instance."
 #rocq_ignore mra_pcore "Replaced by the `pcore` field of the CMRA instance."
 
-@[instance_reducible] def cmraData (R : α → α → Prop) : CMRAData (Mra R) where
+instance instRA (R : α → α → Prop) : RA (Mra R) where
   pcore := some
   op := append
-  ValidN _ _ := True
-  Valid _ := True
-  op_ne.ne _ _ _ h := by rw [h]
-  pcore_ne hxy h := ⟨_, (congrArg some hxy.symm).trans h, .rfl⟩
-  validN_ne _ := id
-  valid_iff_validN := by simp
-  validN_succ := id
-  validN_op_left _ := trivial
   assoc {x y z} := by
     induction x, y, z using ind₃ with
     | mk xs ys zs => exact congrArg mk (List.append_assoc xs ys zs).symm
@@ -131,6 +126,25 @@ theorem append_idem (x : Mra R) : append x x = x := by
   pcore_op_left h :=
     (congrArg (append · _) (Option.some.inj h).symm).trans (append_idem _)
   pcore_idem _ := rfl
+
+@[rocq_alias mra_cmra_total]
+instance instURA (R : α → α → Prop) : URA (Mra R) where
+  unit := mk []
+  unit_left_id {x} := by
+    induction x using ind with
+    | mk xs => rfl
+  pcore_unit := rfl
+  total x := ⟨x, rfl⟩
+
+@[reducible] def cmraData (R : α → α → Prop) : CMRAData (Mra R) where
+  ValidN _ _ := True
+  Valid _ := True
+  op_ne.ne _ _ _ h := by rw [h]
+  pcore_ne hxy h := ⟨_, (congrArg some hxy.symm).trans h, .rfl⟩
+  validN_ne _ := id
+  valid_iff_validN := by simp
+  validN_le := fun h _ => h
+  validN_op_left _ := trivial
   extend _ h := ⟨_, _, h, .rfl, .rfl⟩
   pcore_op_mono h y :=
     ⟨y, congrArg (fun z ↦ some (append z y)) (Option.some.inj h)⟩
@@ -139,10 +153,6 @@ theorem append_idem (x : Mra R) : append x x = x := by
 instance (R : α → α → Prop) : CMRA (Mra R) := ofCMRAData (Mra.cmraData R)
 
 #rocq_ignore mraR "Use Mra."
-
-@[rocq_alias mra_cmra_total]
-instance : IsTotal (Mra R) where
-  total x := ⟨x, rfl⟩
 
 @[rocq_alias mra_core_id]
 instance (x : Mra R) : CoreId x where
@@ -155,13 +165,8 @@ instance : ORA.Discrete (Mra R) where
 #rocq_ignore mra_unit "Replaced by the `unit` field of UCMRA instance."
 #rocq_ignore mraUR "Use Mra."
 
-@[instance_reducible] def ucmraData (R : α → α → Prop) : UCMRAData (Mra R) where
-  unit := mk []
+theorem ucmraData (R : α → α → Prop) : UCMRAData (Mra R) where
   unit_valid := trivial
-  unit_left_id {x} := by
-    induction x using ind with
-    | mk xs => rfl
-  pcore_unit := rfl
 
 @[rocq_alias mra_ucmra_mixin]
 instance instUnital (R : α → α → Prop) : UCMRA (Mra R) := UORA.ofUCMRAData (Mra.ucmraData R)
@@ -178,10 +183,11 @@ theorem below_op (a : α) (x y : Mra R) : below a (x • y) ↔ below a x ∨ be
 theorem idem (x : Mra R) : x • x = x := append_idem x
 
 theorem ord_iff (x y : Mra R) : x ≼ₒ y ↔ y = x • y :=
-  ⟨fun h ↦ (op_core_right_of_inc (OrdInc.ord_inc h)).symm, fun h ↦ IncOrd.inc_ord ⟨y, h⟩⟩
+  ⟨fun h ↦ (op_core_right_of_inc (inc_iff_ord.mpr h)).symm, fun h ↦ inc_iff_ord.mp ⟨y, h⟩⟩
 
 @[rocq_alias mra_included]
-theorem inc_iff (x y : Mra R) : x ≼ y ↔ y = x • y := inc_iff_ord.trans (ord_iff x y)
+theorem inc_iff (x y : Mra R) : x ≼ y ↔ y = x • y :=
+  ⟨fun h ↦ (op_core_right_of_inc h).symm, fun h ↦ ⟨y, h⟩⟩
 
 @[rocq_alias to_mra_R_op]
 theorem toMra_op_of_rel [hR : Trans R R R] (a b : α) (h : R a b) :
@@ -200,8 +206,12 @@ theorem toMra_ord_iff [Std.Refl R] [Trans R R R] (a b : α) :
 
 @[rocq_alias to_mra_included]
 theorem toMra_inc_iff [Std.Refl R] [Trans R R R] (a b : α) :
-    toMra (R := R) a ≼ toMra b ↔ R a b :=
-  inc_iff_ord.trans (toMra_ord_iff a b)
+    toMra (R := R) a ≼ toMra b ↔ R a b := by
+  constructor
+  · rintro ⟨z, hz⟩
+    rw [← below_toMra (R := R) a b, hz, below_op]
+    exact .inl ((below_toMra a a).mpr (Std.Refl.refl a))
+  · exact fun h ↦ ⟨toMra b, (toMra_op_of_rel a b h).symm⟩
 
 @[rocq_alias mra_local_update_grow]
 theorem local_update_grow [hR : Trans R R R] (a : α) (x : Mra R) (b : α) (h : R a b) :
@@ -218,7 +228,7 @@ theorem local_update_grow [hR : Trans R R R] (a : α) (x : Mra R) (b : α) (h : 
       exact .inr hcz
 
 @[rocq_alias mra_local_update_get_frag]
-theorem local_update_get_frag [Std.Refl R] [Trans R R R] (a b : α) (h : R b a) :
+theorem local_update_get_frag [Trans R R R] (a b : α) (h : R b a) :
     (toMra (R := R) a, unit) ~l~> (toMra a, toMra b) := by
   refine (local_update_unital_discrete ..).mpr fun z _ haz ↦ ⟨trivial, ?_⟩
   calc

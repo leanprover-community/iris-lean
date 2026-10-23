@@ -14,13 +14,50 @@ public import Iris.BI.Lib.BUpdPlain
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 section UPredInstance
 
 open Iris BI ORA
 
 namespace UPred
 
-variable [UORA M]
+variable (SI) in
+/-- Lifting an order witness from index `0` to any index, up to `≡{0}≡`.
+
+The transfinite laws `later_false_sep` and the timelessness of `ownM` (Iris !1256) split or
+extend a resource below `x` at step-index `0`, and need the result below `x` at the current
+index. Rocq gets this from `cmra_extend` (exact equality); for an ordered RA the axiom
+`ordN_extend` only lifts one step (from `n` to its successor). The lift exists for finite step indices
+(iterate `ordN_extend`) and for the extension order (`IsInc`, via `extend`). -/
+@[indexed]
+class OrdExtend0 (M : Type _) [URA M] [UORA M] : Prop where
+  ordN_extend0 {n} {x y : M} : ✓{n} x → y ≼ₒ{0} x →
+    ∃ z, z ≼ₒ{n} x ∧ z ≡{0}≡ y
+
+instance OrdExtend0.of_finite [SIdxFinite] [URA M] [UORA M] : OrdExtend0 M where
+  ordN_extend0 {n} {x y} := by
+    induction n using (SIdx.lt_wf).induction with
+    | _ n ih =>
+      intro hv h
+      rcases SIdxFinite.finite_index n with rfl | ⟨m, hm⟩
+      · exact ⟨y, h, .rfl⟩
+      · have hv' := validN_of_le (SIdx.lt_le_incl hm.lt) hv
+        obtain ⟨z, hz, ez⟩ := ih m hm.lt hv' h
+        obtain ⟨w, hw, ew⟩ := ordN_extend hm hv' hz
+        exact ⟨w, hw, (ew.le SIdx.le_0_l).trans ez⟩
+
+/-- Tried after `of_finite`: for a finite step index `SIdxFinite` is found at once, while a failing
+`IsInc` search (an ORA that is not a CMRA, e.g. `IResUR`) explores the CMRA hierarchy first. -/
+instance (priority := low) OrdExtend0.of_isInc [URA M] [UORA M] [IsInc M] : OrdExtend0 M where
+  ordN_extend0 {n} {x y} hv h := by
+    obtain ⟨c, hc⟩ := OrdInc.ordN_incN h
+    obtain ⟨z₁, z₂, hx, hz₁, -⟩ := extend (validN_of_le SIdx.le_0_l hv) hc
+    exact ⟨z₁, (IncOrd.inc_ord ⟨z₂, hx⟩).ordN, hz₁⟩
+
+variable [URA M] [UORA M]
 
 section bidefs
 
@@ -62,7 +99,7 @@ protected def or (P Q : UPred M) : UPred M where
 protected def imp (P Q : UPred M) : UPred M where
   holds n x := ∀ {n'} (x' : ValidAt M n'), x.val ≼ₒ{n'} x'.val → n' ≤ n → P n' x' → Q n' x'
   mono H Hle Hn := fun x' Hxle Hnle HP =>
-    H x' (ordN_trans (Hle.le Hnle) Hxle) (Nat.le_trans Hnle Hn) HP
+    H x' (ordN_trans (Hle.le Hnle) Hxle) (SIdx.le_trans Hnle Hn) HP
 
 #rocq_ignore uPred_impl_unseal "`UPred.imp` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_impl_def "`UPred.imp` is defined directly without `seal`/`unseal`."
@@ -107,12 +144,12 @@ protected def sep (P Q : UPred M) : UPred M where
 
 @[rocq_alias uPred_wand]
 protected def wand (P Q : UPred M) : UPred M where
-  holds n x := ∀ n' x', n' ≤ n → (H : ✓{n'} (x.val • x'))
+  holds n x := ∀ (n') x', n' ≤ n → (H : ✓{n'} (x.val • x'))
     → P n' ⟨x', validN_op_right H⟩ → Q n' ⟨x • x', H⟩
   mono H Hm Hn _ _ Hn' Hv HP := by
     refine Q.mono_unpacked (validN_of_ordN (op_monoN_left_ord _ (Hm.le Hn')) Hv) Hv ?_
-      (op_monoN_left_ord _ (ordN_of_ordN_le Hn' Hm)) .refl
-    exact H _ _ (Nat.le_trans Hn' Hn) ?_ HP
+      (op_monoN_left_ord _ (ordN_of_ordN_le Hn' Hm)) SIdx.le_refl
+    exact H _ _ (SIdx.le_trans Hn' Hn) ?_ HP
 
 #rocq_ignore uPred_wand_unseal "`UPred.wand` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_wand_aux "`UPred.wand` is defined directly without `seal`/`unseal`."
@@ -133,16 +170,15 @@ protected def persistently (P : UPred M) : UPred M where
 
 @[rocq_alias uPred_later]
 protected def later (P : UPred M) : UPred M where
-  holds n x := match n with | 0 => True | Nat.succ n' => P n' (x.le (Nat.le_succ _))
-  mono {n₁ n₂} := by
-    cases n₁ <;> cases n₂ <;> simp
-    exact fun H Hx Hn => P.mono H (ordN_of_ordN_succ Hx) Hn
+  holds n x := ∀ (m) (Hm : m < n), P m (x.le (SIdx.lt_le_incl Hm))
+  mono H Hx Hn m Hm :=
+    P.mono (H m (SIdx.lt_le_trans Hm Hn)) (Hx.le (SIdx.lt_le_incl Hm)) SIdx.le_refl
 
 #rocq_ignore uPred_later_unseal "`UPred.later` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_later_def "`UPred.later` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_later_aux "`UPred.later` is defined directly without `seal`/`unseal`."
 
-@[rocq_alias uPred_ownM]
+@[indexed, rocq_alias uPred_ownM]
 def ownM (m : M) : UPred M where
   holds n x := m ≼ₒ{n} x
   mono H Hle Hn := (H.le Hn).trans Hle
@@ -151,16 +187,16 @@ def ownM (m : M) : UPred M where
 #rocq_ignore uPred_ownM_def "`UPred.ownM` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_ownM_aux "`UPred.ownM` is defined directly without `seal`/`unseal`."
 
-def cmraValid {A} [ORA A] (a : A) : UPred M where
+def cmraValid {A} [RA A] [ORA A] (a : A) : UPred M where
   holds n _ := ✓{n} a
   mono hv _ le := validN_of_le le hv
 
 @[rocq_alias uPred_bupd]
 def bupd (Q : UPred M) : UPred M where
-  holds n x := ∀ k yf, k ≤ n → ✓{k} (x.val • yf)
+  holds n x := ∀ (k) yf, k ≤ n → ✓{k} (x.val • yf)
     → ∃ x', ∃ H : ✓{k} (x' • yf), Q k ⟨x', validN_op_left H⟩
   mono HQ Hx Hn k yf Hk Hyf :=
-    HQ k yf (Nat.le_trans Hk Hn) (validN_of_ordN (op_monoN_left_ord yf (Hx.le Hk)) Hyf)
+    HQ k yf (SIdx.le_trans Hk Hn) (validN_of_ordN (op_monoN_left_ord yf (Hx.le Hk)) Hyf)
 
 #rocq_ignore uPred_bupd_unseal "`UPred.bupd` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_bupd_def "`UPred.bupd` is defined directly without `seal`/`unseal`."
@@ -178,20 +214,15 @@ instance persistently_ne : OFE.NonExpansive UPred.persistently (α := UPred M) w
 
 @[rocq_alias uPred_primitive.later_contractive]
 instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
-  distLater_dist {n x y} Hl :=
-    match n with
-    | 0 => by
-      intro _ _ Hle _
-      simp only [Nat.le_zero_eq] at Hle; subst Hle; simp_all [UPred.later]
-    | n + 1 => fun
-      | 0 => by simp [UPred.later]
-      | n' + 1 => fun _ Hn' Hx' => Hl _ Hn' _ _ .refl (validN_succ Hx')
+  distLater_dist Hl _ z Hn' _ :=
+    ⟨fun H m Hm => (Hl m (SIdx.lt_le_trans Hm Hn') m z SIdx.le_refl _).mp (H m Hm),
+     fun H m Hm => (Hl m (SIdx.lt_le_trans Hm Hn') m z SIdx.le_refl _).mpr (H m Hm)⟩
 
 @[rocq_alias uPred_primitive.ownM_ne, rocq_alias uPred.ownM_ne]
 instance ownM_ne : OFE.NonExpansive (ownM : M → UPred M) where
   ne _ _ _ H _ _ Hn _ := OFE.Dist.ordN (OFE.Dist.le H Hn) .rfl
 
-instance {A} [ORA A] : OFE.NonExpansive (cmraValid : A → UPred M) where
+instance {A} [RA A] [ORA A] : OFE.NonExpansive (cmraValid : A → UPred M) where
   ne _ _ _ H _ _ Hn _ := (H.le Hn).validN
 
 @[rocq_alias uPred_primitive.bupd_ne]
@@ -201,15 +232,18 @@ instance bupd_ne : OFE.NonExpansive (bupd : UPred M → UPred M) where
     · intro H k yf Hk Hyf
       rcases (H k yf Hk Hyf) with ⟨x', ⟨Hx'1, Hx'2⟩⟩
       refine ⟨x', ⟨Hx'1, ?_⟩⟩
-      refine uPred_holds_ne ?_ k.le_refl (validN_op_left Hx'1) _ Hx'2
-      exact OFE.Dist.le Hx.symm (Nat.le_trans Hk Hm)
+      refine uPred_holds_ne ?_ SIdx.le_refl (validN_op_left Hx'1) _ Hx'2
+      exact OFE.Dist.le Hx.symm (SIdx.le_trans Hk Hm)
     · intro H k yf Hk Hyf
       rcases (H k yf Hk Hyf) with ⟨x', ⟨Hx'1, Hx'2⟩⟩
       refine ⟨x', ⟨Hx'1, ?_⟩⟩
-      refine uPred_holds_ne ?_ k.le_refl (validN_op_left Hx'1) _ Hx'2
-      exact OFE.Dist.le Hx (Nat.le_trans Hk Hm)
+      refine uPred_holds_ne ?_ SIdx.le_refl (validN_op_left Hx'1) _ Hx'2
+      exact OFE.Dist.le Hx (SIdx.le_trans Hk Hm)
 
-instance : BIBase (UPred M) where
+section BIInstance
+
+/-- `BIBase` data; only reachable globally through `BI.toBIBase`. -/
+@[reducible] def instBIBaseUPred : BIBase (UPred M) where
   Entails      := UPred.Entails
   emp          := UPred.emp
   pure         := UPred.pure
@@ -222,6 +256,8 @@ instance : BIBase (UPred M) where
   wand         := UPred.wand
   persistently := UPred.persistently
   later        := UPred.later
+
+attribute [local instance] instBIBaseUPred
 
 
 #rocq_ignore uPred.uPred_emp_unseal "Connectives are defined directly without `seal`/`unseal`."
@@ -251,21 +287,100 @@ instance uPred_entails_preorder : Std.IsPreorder (UPred M) where
 theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
     IsCOFE.compl cP ⊢ IsCOFE.compl cQ := by
   intros n Hv HP
-  refine uPred_holds_ne IsCOFE.conv_compl n.le_refl _ Hv.property ?_
+  refine uPred_holds_ne IsCOFE.conv_compl SIdx.le_refl _ Hv.property ?_
   refine H _ _ Hv ?_
-  exact uPred_holds_ne IsCOFE.conv_compl.symm n.le_refl _ Hv.property HP
+  exact uPred_holds_ne IsCOFE.conv_compl.symm SIdx.le_refl _ Hv.property HP
 
 @[rocq_alias uPredI]
-instance : BI (UPred M) where
+instance instBIUPred [OrdExtend0 M] : BI (UPred M) where
+  toBIBase := instBIBaseUPred
   entails_refl := uPred_entails_preorder.le_refl _
   entails_trans := uPred_entails_preorder.le_trans _ _ _
   equiv_iff {_ _} := by
     rw [OFE.eq_dist]
     constructor <;> intro HE
-    · exact ⟨fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mp H,
-             fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mpr H⟩
+    · exact ⟨fun n ⟨x, Hv⟩ H => (HE n n x SIdx.le_refl Hv).mp H,
+             fun n ⟨x, Hv⟩ H => (HE n n x SIdx.le_refl Hv).mpr H⟩
     · intro n n' x _ p
       exact ⟨fun H => HE.1 n' ⟨x, p⟩ H, fun H => HE.2 n' ⟨x, p⟩ H⟩
+  pure_intro P _ _ _ := P
+  pure_elim' I n x P := I P n x trivial
+  and_elim_l _ _ I := I.1
+  and_elim_r _ _ I := I.2
+  and_intro H1 H2 _ Hv H := ⟨H1 _ Hv H, H2 _ Hv H⟩
+  or_intro_l _ _ H := .inl H
+  or_intro_r _ _ H := .inr H
+  or_elim H1 H2 _ Hv := fun
+    | .inl H => H1 _ Hv H
+    | .inr H => H2 _ Hv H
+  imp_intro I _ _ HP _ Hv Hin Hle HQ := I _ Hv ⟨UPred.mono _ HP Hin Hle, HQ⟩
+  imp_elim H' _ Hv := fun ⟨HP, HQ⟩ =>
+    H' _ Hv HP Hv (ordN_refl _) SIdx.le_refl HQ
+  sForall_intro H _ _ Hp _ HΨ := H _ HΨ _ _ Hp
+  sForall_elim HΨ _ _ H := H _ HΨ
+  sExists_intro H _ _ Hp := ⟨_, H, Hp⟩
+  sExists_elim H _ Hv := fun ⟨_, HΨ, H'⟩ => H _ HΨ _ Hv H'
+  sep_mono H1 H2 _ _ :=
+    fun ⟨x1, x2, HE, Hx1, Hx2⟩ => ⟨x1, x2, HE, H1 _ _ Hx1, H2 _ _ Hx2⟩
+  emp_sep {P} := by
+    constructor
+    · intro _ _ ⟨x1, x2, HE, Hx1, H⟩
+      exact P.mono H ((ordN_op_right_of_unit_ordN x2 Hx1).trans HE) SIdx.le_refl
+    · intro _ x H
+      exact ⟨_, _, unit_left_id.dist.to_ordN, ordN_refl unit, H⟩
+  sep_symm _ _ := fun ⟨x1, x2, HE, HP, HQ⟩ => ⟨x2, x1, ordN_of_dist_of_ordN op_commN HE, HQ, HP⟩
+  sep_assoc_l n x := fun ⟨x1, x2, Hx, ⟨y1, y2, Hy, h1, h2⟩, h3⟩ => by
+    refine ⟨y1, y2 • x2, ?_, h1, y2, x2, .rfl, h2, h3⟩
+    calc y1 • (y2 • x2) ≡{n}≡ (y1 • y2) • x2 := op_assocN
+         _              ≼ₒ{n} x1 • x2 := op_monoN_left_ord x2 Hy
+         _              ≼ₒ{n} x.val := Hx
+  wand_intro H _ x HP _ x' Hn _ HQ :=
+    H _ _ ⟨x, x', .rfl, UPred.mono _ HP .rfl Hn, HQ⟩
+  wand_elim H n x := fun ⟨y1, y2, Hy, HP, HQ⟩ => by
+    have Hv := validN_of_ordN Hy x.property
+    refine UPred.mono (x1 := ⟨y1 • y2, Hv⟩) _ ?_ Hy SIdx.le_refl
+    exact H n ⟨y1, validN_op_left Hv⟩ HP _ y2 SIdx.le_refl Hv HQ
+  persistently_mono H _ x H' := H _ ⟨_, validN_core x.property⟩ H'
+  persistently_idem_2 {P} _ x H := by
+    refine P.mono H ?_ SIdx.le_refl
+    refine (ordN_iff_right ?_).mpr (ordN_refl _)
+    exact (core_idem x.val).dist
+  persistently_emp_2 _ _ _ := unit_ordN_core _
+  persistently_and_2 {P Q} := uPred_entails_preorder.le_refl iprop(<pers> P ∧ <pers> Q)
+  persistently_absorb_l {P Q} _ _ := fun ⟨x1, x2, H1, H2, _⟩ =>
+    P.mono H2 ((core_op_mono_ord x1 x2).ordN.trans (core_ordN_core H1)) SIdx.le_refl
+  persistently_and_l _ x H := ⟨core x, x, (core_op x.val).dist.to_ordN, H⟩
+  later_mono H _ _ HP m Hm := H m _ (HP m Hm)
+  later_intro {P} _ _ HP m Hm := P.mono HP (ordN_refl _) (SIdx.lt_le_incl Hm)
+  later_sForall_2 {Ψ} _ x H m Hm p Hp := H _ ⟨p, rfl⟩ x (ordN_refl _) SIdx.le_refl Hp m Hm
+  later_false_sExists {Φ} _ x H := by
+    obtain ⟨p, hΦ, hp⟩ := H (x.le SIdx.le_0_l) (ordN_refl _) SIdx.le_0_l
+      fun k hk => absurd hk (SIdx.not_lt_zero k)
+    refine ⟨_, ⟨p, rfl⟩, hΦ, fun {n'} _ hx' _ hF => ?_⟩
+    have hn' : n' ≤ 0 := SIdx.le_ngt.mpr fun hlt => hF _ hlt
+    exact p.mono hp hx' hn'
+  later_false_sep {P Q} _ x H := by
+    obtain ⟨x1, x2, Hx, HP, HQ⟩ := H (x.le SIdx.le_0_l) (ordN_refl _) SIdx.le_0_l
+      fun k hk => absurd hk (SIdx.not_lt_zero k)
+    obtain ⟨w, Hw, Ew⟩ := OrdExtend0.ordN_extend0 x.property Hx
+    obtain ⟨z1, z2, rfl, E1, E2⟩ :=
+      extend (validN_of_le SIdx.le_0_l (validN_of_ordN Hw x.property)) Ew
+    refine ⟨z1, z2, Hw, fun {n'} _ hx' _ hF => ?_, fun {n'} _ hx' _ hF => ?_⟩
+    · have hn' : n' ≤ 0 := SIdx.le_ngt.mpr fun hlt => hF _ hlt
+      exact P.mono HP (ordN_of_dist_of_ordN (E1.symm.le hn') hx') hn'
+    · have hn' : n' ≤ 0 := SIdx.le_ngt.mpr fun hlt => hF _ hlt
+      exact Q.mono HQ (ordN_of_dist_of_ordN (E2.symm.le hn') hx') hn'
+  later_sep_2 {P Q} _ _ := fun ⟨x1, x2, Hx, HP, HQ⟩ m Hm =>
+    ⟨x1, x2, Hx.le (SIdx.lt_le_incl Hm), HP m Hm, HQ m Hm⟩
+  later_persistently := ⟨fun _ _ => id, fun _ _ => id⟩
+  later_false_em {P} n x HP := by
+    by_cases hn : n = 0
+    · subst hn; exact .inl fun k hk => absurd hk (SIdx.not_lt_zero k)
+    · refine .inr fun {n'} _ hx' _ hF => ?_
+      have hn' : n' ≤ 0 := SIdx.le_ngt.mpr fun hlt => hF _ hlt
+      exact P.mono (HP 0 (SIdx.neq_0_lt_0.mp hn)) hx' hn'
+
+instance instBIStepIndexedUPred [OrdExtend0 M] : BIStepIndexed (UPred M) where
   and_ne.ne _ _ _ H _ _ H' _ _ Hn' Hv' := by
     constructor <;> intro H <;> rcases H with ⟨H1, H2⟩
     · constructor
@@ -282,12 +397,12 @@ instance : BI (UPred M) where
     · right; exact (H'.symm _ _ Hn' Hv).mp H''
   imp_ne.ne _ _ _ H _ _ H' _ _ Hn' Hv := by
     constructor <;> intro Hi n' x' Hle Hn'' H''
-    · refine (H' _ _ (Nat.le_trans Hn'' Hn') x'.property).mp ?_
+    · refine (H' _ _ (SIdx.le_trans Hn'' Hn') x'.property).mp ?_
       refine Hi _ Hle Hn'' ?_
-      exact (H _ _ (Nat.le_trans Hn'' Hn') x'.property).mpr H''
-    · refine (H' _ _ (Nat.le_trans Hn'' Hn') x'.property).mpr ?_
+      exact (H _ _ (SIdx.le_trans Hn'' Hn') x'.property).mpr H''
+    · refine (H' _ _ (SIdx.le_trans Hn'' Hn') x'.property).mpr ?_
       refine Hi _ Hle Hn'' ?_
-      exact (H _ _ (Nat.le_trans Hn'' Hn') x'.property).mp H''
+      exact (H _ _ (SIdx.le_trans Hn'' Hn') x'.property).mp H''
   sep_ne.ne _ _ _ H _ _ H' _ _ Hn' Hv := by
     constructor <;> intro Hi <;> rcases Hi with ⟨z1, z2, H1, H2, H3⟩
     · refine ⟨z1, z2, H1, (H _ _ Hn' ?_).mp H2, (H' _ _ Hn' ?_).mp H3⟩
@@ -298,12 +413,12 @@ instance : BI (UPred M) where
       · exact validN_op_right (validN_of_ordN H1 Hv)
   wand_ne.ne _ _ _ H _ _ H' _ _ Hn' Hv := by
     constructor <;> intro HE n x Hn Hv H''
-    · refine (H' _ _ (Nat.le_trans Hn Hn') Hv).mp ?_
+    · refine (H' _ _ (SIdx.le_trans Hn Hn') Hv).mp ?_
       refine HE _ _ Hn Hv ?_
-      exact (H _ _ (Nat.le_trans Hn Hn') (validN_op_right Hv)).mpr H''
-    · refine (H' _ _ (Nat.le_trans Hn Hn') Hv).mpr ?_
+      exact (H _ _ (SIdx.le_trans Hn Hn') (validN_op_right Hv)).mpr H''
+    · refine (H' _ _ (SIdx.le_trans Hn Hn') Hv).mpr ?_
       refine HE _ _ Hn Hv ?_
-      exact (H _ _ (Nat.le_trans Hn Hn') (validN_op_right Hv)).mp H''
+      exact (H _ _ (SIdx.le_trans Hn Hn') (validN_op_right Hv)).mp H''
   persistently_ne := persistently_ne
   later_ne := inferInstanceAs (OFE.NonExpansive UPred.later)
   sForall_ne := fun ⟨HR1, HR2⟩ n' _ Hn' Hx' => by
@@ -320,81 +435,26 @@ instance : BI (UPred M) where
       exact ⟨p', Hp', (Hp'eq n' _ Hn' Hx').mp H⟩
     · let ⟨p', Hp', Hp'eq⟩ := HR2 p Hp
       exact ⟨p', Hp', (Hp'eq n' _ Hn' Hx').mpr H⟩
-  pure_intro P _ _ _ := P
-  pure_elim' I n x P := I P n x trivial
-  and_elim_l _ _ I := I.1
-  and_elim_r _ _ I := I.2
-  and_intro H1 H2 _ Hv H := ⟨H1 _ Hv H, H2 _ Hv H⟩
-  or_intro_l _ _ H := .inl H
-  or_intro_r _ _ H := .inr H
-  or_elim H1 H2 _ Hv := fun
-    | .inl H => H1 _ Hv H
-    | .inr H => H2 _ Hv H
-  imp_intro I _ _ HP _ Hv Hin Hle HQ := I _ Hv ⟨UPred.mono _ HP Hin Hle, HQ⟩
-  imp_elim H' _ Hv := fun ⟨HP, HQ⟩ =>
-    H' _ Hv HP Hv (ordN_refl _) .refl HQ
-  sForall_intro H _ _ Hp _ HΨ := H _ HΨ _ _ Hp
-  sForall_elim HΨ _ _ H := H _ HΨ
-  sExists_intro H _ _ Hp := ⟨_, H, Hp⟩
-  sExists_elim H _ Hv := fun ⟨_, HΨ, H'⟩ => H _ HΨ _ Hv H'
-  sep_mono H1 H2 _ _ :=
-    fun ⟨x1, x2, HE, Hx1, Hx2⟩ => ⟨x1, x2, HE, H1 _ _ Hx1, H2 _ _ Hx2⟩
-  emp_sep {P} := by
-    constructor
-    · intro _ _ ⟨x1, x2, HE, Hx1, H⟩
-      exact P.mono H ((ordN_op_right_of_unit_ordN x2 Hx1).trans HE) .refl
-    · intro _ x H
-      exact ⟨_, _, unit_left_id.dist.to_ordN, ordN_refl unit, H⟩
-  sep_symm _ _ := fun ⟨x1, x2, HE, HP, HQ⟩ => ⟨x2, x1, ordN_of_dist_of_ordN op_commN HE, HQ, HP⟩
-  sep_assoc_l n x := fun ⟨x1, x2, Hx, ⟨y1, y2, Hy, h1, h2⟩, h3⟩ => by
-    refine ⟨y1, y2 • x2, ?_, h1, y2, x2, .rfl, h2, h3⟩
-    calc y1 • (y2 • x2) ≡{n}≡ (y1 • y2) • x2 := op_assocN
-         _              ≼ₒ{n} x1 • x2 := op_monoN_left_ord x2 Hy
-         _              ≼ₒ{n} x.val := Hx
-  wand_intro H _ x HP _ x' Hn _ HQ :=
-    H _ _ ⟨x, x', .rfl, UPred.mono _ HP .rfl Hn, HQ⟩
-  wand_elim H n x := fun ⟨y1, y2, Hy, HP, HQ⟩ => by
-    have Hv := validN_of_ordN Hy x.property
-    refine UPred.mono (x1 := ⟨y1 • y2, Hv⟩) _ ?_ Hy .refl
-    exact H n ⟨y1, validN_op_left Hv⟩ HP _ y2 .refl Hv HQ
-  persistently_mono H _ x H' := H _ ⟨_, validN_core x.property⟩ H'
-  persistently_idem_2 {P} _ x H := by
-    refine P.mono H ?_ .refl
-    refine (ordN_iff_right ?_).mpr (ordN_refl _)
-    exact (core_idem x.val).dist
-  persistently_emp_2 _ _ _ := unit_ordN_core _
-  persistently_and_2 {P Q} := uPred_entails_preorder.le_refl iprop(<pers> P ∧ <pers> Q)
-  persistently_absorb_l {P Q} _ _ := fun ⟨x1, x2, H1, H2, _⟩ =>
-    P.mono H2 ((core_op_mono_ord x1 x2).ordN.trans (core_ordN_core H1)) .refl
-  persistently_and_l _ x H := ⟨core x, x, (core_op x.val).dist.to_ordN, H⟩
-  later_mono H := fun
-    | 0, _ => id
-    | _+1, x => H _ ⟨_, validN_succ x.property⟩
-  later_intro {P} := fun
-    | 0, _, _ => trivial
-    | _+1, _, Hp => P.mono Hp (ordN_refl _) (Nat.le_add_right ..)
-  later_sForall_2 {Ψ} := fun
-    | 0, _, _ => trivial
-    | _+1, _, H => fun _ => by
-      exact H _ ⟨_, rfl⟩ _ (ordN_refl _) .refl
-  later_sExists_false := fun
-    | 0, _, _ => .inl trivial
-    | _+1, x, ⟨p', Hp', H⟩ => by
-      refine .inr ⟨later p', ⟨p', ?_⟩, H⟩
-      ext n x; exact and_iff_right Hp'
-  later_sep {_ _} := by
-    constructor <;> rintro (_ | n) x ⟨x1, x2, H1, H2, H3⟩
-    · exact ⟨unit, x, unit_left_id.dist.to_ordN, trivial, trivial⟩
-    · let ⟨y1, y2, H1', H2', H3'⟩ := op_extend_ord (validN_succ x.property) H1
-      exact ⟨y1, y2, H1',
-        (uPred_ne (m₁ := ⟨_, _⟩) (m₂ := ⟨_, _⟩) H2').mpr H2,
-        (uPred_ne (m₁ := ⟨_, _⟩) (m₂ := ⟨_, _⟩) H3').mpr H3⟩
-    · trivial
-    · exact ⟨x1, x2, H1.succ, H2, H3⟩
-  later_persistently := ⟨fun | 0, _ | _+1, _ => id, fun | 0, _ | _+1, _ => id⟩
-  later_false_em {P} := fun
-    | 0, _, _ => .inl trivial
-    | _+1, _, H => .inr @fun | 0, _, Hx'le, _, _ => P.mono H Hx'le (Nat.zero_le _)
+
+instance instBILaterFiniteUPred [OrdExtend0 M] [SIdxFinite] : BILaterFinite (UPred M) where
+  later_sExists_false n x H := by
+    rcases SIdxFinite.finite_index n with rfl | ⟨m, hm⟩
+    · exact .inl fun k hk => absurd hk (SIdx.not_lt_zero k)
+    · obtain ⟨p, hΦ, hp⟩ := H m hm.lt
+      exact .inr ⟨_, ⟨p, rfl⟩, hΦ, fun k hk => p.mono hp (ordN_refl _) (hm.le_of_lt hk)⟩
+  later_sep_1 n x H := by
+    rcases SIdxFinite.finite_index n with rfl | ⟨m, hm⟩
+    · exact ⟨unit, x, unit_left_id.dist.to_ordN,
+        fun k hk => absurd hk (SIdx.not_lt_zero k), fun k hk => absurd hk (SIdx.not_lt_zero k)⟩
+    · obtain ⟨x1, x2, H1, H2, H3⟩ := H m hm.lt
+      obtain ⟨y1, y2, H1', E1, E2⟩ := op_extend_ord hm (validN_of_le (SIdx.lt_le_incl hm.lt) x.property) H1
+      refine ⟨y1, y2, H1', fun k hk => ?_, fun k hk => ?_⟩
+      · exact UPred.mono _ H2 (E1.symm.le (hm.le_of_lt hk)).to_ordN (hm.le_of_lt hk)
+      · exact UPred.mono _ H3 (E2.symm.le (hm.le_of_lt hk)).to_ordN (hm.le_of_lt hk)
+
+end BIInstance
+
+variable [OrdExtend0 M]
 
 #rocq_ignore pure_ne "Direct consequence of propext"
 #rocq_ignore pure_intro "Inlined in `uPredI` construction"
@@ -449,6 +509,8 @@ instance : BI (UPred M) where
 #rocq_ignore uPred_primitive.later_persistently_2 "Inlined in `uPredI` construction"
 #rocq_ignore uPred_primitive.later_exist_false "Inlined in `uPredI` construction"
 #rocq_ignore uPred_primitive.later_false_em "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_false_exist "Inlined in `uPredI` construction"
+#rocq_ignore uPred_primitive.later_false_sep "Inlined in `uPredI` construction"
 #rocq_ignore uPred_primitive.later_forall_2 "Inlined in `uPredI` construction"
 
 #rocq_ignore uPred_bi_mixin "Inlined in `uPredI` construction"
@@ -457,11 +519,11 @@ instance : BI (UPred M) where
 
 @[rocq_alias uPred_primitive.persistently_elim]
 theorem persistently_elim [IncOrd M] {P : UPred M} : <pers> P ⊢ P :=
-  fun _ _ H => P.mono H core_ord_self.ordN .refl
+  fun _ _ H => P.mono H core_ord_self.ordN SIdx.le_refl
 
 @[rocq_alias uPred_persistently_forall]
 instance : BIPersistentlyForall (UPred M) where
-  persistently_sForall_2 _ _ x h p hp := h _ ⟨p, rfl⟩ x (ordN_refl _) .refl hp
+  persistently_sForall_2 _ _ x h p hp := h _ ⟨p, rfl⟩ x (ordN_refl _) SIdx.le_refl hp
 
 @[rocq_alias uPred_persistently_exist]
 instance : BIPersistentlyExist (UPred M) where
@@ -477,12 +539,15 @@ instance : BIPersistentlyExist (UPred M) where
 instance : BILaterContractive (UPred M) where
   toContractive := later_contractive
 
+instance : BILoeb (UPred M) := BILoeb.ofLaterContractive
+
 instance [IncOrd M] (P : UPred M) : Affine P where
   affine _ _ _ := ordN_unit
 
 @[rocq_alias uPred_affine]
 instance [IncOrd M] : BIAffine (UPred M) := ⟨by infer_instance⟩
 
+omit [OrdExtend0 M] in
 @[rocq_alias uPred_si_pure]
 protected def uPredSiPure (Pi : SiProp) : UPred M where
   holds n _ := Pi.holds n
@@ -492,6 +557,7 @@ protected def uPredSiPure (Pi : SiProp) : UPred M where
 #rocq_ignore uPred_si_pure_unseal "`UPred.uPredSiPure` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_si_pure_def "`UPred.uPredSiPure` is defined directly without `seal`/`unseal`."
 
+omit [OrdExtend0 M] in
 @[rocq_alias uPred_si_emp_valid]
 protected def uPredSiEmpValid (P : UPred M) : SiProp where
   holds n := P n ⟨unit, unit_validN⟩
@@ -501,16 +567,20 @@ protected def uPredSiEmpValid (P : UPred M) : SiProp where
 #rocq_ignore uPred_si_emp_valid_unseal "`UPred.uPredSiEmpValid` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_si_emp_valid_def "`UPred.uPredSiEmpValid` is defined directly without `seal`/`unseal`."
 
+omit [OrdExtend0 M] in
 @[rocq_alias si_pure_ne, rocq_alias uPred_primitive.si_pure_ne]
 instance uPredSiPure_ne : OFE.NonExpansive (UPred.uPredSiPure : SiProp → UPred M) where
   ne _ _ _ hp _ _ hn _ := hp hn
 
+omit [OrdExtend0 M] in
 @[rocq_alias si_emp_valid_ne, rocq_alias uPred_primitive.si_emp_valid_ne]
 instance uPredSiEmpValid_ne : OFE.NonExpansive (UPred.uPredSiEmpValid : UPred M → SiProp) where
   ne _ _ _ h m hm := h m unit hm unit_validN
 
+omit [OrdExtend0 M] in
 instance : SiPure (UPred M) := ⟨UPred.uPredSiPure⟩
 
+omit [OrdExtend0 M] in
 instance : SiEmpValid (UPred M) := ⟨UPred.uPredSiEmpValid⟩
 
 section SiPropEmbedding
@@ -524,7 +594,8 @@ theorem uPredSiPure_mono {Pi Qi : SiProp} (hpq : Pi ⊢ Qi) : <si_pure> Pi ⊢@{
   fun n _ hp => hpq n hp
 
 @[rocq_alias si_emp_valid_mono, rocq_alias uPred_primitive.si_emp_valid_mono]
-theorem uPredSiEmpValid_mono {P Q : UPred M} (h : P ⊢ Q) : <si_emp_valid> P ⊢ <si_emp_valid> Q :=
+theorem uPredSiEmpValid_mono {P Q : UPred M} (h : P ⊢ Q) :
+    <si_emp_valid> P ⊢@{SiProp} <si_emp_valid> Q :=
   fun n hp => h n ⟨unit, unit_validN⟩ hp
 
 @[rocq_alias si_pure_impl_2, rocq_alias uPred_primitive.si_pure_impl_2]
@@ -534,28 +605,31 @@ theorem uPredSiPure_imp_mpr {Pi Qi : SiProp} :
 
 @[rocq_alias si_pure_later, rocq_alias uPred_primitive.si_pure_later]
 theorem uPredSiPure_later {Pi : SiProp} : <si_pure> (▷ Pi) ⊣⊢@{UPred M} ▷ <si_pure> Pi :=
-  ⟨fun | 0, _ | _+1, _ => id, fun | 0, _ | _+1, _ => id⟩
+  ⟨fun _ _ => id, fun _ _ => id⟩
 
 @[rocq_alias si_emp_valid_later_1, rocq_alias uPred_primitive.si_emp_valid_later_1]
-theorem uPredSiEmpValid_later_mp {P : UPred M} : <si_emp_valid> (▷ P) ⊢ ▷ <si_emp_valid> P :=
-  fun | 0 | _+1 => id
+theorem uPredSiEmpValid_later_mp {P : UPred M} :
+    <si_emp_valid> (▷ P) ⊢@{SiProp} ▷ <si_emp_valid> P :=
+  fun _ => id
 
+omit [OrdExtend0 M] in
 @[rocq_alias si_emp_valid_si_pure, rocq_alias uPred_primitive.si_emp_valid_si_pure]
 theorem uPredSiEmpValid_uPredSiPure {Pi : SiProp} : <si_emp_valid> (<si_pure> Pi : UPred M) ⊣⊢ Pi :=
   ⟨fun _ hp => hp, fun _ hp => hp⟩
 
 @[rocq_alias si_pure_si_emp_valid, rocq_alias uPred_primitive.si_pure_si_emp_valid]
-theorem uPredSiPure_uPredSiEmpValid {P : UPred M} : <si_pure> <si_emp_valid> P ⊢ <pers> P :=
-  fun n x hp => P.mono hp (unit_ordN_core x.val) n.le_refl
+theorem uPredSiPure_uPredSiEmpValid {P : UPred M} :
+    <si_pure> (<si_emp_valid> P : SiProp) ⊢ <pers> P :=
+  fun _ x hp => P.mono hp (unit_ordN_core x.val) SIdx.le_refl
 
 @[rocq_alias persistently_impl_si_pure, rocq_alias uPred_primitive.persistently_impl_si_pure]
 theorem persistently_imp_uPredSiPure {Pi : SiProp} {Q : UPred M} :
     (<si_pure> Pi → <pers> Q) ⊢ <pers> (<si_pure> Pi → Q) := by
-  intro n x hpq m y hinc hle hp
-  exact Q.mono (hpq (x.le hle) (ordN_refl x.val) hle hp) hinc m.le_refl
+  intro _ x hpq m y hinc hle hp
+  exact Q.mono (hpq (x.le hle) (ordN_refl x.val) hle hp) hinc SIdx.le_refl
 
 @[rocq_alias uPred_primitive.prop_ext_2]
-theorem prop_ext_uPredSiEmpValid {P Q : UPred M} : <si_emp_valid> (P ∗-∗ Q) ⊢ SiProp.internalEq P Q := by
+theorem prop_ext_uPredSiEmpValid {P Q : UPred M} : <si_emp_valid> (P ∗-∗ Q) ⊢@{SiProp} SiProp.internalEq P Q := by
   intro _ hpq n x hn hv
   have hu : unit • x ≡{n}≡ x := unit_left_id.dist
   have hvu : ✓{n} unit • x := hu.validN.mpr hv
@@ -574,7 +648,7 @@ instance : Sbi (UPred M) where
   siEmpValid_siPure := uPredSiEmpValid_uPredSiPure
   siPure_siEmpValid := uPredSiPure_uPredSiEmpValid
   siPure_imp_mpr := uPredSiPure_imp_mpr
-  siPure_sForall_mpr {_ _ _} H _ := H _ ⟨_, rfl⟩ _ .rfl .refl
+  siPure_sForall_mpr {_ _ _} H _ := H _ ⟨_, rfl⟩ _ .rfl SIdx.le_refl
   persistently_imp_siPure := persistently_imp_uPredSiPure
   siPure_later := uPredSiPure_later
   siPure_absorbing _ := ⟨fun _ _ ⟨_, _, _, _, h⟩ => h⟩
@@ -599,32 +673,48 @@ instance : SbiEmpValidExist (UPred M) where
 theorem uPredSiEmpValid_exist_mp {α : Type _} {P : α → UPred M} :
     (<si_emp_valid> (∃ x, P x) : SiProp) ⊢ ∃ x, <si_emp_valid> P x := siEmpValid_exist_mp
 
+instance : BIPlainly (UPred M) := BIPlainly.ofSbi
+instance : BIPlainlySbi (UPred M) := BIPlainlySbi.ofSbi
+instance : BIPlainlyExists (UPred M) := BIPlainlyExists.ofSbi
+
 /-- The Sbi-derived plainly on UPred unfolds to `UPred.plainly`. -/
 theorem plainly_eq_uPred_plainly (P : UPred M) : iprop(■ P) = UPred.plainly P := rfl
 
 /-- The Sbi-derived `internalCmraValid` on UPred unfolds to `UPred.cmraValid`. -/
-theorem internalCmraValid_eq_uPred_cmraValid [ORA A] (a : A) :
+theorem internalCmraValid_eq_uPred_cmraValid [RA A] [ORA A] (a : A) :
     iprop(✓ a : UPred M) = UPred.cmraValid a := rfl
 
-instance : BUpd (UPred M) := ⟨bupd⟩
+section BUpdInstance
 
-instance : OFE.NonExpansive (BUpd.bupd (PROP := UPred M)) := bupd_ne
+/-- `BUpd` data; only reachable globally through `BIUpdate.toBUpd`, so generic `BIUpdate PROP`
+lemmas and proof-mode instances unify with it without the step index being pinned. -/
+@[reducible] def instBUpdUPred : BUpd (UPred M) := ⟨bupd⟩
+
+attribute [local instance] instBUpdUPred
+
+omit [OrdExtend0 M] in
+theorem bupd_ne' : OFE.NonExpansive (BUpd.bupd (PROP := UPred M)) := bupd_ne
 
 @[rocq_alias uPred_bi_bupd]
 instance : BIUpdate (UPred M) where
+  toBUpd := instBUpdUPred
   intro {P} _ x HP _ _ Hn H := ⟨_, ⟨H, P.mono HP (ordN_refl x.val) Hn⟩⟩
   mono Himp _ _ HP k yf Hn H := by
     rcases HP k yf Hn H with ⟨x', Hx1, Hx2⟩
     exact ⟨x', ⟨Hx1, Himp k ⟨x', validN_op_left Hx1⟩ Hx2⟩⟩
   trans _ _ H k yf Hx Hyf :=
     let ⟨x', Hx', Hx''⟩ := H k yf Hx Hyf
-    Hx'' k yf k.le_refl Hx'
+    Hx'' k yf SIdx.le_refl Hx'
   frame_right {_ R} _ _ := fun ⟨x1, x2, Hx, HP, HR⟩ k yf Hk Hyf => by
     have L : ✓{k} x1 • (x2 • yf) :=
       validN_of_ordN (ordN_of_dist_of_ordN op_assocN (op_monoN_left_ord yf (Hx.le Hk))) Hyf
     let ⟨x', Hx'1, Hx'2⟩ := HP k (x2 • yf) Hk L
     refine ⟨x' • x2, op_assocN.validN.1 Hx'1, x', x2, .rfl, Hx'2, ?_⟩
     exact R.mono HR (ordN_refl x2) Hk
+
+end BUpdInstance
+
+instance : BUpdNE (UPred M) := ⟨bupd_ne'⟩
 
 #rocq_ignore uPred_primitive.bupd_intro "Inlined in BIUpdate instance construction"
 #rocq_ignore uPred_primitive.bupd_mono "Inlined in BIUpdate instance construction"
@@ -636,12 +726,14 @@ instance : BIUpdate (UPred M) where
 theorem bupd_siPure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure> Pi := by
   intro n x Hv
   have L : ✓{n} x.val • unit := unit_right_id.symm.dist.validN.1 x.property
-  let ⟨_, _, Hv'⟩ := Hv n unit n.le_refl L
+  let ⟨_, _, Hv'⟩ := Hv n unit SIdx.le_refl L
   exact Hv'
 
 @[rocq_alias uPred_bi_bupd_sbi]
 instance : BIBUpdateSbi (UPred M) where
   bupd_siPure := bupd_siPure
+
+instance : BIBUpdatePlainly (UPred M) := BIBUpdatePlainly.ofSbi
 
 @[rocq_alias uPred_primitive.ownM_valid, rocq_alias uPred.ownM_valid]
 theorem ownM_valid (m : M) : ownM m ⊢ internalCmraValid m := fun _ h hp => hp.validN h.property
@@ -668,7 +760,7 @@ instance {a : M} : Persistent (ownM (core a)) where
   persistent := by
     refine .trans (persistently_ownM_core _) ?_
     refine persistently_mono ?_
-    exact (congrArg ownM (core_idem a)).to_bi.mp
+    exact (congrArg (ownM) (core_idem a)).to_bi.mp
 
 @[rocq_alias uPred.bupd_ownM_updateP, rocq_alias uPred_primitive.bupd_ownM_updateP]
 theorem bupd_ownM_updateP (x : M) (Φ : M → Prop) :
@@ -695,16 +787,30 @@ theorem ownM_forall [OrdInc M] (f : A → M) :
   exact ⟨iprop(x.val ≡ f a • xf), ⟨xf, rfl⟩, Hxf⟩
 
 @[rocq_alias uPred.later_ownM, rocq_alias uPred_primitive.later_ownM]
-theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ (a ≡ b)
-  | 0, x, _ => ⟨iprop(ownM x.val ∧ ▷ (a ≡ x.val)), ⟨x.val, rfl⟩, ordN_refl x.val, trivial⟩
-  | _+1, x, hx =>
-    let ⟨b, hb, hab⟩ := ordN_extend (validN_succ x.property) hx
-    ⟨iprop(ownM b ∧ ▷ (a ≡ b)), ⟨b, rfl⟩, hb, hab.symm⟩
+theorem later_ownM [SIdxFinite] (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ (a ≡ b) := by
+  intro n x hx
+  rcases SIdxFinite.finite_index n with rfl | ⟨m, hm⟩
+  · exact ⟨iprop(ownM x.val ∧ ▷ (a ≡ x.val)), ⟨x.val, rfl⟩, ordN_refl x.val,
+      fun k hk => absurd hk (SIdx.not_lt_zero k)⟩
+  · obtain ⟨b, hb, hab⟩ := ordN_extend hm (validN_of_le (SIdx.lt_le_incl hm.lt) x.property) (hx m hm.lt)
+    exact ⟨iprop(ownM b ∧ ▷ (a ≡ b)), ⟨b, rfl⟩, hb,
+      fun k hk => (hab.le (hm.le_of_lt hk)).symm⟩
 
+@[rocq_alias uPred_primitive.later_false_ownM]
+theorem later_false_ownM (a : M) : (▷ False → ownM a) ⊢ ∃ b, ownM b ∧ (▷ False → a ≡ b) := by
+  intro _ x H
+  obtain ⟨b, hb, hba⟩ := OrdExtend0.ordN_extend0 x.property
+    (H (x.le SIdx.le_0_l) (ordN_refl _) SIdx.le_0_l fun k hk => absurd hk (SIdx.not_lt_zero k))
+  refine ⟨iprop(ownM b ∧ (▷ False → a ≡ b)), ⟨b, rfl⟩, hb, fun {n'} _ _ _ hF => ?_⟩
+  exact hba.symm.le (SIdx.le_ngt.mpr fun hlt => hF _ hlt)
+
+@[indexed]
 theorem pure_soundness : (⊢ (⌜P⌝ : UPred M)) → P := (· 0 ⟨unit, unit_validN⟩ (ordN_refl unit))
 
-theorem later_soundness : (⊢ ▷ P) → ⊢@{UPred M} P :=
-  fun HP n _ H => P.mono (HP n.succ ⟨unit, unit_validN⟩ (ordN_refl unit)) H .refl
+theorem later_soundness [SIdxSucc] : (⊢ ▷ P) → ⊢@{UPred M} P :=
+  fun HP n _ H =>
+    P.mono (HP (SIdx.succ n) ⟨unit, unit_validN⟩ (ordN_refl unit) n (SIdx.lt_succ_self n)) H
+      SIdx.le_refl
 
 section derived
 
@@ -742,11 +848,10 @@ theorem bupd_ownM_update {x y : M} (hupd : x ~~> y) : ownM x ⊢ |==> ownM y := 
 
 @[rocq_alias uPred.ownM_timeless]
 instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where
-  timeless
-    | 0, _, _ => .inl trivial
-    | n+1, x, hx =>
-      let ⟨_, hb, hab⟩ := ordN_extend (validN_succ x.property) hx
-      .inr (OFE.DiscreteE.discrete (hab.symm.le n.zero_le) ▸ hb)
+  timeless _ x H := by
+    obtain ⟨_, hb, hba⟩ := OrdExtend0.ordN_extend0 x.property
+      (H (x.le SIdx.le_0_l) (ordN_refl _) SIdx.le_0_l fun k hk => absurd hk (SIdx.not_lt_zero k))
+    exact OFE.DiscreteE.discrete hba.symm ▸ hb
 
 @[rocq_alias uPred.ownM_persistent]
 instance ownM_persistent (a : M) [CoreId a] : Persistent (ownM a) where
@@ -757,18 +862,17 @@ instance ownM_persistent (a : M) [CoreId a] : Persistent (ownM a) where
 
 @[rocq_alias uPred.uPred_ownM_sep_homomorphism]
 instance ownM_sep_homomorphism :
-    Algebra.MonoidHomomorphism op sep (unit : M) emp (· = ·) ownM where
+    Algebra.MonoidHomomorphism op sep (unit : M) (emp : UPred M) (· = ·) (ownM) where
   rel_refl := rfl
   rel_trans := Eq.trans
   op_proper ha hb := ha ▸ hb ▸ rfl
-  map_ne := ownM_ne
   map_op := (ownM_op ..).to_eq
   map_unit := ownM_unit_emp.to_eq
 
 @[rocq_alias uPred.bupd_soundness]
 theorem bupd_soundness {P : UPred M} [Plain P] : (⊢ |==> P) → ⊢ P := fun h n x hx =>
-  let ⟨_, _, HP⟩ := h n x hx n unit n.le_refl (unit_right_id.symm.dist.validN.1 x.property)
-  P.mono (Plain.plain (P := P) n _ HP) hx .refl
+  let ⟨_, _, HP⟩ := h n x hx n unit SIdx.le_refl (unit_right_id.symm.dist.validN.1 x.property)
+  P.mono (Plain.plain (P := P) n _ HP) hx SIdx.le_refl
 
 @[rocq_alias uPred.modality]
 inductive Modality where
@@ -812,7 +916,7 @@ theorem Modality.denoteAll_laterN [IncOrd M] {P : UPred M} [Plain P] :
 
 /-- Soundness under an arbitrary nesting of modalities, for plain propositions. -/
 @[rocq_alias uPred.modal_soundness]
-theorem modal_soundness {P : UPred M} [Plain P] (ms : List Modality)
+theorem modal_soundness [SIdxSucc] {P : UPred M} [Plain P] (ms : List Modality)
     (h : ⊢ Modality.denoteAll ms P) : ⊢ P :=
   laterN_soundness <| (and_intro .rfl ((h.trans (Modality.denoteAll_plainly_laterN ms)).trans
     plainly_elim_persistently)).trans persistently_and_emp_elim
@@ -822,38 +926,38 @@ theorem consistency : ¬ (⊢@{UPred M} False) := pure_soundness
 
 end derived
 
-theorem plainly_valid_mpr [ORA A] (a : A) :
+theorem plainly_valid_mpr [RA A] [ORA A] (a : A) :
     internalCmraValid a ⊢@{UPred M} ■ internalCmraValid a :=
   fun _ _ hv => hv
 
-theorem persistently_valid_mpr [ORA A] (a : A) :
+theorem persistently_valid_mpr [RA A] [ORA A] (a : A) :
     internalCmraValid a ⊢@{UPred M} <pers> internalCmraValid a :=
   (plainly_valid_mpr a).trans plainly_elim_persistently
 
-theorem plainly_valid [ORA A] (a : A) :
+theorem plainly_valid [RA A] [ORA A] (a : A) :
     ■ internalCmraValid a ⊣⊢@{UPred M} internalCmraValid a :=
   ⟨plainly_elim, plainly_valid_mpr a⟩
 
-theorem intuitionistically_valid [IncOrd M] {A} [ORA A] (a : A) :
+theorem intuitionistically_valid [IncOrd M] {A} [RA A] [ORA A] (a : A) :
     □ internalCmraValid a ⊣⊢@{UPred M} internalCmraValid a := by
   constructor
   · exact intuitionistically_elim
   · exact (persistently_valid_mpr a).trans intuitionistically_iff_persistently.mpr
 
-theorem discrete_valid [ORA A] [Discrete A] (a : A) :
+theorem discrete_valid [RA A] [ORA A] [Discrete A] (a : A) :
     internalCmraValid a ⊣⊢@{UPred M} ⌜✓ a⌝ :=
   ⟨fun n _ hv => (valid_iff_validN' n).mpr hv, fun _ _ hv => hv.validN⟩
 
-instance valid_timeless [ORA A] [Discrete A] {a : A} :
+instance valid_timeless [RA A] [ORA A] [Discrete A] {a : A} :
     Timeless (internalCmraValid a : UPred M) where
   timeless := by
-    refine (later_mono (discrete_valid a).mp).trans ?_
-    exact Timeless.timeless.trans (except0_mono (discrete_valid a).mpr)
+    refine (only0_mono (discrete_valid a).mp).trans ?_
+    exact Timeless.timeless.trans (discrete_valid a).mpr
 
-instance valid_plain [ORA A] {a : A} : Plain (internalCmraValid a : UPred M) where
+instance valid_plain [RA A] [ORA A] {a : A} : Plain (internalCmraValid a : UPred M) where
   plain := plainly_valid_mpr a
 
-instance valid_persistent [ORA A] {a : A} : Persistent (internalCmraValid a : UPred M) where
+instance valid_persistent [RA A] [ORA A] {a : A} : Persistent (internalCmraValid a : UPred M) where
   persistent := persistently_valid_mpr a
 
 end UPred
@@ -866,14 +970,14 @@ open BUpdPlain ORA UPred
 ## Compatibility between the UPred model of BUpd and the BUpd construction for generic Sbi instances
 -/
 
-def BUpdPlain_pred [UORA M] (P : UPred M) (y : M) : UPred M where
+def BUpdPlain_pred [URA M] [UORA M] (P : UPred M) (y : M) : UPred M where
   holds k _ := ∃ x'', ∃ H : ✓{k} (x'' • y), P k ⟨x'', validN_op_left H⟩
   mono {_ _ _ _} := fun ⟨z, Hz1, Hz2⟩ _ Hn =>
     ⟨z, validN_of_le Hn Hz1, P.mono Hz2 (ordN_refl z) Hn⟩
 
 /-- The alternative definition entails the ordinary basic update -/
 @[rocq_alias bupd_alt_bupd]
-theorem BUpdPlain_bupd [UORA M] (P : UPred M) : BUpdPlain P ⊢ |==> P := by
+theorem BUpdPlain_bupd [URA M] [UORA M] [OrdExtend0 M] (P : UPred M) : BUpdPlain P ⊢ |==> P := by
   intro _ _ H k y Hkn Hxy
   have := (H _ ⟨BUpdPlain_pred P y, rfl⟩) k y Hkn Hxy ?_
   · rw [plainly_eq_uPred_plainly] at this
@@ -883,11 +987,11 @@ theorem BUpdPlain_bupd [UORA M] (P : UPred M) : BUpdPlain P ⊢ |==> P := by
     refine ⟨z, validN_ne op_commN Hvyz, HP⟩
 
 @[rocq_alias bupd_alt_bupd_iff]
-theorem BUpdPlain_bupd_iff [UORA M] (P : UPred M) : BUpdPlain P ⊣⊢ |==> P :=
+theorem BUpdPlain_bupd_iff [URA M] [UORA M] [OrdExtend0 M] (P : UPred M) : BUpdPlain P ⊣⊢ |==> P :=
   ⟨BUpdPlain_bupd P, BUpd_BUpdPlain (PROP := UPred M)⟩
 
 @[rocq_alias ownM_updateP]
-theorem ownM_updateP [UORA M] {x : M} {R : UPred M} (Φ : M → Prop) (Hup : x ~~>: Φ) :
+theorem ownM_updateP [URA M] [UORA M] [OrdExtend0 M] {x : M} {R : UPred M} (Φ : M → Prop) (Hup : x ~~>: Φ) :
     iprop(ownM x ∗ ∀ y, ⌜Φ y⌝ -∗ ownM y -∗ ■ R) ⊢ ■ R := by
   rw [plainly_eq_uPred_plainly]
   intro n z ⟨x1, z2, Hx, Hx1, HR⟩
@@ -895,8 +999,8 @@ theorem ownM_updateP [UORA M] {x : M} {R : UPred M} (Φ : M → Prop) (Hup : x ~
     validN_of_ordN ((op_monoN_left_ord z2 Hx1).trans Hx) z.property
   have ⟨y, HΦy, Hvalid_y⟩ := Hup n (some z2) Hvalid
   have Hp := HR (iprop(⌜Φ y⌝ -∗ (UPred.ownM y -∗ UPred.plainly R))) ⟨y, rfl⟩
-  exact Hp n unit .refl (validN_ne (unit_right_id_dist z2).symm (validN_op_right Hvalid)) HΦy n y
-    .refl (validN_ne (comm.dist.trans (unit_right_id_dist z2).symm.op_l) Hvalid_y) (ordN_refl y)
+  exact Hp n unit SIdx.le_refl (validN_ne (unit_right_id_dist z2).symm (validN_op_right Hvalid)) HΦy n y
+    SIdx.le_refl (validN_ne (comm.dist.trans (unit_right_id_dist z2).symm.op_l) Hvalid_y) (ordN_refl y)
 
 end UPredAlt
 

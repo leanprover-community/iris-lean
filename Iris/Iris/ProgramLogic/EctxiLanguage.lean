@@ -51,6 +51,7 @@ namespace EctxItemLanguage
 
 variable [Λ : EctxItemLanguage Expr EctxItem State Obs Val]
 
+@[nolint unusedArguments]
 abbrev Ectx [EctxItemLanguage Expr EctxItem State Obs Val] := List EctxItem
 
 @[grind, rocq_alias ectxi_lang_ctx_item]

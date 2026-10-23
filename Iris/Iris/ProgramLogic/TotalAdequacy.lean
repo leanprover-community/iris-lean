@@ -15,6 +15,8 @@ open Language Language.Notation
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## Total adequacy -/
 
 section ThreadPool
@@ -26,7 +28,7 @@ variable [ι : IrisGS_gen hlc Expr GF]
 local instance : OFE (List Expr) := OFE.ofDiscrete _
 local instance list_nonexpansive (Ψ : List Expr → IProp GF) : NonExpansive Ψ :=
   ⟨fun _ _ _ hxy => hxy ▸ .rfl⟩
-local instance : OFE Val := OFE.ofDiscrete _
+local instance (priority := low) : OFE Val := OFE.ofDiscrete _
 
 namespace twptp
 
@@ -70,7 +72,7 @@ instance pre_mono_inst : BIMonoPred (pre (ι := ι)) where
 @[rocq_alias twptp_pre_mono]
 theorem pre_mono (X Y : List Expr → IProp GF) :
     □ (∀ t, X t -∗ Y t) -∗
-      ∀ t, pre X t -∗ pre Y t := mono_pred
+      ∀ t, pre X t -∗ pre Y t := mono_pred Nat
 
 /-- Total weakest precondition for a thread pool. -/
 @[rocq_alias twptp]

@@ -11,20 +11,27 @@ public import Iris.Algebra.CMRA
 
 namespace Iris
 
-@[rocq_alias cmra_updateP]
-def UpdateP [ORA α] (x : α) (P : α → Prop) := ∀ n mz, ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
-infixr:50 " ~~>: " => UpdateP
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 
-@[rocq_alias cmra_update]
-def Update [ORA α] (x y : α) := ∀ n mz, ✓{n} (x •? mz) → ✓{n} (y •? mz)
-infixr:50 " ~~> " => Update
+@[indexed, rocq_alias cmra_updateP]
+def UpdateP [RA α] [ORA α] (x : α) (P : α → Prop) := ∀ (n) mz, ✓{n} (x •? mz) → ∃ y, P y ∧ ✓{n} (y •? mz)
+notation:50 x:51 " ~~>:[" S "] " y:50 => Iris.UpdateP (SI := S) x y
+@[inherit_doc Iris.UpdateP]
+notation:50 x:51 " ~~>: " y:50 => Iris.UpdateP (SI := stepindex%) x y
+
+@[indexed, rocq_alias cmra_update]
+def Update [RA α] [ORA α] (x y : α) := ∀ (n) mz, ✓{n} (x •? mz) → ✓{n} (y •? mz)
+notation:50 x:51 " ~~>[" S "] " y:50 => Iris.Update (SI := S) x y
+@[inherit_doc Iris.Update]
+notation:50 x:51 " ~~> " y:50 => Iris.Update (SI := stepindex%) x y
 
 #rocq_ignore cmra_update_rewrite_relation "Not needed"
 
 section Updates
 open ORA
 
-variable [ORA α] [ORA β] (f : α → β) (g : β → α)
+variable [RA α] [ORA α] [RA β] [ORA β] (f : α → β) (g : β → α)
 
 #rocq_ignore cmra_updateP_proper "OFE is Leibniz; use equality"
 #rocq_ignore cmra_update_proper "OFE is Leibniz; use equality"
@@ -62,13 +69,13 @@ theorem UpdateP.weaken {x : α} (uxp : x ~~>: P) (pq : ∀ y, P y → Q y) : x ~
 theorem Update.exclusive {x y : α} [Exclusive x] (vy : ✓ y) : x ~~> y :=
   fun _ _ P => none_of_excl_valid_op P ▸ vy.validN
 
-instance [ORA α] : Std.Refl (Update (α := α)) where
+instance [RA α] [ORA α] : Std.Refl (Update (α := α)) where
   refl _ := Update.id
 
-instance [ORA α] : Trans Update Update Update (α := α) where
+instance [RA α] [ORA α] : Trans (Update (α := α)) (Update) (Update) where
   trans := Update.trans
 
-instance [ORA α] : Trans Update UpdateP UpdateP (α := α) where
+instance [RA α] [ORA α] : Trans (Update (α := α)) (UpdateP) (UpdateP) where
   trans := Update.transP
 
 #rocq_ignore cmra_update_preorder "Split into the Std.Refl and Trans instances above"
@@ -121,7 +128,7 @@ theorem Update.valid0 {x y : α} : (✓{0} x → x ~~> y) → x ~~> y :=
 
 @[rocq_alias cmra_total_updateP]
 theorem UpdateP.total [IsTotal α] :
-    x ~~>: P ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ∃ y, P y ∧ ✓{n} (y • z) where
+    x ~~>: P ↔ ∀ (n) (z : α), ✓{n} (x • z) → ∃ y, P y ∧ ✓{n} (y • z) where
   mp uxp := fun n z v => uxp n (some z) v
   mpr h := fun n mz v =>
     match mz with
@@ -131,7 +138,7 @@ theorem UpdateP.total [IsTotal α] :
     | some z => h n z v
 
 @[rocq_alias cmra_total_update]
-theorem Update.total [IsTotal α] : x ~~> y ↔ ∀ (n : Nat) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
+theorem Update.total [IsTotal α] : x ~~> y ↔ ∀ (n) (z : α), ✓{n} (x • z) → ✓{n} (y • z) where
   mp uxy := fun n z v => uxy n (some z) v
   mpr h := fun n mz v =>
     match mz with
@@ -185,7 +192,7 @@ theorem Update.discrete_total [Discrete α] [IsTotal α] :
 theorem UpdateP.iso
     (gf : ∀ x, g (f x) = x)
     (g_op : ∀ y1 y2, g (y1 • y2) = g y1 • g y2)
-    (g_validN : ∀ n y, ✓{n} (g y) ↔ ✓{n} y)
+    (g_validN : ∀ (n) y, ✓{n} (g y) ↔ ✓{n} y)
     (uyp : y ~~>: P)
     (pq : ∀ y', P y' → Q (g y')) :
     g y ~~>: Q := by
@@ -207,7 +214,7 @@ theorem UpdateP.iso
 theorem UpdateP.iso'
     (gf : ∀ x, g (f x) = x)
     (g_op : ∀ y1 y2, g (y1 • y2) = g y1 • g y2)
-    (g_validN : ∀ n y, ✓{n} (g y) ↔ ✓{n} y)
+    (g_validN : ∀ (n) y, ✓{n} (g y) ↔ ✓{n} y)
     (uyp : y ~~>: P) :
     g y ~~>: fun x ↦ ∃ y, x = g y ∧ P y :=
   .iso f g gf g_op g_validN uyp fun z pz => ⟨z, rfl, pz⟩
@@ -267,3 +274,17 @@ theorem Update.option (x y : α) (uxy : x ~~> y) : some x ~~> some y :=
 end Updates
 
 end Iris
+
+
+/-! Printing of the step-index-free notations (see `Iris.Algebra.StepIndex`). -/
+namespace Iris.StepIndexSugar
+
+
+@[app_unexpander Iris.UpdateP] meta def unexpandUpdateP : Lean.PrettyPrinter.Unexpander
+  | `($_ $x $y) => `($x ~~>: $y)
+  | _ => throw ()
+@[app_unexpander Iris.Update] meta def unexpandUpdate : Lean.PrettyPrinter.Unexpander
+  | `($_ $x $y) => `($x ~~> $y)
+  | _ => throw ()
+
+end Iris.StepIndexSugar

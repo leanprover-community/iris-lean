@@ -12,6 +12,9 @@ public import Iris.Std.Vector
 
 namespace Iris
 
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
+
 open OFE COFE
 
 /-! ## The vector OFE
@@ -23,7 +26,7 @@ variable [OFE α]
 
 @[rocq_alias vec_ofe_mixin]
 instance : OFE (Vector α n) where
-  Dist k u v := u.toList ≡{k}≡ v.toList
+  dist k u v := u.toList ≡{k}≡ v.toList
   dist_eqv := InvImage.equivalence dist_eqv
   eq_dist' := ⟨fun h _ => h ▸ .rfl, fun h => Vector.toList_inj.mp (eq_dist_2 h)⟩
   dist_lt h hlt := h.lt hlt
@@ -61,12 +64,14 @@ end ofe
 /-! ## COFE structure -/
 
 section cofe
-variable [COFE α]
+variable [SIdxFinite SI] [COFE α]
 
+@[indexed]
 def vecToListHom : Vector α n -n> List α where
   f := Vector.toList
   ne := ⟨fun _ _ _ h => h⟩
 
+omit [SIdxFinite] in
 @[simp] theorem vecToListHom_apply {v : Vector α n} : vecToListHom v = v.toList := rfl
 
 theorem length_compl_vecToListHom (c : Chain (Vector α n)) :
@@ -79,6 +84,9 @@ instance : IsCOFE (Vector α n) where
   conv_compl {k c} := vec_dist_toList.mpr <| by
     rw [Vector.toList_ofList]
     exact conv_compl
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
 end cofe
 
@@ -130,7 +138,7 @@ theorem vec_map_ne [OFE α] [OFE β] {k} {f g : α → β}
   exact list_fmap_ne Hf (vec_dist_toList.mp h)
 
 /-- The vector functor's action on morphisms: postcompose with `Vector.map`. -/
-@[rocq_alias vecO_map]
+@[indexed, rocq_alias vecO_map]
 def vecMap [OFE α] [OFE β] (f : α -n> β) : Vector α n -n> Vector β n where
   f := Vector.map f
   ne := ⟨fun _ _ _ h => vec_map_ne (fun hab => f.ne.ne hab) h⟩

@@ -11,16 +11,20 @@ public import Iris.ProofMode
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris
 
 section Core
 open BI OFE
 
 @[rocq_alias coreP]
-def coreP [Sbi PROP] (P : PROP) : PROP :=
+def coreP [BI PROP] [BIPlainly PROP] (P : PROP) : PROP :=
   iprop% ∀ Q, <affine> ■ (Q -∗ <pers> Q) -∗ <affine> ■ (P -∗ Q) -∗ Q
 
-variable [Sbi PROP]
+variable [BI PROP] [BIPlainly PROP]
 
 @[rocq_alias coreP_intro]
 theorem coreP_intro {P : PROP} : P -∗ coreP P := by
@@ -50,7 +54,8 @@ instance coreP_affine (P : PROP) [Affine P] : Affine (coreP P) where
     iapply HC <;> iintro !> !> _ //
 
 @[rocq_alias coreP_ne]
-instance coreP_ne : NonExpansive (coreP (PROP := PROP)) where
+instance coreP_ne [BIStepIndexed PROP] [Sbi PROP] [BIPlainlySbi PROP] :
+    NonExpansive (coreP (PROP := PROP)) where
   ne _ _ _ H :=
     forall_ne fun _ => wand_ne.ne .rfl (wand_ne.ne
       (affinely_ne.ne (instPlainly_ne.ne (wand_ne.ne H .rfl))) .rfl)
