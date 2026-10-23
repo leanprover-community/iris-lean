@@ -25,6 +25,7 @@ attribute [reducible, instance] MonoZG.natG
 namespace MonoZ
 
 variable {GF : BundledGFunctors} [MonoZG GF]
+local bi (IProp GF)
 
 @[rocq_alias mono_Z_auth_own]
 def auth_own (γ : GName) (dq : DFrac) (n : Int) : IProp GF := iprop%
@@ -86,7 +87,7 @@ instance {γ n} (q : Qp) : AsFractional (PROP := IProp GF) (γ ↪●MZ{.own q} 
 
 @[rocq_alias mono_Z_auth_own_agree]
 theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (n1 n2 : Int) :
-    ⊢@{IProp GF} (γ ↪●MZ{dq1} n1) -∗ (γ ↪●MZ{dq2} n2) -∗ ⌜✓ (dq1 • dq2) ∧ n1 = n2⌝ := by
+    ⊢ (γ ↪●MZ{dq1} n1) -∗ (γ ↪●MZ{dq2} n2) -∗ ⌜✓ (dq1 • dq2) ∧ n1 = n2⌝ := by
   unfold auth_own
   iintro ⟨%Hn1, H1⟩ ⟨%Hn2, H2⟩
   icases MonoNat.auth_own_agree $$ H1 H2 with %⟨Hdq, Heq⟩
@@ -96,7 +97,7 @@ theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (n1 n2 : Int) :
 
 @[rocq_alias mono_Z_auth_own_exclusive]
 theorem auth_own_exclusive (γ : GName) (n1 n2 : Int) :
-    ⊢@{IProp GF} (γ ↪●MZ n1) -∗ (γ ↪●MZ n2) -∗ False := by
+    ⊢ (γ ↪●MZ n1) -∗ (γ ↪●MZ n2) -∗ False := by
   iintro H1 H2
   icases auth_own_agree $$ H1 H2 with %⟨Hdq, -⟩
   ipureintro
@@ -104,7 +105,7 @@ theorem auth_own_exclusive (γ : GName) (n1 n2 : Int) :
 
 @[rocq_alias mono_Z_auth_lb_own_valid]
 theorem auth_lb_own_valid (γ : GName) (dq : DFrac) (n m : Int) :
-    ⊢@{IProp GF} (γ ↪●MZ{dq} n) -∗ (γ ↪◯MZ m) -∗ ⌜✓ dq ∧ m ≤ n⌝ := by
+    ⊢ (γ ↪●MZ{dq} n) -∗ (γ ↪◯MZ m) -∗ ⌜✓ dq ∧ m ≤ n⌝ := by
   unfold auth_own lb_own
   iintro ⟨%Hn, Hauth⟩ ⟨%Hm, Hlb⟩
   icases MonoNat.auth_lb_own_valid $$ Hauth Hlb with %⟨Hdq, Hle⟩
@@ -114,21 +115,21 @@ theorem auth_lb_own_valid (γ : GName) (dq : DFrac) (n m : Int) :
 
 @[rocq_alias mono_Z_lb_own_get]
 theorem lb_own_get (γ : GName) (dq : DFrac) (n : Int) :
-    ⊢@{IProp GF} (γ ↪●MZ{dq} n) -∗ (γ ↪◯MZ n) := by
+    ⊢ (γ ↪●MZ{dq} n) -∗ (γ ↪◯MZ n) := by
   unfold auth_own lb_own
   iintro ⟨$, H⟩
   iapply MonoNat.lb_own_get $$ H
 
 @[rocq_alias mono_Z_lb_own_le]
 theorem lb_own_le (γ : GName) (n n' : Int) (h : n' ≤ n) (h0 : 0 ≤ n') :
-    ⊢@{IProp GF} (γ ↪◯MZ n) -∗ (γ ↪◯MZ n') := by
+    ⊢ (γ ↪◯MZ n) -∗ (γ ↪◯MZ n') := by
   unfold lb_own
   iintro ⟨-, H⟩
   iframe %h0
   iapply MonoNat.lb_own_le (h := by simp only [MaxNat.le_toNat]; omega) $$ H
 
 @[rocq_alias mono_Z_lb_own_0]
-theorem lb_own_0 (γ : GName) : ⊢@{IProp GF} |==> (γ ↪◯MZ 0) := by
+theorem lb_own_0 (γ : GName) : ⊢ |==> (γ ↪◯MZ 0) := by
   unfold lb_own
   simp only [Int.toNat_zero]
   imod MonoNat.lb_own_0 with H
@@ -139,7 +140,7 @@ theorem lb_own_0 (γ : GName) : ⊢@{IProp GF} |==> (γ ↪◯MZ 0) := by
 
 @[rocq_alias mono_Z_own_alloc]
 theorem own_alloc (n : Int) (h : 0 ≤ n) :
-    ⊢@{IProp GF} |==> (∃ γ, (γ ↪●MZ n) ∗ (γ ↪◯MZ n)) := by
+    ⊢ |==> (∃ γ, (γ ↪●MZ n) ∗ (γ ↪◯MZ n)) := by
   unfold auth_own lb_own
   imod (MonoNat.own_alloc (MaxNat.ofNat n.toNat)) with ⟨%γ, H1, H2⟩
   imodintro
@@ -148,7 +149,7 @@ theorem own_alloc (n : Int) (h : 0 ≤ n) :
 
 @[rocq_alias mono_Z_own_update]
 theorem own_update (γ : GName) (n n' : Int) (h : n ≤ n') :
-    ⊢@{IProp GF} (γ ↪●MZ n) ==∗ (γ ↪●MZ n') ∗ (γ ↪◯MZ n') := by
+    ⊢ (γ ↪●MZ n) ==∗ (γ ↪●MZ n') ∗ (γ ↪◯MZ n') := by
   iintro H
   ihave >Hauth : |==> (γ ↪●MZ n') $$ [H]
   · unfold auth_own
@@ -165,14 +166,14 @@ theorem own_update (γ : GName) (n n' : Int) (h : n ≤ n') :
 
 @[rocq_alias mono_Z_own_persist]
 theorem own_persist (γ : GName) (dq : DFrac) (a : Int) :
-    ⊢@{IProp GF} (γ ↪●MZ{dq} a) ==∗ (γ ↪●MZ□ a) := by
+    ⊢ (γ ↪●MZ{dq} a) ==∗ (γ ↪●MZ□ a) := by
   unfold auth_own
   iintro ⟨$, H⟩
   iapply MonoNat.own_persist $$ H
 
 @[rocq_alias mono_Z_own_unpersist]
 theorem own_unpersist (γ : GName) (a : Int) :
-    ⊢@{IProp GF} (γ ↪●MZ□ a) ==∗ (∃ q, γ ↪●MZ{DFrac.own q} a) := by
+    ⊢ (γ ↪●MZ□ a) ==∗ (∃ q, γ ↪●MZ{DFrac.own q} a) := by
   unfold auth_own
   iintro ⟨%Ha, H⟩
   imod MonoNat.own_unpersist $$ H with ⟨%q, H⟩

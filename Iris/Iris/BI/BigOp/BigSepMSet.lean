@@ -23,6 +23,7 @@ open Iris.Algebra BigOpL BigOpMS BIBase Iris.Std BigSepL
 
 variable {PROP : Type _} [BI PROP]
 variable {MS : Type _} {A : Type _} [LawfulFiniteMultiSet MS A]
+local bi PROP
 
 namespace BigSepMS
 
@@ -70,7 +71,7 @@ theorem bigSepMS_empty_intro {P : PROP} [Affine P] {Φ : A → PROP} :
   Affine.affine.trans bigSepMS_empty.2
 
 /-- Lean helper (Coq has no `big_sepMS_emp`). -/
-theorem bigSepMS_emp {X : MS} : ([∗mset] _x ∈ X, (emp : PROP)) ⊣⊢ emp :=
+theorem bigSepMS_emp {X : MS} : ([∗mset] _x ∈ X, emp) ⊣⊢ emp :=
   bigSepMS_elements.trans bigSepL_emp
 
 @[rocq_alias big_sepMS_singleton]
@@ -179,20 +180,20 @@ theorem bigSepMS_elem_of_acc {Φ : A → PROP} {X : MS} {x : A} (h : x ∈ X) :
 
 @[rocq_alias big_sepMS_pure_1]
 theorem bigSepMS_pure_intro {φ : A → Prop} {X : MS} :
-    ([∗mset] y ∈ X, ⌜φ y⌝) ⊢ (⌜∀ y, y ∈ X → φ y⌝ : PROP) :=
+    ([∗mset] y ∈ X, ⌜φ y⌝) ⊢ ⌜∀ y, y ∈ X → φ y⌝ :=
   bigSepMS_elements.1.trans <| bigSepL_pure_intro.trans <| pure_mono fun h _ hy =>
     h _ _ (List.getElem?_of_mem (LawfulFiniteMultiSet.mem_toList.mpr hy)).choose_spec
 
 @[rocq_alias big_sepMS_affinely_pure_2]
 theorem bigSepMS_affinely_pure_elim {φ : A → Prop} {X : MS} :
-    (<affine> (⌜∀ y, y ∈ X → φ y⌝ : PROP)) ⊢ ([∗mset] y ∈ X, <affine> ⌜φ y⌝) :=
+    (<affine> ⌜∀ y, y ∈ X → φ y⌝) ⊢ ([∗mset] y ∈ X, <affine> ⌜φ y⌝) :=
   (affinely_mono <| pure_mono fun h _ x hget =>
       h x (LawfulFiniteMultiSet.mem_toList.mp (List.mem_of_getElem? hget))).trans <|
   bigSepL_affinely_pure_elim.trans bigSepMS_elements.2
 
 @[rocq_alias big_sepMS_pure]
 theorem bigSepMS_pure [BIAffine PROP] {φ : A → Prop} {X : MS} :
-    ([∗mset] y ∈ X, ⌜φ y⌝) ⊣⊢ (⌜∀ y, y ∈ X → φ y⌝ : PROP) :=
+    ([∗mset] y ∈ X, ⌜φ y⌝) ⊣⊢ ⌜∀ y, y ∈ X → φ y⌝ :=
   ⟨bigSepMS_pure_intro, (affine_affinely _).2.trans <|
     bigSepMS_affinely_pure_elim.trans (bigSepMS_mono fun _ => affinely_elim)⟩
 

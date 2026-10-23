@@ -23,6 +23,8 @@ namespace Iris
 
 open Iris OFE COFE BI Auth
 
+local bi (IProp GF)
+
 section InvG
 
 @[rocq_alias invGpreS]
@@ -435,7 +437,7 @@ theorem fupd_keep_pure {E1 E2 : CoPset} (φ : Prop) (E2' : CoPset) (Q : IProp GF
 
 @[rocq_alias fupd_pure_forall]
 theorem fupd_pure_forall {A : Type _} (E1 E2 : CoPset) (φ : A → Prop) (H : E2 ⊆ E1) :
-    (|={E1,E2}=> ∀ x, ⌜φ x⌝ : IProp GF) ⊣⊢ iprop(∀ x, |={E1,E2}=> ⌜φ x⌝) := by
+    (|={E1,E2}=> ∀ x, ⌜φ x⌝) ⊣⊢ iprop(∀ x, |={E1,E2}=> ⌜φ x⌝) := by
   refine ⟨fupd_forall, ?_⟩
   · iintro H
     iapply fupd_keep iprop(∀ x, ⌜φ x⌝)

@@ -19,6 +19,8 @@ namespace Iris
 
 open BI ORA OFE Iris Iris.Std LawfulSet DisjointLeibnizSet COFE ProofMode
 
+local bi (IProp GF)
+
 abbrev NaInvF : OFunctorPre :=
   ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
 
@@ -111,7 +113,7 @@ nonrec theorem inv_iff {p : NaInvPoolName} {N : Namespace} {P Q : IProp GF} :
     · iright; iassumption
 
 @[rocq_alias na_alloc]
-theorem alloc : ⊢@{IProp GF} |==> ∃ p : NaInvPoolName, own p ⊤ :=
+theorem alloc : ⊢ |==> ∃ p : NaInvPoolName, own p ⊤ :=
   iOwn_alloc (E := W.inv) (.valid (⊤ : CoPset), .valid (∅ : PosSet)) ⟨trivial, trivial⟩
 
 @[rocq_alias na_own_disjoint]
@@ -146,7 +148,7 @@ theorem own_acc {E2 E1 : CoPset} {tid : NaInvPoolName} (Hsub : E2 ⊆ E1) :
   isplitl [H1] <;> iassumption
 
 @[rocq_alias na_own_empty]
-theorem own_empty (p : NaInvPoolName) : ⊢@{IProp GF} |==> own p ∅ := iOwn_unit (E := W.inv)
+theorem own_empty (p : NaInvPoolName) : ⊢ |==> own p ∅ := iOwn_unit (E := W.inv)
 
 @[rocq_alias na_inv_alloc]
 nonrec theorem inv_alloc {p : NaInvPoolName} {E : CoPset} {N : Namespace} {P : IProp GF} :
