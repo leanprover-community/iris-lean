@@ -46,26 +46,26 @@ instance instRA : RA (MaxPrefixList α) := Heap.raRA (M := MaxPrefixListMap) (V 
 /-- URA instance on `MaxPrefixList`, inherited from the URA on the underlying map. -/
 instance instURA : URA (MaxPrefixList α) := Heap.raURA (M := MaxPrefixListMap) (V := Agree α)
 
-variable [OFE Nat α]
+variable [OFE α]
 
 /-- OFE instance on [MaxPrefixList], inherited from the OFE on the underlying map. -/
-instance instOFE : OFE Nat (MaxPrefixList α) :=
+instance instOFE : OFE (MaxPrefixList α) :=
   PartialMap.instOFE (M:= MaxPrefixListMap) (V := Agree α)
 
 /-- ORA instance on [MaxPrefixList], inherited from the ORA on the underlying map. -/
-instance instORA : ORA Nat (MaxPrefixList α) :=
+instance instORA : ORA (MaxPrefixList α) :=
   Heap.instStoreORA (M:= MaxPrefixListMap) (V := Agree α)
 
 /-- UORA instance on `MaxPrefixList`, inherited from the UORA on the underlying map. -/
-instance instUORA : UORA Nat (MaxPrefixList α) :=
+instance instUORA : UORA (MaxPrefixList α) :=
   Heap.instStoreUORA  (M:= MaxPrefixListMap) (V := Agree α)
 
-instance instIsInc : IsInc Nat (MaxPrefixList α) := inferInstanceAs (IsInc Nat (MaxPrefixListMap (Agree α)))
+instance instIsInc : IsInc (MaxPrefixList α) := inferInstanceAs (IsInc (MaxPrefixListMap (Agree α)))
 
 instance instCoreId (x : MaxPrefixList α) : CoreId x :=
   Heap.instCoreId (M:= MaxPrefixListMap) (V := Agree α)
 
-instance instDiscrete [OFE.Discrete Nat α] : ORA.Discrete Nat (MaxPrefixList α) where
+instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MaxPrefixList α) where
   discrete_0 := OFE.discrete_0 (α := MaxPrefixListMap (Agree α))
   discrete_valid := discrete_valid (α := MaxPrefixListMap (Agree α))
   discrete_ord := discrete_ord (α := MaxPrefixListMap (Agree α))
@@ -140,12 +140,12 @@ theorem toMaxPrefixList_inc_iff {l1 l2 : List α} :
       exact congrArg some (ha.elim Agree.toAgree_inj Agree.toAgree_included.mp)
   · grind [inc_op_left]
 
-variable [OFE Nat α]
+variable [OFE α]
 
 /-! ## OFE properties -/
 
 @[rocq_alias to_max_prefix_list_ne]
-instance toMaxPrefixList_ne : NonExpansive Nat (toMaxPrefixList (α := α)) where
+instance toMaxPrefixList_ne : NonExpansive (toMaxPrefixList (α := α)) where
   ne _ _ _ h i := by
     rw [get?_toMaxPrefixList, get?_toMaxPrefixList]
     exact Option.map_ne (fun _ _ hd => NonExpansive.ne hd) (list_dist_lookup.mp h i)

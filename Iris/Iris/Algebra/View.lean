@@ -281,11 +281,11 @@ theorem ValidN.pair {n} {x : View R} (Hv : ValidN n x) :
   · obtain ⟨Hq, a, Ha1, Ha2⟩ := Hv
     exact ⟨⟨Hq, Agree.validN_ne Ha1.symm trivial⟩, IsViewRel.rel_validN _ _ _ Ha2⟩
 
-@[reducible] def raValid : _root_.Iris.Valid (View R) where
+@[reducible] def raValid : _root_.Iris.Valid (SI := SI) (View R) where
   ValidN := ValidN
   Valid := Valid
   valid_iff_validN {x} := by
-    simp only [Valid, ValidN]; split
+    simp only [«Valid», «ValidN»]; split
     · exact ⟨fun H n => ⟨H.1, H.2 n⟩, fun H => ⟨(H 0).1, fun n => (H n).2⟩⟩
     · exact Eq.to_iff rfl
 
@@ -334,7 +334,7 @@ instance instORA : ORA (View R) where
     rintro ⟨Hl, Hr⟩
     rcases x1 with ⟨_|⟨q1, ag1⟩, b1⟩ <;>
     rcases x2 with ⟨_|⟨q2, ag2⟩, b2⟩ <;>
-    simp_all [Valid.ValidN]
+    simp_all [Valid.«ValidN»]
     · exact fun x H => ⟨x, mono_inc H .rfl Hr.symm.to_incN SIdx.le_refl⟩
     intro Hq a Hag HR
     refine ⟨validN_ne Hl.1 Hq, ?_⟩
@@ -342,7 +342,7 @@ instance instORA : ORA (View R) where
     refine ⟨Hl.2.symm.trans Hag, ?_⟩
     exact mono_inc HR .rfl Hr.symm.to_incN SIdx.le_refl
   validN_le {n n'} {x} := by
-    simp only [Valid.ValidN, ValidN]
+    simp only [Valid.«ValidN», «ValidN»]
     split
     · refine fun H hle => ⟨H.1, ?_⟩
       rcases H.2 with ⟨ag, Ha⟩; exists ag
@@ -450,7 +450,7 @@ instance increasing_fragElem {b : B} [Increasing b] : Increasing (◯V b : View 
 instance [OFE.Discrete A] [ORA.Discrete B] [IsViewRelDiscrete R] : ORA.Discrete (View R) where
   discrete_ord h := ⟨discrete_ord h.1, discrete_ord h.2⟩
   discrete_valid {x} := by
-    simp only [ORA.ValidN, ValidN, ORA.Valid, Valid]
+    simp only [ORA.ValidN, «ValidN», ORA.Valid, «Valid»]
     split
     · rintro ⟨H1, ⟨a, H2, H3⟩⟩
       refine ⟨H1, fun n => ⟨a, ⟨?_, ?_⟩⟩⟩
@@ -595,7 +595,7 @@ theorem auth_op_auth_validN_iff {n} :
     apply op_commN.trans
     apply (op_ne.ne (toAgree.ne.ne Ha')).trans
     exact Agree.idemp.dist
-  · simp [ORA.op, ORA.ValidN, ValidN, optionOp, Prod.op]
+  · simp [ORA.op, ORA.ValidN, «ValidN», optionOp, Prod.op]
     refine ⟨H.1, a1, ?_, ?_⟩
     · exact (op_ne.ne <| toAgree.ne.ne H.2.1.symm).trans Agree.idemp.dist
     · refine mono_inc H.2.2 .rfl ?_ SIdx.le_refl
@@ -606,7 +606,7 @@ theorem auth_one_op_auth_one_validN_iff {n} : ✓{n} ((●V a1 : View R) • ●
   refine auth_op_auth_validN_iff.trans ?_
   simp only [iff_false, not_and]
   intro h
-  simp only [ORA.Valid, ORA.op, DFrac.op, valid] at h
+  simp only [ORA.Valid, ORA.op, DFrac.op, «valid»] at h
   grind
 
 @[rocq_alias view_frag_validN]
@@ -632,7 +632,7 @@ theorem auth_one_valid_iff : ✓ (●V a : View R) ↔ ∀ n, R n a unit :=
 theorem auth_op_auth_valid_iff : ✓ ((●V{dq1} a1 : View R) • ●V{dq2} a2) ↔ ✓ (dq1 • dq2) ∧ a1 = a2 ∧ ∀ n, R n a1 unit := by
   refine valid_iff_validN.trans ?_
   refine ⟨fun H => ?_, fun H n => ?_⟩
-  · simp [valid, ORA.op, DFrac.op, optionOp, ORA.ValidN, ValidN] at H
+  · simp [«valid», ORA.op, DFrac.op, optionOp, ORA.ValidN, «ValidN»] at H
     let Hn n := dist_of_validN_auth <| H n
     refine ⟨(H 0).1, OFE.eq_dist_2 Hn, fun n => ?_⟩
     · rcases (H n) with ⟨_, _, Hl, H⟩
@@ -644,7 +644,7 @@ theorem auth_op_auth_valid_iff : ✓ ((●V{dq1} a1 : View R) • ●V{dq2} a2) 
 @[rocq_alias view_auth_op_valid]
 theorem auth_one_op_auth_one_valid_iff : ✓ ((●V a1 : View R) • ●V a2) ↔ False := by
   refine auth_op_auth_valid_iff.trans ?_
-  simp [ORA.op, DFrac.op, ORA.Valid, valid]
+  simp [ORA.op, DFrac.op, ORA.Valid, «valid»]
   grind
 
 @[rocq_alias view_frag_valid]
@@ -664,7 +664,7 @@ theorem auth_incN_auth_op_frag_iff {n} :
     (●V{dq1} a1 : View R) ≼{n} ((●V{dq2} a2) • ◯V b) ↔
       (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 ≡{n}≡ a2 := by
   refine ⟨?_, fun H => ?_⟩
-  · simp only [Auth, Frag, IncludedN, ORA.op]
+  · simp only [Auth, Frag, «IncludedN», ORA.op]
     rintro ⟨(_|⟨dqf, af⟩),⟨⟨x1, x2⟩, y⟩⟩
     · exact ⟨.inr x1.symm, toAgree.inj x2.symm⟩
     · exact ⟨.inl ⟨dqf, x1⟩, Agree.toAgree_includedN.mp ⟨af, x2⟩⟩
@@ -1003,7 +1003,7 @@ theorem frag_updateP {P : B → Prop} (Hupd : ∀ a n bf, R n a (b • bf) → �
     exists (◯V b')
     simp only [mk.injEq, true_and, exists_eq_left']
     refine ⟨Hb', ?_⟩
-    simp [ORA.ValidN, ValidN, ORA.op, optionOp]
+    simp [ORA.ValidN, «ValidN», ORA.op, optionOp]
     exact ⟨Hq, ⟨a, Hae, Hp⟩⟩
 
 @[rocq_alias view_update_frag]
@@ -1026,7 +1026,7 @@ theorem auth_alloc (Hup : ∀ n bf, R n a bf → R n a (b • bf)) :
     (●V{dq} a : View R) ~~> ((●V{dq} a) • ◯V b) := by
   refine Update.total.mpr (fun n ⟨ag', bf⟩ => ?_)
   obtain (_|⟨p, ag⟩) := ag'
-  · simp [ORA.op, optionOp, ORA.ValidN, ValidN]
+  · simp [ORA.op, optionOp, ORA.ValidN, «ValidN»]
     intro Hq a' Hag HR
     refine ⟨Hq, a', Hag, ?_⟩
     have HR' := IsViewRel.mono_inc HR (toAgree.inj Hag).symm (incN_op_right n unit bf) SIdx.le_refl
@@ -1113,7 +1113,7 @@ instance (f : A → A') (g : B → B') [OFE.NonExpansive f] [hne : OFE.NonExpans
   ne := by
     rintro n _ _ ⟨h1, h2⟩
     refine ⟨?_, hne.ne h2⟩
-    simp only [map]
+    simp only [«map»]
     split <;> split <;> simp_all
     exact ⟨h1.1, Agree.map f |>.ne.ne h1.2⟩
 
@@ -1145,7 +1145,7 @@ def mapC [OFE A] [URA B] [UORA B] [OFE A'] [URA B'] [UORA B']
   f := View.map R' f g
   ne := inferInstance
   validN {n} {x} hval := by
-    simp [ORA.ValidN, map] at *
+    simp [ORA.ValidN, «map»] at *
     rcases x with ⟨_ | ⟨fr,a⟩, b⟩ <;> simp_all
     · obtain ⟨a, hr⟩ := hval
       exists f a
@@ -1153,7 +1153,7 @@ def mapC [OFE A] [URA B] [UORA B] [OFE A'] [URA B'] [UORA B']
     · rcases hval with ⟨hfr, a1, ha, hr⟩
       exact ⟨f a1, ⟨OFE.NonExpansive.ne ha, H n a1 b hr⟩⟩
   pcore x := by
-    simp [ORA.pcore, map, ORA.core, Option.getD]
+    simp [ORA.pcore, «map», ORA.core, Option.getD]
     refine ⟨?_, ?_⟩
     · rcases x.auth with _|⟨fr, a⟩ <;> simp [Prod.pcore]
       rcases (ORA.pcore fr) <;> simp
@@ -1163,7 +1163,7 @@ def mapC [OFE A] [URA B] [UORA B] [OFE A'] [URA B'] [UORA B']
       rcases _ : (ORA.pcore (g.f x.frag)) <;> simp_all
   op x y := by
     rcases x with ⟨xa, xf⟩; rcases y with ⟨ya, yf⟩
-    simp only [ORA.op, map]
+    simp only [ORA.op, «map»]
     simp only [Op, View.mk.injEq]
     refine ⟨?_, ?_⟩
     · cases xa <;> cases ya <;> simp [ORA.op, optionOp, Prod.op]

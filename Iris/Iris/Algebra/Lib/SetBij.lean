@@ -59,7 +59,7 @@ namespace SetBij
 /-- The view relation: a fragment is a subrelation of the authoritative bijection. -/
 @[indexed, rocq_alias gset_bij_view_rel, rocq_alias gset_bij_view_rel_raw]
 def viewRel : ViewRel (LeibnizSet S) (LeibnizSet S)
-  | _, valid bijL, valid L => L ⊆ bijL ∧ SetBijective bijL
+  | _, «valid» bijL, «valid» L => L ⊆ bijL ∧ SetBijective bijL
 
 @[rocq_alias gset_bij_view_rel_iff]
 theorem viewRel_iff {n} : viewRel n (valid L') (valid L) ↔ L ⊆ L' ∧ SetBijective L' := .rfl
@@ -102,7 +102,7 @@ theorem frag_op_union : ((◯V valid L₁ : SetBij S) • ◯V valid L₂) = ◯
 /-- The authoritative and fragment parts of two `auth`s, regrouped. -/
 theorem auth_op_auth_eq : ((auth dq₁ L₁ : SetBij S) • auth dq₂ L₂)
     = ((●V{dq₁} valid L₁ : SetBij S) • ●V{dq₂} valid L₂) • ◯V valid (L₁ ∪ L₂) := by
-  rw [auth, auth, ← frag_op_union]
+  rw [«auth», «auth», ← frag_op_union]
   exact Algebra.MonoidOps.op_op_op_comm
 attribute [local grind =] auth_op_auth_eq
 
@@ -113,7 +113,7 @@ attribute [local grind =] auth_op_auth
 
 @[rocq_alias gset_bij_auth_dfrac_valid]
 theorem auth_valid_iff : ✓ (auth dq L : SetBij S) ↔ ✓ dq ∧ SetBijective L := by
-  rw [auth, auth_op_frag_valid_iff]
+  rw [«auth», auth_op_frag_valid_iff]
   exact and_congr_right fun _ => ⟨fun h => (h 0).2, fun h _ => ⟨subset_refl, h⟩⟩
 attribute [local grind =] auth_valid_iff
 
@@ -149,7 +149,7 @@ theorem auth_one_op_auth_one_valid_iff :
 
 @[rocq_alias bij_both_dfrac_valid]
 theorem auth_op_elem_valid_iff : ✓ (auth dq L • elem a b) ↔ ✓ dq ∧ SetBijective L ∧ (a, b) ∈ L := by
-  rw [auth, elem, ← assoc_L, frag_op_union, auth_op_frag_valid_iff]
+  rw [«auth», «elem», ← assoc_L, frag_op_union, auth_op_frag_valid_iff]
   exact and_congr_right fun _ =>
     ⟨fun h => ⟨(h 0).2, (h 0).1 _ (mem_union.mpr (.inr (mem_singleton.mpr rfl)))⟩,
      fun ⟨hbij, hmem⟩ _ =>
@@ -161,7 +161,7 @@ theorem auth_one_op_elem_valid_iff : ✓ (auth (.own 1) L • elem a b) ↔ SetB
 
 @[rocq_alias gset_bij_elem_agree]
 theorem elem_agree (h : ✓ ((elem a₁ b₁ • elem a₂ b₂) : SetBij S)) : a₁ = a₂ ↔ b₁ = b₂ := by
-  rw [elem, elem, frag_op_union, frag_valid_iff] at h
+  rw [«elem», «elem», frag_op_union, frag_valid_iff] at h
   obtain ⟨⟨_⟩, hsub, hbij⟩ := h 0
   exact SetBijective.eq_iff (hbij.mono hsub) (mem_union.mpr (.inl (mem_singleton.mpr rfl)))
     (mem_union.mpr (.inr (mem_singleton.mpr rfl)))

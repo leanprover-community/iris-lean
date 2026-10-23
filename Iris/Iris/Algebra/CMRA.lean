@@ -181,7 +181,7 @@ namespace Ordered
 @[inherit_doc Order] notation:50 x " ≼ₒ[" S "] " y:51 => Order (SI := S) x y
 @[inherit_doc Ordered.Order] notation:50 x:51 " ≼ₒ " y:51 => Ordered.Order (SI := stepindex%) x y
 
-variable [OFE α] [Ordered SI α]
+variable [OFE α] [Ordered α]
 
 /-- The reflexive closure of the step-indexed order. -/
 @[indexed]
@@ -279,7 +279,7 @@ class IsInc (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [HasDist α] [Op �
 attribute [indexed] IncOrd.inc_ord OrdInc.ord_inc OrdInc.ordN_incN
 
 section
-variable {α : Type _} [OFE α] [Op α] [Ordered SI α]
+variable {α : Type _} [OFE α] [Op α] [Ordered α]
 
 theorem IncOrd.increasing [IncOrd α] (x : α) : Increasing x :=
   ⟨fun _ => IncOrd.inc_ord ⟨x, Op.comm⟩⟩
@@ -996,7 +996,7 @@ theorem core_mono_of_pcore_op_mono [Op α] [PCore α] [IsTotal α]
 of it (Mathlib-style constructors); `ORA.ofCMRAData` instantiates them. -/
 
 section build
-variable [OFE α] [RA α] [Valid SI α] [OpNE α] [PCoreNE α] [ValidNE α]
+variable [OFE α] [RA α] [Valid α] [OpNE α] [PCoreNE α] [ValidNE α]
 variable (hv : ∀ {n : SI} {x y : α}, ✓{n} (x • y) → ✓{n} x)
 variable (hpm : ∀ {x cx : α}, pcore x = some cx → ∀ y, ∃ cy : α, pcore (x • y) = some (cx • cy))
 
@@ -1188,7 +1188,7 @@ variable [RA α] [ORA α]
 
 section orderN
 omit [RA α] [ORA α]
-variable [OFE α] [Ordered SI α] [OrderedNE α]
+variable [OFE α] [Ordered α] [OrderedNE α]
 
 theorem ordN_of_ordN_of_dist {n} (h : (a : α) ≼ₒ{n} b) (e : b ≡{n}≡ c) : a ≼ₒ{n} c := ordN_ne .rfl e h
 
@@ -2084,7 +2084,7 @@ instance raURA [∀ x, URA (β x)] : URA (∀ x, β x) where
   pcore_unit := congrArg some (funext fun _ => core_eqv_self _)
 
 @[reducible, rocq_alias discrete_fun_valid_instance, rocq_alias discrete_fun_validN_instance]
-def raValid [∀ x, _root_.Iris.Valid (β x)] : _root_.Iris.Valid (∀ x, β x) where
+def raValid [∀ x, _root_.Iris.Valid (SI := SI) (β x)] : _root_.Iris.Valid (SI := SI) (∀ x, β x) where
   ValidN n f := ∀ x, ✓{n} f x
   Valid f := ∀ x, ✓ f x
   valid_iff_validN {g} := by simpa [valid_iff_validN] using forall_comm
@@ -2346,7 +2346,7 @@ instance raURA : URA (Option α) where
   total _ := ⟨_, rfl⟩
 
 @[reducible, rocq_alias option_valid_instance, rocq_alias option_validN_instance]
-def raValid : _root_.Iris.Valid (Option α) where
+def raValid : _root_.Iris.Valid (SI := SI) (Option α) where
   ValidN := optionValidN
   Valid := optionValid
   valid_iff_validN {x} := by
@@ -2371,11 +2371,11 @@ attribute [local instance] raOrdered in
 theorem raOrderedNE : OrderedNE (Option α) where
   ordN_ne {n} {x x' y y'} ex ey h := by
     rcases x, x', y, y' with ⟨_|x, _|x', _|y, _|y'⟩ <;>
-      simp_all [Dist, HasDist.dist, Option.Forall₂, Ordered.OrderN]
+      simp_all [Iris.OFE.Dist, HasDist.dist, Option.Forall₂, Iris.Ordered.OrderN]
     · exact h.of_dist ey
     · exact Ordered.OrderNR.ne ex ey h
   ordN_le {n n'} {x y} h le := by
-    rcases x, y with ⟨_|x, _|y⟩ <;> simp_all [Ordered.OrderN]
+    rcases x, y with ⟨_|x, _|y⟩ <;> simp_all [Iris.Ordered.OrderN]
     exact Ordered.OrderNR.le le h
 
 section
@@ -2462,14 +2462,14 @@ instance cmraOption : ORA (Option α) where
     | none, none, _ => exact Dist.rfl
     | some x, some y, (H : x ≡{n}≡ y) => exact NonExpansive.ne (f := pcore) H
   validN_ne {n} {x y} H := by
-    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Dist, HasDist.dist, Option.Forall₂, Valid.ValidN]
+    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Iris.OFE.Dist, HasDist.dist, Option.Forall₂, Iris.Valid.ValidN]
     exact Dist.validN H |>.mp
   validN_le {n n'} {x} := by
-    rcases x with ⟨_|_⟩ <;> simp_all [Valid.ValidN]
+    rcases x with ⟨_|_⟩ <;> simp_all [Iris.Valid.ValidN]
     exact fun h le => validN_le h le
   toOrderedNE := Option.raOrderedNE
   validN_op_left {n} {x y} := by
-    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Op.op, optionOp, Valid.ValidN, optionValidN]
+    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Op.op, optionOp, Iris.Valid.ValidN, optionValidN]
     apply validN_op_left
   extend {n} := by
     rintro (_|x) (_|mb1) (_|mb2) Hx Hx' <;> simp [Op.op, optionOp] at Hx' ⊢
@@ -3176,7 +3176,7 @@ abbrev OrderN (n) (x y : α × β) := x.fst ≼ₒ{n} y.fst ∧ x.snd ≼ₒ{n} 
 abbrev Order (x y : α × β) := x.fst ≼ₒ y.fst ∧ x.snd ≼ₒ y.snd
 
 @[reducible, rocq_alias prod_valid_instance, rocq_alias prod_validN_instance]
-def raValid : _root_.Iris.Valid (α × β) where
+def raValid : _root_.Iris.Valid (SI := SI) (α × β) where
   ValidN := ValidN
   Valid := Valid
   valid_iff_validN {x} := by
@@ -3830,7 +3830,7 @@ namespace ORA
 
 @[indexed, reducible] def ofDiscreteORAData [OFE α] [OFE.Discrete α] [RA α] (d : DiscreteORAData α) :
     ORA α :=
-  letI : _root_.Iris.Valid α :=
+  letI : _root_.Iris.Valid (SI := SI) α :=
     { Valid := d.Valid
       ValidN _ := d.Valid
       valid_iff_validN := (forall_const _).symm }

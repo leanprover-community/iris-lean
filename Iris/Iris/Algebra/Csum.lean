@@ -54,7 +54,7 @@ instance [OFE α] [OFE β] : OFE (Csum α β) where
   dist := Csum.Dist
   dist_eqv := dist_eqv
   eq_dist' {x y} := by
-    cases x <;> cases y <;> simp [Csum.Dist, eq_dist (SI := SI)]
+    cases x <;> cases y <;> simp [Csum.«Dist», eq_dist (SI := SI)]
   dist_lt {n} {x y m} hn hlt := by
     cases x <;> cases y <;> first | exact OFE.Dist.lt hn hlt | exact hn.elim | trivial
 
@@ -132,14 +132,14 @@ def chainL [OFE α] [OFE β] (c : Chain (Csum α β)) (a : α) : Chain α where
   chain n := (c n).getInlD a
   cauchy {n} {i} h := by
     have hc := c.cauchy h; revert hc
-    cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist, HasDist.dist]
+    cases c.chain i <;> cases c.chain n <;> simp [OFE.«Dist», HasDist.dist]
 
 @[rocq_alias csum_chain_r]
 def chainR [OFE α] [OFE β] (c : Chain (Csum α β)) (b : β) : Chain β where
   chain n := (c n).getInrD b
   cauchy {n} {i} h := by
     have hc := c.cauchy h; revert hc
-    cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist, HasDist.dist]
+    cases c.chain i <;> cases c.chain n <;> simp [OFE.«Dist», HasDist.dist]
 
 @[rocq_alias csum_cofe]
 instance [SIdxFinite] [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
@@ -242,7 +242,7 @@ instance raOp [Op α] [Op β] : Op (Csum α β) where
     | inr b => obtain ⟨cb, hpb, rfl⟩ := pcore_map_inr_eq hpx; exact congrArg _ (pcore_op_left hpb)
     | invalid => exact (Option.some.inj hpx) ▸ rfl
 
-@[reducible] def raValid [RA α] [ORA α] [RA β] [ORA β] : _root_.Iris.Valid (Csum α β) where
+@[reducible] def raValid [RA α] [ORA α] [RA β] [ORA β] : _root_.Iris.Valid (SI := SI) (Csum α β) where
   Valid := Csum.valid
   ValidN := Csum.validN
   valid_iff_validN {x} := by cases x <;> simp [valid_iff_validN]
@@ -475,7 +475,7 @@ theorem ord [RA α] [ORA α] [RA β] [ORA β] {x y : Csum α β} :
       (∃ a a', x = inl a ∧ y = inl a' ∧ a ≼ₒ a') ∨
       (∃ b b', x = inr b ∧ y = inr b' ∧ b ≼ₒ b') := by
   change Csum.Order x y ↔ _
-  cases x <;> cases y <;> simp [Csum.Order]
+  cases x <;> cases y <;> simp [Csum.«Order»]
 
 theorem inl_ord [RA α] [ORA α] [RA β] [ORA β] {a a' : α} : (inl (β := β) a) ≼ₒ inl a' ↔ a ≼ₒ a' := .rfl
 
@@ -496,7 +496,7 @@ theorem some_ord [RA α] [ORA α] [RA β] [ORA β] {x y : Csum α β} :
       (∃ b b', x = inr b ∧ y = inr b' ∧ some b ≼ₒ some b') := by
   rw [Option.some_ord_some_iff]
   change _ ∨ Csum.Order x y ↔ _
-  cases x <;> cases y <;> simp [Csum.Order, Option.some_ord_some_iff]
+  cases x <;> cases y <;> simp [Csum.«Order», Option.some_ord_some_iff]
 
 theorem some_ordN [RA α] [ORA α] [RA β] [ORA β] {n} {x y : Csum α β} :
     some x ≼ₒ{n} some y ↔ y = invalid ∨
@@ -663,8 +663,8 @@ theorem map_ne [OFE α] [OFE α'] [OFE β] [OFE β'] {n}
     {x y : Csum α β} (hxy : x ≡{n}≡ y) :
     map f g x ≡{n}≡ map f' g' y := by
   cases x with
-  | inl => cases y with | inl => simp [map]; exact hf hxy | _ => exact hxy
-  | inr => cases y with | inr => simp [map]; exact hg hxy | _ => exact hxy
+  | inl => cases y with | inl => simp [«map»]; exact hf hxy | _ => exact hxy
+  | inr => cases y with | inr => simp [«map»]; exact hg hxy | _ => exact hxy
   | invalid => cases y with | invalid => trivial | _ => exact hxy
 
 @[indexed, rocq_alias csumO_map]
@@ -679,8 +679,8 @@ theorem oMap_ne [OFE α] [OFE α'] [OFE β] [OFE β'] :
     NonExpansive₂ (oMap (α := α) (α' := α') (β := β) (β' := β')) where
   ne _ _ _ hf _ _ hg x := by
     cases x with
-    | inl => simp [oMap, map]; exact hf _
-    | inr => simp [oMap, map]; exact hg _
+    | inl => simp [«oMap», «map»]; exact hf _
+    | inr => simp [«oMap», «map»]; exact hg _
     | invalid => trivial
 
 @[rocq_alias csumRF]
@@ -728,10 +728,10 @@ def cMap [RA α] [ORA α] [RA α'] [ORA α'] [RA β] [ORA β] [RA β'] [ORA β']
 instance {Fa Fb} [RFunctor Fa] [RFunctor Fb] : RFunctor (OF Fa Fb) where
   map f g := cMap (RFunctor.map f g) (RFunctor.map f g)
   map_ne.ne _ _ _ hf _ _ hg x := by
-    cases x <;> simp [cMap, map] <;> exact RFunctor.map_ne.ne hf hg _
-  map_id x := by cases x <;> simp [cMap, map] <;> exact RFunctor.map_id _
+    cases x <;> simp [cMap, «map»] <;> exact RFunctor.map_ne.ne hf hg _
+  map_id x := by cases x <;> simp [cMap, «map»] <;> exact RFunctor.map_id _
   map_comp f g f' g' x := by
-    cases x <;> simp [cMap, map] <;> exact RFunctor.map_comp f g f' g' _
+    cases x <;> simp [cMap, «map»] <;> exact RFunctor.map_comp f g f' g' _
 
 instance instRFunctorAffine {Fa Fb} [RFunctor Fa] [RFunctor Fb] [RFunctorAffine Fa] [RFunctorAffine Fb] :
     RFunctorAffine (OF Fa Fb) where

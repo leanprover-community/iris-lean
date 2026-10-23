@@ -7,7 +7,7 @@ module
 
 public import Iris.Std.Classes
 public meta import IrisSugar.Registry
-public meta import IrisSugar.Elab
+public meta import IrisSugar.Notation
 
 @[expose] public section
 
@@ -497,9 +497,10 @@ end Iris
 Code that works at one fixed step index type (e.g. HeapLang at `Nat`) writes `local stepindex Nat`
 once, and then uses the step-index-free API: `CMRA α`, `Auth α`, `✓ x`, `α -n> β`, … . The command
 records `T` as the step index of the current section (read by `stepindex%`) and opens the scope
-`Iris.StepIndexSugar`, in which every `@[indexed]` declaration gets its step index (the binder of
-type `stepindex (Type _)`) filled in with `stepindex%` when it is not given, and prints back
-without it. Both last until the end of the current section.
+`Iris.StepIndexSugar`. Every `@[indexed]` declaration generates scoped notations for its relative
+names. These supply its step index (the binder of type `stepindex (Type _)`) by name using
+`stepindex%`; fully qualified identifiers retain the explicit API. The scope and the chosen index
+last until the end of the current section. The pretty-printer hides the section's index.
 
 The step-index-free notations (`✓ x`, `x ≼ₒ y`, `α -n> β`, `x ~~> y`, `iprop(a ≡ b)`, …) are
 available everywhere, next to their `[SI]` forms: they expand to `stepindex%`, which is the step
@@ -508,7 +509,11 @@ index of the section, or a hole (to be found by unification) outside a `local st
 Rules of thumb:
 * every definition, structure or constructor that takes a step index and is used without it is
   `@[indexed]`; lemmas only when nothing else determines their step index (`have h := lemma`);
-* in a sugared section a positional step index counts as given only in a full application, or when
-  it is the section's own step index variable (`bi_least_fixpoint SI F`);
-* the sugar does not reach `simp [lemma]` lists, dot calls on locals (`h.lemma`) or `@C`: write the
-  step index there. -/
+* relative names always omit the positional step index: write `OFE α`, or override it by name
+  with `OFE (SI := OtherSI) α`; use `Iris.OFE SI α` for the ordinary positional API;
+* to unfold a definition in a tactic, use its fully qualified identifier, e.g.
+  `simp [Iris.OFE.Dist]`. The notation `Dist` denotes a specialized application;
+* notation does not rewrite identifiers already embedded in macro templates. Such templates
+  should use fully qualified names and supply `(SI := stepindex%)` explicitly;
+* dot calls on locals (`h.lemma`) and fully explicit applications (`@Iris.OFE`) retain Lean's
+  ordinary behavior. -/

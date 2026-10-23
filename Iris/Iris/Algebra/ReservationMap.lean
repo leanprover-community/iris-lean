@@ -201,11 +201,11 @@ def Valid (x : ReservationMap A H) : Prop :=
 theorem validN_iff {n} {x : ReservationMap A H} :
     x.ValidN n ↔ ✓{n} x.data ∧ ✓{n} x.token ∧ ∀ i, get? x.data i = none ∨ i ∉ x.token := by
   refine ⟨fun h => ?_, fun ⟨vd, vt, disj⟩ => ?_⟩
-  · simp only [ValidN] at h
+  · simp only [«ValidN»] at h
     exact match eq : x.token with
     | .valid s => ⟨(eq ▸ h).left, (valid_0_iff_validN n).mp trivial, (eq ▸ h).right⟩
     | .error => (eq ▸ h).elim
-  · simp only [ValidN]
+  · simp only [«ValidN»]
     cases h : x.token
     · simp only [h] at disj
       exact ⟨vd, disj⟩
@@ -214,11 +214,11 @@ theorem validN_iff {n} {x : ReservationMap A H} :
 theorem valid_iff {x : ReservationMap A H} :
     Valid x ↔ ✓ x.data ∧ ✓ x.token ∧ ∀ i, get? x.data i = none ∨ i ∉ x.token := by
   refine ⟨fun h => ?_, fun ⟨vd, vt, disj⟩ => ?_⟩
-  · simp only [Valid] at h
+  · simp only [«Valid»] at h
     exact match eq : x.token with
     | .valid s => ⟨(eq ▸ h).left, valid_mapN (fun n a => a) trivial, (eq ▸ h).right⟩
     | .error => (eq ▸ h).elim
-  · simp only [Valid]
+  · simp only [«Valid»]
     cases h : x.token
     · simp only [h] at disj
       exact ⟨vd, disj⟩
@@ -257,7 +257,7 @@ theorem validN_mono {n} {x y : ReservationMap A H} (hd : ✓{n} y.data → ✓{n
 #rocq_ignore reservation_map_ucmra_mixin "Not needed"
 #rocq_ignore reservation_mapR "Derivable using UCMRA"
 
-@[reducible] def raValid : _root_.Iris.Valid (ReservationMap A H) where
+@[reducible] def raValid : _root_.Iris.Valid (SI := SI) (ReservationMap A H) where
   Valid := Valid
   ValidN := ValidN
   valid_iff_validN {x} := by

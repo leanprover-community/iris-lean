@@ -64,7 +64,7 @@ end ofe
 /-! ## COFE structure -/
 
 section cofe
-variable [SIdxFinite SI] [COFE α]
+variable [SIdxFinite] [COFE α]
 
 @[indexed]
 def vecToListHom : Vector α n -n> List α where

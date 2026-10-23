@@ -67,7 +67,7 @@ theorem mk_op {d₁ d₂ : DFrac} {a : A} : mk (d₁ • d₂) a = mk d₁ a •
 
 @[rocq_alias dfrac_agree_op_valid]
 theorem op_valid {d₁ d₂ : DFrac} {a₁ a₂ : A} : ✓ (mk d₁ a₁ • mk d₂ a₂) ↔ ✓ (d₁ • d₂) ∧ a₁ = a₂ := by
-  simp only [Prod.op, ORA.op, mk]
+  simp only [Prod.op, ORA.op, «mk»]
   exact and_congr_right fun _ => toAgree_op_valid_iff_eq
 
 #rocq_ignore dfrac_agree_op_valid_L "Use op_valid"
@@ -76,7 +76,7 @@ theorem op_valid {d₁ d₂ : DFrac} {a₁ a₂ : A} : ✓ (mk d₁ a₁ • mk 
 theorem op_validN {n} {d₁ d₂ : DFrac} {a₁ a₂ : A} :
     ✓{n} (mk d₁ a₁ • mk d₂ a₂) ↔ ✓ (d₁ • d₂) ∧ a₁ ≡{n}≡ a₂ := by
   change Prod.ValidN n (Prod.op (mk d₁ a₁) (mk d₂ a₂)) ↔ _
-  simp only [Prod.ValidN, mk]
+  simp only [Prod.ValidN, «mk»]
   rw [Agree.toAgree_op_validN_iff_dist]
   exact and_congr_left' (valid_iff_validN' (α := DFrac) n)
 
@@ -112,7 +112,7 @@ theorem update₂ {d₁ d₂ : DFrac} {a₁ a₂ a' : A} (hd : d₁ • d₂ = .
 @[rocq_alias dfrac_agree_persist]
 theorem persist {d : DFrac} {a : A} : mk d a ~~> mk .discard a := by
   intro n mz hv
-  simp only [mk, op?] at hv ⊢
+  simp only [«mk», op?] at hv ⊢
   rcases mz with _ | ⟨mz₁, mz₂⟩
   · exact ⟨DFrac.update_discard n none hv.1, hv.2⟩
   · exact ⟨DFrac.update_discard n (some mz₁) hv.1, hv.2⟩
@@ -121,7 +121,7 @@ theorem persist {d : DFrac} {a : A} : mk d a ~~> mk .discard a := by
 theorem unpersist {a : A} :
     mk (.discard : DFrac) a ~~>: fun k => ∃ q, k = mk (.own q) a := by
   intro n mz hv
-  simp only [mk, op?] at hv ⊢
+  simp only [«mk», op?] at hv ⊢
   rcases mz with _ | ⟨mz₁, mz₂⟩
   · obtain ⟨d', ⟨q, rfl⟩, hv'⟩ := DFrac.update_acquire n none hv.1
     exact ⟨(.own q, toAgree a), ⟨q, rfl⟩, hv', hv.2⟩

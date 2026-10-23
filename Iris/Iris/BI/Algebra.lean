@@ -271,7 +271,7 @@ open BI
 @[rocq_alias dfrac_agree_validI]
 theorem dfrac_agree_validI (dq : DFrac) (x : A) :
     ✓ (DFracAgree.mk dq x) ⊣⊢@{PROP} ⌜✓ dq⌝ := by
-  sbi_unfold; intro _; exact ⟨fun h => h.1, fun h => ⟨h, by simp [DFracAgree.mk]⟩⟩
+  sbi_unfold; intro _; exact ⟨fun h => h.1, fun h => ⟨h, by simp [DFracAgree.«mk»]⟩⟩
 
 @[rocq_alias dfrac_agree_validI_2]
 theorem dfrac_agree_validI_2 (dq1 dq2 : DFrac) (x y : A) :

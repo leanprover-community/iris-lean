@@ -54,7 +54,7 @@ instance [OFE α] : OFE (Excl α) where
   dist := Excl.Dist
   dist_eqv
   eq_dist' {x y} := by
-    cases x <;> cases y <;> simp [Excl.Dist, eq_dist (SI := SI)]
+    cases x <;> cases y <;> simp [Excl.«Dist», eq_dist (SI := SI)]
   dist_lt {n} {x y m} hn hlt := by
     cases x <;> cases y <;> simp at *
     exact Dist.lt hn hlt
@@ -113,14 +113,14 @@ instance [OFE α] : DiscreteE (@invalid α) where
 def exclChain [OFE α] (c : Chain (Excl α)) (a : α) : Chain α := by
   refine ⟨fun n => (c n).getD a, fun {n} {i} H => ?_⟩
   dsimp; have := c.cauchy H; revert this
-  cases c.chain i <;> cases c.chain n <;> simp [Dist, HasDist.dist]
+  cases c.chain i <;> cases c.chain n <;> simp [«Dist», HasDist.dist]
 
 @[rocq_alias excl_cofe]
 instance [SIdxFinite] [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
   compl c := (c 0).map fun x => IsCOFE.compl (exclChain c x)
   conv_compl {n} c := by
     have := c.cauchy (i := n) SIdx.le_0_l; revert this
-    obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [Dist, HasDist.dist]
+    obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [«Dist», HasDist.dist]
     refine fun _ => Dist.trans IsCOFE.conv_compl ?_
     simp [exclChain, e]
   lbcompl := (·.elim)

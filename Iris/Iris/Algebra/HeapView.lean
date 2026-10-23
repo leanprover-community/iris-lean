@@ -83,7 +83,7 @@ instance : IsViewRel (HeapR K V H) where
     exact Hc
   rel_validN n m f Hrel k := by
     match Hf : get? f k with
-    | none => simp [ValidN, optionValidN]
+    | none => simp [«ValidN», optionValidN]
     | some _ =>
       obtain ⟨_, _, _, Hvv, _, Hvi⟩ := Hf ▸ Hrel k _ Hf
       exact (Hf ▸ validN_op_left (validN_of_ordN Hvi Hvv))
@@ -103,7 +103,7 @@ theorem iff_inc [OrdInc V] {n} {m f} : HeapR K V H n m f ↔ HeapRInc K V H n m 
 
 @[rocq_alias gmap_view_rel_unit]
 theorem unit {n} {m : H V} : HeapR K V H n m UnitOp.unit := by
-  simp [HeapR, UnitOp.unit, Heap.unit, get?_empty]
+  simp [«HeapR», UnitOp.unit, Heap.unit, get?_empty]
 
 @[rocq_alias gmap_view_rel_exists]
 theorem exists_iff_validN {n} {f} : (∃ m, HeapR K V H n m f) ↔ ✓{n} f := by
@@ -449,12 +449,12 @@ theorem update_one_alloc (Hfresh : Std.PartialMap.get? m1 k = none) (Hdq : ✓ d
   refine auth_one_alloc (fun n bf Hrel j => ?_)
   simp only [ORA.op, Heap.op, get?_merge, Option.merge, exists_and_left, Prod.forall]
   by_cases h : k = j
-  · have Hbf : Std.PartialMap.get? bf j = none := by cases _ : Std.PartialMap.get? bf j <;> grind [HeapR]
+  · have Hbf : Std.PartialMap.get? bf j = none := by cases _ : Std.PartialMap.get? bf j <;> grind [«HeapR»]
     rw [get?_singleton_eq h, Hbf]
     rintro _ _ ⟨rfl⟩
     exact ⟨v1, get?_insert_eq h, dq, ⟨Hdq, Hval.validN⟩, none, ordN_refl _⟩
   · rw [get?_singleton_ne h, get?_insert_ne h]
-    simp only [HeapR, exists_and_left, Prod.forall] at Hrel
+    simp only [«HeapR», exists_and_left, Prod.forall] at Hrel
     cases Hbf : Std.PartialMap.get? bf j
     · grind
     exact (Hrel j · · <| · ▸ Hbf)
@@ -652,7 +652,7 @@ theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' 
       ((mapO H (RFunctor.map f g).toHom).f m)
       ((mapC H (Prod.mapC (ORA.Hom.id (α := DFrac))
       (RFunctor.map (F:=T) f g))).f mv) := by
-  simp [HeapR, PartialMap.mapC, PartialMap.mapO, PartialMap.map, ORA.Hom.id, OFE.Hom.id, Prod.mapC, get?_bindAlter]
+  simp [«HeapR», PartialMap.mapC, PartialMap.mapO, PartialMap.map, ORA.Hom.id, OFE.Hom.id, Prod.mapC, get?_bindAlter]
   intros hr k a b
   rcases h : get? mv k with _ | ⟨a,b⟩ <;> simp
   rintro rfl rfl

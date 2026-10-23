@@ -17,7 +17,7 @@ rev = "v4.35.0"
 # need a C toolchain with Lean's headers in every build (e.g. the radar benchmark's wrapper has none).
 [[lean_lib]]
 name = "IrisSugar"
-roots = ["IrisSugar.Registry", "IrisSugar.Elab"]
+roots = ["IrisSugar.Registry", "IrisSugar.Notation"]
 
 [[lean_lib]]
 name = "Iris"

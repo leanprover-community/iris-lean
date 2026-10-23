@@ -70,7 +70,7 @@ namespace COFE
 
 section TowerLimit
 
-variable {P : Site SI} (T : Tower (CofeObj.{v, w}) P) (hT : T.Lawful)
+variable {P : Site} (T : Tower (CofeObj.{v, w}) P) (hT : T.Lawful)
 
 @[ext, rocq_alias solver.tower]
 structure TowerLimit (hT : T.Lawful) where
@@ -166,8 +166,8 @@ instance : IsCOFE (TowerLimit T hT) where
 #rocq_ignore solver.tower_equiv "Included in the OFE (TowerLimit T hT) instance"
 #rocq_ignore solver.tower_dist "Included in the OFE (TowerLimit T hT) instance"
 #rocq_ignore solver.tower_ofe_mixin "Included in the OFE (TowerLimit T hT) instance"
-#rocq_ignore solver.tower_cofe "Use the IsCOFE SI (TowerLimit T hT) instance"
-#rocq_ignore solver.tower_compl "Use the IsCOFE SI (TowerLimit T hT) instance"
+#rocq_ignore solver.tower_cofe "Use the IsCOFE (TowerLimit T hT) instance"
+#rocq_ignore solver.tower_compl "Use the IsCOFE (TowerLimit T hT) instance"
 #rocq_ignore solver.tower_car_ne "Implicit in TowerLimit.proj"
 
 def TowerLimit.cofeObj : CofeObj.{v, w} := ⟨TowerLimit T hT, inferInstance⟩
@@ -197,7 +197,7 @@ structure Truncation (K : LimitCut) (A : Type _) [OFE A] where
 
 namespace Truncation
 
-variable {K : LimitCut SI} {A : Type _} [COFE A] (t : Truncation K A)
+variable {K : LimitCut} {A : Type _} [COFE A] (t : Truncation K A)
 
 omit [SIdxSucc] in
 theorem truncate_truncate (x : A) : t.truncate (t.truncate x) = t.truncate x :=
@@ -234,7 +234,7 @@ end Truncation
 
 section Classical
 
-variable (K : LimitCut SI) {A : Type _} [COFE A]
+variable (K : LimitCut) {A : Type _} [COFE A]
 
 noncomputable def classicalRep (x : A) : A := @Classical.epsilon A ⟨x⟩ fun y => K.dist x y
 

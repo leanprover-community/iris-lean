@@ -62,7 +62,7 @@ instance getD_ne [LawfulPartialMap M K] [OFE V] (k : K) (d : V) :
   ne {_ m₁ m₂} Ht := by
     have h := Ht k
     rcases h₁ : get? m₁ k with _ | v <;> rcases h₂ : get? m₂ k with _ | w <;>
-      simp_all [PartialMap.getD, OFE.Dist, HasDist.dist, Option.Forall₂]
+      simp_all [PartialMap.getD, OFE.«Dist», HasDist.dist, Option.Forall₂]
 
 @[rocq_alias insert_ne]
 instance [LawfulPartialMap M K] [OFE V] (k : K) : NonExpansive₂ (insert · k · : M V → V → M V) where
@@ -95,7 +95,7 @@ theorem bindAlter_dist [LawfulPartialMap M K] [OFE V] [OFE V'] {n}
   intro k
   specialize Hm k
   revert Hm
-  simp only [OFE.Dist, HasDist.dist, Option.Forall₂, get?_bindAlter]
+  simp only [OFE.«Dist», HasDist.dist, Option.Forall₂, get?_bindAlter]
   cases get? m₁ k <;> cases get? m₂ k <;> simp_all
   exact Hf
 
@@ -109,7 +109,7 @@ theorem merge_dist [LawfulPartialMap M K] [OFE V] {n} {f g : K → V → V → V
   specialize H₁ k
   specialize H₂ k
   revert H₁ H₂
-  simp only [OFE.Dist, HasDist.dist, Option.Forall₂, get?_merge, Option.merge]
+  simp only [OFE.«Dist», HasDist.dist, Option.Forall₂, get?_merge, Option.merge]
   cases get? m₁ k <;> cases get? m₁' k <;> cases get? m₂ k <;> cases get? m₂' k <;> simp_all
 
 /-- `zipWith` is non-expansive in both the combining function and the maps. -/
@@ -122,13 +122,13 @@ theorem zipWith_dist [LawfulPartialMap M K] [OFE V] [OFE V'] [OFE V''] {n}
   bindAlter_dist (fun {k _ _} Hv => by
     have h := H₂ k
     revert h
-    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, HasDist.dist, Option.Forall₂]) H₁
+    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.«Dist», HasDist.dist, Option.Forall₂]) H₁
 
 theorem isSome_get?_eq_of_dist [LawfulPartialMap M K] [OFE V] {n} {m₁ m₂ : M V}
     (H : m₁ ≡{n}≡ m₂) (k : K) : (get? m₁ k).isSome = (get? m₂ k).isSome := by
   specialize H k
   revert H
-  cases get? m₁ k <;> cases get? m₂ k <;> simp_all [OFE.Dist, HasDist.dist, Option.Forall₂]
+  cases get? m₁ k <;> cases get? m₂ k <;> simp_all [OFE.«Dist», HasDist.dist, Option.Forall₂]
 
 @[rocq_alias gmap_union_ne]
 instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· ∪ ·) : M V → M V → M V) where
@@ -144,7 +144,7 @@ theorem intersectionWith_dist [LawfulPartialMap M K] [OFE V] {n}
   bindAlter_dist (fun {k _ _} Hv => by
     have h := H₂ k
     revert h
-    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, HasDist.dist, Option.Forall₂]) H₁
+    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.«Dist», HasDist.dist, Option.Forall₂]) H₁
 
 /-- `differenceWith` is non-expansive in the combining function and in both maps. -/
 @[rocq_alias difference_with_ne]
@@ -156,7 +156,7 @@ theorem differenceWith_dist [LawfulPartialMap M K] [OFE V] {n}
   bindAlter_dist (fun {k _ _} Hv => by
     have h := H₂ k
     revert h
-    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.Dist, HasDist.dist, Option.Forall₂]) H₁
+    cases get? m₂ k <;> cases get? m₂' k <;> simp_all [OFE.«Dist», HasDist.dist, Option.Forall₂]) H₁
 
 @[rocq_alias gmap_intersection_ne]
 instance [LawfulPartialMap M K] [OFE V] : NonExpansive₂ ((· ∩ ·) : M V → M V → M V) where
@@ -184,7 +184,7 @@ theorem union_dist_iff [LawfulPartialMap M K] [OFE V] {n} {m m₁ m₂ : M V} :
   all_goals
     specialize hm k
     revert hm
-    simp only [OFE.Dist, HasDist.dist, Option.Forall₂, LawfulPartialMap.get?_union,
+    simp only [OFE.«Dist», HasDist.dist, Option.Forall₂, LawfulPartialMap.get?_union,
       LawfulPartialMap.get?_filter, LawfulPartialMap.get?_zipWith]
     cases get? m k <;> cases get? m₁ k <;> cases get? m₂ k <;> simp_all
 
@@ -224,7 +224,7 @@ def chain [LawfulPartialMap M K] [OFE V] (k : K) (c : Chain (M V)) : Chain (Opti
   cauchy Hni := c.cauchy Hni k
 
 theorem chain_get [LawfulPartialMap M K] [OFE V] (k : K) (c : Chain (M V)) :
-    (chain k c) i = get? (c i) k := by simp [chain]
+    (chain k c) i = get? (c i) k := by simp [«chain»]
 
 end PartialMap
 
@@ -293,7 +293,7 @@ instance instDiscreteEGet? [LawfulPartialMap M K] [OFE V] {m : M V} [DiscreteE m
   discrete {y} h := by
     rcases y with _ | v
     · revert h
-      cases get? m i <;> simp_all [OFE.Dist, HasDist.dist, Option.Forall₂]
+      cases get? m i <;> simp_all [OFE.«Dist», HasDist.dist, Option.Forall₂]
     · refine (congrArg (get? · i)
         (DiscreteE.discrete (y := insert m i v) fun k => ?_)).trans (get?_insert_eq rfl)
       by_cases hk : i = k
@@ -433,7 +433,7 @@ theorem lookup_incN {n} {m1 m2 : M V} :
     cases get? m2 i <;> cases get? m1 i <;> cases f i <;> simp
 
 @[reducible]
-def raValid : _root_.Iris.Valid (M V) where
+def raValid : _root_.Iris.Valid (SI := SI) (M V) where
   ValidN := validN
   Valid := valid
   valid_iff_validN :=
@@ -1320,7 +1320,7 @@ def map (f : α → β) : H α → H β := PartialMap.bindAlter (fun _ a => some
 @[rocq_alias map_fmap_ne, rocq_alias gmap_fmap_ne]
 instance [OFE α] [OFE β] {f : α → β} [hne : OFE.NonExpansive f] : OFE.NonExpansive (map H f) where
   ne := by
-    simp only [OFE.Dist, HasDist.dist, Option.Forall₂, map, get?_bindAlter, Option.bind]
+    simp only [OFE.«Dist», HasDist.dist, Option.Forall₂, «map», get?_bindAlter, Option.bind]
     refine fun n m1 m2 => forall_imp fun k => ?_
     cases get? m1 k <;> cases get? m2 k <;> simp
     apply OFE.NonExpansive.ne
@@ -1338,7 +1338,7 @@ def mapO [OFE α] [OFE β] (f : α -n> β) : OFE.Hom (H α) (H β) where
 
 @[rocq_alias gmap_fmap_ne_ext, rocq_alias gmapO_map_ne]
 theorem map_ne {n} [OFE β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H f m ≡{n}≡ map H g m := by
-  simp [OFE.Dist, HasDist.dist, Option.Forall₂, map, get?_bindAlter]
+  simp [OFE.«Dist», HasDist.dist, Option.Forall₂, «map», get?_bindAlter]
   intro k
   cases get? m k <;> simp
   exact heq _
@@ -1346,11 +1346,11 @@ theorem map_ne {n} [OFE β] (f g : α -> β) {heq : f ≡{n}≡ g} : map H f m �
 theorem map_compose (f : α -> β) (g : β -> γ) m :
     map H (g.comp f) m = map H g (map H f m) := LawfulPartialMap.equiv_iff_eq.mp <| by
   intro k
-  simp [map, get?_bindAlter]
+  simp [«map», get?_bindAlter]
   cases get? m k <;> simp
 
 theorem get?_map (f : α → β) (m : H α) (k : K) : get? (map H f m) k = (get? m k).map f := by
-  simp only [map, get?_bindAlter]
+  simp only [«map», get?_bindAlter]
   cases get? m k <;> rfl
 
 @[rocq_alias gmap_fmap_cmra_morphism]
@@ -1358,7 +1358,7 @@ def mapC [RA α] [ORA α] [RA β] [ORA β] (f : α -C> β) : Hom (H α) (H β) w
   f := PartialMap.map H f
   ne := inferInstance
   validN {n} {x} := by
-    simp only [map, ValidN, Heap.validN, optionValidN]
+    simp only [«map», «ValidN», Heap.validN, optionValidN]
     apply forall_imp
     intro k
     rw [get?_bindAlter]
@@ -1366,7 +1366,7 @@ def mapC [RA α] [ORA α] [RA β] [ORA β] (f : α -C> β) : Hom (H α) (H β) w
     apply f.validN
   pcore m := OFE.eq_dist_2 <| by
     intro _ x
-    simp [map, get?_bindAlter]
+    simp [«map», get?_bindAlter]
     rcases get? m x with _|v <;> simp
     have h : (pcore v).bind (fun a => some (f a)) = (pcore v).map f := by
       rw [Option.map_eq_bind]
@@ -1375,7 +1375,7 @@ def mapC [RA α] [ORA α] [RA β] [ORA β] (f : α -C> β) : Hom (H α) (H β) w
     exact (f.pcore v).dist
   op m1 m2 := OFE.eq_dist_2 <| by
     intro _ k
-    simp [op, map, get?_bindAlter, get?_merge, Option.merge]
+    simp [op, «map», get?_bindAlter, get?_merge, Option.merge]
     cases get? m1 k <;> cases get? m2 k <;> simp
     exact (f.op _ _).dist
   monoN_ord h k := by rw [get?_map, get?_map]; exact (Option.mapC f).monoN_ord (h k)
@@ -1399,7 +1399,7 @@ instance {F} [COFE.OFunctor F] : COFE.OFunctor (PartialMapOF H F) where
     refine .trans ?_ (map_id H x)
     exact congrArg (map H · x) (funext fun a => COFE.OFunctor.map_id (F := F) a)
   map_comp f g f' g' m := OFE.eq_dist_2 <| by
-    simp [mapO, map]
+    simp [«mapO», «map»]
     intro n x
     simp [get?_bindAlter]
     cases get? m x <;> simp
@@ -1423,7 +1423,7 @@ instance {F} [RFunctor F] : URFunctor (PartialMapOF H F) where
     refine .trans ?_ (map_id H x)
     exact congrArg (map H · x) (funext fun a => RFunctor.map_id (F := F) a)
   map_comp f g f' g' m := OFE.eq_dist_2 <| by
-    simp [mapC, map]
+    simp [mapC, «map»]
     intro n x
     simp [get?_bindAlter]
     cases get? m x <;> simp

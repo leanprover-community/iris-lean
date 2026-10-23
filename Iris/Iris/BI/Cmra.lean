@@ -284,14 +284,14 @@ def _root_.SiProp.cmraOrder (a b : A) : SiProp where
   closed h hle := h.le hle
 
 instance _root_.SiProp.cmraOrder_timeless [ORA.Discrete A] {a b : A} :
-    Timeless (SiProp.cmraOrder a b) where
+    Timeless (SiProp.cmraOrder (SI := SI) a b) where
   timeless := fun _ h =>
     ordN_of_ord _ (discrete_ord (h 0 SIdx.le_0_l fun k hk => absurd hk (SIdx.not_lt_zero k)))
 
 /-- The internal order `a ≼ₒ b`, holding at step index `n` when `a ≼ₒ{n} b`; ownership is
 monotone along it (`ownM_mono`). -/
 @[indexed]
-def internalCmraOrder (a b : A) : PROP := siPure (SiProp.cmraOrder a b)
+def internalCmraOrder (a b : A) : PROP := siPure (SiProp.cmraOrder (SI := SI) a b)
 
 macro_rules
   | `(iprop($a ≼ₒ[%$tk $si] $b)) => ``($(wrapIprop tk ``internalCmraOrder) (SI := $si) $a $b)

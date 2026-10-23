@@ -130,7 +130,7 @@ instance instCMRADFrac : CMRA DFrac := ofCMRAData DFrac.cmraData
 instance own_whole_exclusive : Exclusive (α := DFrac) (own 1) where
   exclusive0_l := by
     rintro (y|_|y) <;>
-    simp only [ValidN, valid, ORA.op, op] <;>
+    simp only [«ValidN», valid, ORA.op, op] <;>
     grind
 
 @[indexed]
@@ -138,18 +138,18 @@ instance one_exclusive_left [RA V] [ORA V] {v : V} : Exclusive (own (One.one : Q
   exclusive0_l := by
     refine fun ⟨y1, _⟩ ⟨Hv1, _⟩ => ?_
     have h1 : (One.one : Qp).val = 1 := rfl
-    rcases y1 with (y|_|y) <;> simp only [ValidN, ORA.op, op, valid] at Hv1 <;> grind
+    rcases y1 with (y|_|y) <;> simp only [«ValidN», ORA.op, op, valid] at Hv1 <;> grind
 
 instance one_exclusive_right [RA V] [ORA V] {v : V} : Exclusive (v, own (One.one : Qp)) where
   exclusive0_l := by
     refine fun ⟨_, y2⟩ ⟨_, Hv2⟩ => ?_
     have h1 : (One.one : Qp).val = 1 := rfl
-    rcases y2 with (y|_|y) <;> simp only [ValidN, ORA.op, op, valid] at Hv2 <;> grind
+    rcases y2 with (y|_|y) <;> simp only [«ValidN», ORA.op, op, valid] at Hv2 <;> grind
 
 @[rocq_alias dfrac_cancelable]
 instance {f : Qp} : Cancelable (own f) where
   cancelableN {_} := by
-    rintro (a|_|a) (b|_|b) <;> simp [ValidN, ORA.op, op] <;> intro H Hxyz
+    rintro (a|_|a) (b|_|b) <;> simp [«ValidN», ORA.op, op] <;> intro H Hxyz
     any_goals have Hxyz' := discrete Hxyz; simp at Hxyz'
     · exact congrArg own (Subtype.ext (by grind))
     · exact absurd Hxyz' (by have := b.2; grind)
@@ -160,7 +160,7 @@ instance {f : Qp} : Cancelable (own f) where
 instance {f : Qp} : IdFree (own f) where
   id_free0_r := by
     rintro (y|_|y) <;>
-      simp [ValidN, ORA.op, op] <;>
+      simp [«ValidN», ORA.op, op] <;>
       intro H Hxyz <;>
       any_goals have Hxyz' := discrete Hxyz; simp at Hxyz'
     exact absurd Hxyz' (by have := y.2; grind)

@@ -313,7 +313,7 @@ theorem iSingleton_free_at_ne {γ : GName} {v : F.ap (IProp GF)} {γ' : GName} (
 
 theorem iSingleton_ne_eq_unit {γ : GName} {v : F.ap (IProp GF)} {τ' : GType} (h : τ' ≠ E.τ) :
     (iSingleton F γ v τ').car = (unit : GenMap _).car := by
-  funext γ'; simp only [iSingleton, unit]
+  funext γ'; simp only [iSingleton, «unit»]
   split
   next heq => subst heq; contradiction
   next => apply GenMap.empty_map_lookup
@@ -392,7 +392,7 @@ theorem iSingleton_validN_at_E_τ {n : Nat} {a : F.ap (IProp GF)} (a_valid : ✓
     ✓{n} (iSingleton F γ a E.τ) := by
   intro γ'
   simp [iSingleton]
-  by_cases h_gamma : γ' = γ <;> simp [h_gamma, ValidN, optionValidN, GenMap.singleton_map_in]
+  by_cases h_gamma : γ' = γ <;> simp [h_gamma, «ValidN», optionValidN, GenMap.singleton_map_in]
   · exact IProp.unfoldi_bundle_validN a_valid
   · simp [singleton_map_none h_gamma]
 
@@ -433,7 +433,7 @@ theorem validN_mf_at_E_τ_of_iSingleton_op_free {n : Nat} {mf : IResUR GF} {y : 
   simp [IsFree] at Hfree
   intro γ'
   by_cases h_gamma : γ' = γ
-  · simp [h_gamma, Hfree, ValidN]
+  · simp [h_gamma, Hfree, «ValidN»]
   · have h := Hv E.τ γ'
     simp [op, iSingleton, singleton_map_none h_gamma, optionOp] at h
     exact h
@@ -451,7 +451,7 @@ theorem extract_frame_validN {τ : GType} {n : Nat}
     {γ : GName} {v : GF.api τ (IPre GF)} (h_at : (mz' τ).car γ = some v) :
     ✓{n} v := by
   have := h_valid γ
-  simp [ValidN, optionValidN, h_at] at this
+  simp [«ValidN», optionValidN, h_at] at this
   exact this
 
 theorem iSingleton_op_validN_at_E {n : Nat} {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
@@ -463,7 +463,7 @@ theorem iSingleton_op_validN_at_E {n : Nat} {a : F.ap (IProp GF)} (Hv : ✓{n} m
     apply Hv_a
   · refine validN_ne (n := n) (x := mf τ') ?_ (Hv τ')
     simp only [op, iSingleton_ne_eq_unit Heq]
-    simp [unit, GenMap.empty, optionOp]
+    simp [«unit», GenMap.empty, optionOp]
 
 theorem iSingleton_op_validN_at_γ {n : Nat} {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
     ✓{n} ((iSingleton F γ a • mf) (ElemG.τ GF F)).car γ →
@@ -473,7 +473,7 @@ theorem iSingleton_op_validN_at_γ {n : Nat} {a : F.ap (IProp GF)} (Hv : ✓{n} 
   intro γ'
   by_cases h_key : γ' = γ
   · subst γ'; exact Hv_a
-  · simp [ValidN, op, iSingleton, singleton_map_none h_key]
+  · simp [«ValidN», op, iSingleton, singleton_map_none h_key]
     rcases h_at : (mf E.τ).car γ' with (⟨⟩ | v)
     · trivial
     · simp; exact extract_frame_validN (Hv E.τ) h_at
@@ -774,7 +774,7 @@ theorem validN_iSingleton_op_notfree {n : Nat} {mz' : IResUR GF} :
   intro γ'
   simp [op]
   by_cases h_gamma : γ' = γ
-  · simp [h_gamma, iSingleton, Hnotfree, ValidN, optionValidN, GenMap.singleton_map_in]
+  · simp [h_gamma, iSingleton, Hnotfree, «ValidN», optionValidN, GenMap.singleton_map_in]
     exact validN_bundle_op_foldi Ha'_valid
   · have h_at_gamma' := Hv E.τ γ'
     simp [op, iSingleton, singleton_map_none h_gamma, optionOp] at h_at_gamma' ⊢
@@ -845,7 +845,7 @@ theorem iOwn_unit {γ} {ε : F.ap (IProp GF)} [IsRAUnit ε] [Hε : IsUnit ε] : 
     refine ⟨iSingleton F γ ε, rfl, ?_⟩
     replace Hv := validN_ne unit_left_id.dist Hv
     apply iSingleton_op_validN_at_γ Hv
-    unfold iSingleton; simp [ValidN, op, GenMap.singleton_map_in]
+    unfold iSingleton; simp [«ValidN», op, GenMap.singleton_map_in]
     rcases h_at : (mf E.τ).car γ with (⟨⟩ | v) <;> simp
     · exact IProp.unfoldi_bundle_validN Hε.unit_valid.validN
     · have h_unit : IsRAUnit (IProp.unfoldi (E.bundle ε)) := IProp.unfoldi_bundle_raUnit

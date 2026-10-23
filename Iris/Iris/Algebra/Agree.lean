@@ -138,7 +138,7 @@ def validN (n : SI) (x : Raw α) : Prop :=
 
 theorem validN_iff {n} {x : Raw α} :
     x.validN n ↔ ∀ a ∈ x.car, ∀ b ∈ x.car, a ≡{n}≡ b := by
-  rcases x with ⟨⟨⟩ | ⟨a, ⟨⟩| _⟩, _⟩ <;> simp_all [validN]
+  rcases x with ⟨⟨⟩ | ⟨a, ⟨⟩| _⟩, _⟩ <;> simp_all [«validN»]
 
 theorem validN_congr {x y : Raw α} (h : SameElems x y) : validN n x ↔ validN n y := by
   simp only [validN_iff]
@@ -149,20 +149,20 @@ theorem validN_congr {x y : Raw α} (h : SameElems x y) : validN n x ↔ validN 
 def valid (x : Raw α) : Prop := ∀ n, validN n x
 
 theorem op_comm {x y : Raw α} : ∀ n, dist n (op x y) (op y x) := by
-  intro n; simp_all only [dist, op, List.mem_append]
+  intro n; simp_all only [«dist», op, List.mem_append]
   refine ⟨?_, ?_⟩ <;> exact fun _ ha => ⟨_, ha.symm, .rfl⟩
 
 theorem op_commN {x y : Raw α} : dist n (op x y) (op y x) := op_comm n
 
 theorem op_assoc {x y z : Raw α} : ∀ n, dist n (op x (op y z)) (op (op x y) z) := by
-  intro n; simp_all only [dist, op, List.mem_append, List.append_assoc]
+  intro n; simp_all only [«dist», op, List.mem_append, List.append_assoc]
   refine ⟨?_, ?_⟩ <;> (intro a ha; exists a)
 
 theorem idemp {x : Raw α} : ∀ n, dist n (op x x) x := by
   intro n; refine ⟨?_, ?_⟩ <;> (intro a ha; exists a; simp_all [op])
 
 theorem validN_ne {x y : Raw α} : dist n x y → x.validN n → y.validN n := by
-  simp only [dist, validN_iff, and_imp]
+  simp only [«dist», validN_iff, and_imp]
   intro h₁ h₂ hn a ha b hb
   have ⟨a', ha', ha'a⟩ := h₂ _ ha
   have ⟨b', hb', hb'b⟩ := h₂ _ hb
@@ -179,7 +179,7 @@ theorem validN_op_left {x y : Raw α} : (op x y).validN n → x.validN n := by
 
 theorem op_ne {x y₁ y₂ : Raw α} (h : dist n y₁ y₂) : dist n (op x y₁) (op x y₂) := by
   obtain ⟨heq₁, heq₂⟩ := h
-  simp only [dist, op, List.mem_append]
+  simp only [«dist», op, List.mem_append]
   refine ⟨?_, ?_⟩
   · rintro a (hx | hy)
     · exists a; simp [hx]
@@ -196,7 +196,7 @@ theorem op_ne₂ {x₁ x₂ y₁ y₂ : Raw α} (hx : dist n x₁ x₂) (hy : di
     dist_equiv.trans (op_ne hx) (op_comm n)
 
 theorem op_invN {x y : Raw α} : (op x y).validN n → dist n x y := by
-  simp only [op, validN_iff, List.mem_append, dist]
+  simp only [op, validN_iff, List.mem_append, «dist»]
   intro h; refine ⟨?_, ?_⟩
   · intro a ha
     obtain ⟨b, hb⟩ := mem y
@@ -206,12 +206,12 @@ theorem op_invN {x y : Raw α} : (op x y).validN n → dist n x y := by
     exists b; simp_all
 
 theorem op_inv {x y : Raw α} : valid (op x y) → ∀ n, dist n x y := by
-  simp only [valid]
+  simp only [«valid»]
   intro h n
   exact op_invN (h n)
 
 @[simp] theorem toAgree_validN {a : α} : (toAgree a).validN n := by
-  simp [validN, toAgree]
+  simp [«validN», toAgree]
 
 theorem toAgree_injN {n} {a b : α} : dist n (toAgree a) (toAgree b) → a ≡{n}≡ b := by
   intro ⟨h₁, h₂⟩; simp_all [toAgree]
@@ -225,7 +225,7 @@ theorem toAgree_uninjN {x : Raw α} : x.validN n → ∃ a, dist n (toAgree a) x
   · simp_all [toAgree]
 
 theorem toAgree_uninj {x : Raw α} : valid x → ∃ a, ∀ n, dist n (toAgree a) x := by
-  simp only [valid, validN_iff]
+  simp only [«valid», validN_iff]
   obtain ⟨a, ha⟩ := mem x
   intro h; exists a; intro n
   refine ⟨?_, ?_⟩ <;> intros

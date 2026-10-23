@@ -182,7 +182,7 @@ theorem bi_rtc_refl (x : A) : ⊢ biRtc R x x :=
 theorem bi_rtc_left (x₁ x₂ x₃ : A) :
     R x₁ x₂ -∗ biRtc R x₂ x₃ -∗ biRtc R x₁ x₃ := by
   iintro H₁ H₂
-  rw [bi_rtc_unfold R x₁ x₃, biRtcPre]
+  rw [bi_rtc_unfold R x₁ x₃, «biRtcPre»]
   iright
   iexists x₂
   iframe
@@ -373,9 +373,9 @@ theorem bi_nsteps_trans (n m : Nat) (x y z : A) :
       · exact ⟨fun _ _ _ h => wand_ne.ne .rfl (NonExpansive₂.ne h .rfl)⟩
       iintro $
   | succ n ih =>
-      rw (occs := [1]) [biNsteps]
+      rw (occs := [1]) [«biNsteps»]
       iintro ⟨%x', HR, Hrest⟩ Hyz
-      isimp only [biNsteps, Nat.add_comm]
+      isimp only [«biNsteps», Nat.add_comm]
       iexists x'
       iframe HR
       simp only [Nat.add_comm]

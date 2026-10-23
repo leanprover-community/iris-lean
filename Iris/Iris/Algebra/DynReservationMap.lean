@@ -200,13 +200,13 @@ theorem validN_iff {n} {x : DynReservationMap A H} :
     x.ValidN n ↔ ✓{n} x.data ∧ ✓{n} x.token ∧ x.Infinite ∧
       ∀ i, get? x.data i = none ∨ i ∉ x.token := by
   refine ⟨fun h => ?_, fun ⟨vd, vt, inf, disj⟩ => ?_⟩
-  · simp only [ValidN, Infinite] at h ⊢
+  · simp only [«ValidN», Infinite] at h ⊢
     cases eq : x.token with
     | valid s =>
       simp only [eq] at h ⊢
       exact ⟨h.left, trivial, h.right.left, h.right.right⟩
     | error => simp only [eq] at h
-  · simp only [ValidN]
+  · simp only [«ValidN»]
     cases h : x.token
     · simp only [h, Infinite] at disj inf
       exact ⟨vd, inf, disj⟩
@@ -216,13 +216,13 @@ theorem valid_iff {x : DynReservationMap A H} :
     Valid x ↔ ✓ x.data ∧ ✓ x.token ∧ x.Infinite ∧
       ∀ i, get? x.data i = none ∨ i ∉ x.token := by
   refine ⟨fun h => ?_, fun ⟨vd, vt, inf, disj⟩ => ?_⟩
-  · simp only [Valid, Infinite] at h ⊢
+  · simp only [«Valid», Infinite] at h ⊢
     cases eq : x.token with
     | valid s =>
       simp only [eq] at h ⊢
       exact ⟨h.left, valid_set, h.right.left, h.right.right⟩
     | error => simp only [eq] at h
-  · simp only [Valid]
+  · simp only [«Valid»]
     cases h : x.token
     · simp only [h, Infinite] at disj inf
       exact ⟨vd, inf, disj⟩
@@ -283,7 +283,7 @@ theorem validN_mono {n} {x y : DynReservationMap A H} (hd : ✓{n} y.data → �
 #rocq_ignore dyn_reservation_mapR "Derivable using UCMRA"
 #rocq_ignore dyn_reservation_map_empty_instance "Part of UCMRA instance"
 
-@[reducible] def raValid : _root_.Iris.Valid (DynReservationMap A H) where
+@[reducible] def raValid : _root_.Iris.Valid (SI := SI) (DynReservationMap A H) where
   Valid := Valid
   ValidN := ValidN
   valid_iff_validN {x} := by

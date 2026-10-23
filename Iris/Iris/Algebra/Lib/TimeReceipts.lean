@@ -157,7 +157,7 @@ instance {n n₁ n₂ : Nat} [h : IsOp d (MaxNat.ofNat n) (MaxNat.ofNat n₁) (M
 
 @[rocq_alias time_receipt_frag_excl_valid]
 theorem auth_op_fragExcl_valid_iff (m n : Nat) : ✓ (auth m • fragExcl n) ↔ n + n ≤ m := by
-  rw [auth, fragExcl, ← ofView_op, valid_ofView, auth_one_op_frag_valid_iff]
+  rw [«auth», «fragExcl», ← ofView_op, valid_ofView, auth_one_op_frag_valid_iff]
   refine ⟨fun h => ?_, fun h _ => ⟨n, m - n, by simp; omega, by omega, Nat.le_refl _, Nat.zero_le _⟩⟩
   obtain ⟨_, _, h₀, _, h₁, h₂⟩ := h 0
   simp only [Count.toNat_ofNat] at h₀ h₁ h₂
@@ -165,7 +165,7 @@ theorem auth_op_fragExcl_valid_iff (m n : Nat) : ✓ (auth m • fragExcl n) ↔
 
 @[rocq_alias time_receipt_frag_pers_valid]
 theorem auth_op_fragPers_valid_iff (m n : Nat) : ✓ (auth m • fragPers n) ↔ n ≤ m := by
-  rw [auth, fragPers, ← ofView_op, valid_ofView, auth_one_op_frag_valid_iff]
+  rw [«auth», «fragPers», ← ofView_op, valid_ofView, auth_one_op_frag_valid_iff]
   refine ⟨fun h => ?_, fun h _ => ⟨0, m, (Nat.zero_add m).symm, Nat.zero_le _, Nat.le_refl _, h⟩⟩
   obtain ⟨_, _, h₀, _, h₁, h₂⟩ := h 0
   simp only [Count.toNat_ofNat] at h₀ h₁ h₂
@@ -174,7 +174,7 @@ theorem auth_op_fragPers_valid_iff (m n : Nat) : ✓ (auth m • fragPers n) ↔
 @[rocq_alias time_receipt_view_frag_both_valid]
 theorem le_of_auth_op_frag_valid {m n₁ n₂ : Nat}
     (h : ✓ (auth m • (fragExcl n₁ • fragPers n₂))) : n₁ + n₂ ≤ m := by
-  rw [auth, fragExcl, fragPers, ← ofView_op, ← ofView_op, valid_ofView, ← frag_op_eq,
+  rw [«auth», «fragExcl», «fragPers», ← ofView_op, ← ofView_op, valid_ofView, ← frag_op_eq,
     auth_one_op_frag_valid_iff] at h
   obtain ⟨_, _, h₀, _, h₁, h₂⟩ := h 0
   simp only [Prod.mk_op_mk, Count.toNat_op, Count.toNat_ofNat, MaxNat.toNat_op]
@@ -183,7 +183,7 @@ theorem le_of_auth_op_frag_valid {m n₁ n₂ : Nat}
 
 @[rocq_alias time_receipt_frag_excl_persist]
 theorem fragExcl_persist (n₁ n₂ : Nat) : fragExcl n₁ • fragPers n₂ ~~> fragPers (n₁ + n₂) := by
-  rw [fragExcl, fragPers, fragPers, ← ofView_op, update_ofView, ← frag_op_eq]
+  rw [«fragExcl», «fragPers», «fragPers», ← ofView_op, update_ofView, ← frag_op_eq]
   refine frag_update fun _ _ ⟨_, _⟩ ⟨a, b, h⟩ => ⟨a - n₁, b + n₁, ?_⟩
   simp only [Prod.mk_op_mk, Count.toNat_op, Count.toNat_ofNat, MaxNat.toNat_op]
     at h ⊢
@@ -191,7 +191,7 @@ theorem fragExcl_persist (n₁ n₂ : Nat) : fragExcl n₁ • fragPers n₂ ~~>
 
 @[rocq_alias time_receipt_frag_excl_get_pers]
 theorem fragExcl_get_pers (n : Nat) : fragExcl n ~~> fragExcl n • fragPers n := by
-  rw [fragExcl, fragPers, ← ofView_op, update_ofView, ← frag_op_eq]
+  rw [«fragExcl», «fragPers», ← ofView_op, update_ofView, ← frag_op_eq]
   refine frag_update fun _ _ ⟨_, _⟩ ⟨a, b, h⟩ => ⟨a, b, ?_⟩
   simp only [Prod.mk_op_mk, Count.toNat_op, Count.toNat_ofNat, MaxNat.toNat_op]
     at h ⊢
@@ -200,7 +200,7 @@ theorem fragExcl_get_pers (n : Nat) : fragExcl n ~~> fragExcl n • fragPers n :
 @[rocq_alias time_receipt_auth_incr]
 theorem auth_incr (m n k : Nat) :
     auth m • fragPers n ~~> (auth (m + k + k) • fragPers (n + k)) • fragExcl k := by
-  rw [← assoc_L, auth, auth, fragPers, fragPers, fragExcl, ← ofView_op, ← ofView_op, ← ofView_op,
+  rw [← assoc_L, «auth», «auth», «fragPers», «fragPers», «fragExcl», ← ofView_op, ← ofView_op, ← ofView_op,
     update_ofView, ← frag_op_eq]
   refine auth_one_op_frag_update fun _ ⟨_, _⟩ ⟨a, b, h⟩ => ⟨a + k, b + k, ?_⟩
   simp only [Prod.mk_op_mk, Count.toNat_op, Count.toNat_ofNat, MaxNat.toNat_op]

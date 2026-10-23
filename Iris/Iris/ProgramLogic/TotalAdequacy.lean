@@ -72,7 +72,7 @@ instance pre_mono_inst : BIMonoPred (pre (ι := ι)) where
 @[rocq_alias twptp_pre_mono]
 theorem pre_mono (X Y : List Expr → IProp GF) :
     □ (∀ t, X t -∗ Y t) -∗
-      ∀ t, pre X t -∗ pre Y t := mono_pred Nat
+      ∀ t, pre X t -∗ pre Y t := mono_pred
 
 /-- Total weakest precondition for a thread pool. -/
 @[rocq_alias twptp]

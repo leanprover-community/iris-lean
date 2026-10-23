@@ -917,8 +917,8 @@ theorem extend_restrict {α} (fam : ∀ γ, γ < α → ClosedSol F γ)
 
 variable (F) in
 def graph (α) : ClosedSol F α → Prop :=
-  (SIdx.lt_wf).fix (C := fun α => ClosedSol F α → Prop) (fun α below t =>
-    ∃ (fam : ∀ γ, γ < α → ClosedSol F γ) (_ : ∀ γ hγ, below γ hγ (fam γ hγ))
+  (SIdx.lt_wf).fix (C := fun α => ClosedSol F α → Prop) (fun α ih t =>
+    ∃ (fam : ∀ γ, γ < α → ClosedSol F γ) (_ : ∀ γ hγ, ih γ hγ (fam γ hγ))
       (hcoh : Coherent (P := Site.below α) fam),
       t = extend F α fam hcoh) α
 
