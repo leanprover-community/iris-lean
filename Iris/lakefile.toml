@@ -15,6 +15,7 @@ rev = "v4.35.0"
 
 [[lean_lib]]
 name = "Iris"
+precompileLibrary = true
 
 [[lean_lib]]
 name = "IrisTest"
