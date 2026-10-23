@@ -47,7 +47,7 @@ def spinlockN : Namespace := ndot nroot "spinlock"
 section Predicates
 
 variable [HeapLangGS hlc GF] [SpinLockG GF]
-local bi IProp GF
+local bi (IProp GF)
 
 @[rocq_alias heap_lang.spin_lock.locked]
 def locked (γ : GName) : IProp GF := token γ
@@ -96,7 +96,7 @@ end Predicates
 section Specs
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [SpinLockG GF]
-local bi IProp GF
+local bi (IProp GF)
 
 @[rocq_alias heap_lang.spin_lock.newlock_spec_delay_init]
 theorem newlock_spec :

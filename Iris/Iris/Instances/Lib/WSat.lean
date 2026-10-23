@@ -25,7 +25,7 @@ namespace Iris
 open Iris Iris.Std OFE COFE BI HeapView PartialMap DisjointLeibnizSet DFrac LawfulPartialMap BigSepM
   HeapView FiniteMap LawfulFiniteMap
 
-local bi IProp GF
+local bi (IProp GF)
 
 section WsatGS
 

@@ -14,7 +14,7 @@ namespace Iris.HeapLang
 public section
 
 variable [HeapLangGS hlc GF]
-local bi IProp GF
+local bi (IProp GF)
 
 @[rocq_alias heap_lang.nondet_bool]
 def nondetBool := hl_val% λ _,

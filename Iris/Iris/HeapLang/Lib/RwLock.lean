@@ -13,7 +13,7 @@ public import Iris.HeapLang.Instances
 namespace Iris.HeapLang
 
 open BI OFE
-local bi IProp GF
+local bi (IProp GF)
 
 @[expose] public section
 

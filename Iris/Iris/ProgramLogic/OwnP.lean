@@ -15,7 +15,7 @@ namespace Iris.ProgramLogic
 
 open BI ExclAuth Language Language.Notation Std.LawfulSet Iris.ProgramLogic.PrimStep
 
-local bi IProp GF
+local bi (IProp GF)
 
 @[expose] public section
 

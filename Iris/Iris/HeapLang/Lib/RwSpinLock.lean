@@ -77,7 +77,7 @@ attribute [reducible, instance] RwSpinLockG.elemG
 section proof
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [RwSpinLockG GF]
-local bi IProp GF
+local bi (IProp GF)
 
 def rwLockN : Namespace := nroot .@ "rw_lock"
 

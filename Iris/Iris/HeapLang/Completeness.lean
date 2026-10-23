@@ -26,7 +26,7 @@ namespace Iris.HeapLang
 open Iris ProgramLogic Iris.BI Language Language.Notation Iris.Std
 
 variable {hlc : HasLC} {GF : BundledGFunctors} [HeapLangGS hlc GF]
-local bi IProp GF
+local bi (IProp GF)
 
 @[reducible] def heapCellPts (l : Loc) (vo : Option Val) : IProp GF :=
   match vo with

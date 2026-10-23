@@ -17,7 +17,7 @@ public import Iris.Instances.IProp
 namespace Iris
 open BI ProofMode Algebra
 
-local bi IProp GF
+local bi (IProp GF)
 
 @[rocq_alias time_receiptGpreS]
 class TimeReceiptGpreS (GF : BundledGFunctors) where

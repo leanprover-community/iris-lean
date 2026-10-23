@@ -127,7 +127,7 @@ variable {GF : BundledGFunctors} {P V : Type _}
 variable {H : outParam <| Type _ → Type _} [LawfulFiniteMap H P]
 variable {S : Type _} [LawfulSet S P]
 variable [prophMapGS P V GF H]
-local bi IProp GF
+local bi (IProp GF)
 
 /-! ### General properties of `proph` -/
 

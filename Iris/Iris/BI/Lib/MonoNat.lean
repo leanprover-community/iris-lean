@@ -33,7 +33,7 @@ attribute [reducible, instance] MonoNatG.elem
 namespace MonoNat
 
 variable {GF : BundledGFunctors} [MonoNatG GF]
-local bi IProp GF
+local bi (IProp GF)
 open MonoNatG
 
 @[rocq_alias mono_nat_auth_own]

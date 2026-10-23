@@ -18,7 +18,7 @@ namespace Iris
 
 open ProgramLogic Language.Notation Iris.Std Iris.BI
 
-local bi IProp GF
+local bi (IProp GF)
 
 @[expose] public section
 

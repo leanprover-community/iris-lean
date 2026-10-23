@@ -14,7 +14,7 @@ namespace Iris
 
 open BI ORA Excl OFE Iris.UPred IProp Iris.Std ProofMode
 
-local bi IProp GF
+local bi (IProp GF)
 
 /-! ## Token
 

@@ -23,7 +23,7 @@ namespace Iris
 
 open BI ORA OFE Iris Iris.Std LawfulSet Excl COFE ProofMode
 
-local bi IProp GF
+local bi (IProp GF)
 
 /-! # Cancelable Invariants -/
 

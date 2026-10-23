@@ -467,6 +467,7 @@ instance embed_plain (P : P1) [Plain P] : Plain (embed P : P2) where
   plain := (embed_mono Plain.plain).trans (embed_plainly P).mp
 
 section
+set_option iris.localBi.warnOnOverride false in
 local bi SiProp
 
 /-- `⎡·⎤` reflects internal equality. -/

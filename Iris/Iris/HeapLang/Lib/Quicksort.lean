@@ -84,7 +84,7 @@ def checkSorted : Val := hl_val%
 section Predicates
 
 variable [HeapLangGS hlc GF]
-local bi IProp GF
+local bi (IProp GF)
 
 def isList (v : Val) : List Int → IProp GF
   | [] => iprop% ⌜v = hl_val(none())⌝
@@ -103,7 +103,7 @@ end Predicates
 section Specs
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
-local bi IProp GF
+local bi (IProp GF)
 
 theorem nil_spec :
     {{ emp }}

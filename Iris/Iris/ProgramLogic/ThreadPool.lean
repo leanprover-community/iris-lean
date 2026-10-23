@@ -17,7 +17,7 @@ namespace Iris.ProgramLogic
 open Iris.ProgramLogic.PrimStep
 open Language Language.Notation Relation FromMathlib.Relation.TransGen
 
-local bi IProp GF
+local bi (IProp GF)
 
 @[expose] public section
 

@@ -317,6 +317,7 @@ theorem siEmpValid_congr [Sbi PROP] {P Q : PROP} (h : P ⊣⊢ Q) :
     iprop(<si_emp_valid> P ⊣⊢@{SiProp} <si_emp_valid> Q) :=
   ⟨siEmpValid_mono h.mp, siEmpValid_mono h.mpr⟩
 
+set_option iris.localBi.warnOnOverride false in
 local bi SiProp
 
 @[rocq_alias si_emp_valid_affinely]
@@ -501,6 +502,7 @@ instance siEmpValid_timeless [Sbi PROP] (P : PROP) [Timeless P] :
       _ ⊢ <si_emp_valid> (◇ P) := siEmpValid_mono Timeless.timeless
       _ ⊢ ◇ <si_emp_valid> P := siEmpValid_except0.mp
 
+set_option iris.localBi.warnOnOverride false in
 local bi PROP
 
 @[rocq_alias only_0_persistently]
@@ -533,6 +535,7 @@ theorem siEmpValid_emp_valid [Sbi PROP] {P : PROP} :
     _ ⊢ <affine> <si_pure> <si_emp_valid> P := affinely_mono (siPure_mono h)
     _ ⊢ P := affinely_siPure_siEmpValid
 
+set_option iris.localBi.warnOnOverride false in
 local bi SiProp
 
 @[rocq_alias si_pure_emp_valid]
@@ -556,6 +559,7 @@ theorem siPure_inj [Sbi PROP] {Pi Qi : SiProp} (h : <si_pure> Pi ⊣⊢ <si_pure
     Pi ⊣⊢ Qi :=
   ⟨siPure_entails.mp h.mp, siPure_entails.mp h.mpr⟩
 
+set_option iris.localBi.warnOnOverride false in
 local bi PROP
 
 @[rocq_alias pure_soundness]

@@ -19,7 +19,7 @@ namespace Iris
 
 open BI ORA OFE Iris Iris.Std LawfulSet DisjointLeibnizSet COFE ProofMode
 
-local bi IProp GF
+local bi (IProp GF)
 
 abbrev NaInvF : OFunctorPre :=
   ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))

@@ -69,7 +69,7 @@ attribute [reducible, instance] TicketLockG.elemG
 section proof
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [TicketLockG GF]
-local bi IProp GF
+local bi (IProp GF)
 
 def ticketLockN : Namespace := nroot .@ "ticket_lock"
 

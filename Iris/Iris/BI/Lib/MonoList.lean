@@ -38,7 +38,7 @@ attribute [reducible, instance] MonoListG.elem
 namespace MonoList
 
 variable {GF : BundledGFunctors} {α : Type _} [MonoListG GF α]
-local bi IProp GF
+local bi (IProp GF)
 
 /-! ## Helper functions -/
 

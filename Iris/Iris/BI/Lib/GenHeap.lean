@@ -123,7 +123,7 @@ section lemmas
 variable {GF : BundledGFunctors}
 variable {L V : Type _} {H : outParam <| Type _ → Type _} [Std.LawfulFiniteMap H L]
 variable [genHeapGS L V GF H]
-local bi IProp GF
+local bi (IProp GF)
 
 open genHeapGS Std.PartialMap Std.FiniteMap
 

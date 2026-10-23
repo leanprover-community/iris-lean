@@ -168,7 +168,7 @@ theorem ElemG.bundle_unit {GF} (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit �
 end ElemG
 
 section Fold
-local bi IProp FF
+local bi (IProp FF)
 
 open Iris COFE Iris.UPred
 
@@ -258,7 +258,7 @@ theorem IProp.unfoldi_unit {τ : GType} {x : FF.api τ (IProp FF)} [IsUnit x] :
 end Fold
 
 section iSingleton
-local bi IProp GF
+local bi (IProp GF)
 
 open IProp OFE Iris.UPred GenMap
 
@@ -987,7 +987,7 @@ theorem bigOpMS_iOwn_entail {B : Type _} {MS : Type _} [LawfulFiniteMultiSet MS 
 end big_op_instances
 
 section own_forall
-local bi IProp GF
+local bi (IProp GF)
 
 open IProp OFE BI
 

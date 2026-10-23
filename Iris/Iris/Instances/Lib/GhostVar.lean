@@ -15,7 +15,7 @@ namespace Iris
 
 open BI DFrac DFracAgree ProofMode
 
-local bi IProp GF
+local bi (IProp GF)
 
 /-! ## Ghost variable -/
 

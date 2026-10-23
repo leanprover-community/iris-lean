@@ -22,7 +22,7 @@ namespace Iris
 
 open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
 open Iris OFE COFE BI Auth CommMonoidLike Iris.Std
-local bi IProp GF
+local bi (IProp GF)
 
 section LcGS
 open ORA

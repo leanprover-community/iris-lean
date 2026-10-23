@@ -63,7 +63,7 @@ private theorem loc_add_nat_zero (l : Loc) : l + (0 : Nat) = l := by
 section Proof
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [HeapLangGS hlc GF]
-local bi IProp GF
+local bi (IProp GF)
 
 @[rocq_alias heap_lang.wp_array_free]
 theorem wp_array_free (s : Stuckness) (E : CoPset) (l : Loc) (vs : List Val) (n : Int)

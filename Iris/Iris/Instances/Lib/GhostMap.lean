@@ -16,7 +16,7 @@ namespace Iris
 
 open Iris.Std HeapView PartialMap Iris.Algebra ORA BI ProofMode
 
-local bi IProp GF
+local bi (IProp GF)
 
 @[rocq_alias ghost_mapG]
 class GhostMapG (GF : BundledGFunctors)

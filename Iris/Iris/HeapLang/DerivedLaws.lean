@@ -17,7 +17,7 @@ open Iris BI ProofMode ProgramLogic Iris.Std
 variable {GF : BundledGFunctors} {hlc : HasLC} [HeapLangGS hlc GF]
 variable {s : Stuckness} {E : CoPset} {Φ : Val → IProp GF}
 variable {l : Loc} {dq : DFrac} {v : Val} {vs : List Val}
-local bi IProp GF
+local bi (IProp GF)
 
 /-- Predicate for asserting ownership over a contiguous array. -/
 @[rocq_alias heap_lang.array]

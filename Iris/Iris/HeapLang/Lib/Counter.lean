@@ -47,7 +47,7 @@ while the invariant is open as a premise. -/
 section CounterProof
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF]
-local bi IProp GF
+local bi (IProp GF)
 
 /-- The shared counter invariant: the location holds `n`, tracked by the ghost state `A n`. -/
 abbrev counterInv (A : Nat → IProp GF) (l : Loc) : IProp GF := iprop%
@@ -112,7 +112,7 @@ attribute [reducible, instance] MCounterG.elemG
 section MonoProof
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [MCounterG GF] (N : Namespace)
-local bi IProp GF
+local bi (IProp GF)
 
 /-- The authoritative element of the monotone counter. -/
 abbrev mcounterAuth (γ : GName) (n : Nat) : IProp GF := iOwn (F := MCounterRF) γ (● MaxNat.ofNat n)
@@ -208,7 +208,7 @@ attribute [reducible, instance] CCounterG.elemG
 section ContribProof
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [CCounterG GF] (N : Namespace)
-local bi IProp GF
+local bi (IProp GF)
 
 /-- The authoritative element of the counter with contributions. -/
 abbrev ccounterAuth (γ : GName) (n : Nat) : IProp GF := iOwn (F := CCounterRF) γ (●F n)

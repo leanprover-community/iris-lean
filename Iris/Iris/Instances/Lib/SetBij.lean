@@ -22,7 +22,7 @@ namespace Iris
 
 open Iris.Std ORA BI ProofMode BigSepS LawfulSet SetBij
 
-local bi IProp GF
+local bi (IProp GF)
 
 @[rocq_alias gset_bijG]
 class SetBijG (GF : BundledGFunctors) (A B : Type _) (S : outParam (Type _))

@@ -165,7 +165,7 @@ section Lifting
 variable {GF : BundledGFunctors} {hlc : HasLC}
 variable [HeapLangGS hlc GF]
 variable {s : Stuckness} {E : CoPset} {Φ : Val → IProp GF}
-local bi IProp GF
+local bi (IProp GF)
 
 open EctxLanguage
 

@@ -25,7 +25,7 @@ attribute [reducible, instance] MonoZG.natG
 namespace MonoZ
 
 variable {GF : BundledGFunctors} [MonoZG GF]
-local bi IProp GF
+local bi (IProp GF)
 
 @[rocq_alias mono_Z_auth_own]
 def auth_own (γ : GName) (dq : DFrac) (n : Int) : IProp GF := iprop%

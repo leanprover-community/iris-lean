@@ -23,7 +23,7 @@ namespace Iris
 
 open Iris OFE COFE BI Auth
 
-local bi IProp GF
+local bi (IProp GF)
 
 section InvG
 
