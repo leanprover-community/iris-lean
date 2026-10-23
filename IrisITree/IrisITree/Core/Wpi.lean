@@ -227,7 +227,9 @@ theorem wpi_ind_mask (G : CoPset → ITree E R → (R → PROP) → PROP)
     ∀ Ms t Φ, WPi t @> H;Ms,Me {{ Φ }} -∗ G Ms t Φ := by
   iintro #HPre %Ms %t %Φ Hwp; unfold wpi
   let G' : (DiscreteO CoPset × _ × _) → _ := fun ⟨⟨Ms⟩, t, Φ⟩ => G Ms t Φ
-  have : OFE.NonExpansive G' := by sorry
+  have : OFE.NonExpansive G' := by
+    constructor; intro _ ⟨⟨Ms1⟩, t1, Φ1⟩ ⟨⟨Ms2⟩, t2, Φ2⟩ ⟨rfl, Ht, HΦ⟩
+    cases Ht; simp only [G']; exact OFE.NonExpansive.ne HΦ
   iapply least_fixpoint_ind (wpiF' H Me) G' $$ [] %⟨⟨Ms⟩, t, Φ⟩ Hwp
   iintro !> %p HwpiF
   obtain ⟨⟨_⟩, _, _⟩ := p
@@ -243,7 +245,9 @@ theorem wpi_ind :
     ∀ t Φ, WPi t @> H;∅,Me {{ Φ }} -∗ G t Φ := by
   iintro #HPre %t %Φ Hwp
   let G' := fun (Ms : CoPset) t Φ => iprop(<affine> ⌜Ms = ∅⌝ -∗ G t Φ)
-  have : ∀ Ms t, OFE.NonExpansive (G' Ms t) := by sorry
+  have : ∀ Ms t, OFE.NonExpansive (G' Ms t) := by
+    intro Ms t; constructor; intro _ Φ1 Φ2 HΦ; simp only [G']
+    exact wand_ne.ne .rfl <| OFE.NonExpansive.ne HΦ
   iapply wpi_ind_mask G' $$ [] Hwp; rotate_left 1; itrivial
   iintro !> %Ms %t %Φ Hwpi %hp; subst hp
   iapply HPre
@@ -378,7 +382,10 @@ theorem wpi_bind' {A} M' t (k : A → ITree E R) (Φ : R → PROP) :
   let G := fun t (Φ : A → PROP) =>
     iprop(∀ Ψ, (∀ r, Φ r -∗ WPi k r @> H; M', Me {{ Ψ }}) -∗
     WPi t >>= k @> H; ∅, Me {{ Ψ }})
-  have : ∀ t, OFE.NonExpansive (G t) := by sorry
+  have : ∀ t, OFE.NonExpansive (G t) := by
+    intro t; constructor; intro n Φ1 Φ2 HΦ; simp only [G];
+    refine forall_ne fun Ψ => wand_ne.ne ?_ .rfl
+    refine forall_ne fun r => wand_ne.ne (HΦ r) .rfl
   iintro >Hwp; iapply wpi_iter' G $$ [] [] [] Hwp
   rotate_right 1; focus iintro %_ $
   · iintro !> %Φ %r >Hwpi %Ψ Hwand; simp
@@ -449,33 +456,6 @@ theorem wpi_mask_mono_end {Me'} [BIAffine PROP] t (Φ : R → PROP) :
   iintro %_ HΦ
   imod (fupd_mask_subseteq Hsub) with -
   imodintro; iframe
-
--- TODO: I feel confused about the following lemma, what is a proper way to generalize it?
--- Lemma wpi_open_invariant {R} N M (Φ : R → iProp Σ) t P :
---   ↑N ⊆ M →
---   inv N P -∗
---   (▷ P -∗ WPi t @ H; M ∖ ↑N {{ v, ▷ P ∗ Φ v }}) -∗
---   WPi t @ H; M {{ Φ }}.
--- Proof.
---   iIntros (Hsubset) "Hinv Hwp". rewrite /wpi_mask unlock.
---   iMod (inv_acc _ with "Hinv") as "[HP Hclose]"; first done.
---   iSpecialize ("Hwp" with "HP").
---   iMod "Hwp". iModIntro. iApply (wpi_wand_emp_mask with "[Hclose] [Hwp //]").
---   iIntros (r) "HP". iMod "HP" as "[HP HΦ]". by iMod ("Hclose" with "HP").
--- Qed.
--- Lemma wpi_open_invariant_timeless {R} N M (Φ : R → iProp Σ) t P :
---   Timeless P →
---   ↑N ⊆ M →
---   inv N P -∗
---   (P -∗ WPi t @ H; M ∖ ↑N {{ v, P ∗ Φ v }}) -∗
---   WPi t @ H; M {{ Φ }}.
--- Proof.
---   iIntros (Htimeless Hsubset) "Hinv Hwp". rewrite /wpi_mask unlock.
---   iMod (inv_acc_timeless _ with "Hinv") as "[HP Hclose]"; first done.
---   iSpecialize ("Hwp" with "HP").
---   iMod "Hwp". iModIntro. iApply (wpi_wand_emp_mask with "[Hclose] [Hwp //]").
---   iIntros (r) "HP". iMod "HP" as "[HP HΦ]". by iMod ("Hclose" with "HP").
--- Qed.
 
 #rocq_ignore wpi_open_invariant "Use `iinv` (via `elimAcc_wpi`), or `wpi_acc` with `inv_acc`."
 #rocq_ignore wpi_open_invariant_timeless "Use `iinv … with >HP` (via `isExcept0_wpi`)."
