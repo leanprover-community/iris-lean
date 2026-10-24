@@ -16,6 +16,7 @@ public import Iris.BI.Lib.InvHeap
 public import Iris.BI.Lib.Laterable
 public import Iris.BI.Lib.MonoList
 public import Iris.BI.Lib.MonoNat
+public import Iris.BI.Lib.Monotone
 public import Iris.BI.Lib.MonoZ
 public import Iris.BI.Lib.ProphMap
 public import Iris.BI.Lib.Relations
