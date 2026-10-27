@@ -28,54 +28,55 @@ private def laterP (φ : Nat → Prop) : Nat → Prop
 
 section RocqTests
 variable [Sbi PROP] {A : Type _} [OFE A] (x y z : A)
+local bi PROP
 
 /-! ### These should *not* include a `∀ m ≤ n` -/
 
 /- `test_impl` -/
 example (h : ∀ n, x ≡{n}≡ y → y ≡{n}≡ z → x ≡{n}≡ z) :
-    x ≡ y ⊢@{PROP} iprop(y ≡ z → x ≡ z) := by
+    x ≡ y ⊢ iprop(y ≡ z → x ≡ z) := by
   sbi_unfold; exact h
 
 /- `test_impl_impl_and` -/
 example (h : ∀ n, x ≡{n}≡ y → y ≡{n}≡ z → x ≡{n}≡ z ∧ z ≡{n}≡ x) :
-    ⊢@{PROP} iprop(x ≡ y → y ≡ z → x ≡ z ∧ z ≡ x) := by
+    ⊢ iprop(x ≡ y → y ≡ z → x ≡ z ∧ z ≡ x) := by
   sbi_unfold; exact h
 
 /- `test_exist_impl`, with the `∃` in the hypothesis -/
 example (h : ∀ n, (∃ y, x ≡{n}≡ y ∧ y ≡{n}≡ z) → x ≡{n}≡ z) :
-    ⊢@{PROP} iprop((∃ y, x ≡ y ∧ y ≡ z) → x ≡ z) := by
+    ⊢ iprop((∃ y, x ≡ y ∧ y ≡ z) → x ≡ z) := by
   sbi_unfold; exact h
 
 /- `test_exist_impl`, with the `∃` in the conclusion -/
 example (h : ∀ n, x ≡{n}≡ z → ∃ y, x ≡{n}≡ y ∧ y ≡{n}≡ z) :
-    ⊢@{PROP} iprop(x ≡ z → ∃ y, x ≡ y ∧ y ≡ z) := by
+    ⊢ iprop(x ≡ z → ∃ y, x ≡ y ∧ y ≡ z) := by
   sbi_unfold; exact h
 
 /- `test_si_pure_exist`. The `<si_pure>` leaves are transparent, so this gives
 the same goal as the version without them. -/
 example (h : ∀ n, (∃ y, x ≡{n}≡ y ∧ y ≡{n}≡ z) → x ≡{n}≡ z) :
-    ⊢@{PROP} iprop(<si_pure> (∃ y, <si_pure> (x ≡ y) ∧ y ≡ z) → x ≡ z) := by
+    ⊢ iprop(<si_pure> (∃ y, <si_pure> (x ≡ y) ∧ y ≡ z) → x ≡ z) := by
   sbi_unfold; exact h
 
 /- `test_equiv_exist` -/
 example (h : ∀ n, x ≡{n}≡ z ↔ ∃ y, x ≡{n}≡ y ∧ y ≡{n}≡ z) :
-    x ≡ z ⊣⊢@{PROP} iprop(∃ y, x ≡ y ∧ y ≡ z) := by
+    x ≡ z ⊣⊢ iprop(∃ y, x ≡ y ∧ y ≡ z) := by
   sbi_unfold; exact h
 
 /- `test_iff_exist` -/
 example (h : ∀ n, x ≡{n}≡ z ↔ ∃ y, x ≡{n}≡ y ∧ y ≡{n}≡ z) :
-    ⊢@{PROP} iprop(x ≡ z ↔ ∃ y, x ≡ y ∧ y ≡ z) := by
+    ⊢ iprop(x ≡ z ↔ ∃ y, x ≡ y ∧ y ≡ z) := by
   sbi_unfold; exact h
 
 /- `test_wand_iff_exist` -/
 example (h : ∀ n, x ≡{n}≡ z ↔ ∃ y, x ≡{n}≡ y ∧ y ≡{n}≡ z) :
-    ⊢@{PROP} iprop(x ≡ z ∗-∗ ∃ y, x ≡ y ∧ y ≡ z) := by
+    ⊢ iprop(x ≡ z ∗-∗ ∃ y, x ≡ y ∧ y ≡ z) := by
   sbi_unfold; exact h
 
 /- `test_iff_exist_later` -/
 example (h : ∀ n, laterP (fun m => x ≡{m}≡ z) n
                     ↔ ∃ y, laterP (fun m => x ≡{m}≡ y ∧ y ≡{m}≡ z) n) :
-    ⊢@{PROP} iprop(▷ (x ≡ z) ∗-∗ ∃ y, ▷ (x ≡ y ∧ y ≡ z)) := by
+    ⊢ iprop(▷ (x ≡ z) ∗-∗ ∃ y, ▷ (x ≡ y ∧ y ≡ z)) := by
   sbi_unfold; exact h
 
 /-! ### These should include a `∀ m ≤ n`
@@ -85,64 +86,65 @@ closure: neither connective commutes with `∀`. -/
 
 /- `test_exist_impl` -/
 example (h : ∀ n, x ≡{n}≡ z → ∃ y, ∀ m ≤ n, x ≡{m}≡ y → y ≡{m}≡ z) :
-    ⊢@{PROP} iprop(x ≡ z → ∃ y, x ≡ y → y ≡ z) := by
+    ⊢ iprop(x ≡ z → ∃ y, x ≡ y → y ≡ z) := by
   sbi_unfold; exact h
 
 /- `test_forall_impl` -/
 example (h : ∀ n, (∀ y, ∀ m ≤ n, x ≡{m}≡ y → y ≡{m}≡ z) → x ≡{n}≡ z) :
-    ⊢@{PROP} iprop((∀ y, x ≡ y → y ≡ z) → x ≡ z) := by
+    ⊢ iprop((∀ y, x ≡ y → y ≡ z) → x ≡ z) := by
   sbi_unfold; exact h
 
 end RocqTests
 
 section LeanTests
 variable [Sbi PROP] [ORA A] [OFE B]
+local bi PROP
 
 /- `prod_validI`. -/
 example (x : A × A) (h : ∀ n, ✓{n} x ↔ ✓{n} x.1 ∧ ✓{n} x.2) :
-    ✓ x ⊣⊢@{PROP} ✓ x.1 ∧ ✓ x.2 := by
+    ✓ x ⊣⊢ ✓ x.1 ∧ ✓ x.2 := by
   sbi_unfold; exact h
 
 /- The example from the module docstring: nested implications contribute no
 closure. -/
 example (x y : A × A) (h : ∀ n, x.1 ≼ₒ{n} y.1 → x.2 ≼ₒ{n} y.2 → x ≼ₒ{n} y) :
-    ⊢@{PROP} iprop(x.1 ≼ₒ y.1 → x.2 ≼ₒ y.2 → x ≼ₒ y) := by
+    ⊢ iprop(x.1 ≼ₒ y.1 → x.2 ≼ₒ y.2 → x ≼ₒ y) := by
   sbi_unfold; exact h
 
 /- `⌜_⌝` and `∧`. -/
 example (a b : B) (φ : Prop) (h : ∀ n, φ ∧ a ≡{n}≡ b → a ≡{n}≡ b) :
-    iprop(⌜φ⌝ ∧ a ≡ b) ⊢@{PROP} iprop(a ≡ b) := by
+    iprop(⌜φ⌝ ∧ a ≡ b) ⊢ iprop(a ≡ b) := by
   sbi_unfold; exact h
 
-example : ⊢@{PROP} iprop(∃ (_h : True), ⌜True⌝) := by
+example : ⊢ iprop(∃ (_h : True), ⌜True⌝) := by
   sbi_unfold
   exact fun _ => ⟨True.intro, True.intro⟩
 
 /- `∗` becomes `∧`. -/
 example (a b : B) (h : ∀ n, a ≡{n}≡ b ∧ b ≡{n}≡ a → a ≡{n}≡ b) :
-    iprop((a ≡ b) ∗ (b ≡ a)) ⊢@{PROP} iprop(a ≡ b) := by
+    iprop((a ≡ b) ∗ (b ≡ a)) ⊢ iprop(a ≡ b) := by
   sbi_unfold; exact h
 
 /- `-∗` becomes `→`, and the conclusion of an entailment keeps no closure. -/
 example (a b : B) (h : ∀ n, a ≡{n}≡ b → a ≡{n}≡ b → b ≡{n}≡ a) :
-    iprop(a ≡ b) ⊢@{PROP} iprop((a ≡ b) -∗ (b ≡ a)) := by
+    iprop(a ≡ b) ⊢ iprop((a ≡ b) -∗ (b ≡ a)) := by
   sbi_unfold; exact h
 
 /- A closure next to a leaf under `∧` still merges away, because `∧` passes the
 indicator down to both conjuncts. -/
 example (a b c d : B) (h : ∀ n, (a ≡{n}≡ b → c ≡{n}≡ d) ∧ c ≡{n}≡ d) :
-    ⊢@{PROP} iprop((a ≡ b → c ≡ d) ∧ (c ≡ d)) := by
+    ⊢ iprop((a ≡ b → c ≡ d) ∧ (c ≡ d)) := by
   sbi_unfold; exact h
 
 /- A `▷` in the hypothesis of an implication needs no closure either. -/
 example (a b c d e f : B)
     (h : ∀ n, laterP (fun m => a ≡{m}≡ b) n → c ≡{n}≡ d → e ≡{n}≡ f) :
-    ⊢@{PROP} iprop(▷ (a ≡ b) → (c ≡ d → e ≡ f)) := by
+    ⊢ iprop(▷ (a ≡ b) → (c ≡ d → e ≡ f)) := by
   sbi_unfold; exact h
 
 /- Under `∨` the closure stays: `∨` does not commute with `∀`. -/
 example (a b c d : B) (h : ∀ n, (∀ m ≤ n, a ≡{m}≡ b → c ≡{m}≡ d) ∨ a ≡{n}≡ b) :
-    ⊢@{PROP} iprop((a ≡ b → c ≡ d) ∨ (a ≡ b)) := by
+    ⊢ iprop((a ≡ b → c ≡ d) ∨ (a ≡ b)) := by
   sbi_unfold; exact h
 
 /- A goal in the model itself: the low-priority `SiProp` instance applies. -/
@@ -152,7 +154,7 @@ example (Pi Qi : SiProp) (h : ∀ n, Pi.holds n ∧ Qi.holds n → Pi.holds n) :
 
 /- A `match` has to be case split before unfolding. -/
 example (mx : Option B) :
-    (match mx with | none => iprop(⌜True⌝) | some a => iprop(a ≡ a)) ⊢@{PROP}
+    (match mx with | none => iprop(⌜True⌝) | some a => iprop(a ≡ a)) ⊢
       (match mx with | none => iprop(⌜True⌝) | some a => iprop(a ≡ a)) := by
   cases mx <;> sbi_unfold <;> intro _ <;> exact id
 
