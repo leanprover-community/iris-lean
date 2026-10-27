@@ -16,6 +16,7 @@ open Iris.Algebra BigOpL BIBase
 /-! # Big Disjunction over Lists -/
 
 variable {PROP : Type _} [BI PROP] {A : Type _}
+local bi PROP
 
 namespace BigOrL
 
@@ -105,7 +106,7 @@ theorem bigOrL_exist {Φ : Nat → A → PROP} {l : List A} :
 
 @[rocq_alias big_orL_pure]
 theorem bigOrL_pure {φ : Nat → A → Prop} {l : List A} :
-    ([∨list] k ↦ x ∈ l, ⌜φ k x⌝ : PROP) ⊣⊢ ⌜∃ k x, l[k]? = some x ∧ φ k x⌝ := by
+    ([∨list] k ↦ x ∈ l, ⌜φ k x⌝) ⊣⊢ ⌜∃ k x, l[k]? = some x ∧ φ k x⌝ := by
   refine bigOrL_exist.trans ?_
   refine (exists_congr fun _ => (exists_congr fun _ => pure_and).trans pure_exists).trans ?_
   exact pure_exists

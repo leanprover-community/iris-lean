@@ -13,6 +13,7 @@ public import Iris.ProofMode
 namespace Iris
 
 open Iris.Std BI ProofMode
+local bi PROP
 
 /-
   The excluded middle `P ∨ ¬P` makes the separating conjunction trivial for
@@ -57,7 +58,7 @@ namespace LoebEM
 @[rocq_alias löb_em.later_anything]
 theorem later_anything [BI PROP] [BIPersistentlyExist PROP]
     (em : ∀ P : PROP, ⊢ P ∨ ¬P) [BILoeb PROP] :
-    ⊢@{PROP} ▷ P := by
+    ⊢ ▷ P := by
   icases (em iprop(▷ False)) with #(HP | HnotP)
   · inext
     iexfalso
@@ -69,8 +70,8 @@ theorem later_anything [BI PROP] [BIPersistentlyExist PROP]
 
 @[rocq_alias löb_em.later_inconsistent]
 theorem later_inconsistent [Sbi PROP] [BIPersistentlyExist PROP]
-    (em : ∀ P : PROP, ⊢ P ∨ ¬P) : ⊢@{PROP} False := by
-  apply later_soundness (PROP := PROP) (P := iprop(False))
+    (em : ∀ P : PROP, ⊢ P ∨ ¬P) : ⊢ False := by
+  apply later_soundness (P := iprop(False))
   apply later_anything
   assumption
 
@@ -245,7 +246,7 @@ variable (gname : Type _) (start finished : gname → PROP)
 
 variable (sts_alloc : ⊢ fupd M0 (∃ γ, start γ))
 variable (start_finish : ∀ γ, start γ ⊢ fupd M0 (finished γ))
-variable (finished_not_start : ∀ γ, start γ ∗ finished γ ⊢ (False : PROP))
+variable (finished_not_start : ∀ γ, start γ ∗ finished γ ⊢ False)
 variable (finished_dup : ∀ γ, finished γ ⊢ finished γ ∗ finished γ)
 
 @[reducible, rocq_alias inv.saved]
@@ -394,7 +395,7 @@ variable [∀ γ, Persistent (finished γ)]
 
 variable (sts_alloc : ⊢ fupd M0 (∃ γ, start γ))
 variable (start_finish : ∀ γ, start γ ⊢ fupd M0 (finished γ))
-variable (finished_not_start : ∀ γ, start γ ∗ finished γ ⊢ (False : PROP))
+variable (finished_not_start : ∀ γ, start γ ∗ finished γ ⊢ False)
 
 @[reducible, rocq_alias inv.B]
 def B : PROP := iprop(□ fupd M1 iprop(False))
@@ -497,7 +498,7 @@ variable (fupd_frame_left :
 variable (cinv_alloc : ∀ {E : Mask} (P : PROP), ▷ P ⊢ fupd E E iprop(∃ γ, cinv γ P ∗ cinv_own γ))
 variable (cinv_acc :
   ∀ (P : PROP) (γ : gname), cinv γ P -∗ cinv_own γ -∗
-    fupd M1 M0 iprop(▷ P ∗ cinv_own γ ∗ (▷ P -∗ fupd M0 M1 (emp : PROP))))
+    fupd M1 M0 iprop(▷ P ∗ cinv_own γ ∗ (▷ P -∗ fupd M0 M1 emp)))
 
 include fupd_mono in
 @[rw_mono_rule, rocq_alias linear.fupd_mono']
@@ -529,7 +530,7 @@ theorem elim_fupd_fupd {p : Bool} {E1 E2 E3 : Mask} :
 
 include cinv_alloc cinv_acc fupd_mono fupd_fupd fupd_frame_left in
 @[rocq_alias linear.leak]
-theorem leak : P ⊢ fupd M1 M1 (emp : PROP) := by
+theorem leak : P ⊢ fupd M1 M1 emp := by
   haveI {p : Bool} {E1 E2 E3 : Mask} {P Q : PROP} :
       ElimModal True p .out false (fupd E1 E2 P) P (fupd E1 E3 Q) (fupd E2 E3 Q) :=
     elim_fupd_fupd (io := .out) fupd fupd_mono fupd_fupd fupd_frame_left
@@ -574,7 +575,7 @@ theorem lc_fupd_elim_later_keep {E : CoPset} {P : PROP} [inst1 : Plain P] [inst2
 
 omit instBFupd in
 @[rocq_alias later_credits_plain.laterN_False]
-theorem laterN_False [BILoeb PROP] : ⊢@{PROP} ∃ n, ▷^[n] False := by
+theorem laterN_False [BILoeb PROP] : ⊢ ∃ n, ▷^[n] False := by
   iloeb as IH
   icases IH with ⟨%n, Hn⟩
   iexists n + 1

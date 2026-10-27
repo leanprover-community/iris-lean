@@ -18,6 +18,8 @@ public import Iris.Std.TC
 namespace Iris.BI
 open Iris.Std BI
 
+local bi PROP
+
 /-! # Entails -/
 
 /- Necessary for `calc`-style proofs. -/
@@ -84,11 +86,11 @@ theorem false_elim [BI PROP] {P : PROP} : False ⊢ P := pure_elim' False.elim
 theorem true_intro [BI PROP] {P : PROP} : P ⊢ True := pure_intro trivial
 
 @[rocq_alias bi.entails_eq_True]
-theorem entails_eq_true [BI PROP] {P Q : PROP} (h : P ⊢ Q) : (P → Q) ⊣⊢ (True : PROP) :=
+theorem entails_eq_true [BI PROP] {P Q : PROP} (h : P ⊢ Q) : (P → Q) ⊣⊢ True :=
   ⟨true_intro, imp_intro (and_elim_r.trans h)⟩
 
 @[rocq_alias bi.entails_impl_True]
-theorem entails_impl_true [BI PROP] {P Q : PROP} : (P ⊢ Q) ↔ ((True : PROP) ⊢ P → Q) :=
+theorem entails_impl_true [BI PROP] {P Q : PROP} : (P ⊢ Q) ↔ (True ⊢ P → Q) :=
   ⟨fun h => imp_intro (and_elim_r.trans h),
    fun h => and_intro (true_intro.trans h) .rfl |>.trans imp_elim_left⟩
 
@@ -245,27 +247,27 @@ instance [BI PROP] : Commutative (α := PROP) BiEntails or := ⟨or_comm⟩
 @[rocq_alias bi.True_and]
 theorem true_and [BI PROP] {P : PROP} : True ∧ P ⊣⊢ P :=
   ⟨and_elim_r, and_intro (pure_intro trivial) .rfl⟩
-instance [BI PROP] : LeftId (· ⊣⊢@{PROP} ·) iprop(True) and := ⟨true_and⟩
+instance [BI PROP] : LeftId (· ⊣⊢ ·) iprop(True) and := ⟨true_and⟩
 
 @[rocq_alias bi.and_True]
 theorem and_true [BI PROP] {P : PROP} : P ∧ True ⊣⊢ P := and_comm.trans true_and
-instance [BI PROP] : RightId (· ⊣⊢@{PROP} ·) iprop(True) and := ⟨and_true⟩
+instance [BI PROP] : RightId (· ⊣⊢ ·) iprop(True) and := ⟨and_true⟩
 
 @[rocq_alias bi.False_and]
 theorem false_and [BI PROP] {P : PROP} : False ∧ P ⊣⊢ False := ⟨and_elim_l, false_elim⟩
-instance [BI PROP] : LeftAbsorb (· ⊣⊢@{PROP} ·) iprop(False) and := ⟨false_and⟩
+instance [BI PROP] : LeftAbsorb (· ⊣⊢ ·) iprop(False) and := ⟨false_and⟩
 
 @[rocq_alias bi.and_False]
 theorem and_false [BI PROP] {P : PROP} : P ∧ False ⊣⊢ False := and_comm.trans false_and
-instance [BI PROP] : RightAbsorb (· ⊣⊢@{PROP} ·) iprop(False) and := ⟨and_false⟩
+instance [BI PROP] : RightAbsorb (· ⊣⊢ ·) iprop(False) and := ⟨and_false⟩
 
 @[rocq_alias bi.True_or]
 theorem true_or [BI PROP] {P : PROP} : True ∨ P ⊣⊢ True := ⟨true_intro, or_intro_l⟩
-instance [BI PROP] : LeftAbsorb (· ⊣⊢@{PROP} ·) iprop(True) or := ⟨true_or⟩
+instance [BI PROP] : LeftAbsorb (· ⊣⊢ ·) iprop(True) or := ⟨true_or⟩
 
 @[rocq_alias bi.or_True]
 theorem or_true [BI PROP] {P : PROP} : P ∨ True ⊣⊢ True := or_comm.trans true_or
-instance [BI PROP] : RightAbsorb (· ⊣⊢@{PROP} ·) iprop(True) or := ⟨or_true⟩
+instance [BI PROP] : RightAbsorb (· ⊣⊢ ·) iprop(True) or := ⟨or_true⟩
 
 @[rocq_alias bi.False_or]
 theorem false_or [BI PROP] {P : PROP} : False ∨ P ⊣⊢ P := ⟨or_elim false_elim .rfl, or_intro_r⟩
@@ -290,7 +292,7 @@ instance [BI PROP] : Associative (α := PROP) BiEntails or := ⟨or_assoc⟩
 @[rocq_alias bi.True_impl]
 theorem true_imp [BI PROP] {P : PROP} : (True → P) ⊣⊢ P :=
   ⟨and_true.2.trans imp_elim_left, imp_intro and_elim_l⟩
-instance [BI PROP] : LeftId (· ⊣⊢@{PROP} ·) iprop(True) imp := ⟨true_imp⟩
+instance [BI PROP] : LeftId (· ⊣⊢ ·) iprop(True) imp := ⟨true_imp⟩
 
 @[rocq_alias bi.impl_refl]
 theorem imp_self [BI PROP] {P Q : PROP} : Q ⊢ P → P := imp_intro and_elim_r
@@ -525,12 +527,12 @@ theorem wand_elim_left [BI PROP] {P Q : PROP} : (P -∗ Q) ∗ P ⊢ Q := wand_e
 theorem false_sep [BI PROP] {P : PROP} : False ∗ P ⊣⊢ False :=
   ⟨(sep_mono_left (P' := iprop(P -∗ False)) false_elim).trans wand_elim_left, false_elim⟩
 @[rocq_alias bi.False_sep]
-instance [BI PROP] : LeftAbsorb (· ⊣⊢@{PROP} ·) iprop(False) sep where
+instance [BI PROP] : LeftAbsorb (· ⊣⊢ ·) iprop(False) sep where
   left_absorb := false_sep
 
 theorem sep_false [BI PROP] {P : PROP} : P ∗ False ⊣⊢ False := sep_comm.trans false_sep
 @[rocq_alias bi.sep_False]
-instance [BI PROP] : RightAbsorb (· ⊣⊢@{PROP} ·) iprop(False) sep where
+instance [BI PROP] : RightAbsorb (· ⊣⊢ ·) iprop(False) sep where
   right_absorb := sep_false
 
 @[rocq_alias bi.wand_elim_r]
@@ -797,17 +799,17 @@ instance bi_or_monoid [BI PROP] : LawfulBigOp or (iprop(False) : PROP) BiEntails
 
 @[rocq_alias bi.pure_elim]
 theorem pure_elim [BI PROP] (φ : Prop) {Q R : PROP} (h1 : Q ⊢ ⌜φ⌝) (h2 : φ → Q ⊢ R) : Q ⊢ R :=
-  (and_self (PROP := PROP)).2.trans <| imp_elim <| h1.trans <| pure_elim' fun h =>
+  (and_self).2.trans <| imp_elim <| h1.trans <| pure_elim' fun h =>
     imp_intro_swap <| and_elim_l.trans (h2 h)
 
 @[rw_mono_rule, rocq_alias bi.pure_mono]
-theorem pure_mono [BI PROP] {φ1 φ2 : Prop} (h : φ1 → φ2) : ⌜φ1⌝ ⊢ (⌜φ2⌝ : PROP) :=
+theorem pure_mono [BI PROP] {φ1 φ2 : Prop} (h : φ1 → φ2) : ⌜φ1⌝ ⊢ ⌜φ2⌝ :=
   pure_elim' <| pure_intro ∘ h
 #rocq_ignore bi.pure_mono' "Use pure_mono."
 #rocq_ignore bi.pure_proper "Derivable from _ne with NonExpansive.eqv."
 #rocq_ignore bi.pure_flip_mono "No Proper type class in Lean. Use pure_mono directly."
 
-theorem pure_congr [BI PROP] {φ1 φ2 : Prop} (h : φ1 ↔ φ2) : ⌜φ1⌝ ⊣⊢ (⌜φ2⌝ : PROP) :=
+theorem pure_congr [BI PROP] {φ1 φ2 : Prop} (h : φ1 ↔ φ2) : ⌜φ1⌝ ⊣⊢ ⌜φ2⌝ :=
   ⟨pure_mono h.1,pure_mono h.2⟩
 
 @[rocq_alias bi.pure_elim_l]
@@ -819,30 +821,30 @@ theorem pure_elim_right [BI PROP] {φ : Prop} {Q R : PROP} (h : φ → Q ⊢ R) 
   and_comm.1.trans (pure_elim_left h)
 
 @[rocq_alias bi.pure_True]
-theorem pure_true [BI PROP] {φ : Prop} (h : φ) : ⌜φ⌝ ⊣⊢ (True : PROP) := eq_true h ▸ .rfl
+theorem pure_true [BI PROP] {φ : Prop} (h : φ) : ⌜φ⌝ ⊣⊢ True := eq_true h ▸ .rfl
 
 @[rocq_alias bi.pure_False]
-theorem pure_false [BI PROP] {φ : Prop} (h : ¬ φ) : ⌜φ⌝ ⊣⊢ (False : PROP) := eq_false h ▸ .rfl
+theorem pure_false [BI PROP] {φ : Prop} (h : ¬ φ) : ⌜φ⌝ ⊣⊢ False := eq_false h ▸ .rfl
 
 @[rocq_alias bi.pure_iff]
-theorem pure_iff [BI PROP] {φ1 φ2 : Prop} (h : φ1 ↔ φ2) : ⌜φ1⌝ ⊣⊢ (⌜φ2⌝ : PROP) :=
+theorem pure_iff [BI PROP] {φ1 φ2 : Prop} (h : φ1 ↔ φ2) : ⌜φ1⌝ ⊣⊢ ⌜φ2⌝ :=
   ⟨pure_mono h.mp, pure_mono h.mpr⟩
 
 theorem pure_imp_elim [BI PROP] {φ : Prop} {R : PROP} (h : φ) : (⌜φ⌝ → R) ⊢ R :=
   (and_intro .rfl (pure_intro h)).trans imp_elim_left
 
 @[rocq_alias bi.pure_and]
-theorem pure_and [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∧ (⌜φ2⌝ : PROP) ⊣⊢ ⌜φ1 ∧ φ2⌝ :=
+theorem pure_and [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∧ ⌜φ2⌝ ⊣⊢ ⌜φ1 ∧ φ2⌝ :=
   ⟨pure_elim φ1 and_elim_l fun h => and_elim_right_trans <| pure_mono <| And.intro h,
    and_intro (pure_mono And.left) (pure_mono And.right)⟩
 
 @[rocq_alias bi.pure_or]
-theorem pure_or [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∨ (⌜φ2⌝ : PROP) ⊣⊢ ⌜φ1 ∨ φ2⌝ :=
+theorem pure_or [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∨ ⌜φ2⌝ ⊣⊢ ⌜φ1 ∨ φ2⌝ :=
   ⟨or_elim (pure_mono Or.inl) (pure_mono Or.inr),
    pure_elim' (·.elim (or_intro_left_trans ∘ pure_intro) (or_intro_right_trans ∘ pure_intro))⟩
 
 @[rocq_alias bi.pure_impl]
-theorem pure_imp [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊣⊢@{PROP} (⌜φ1⌝ → ⌜φ2⌝)   := by
+theorem pure_imp [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊣⊢ (⌜φ1⌝ → ⌜φ2⌝) := by
   refine ⟨imp_intro <| pure_and.1.trans <| pure_mono (And.elim id), ?_⟩
   by_cases h : φ1
   · exact (imp_mp .rfl (pure_intro h)).trans (pure_mono fun h _ => h)
@@ -852,7 +854,7 @@ theorem pure_imp [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊣⊢@{PROP} (�
 #rocq_ignore bi.pure_impl_2 "Proven as pure_imp.2"
 
 @[rocq_alias bi.pure_forall]
-theorem pure_forall [BI PROP] {φ : α → Prop} :  ⌜∀ x, φ x⌝ ⊣⊢@{PROP} (∀ x, ⌜φ x⌝) := by
+theorem pure_forall [BI PROP] {φ : α → Prop} :  ⌜∀ x, φ x⌝ ⊣⊢ (∀ x, ⌜φ x⌝) := by
   refine ⟨forall_intro fun _ => pure_mono (· _), ?_⟩
   by_cases h : ∃ x, ¬φ x
   · let ⟨x, h⟩ := h
@@ -862,7 +864,7 @@ theorem pure_forall [BI PROP] {φ : α → Prop} :  ⌜∀ x, φ x⌝ ⊣⊢@{PR
 #rocq_ignore bi.pure_forall_1 "Proven as pure_forall.1"
 
 @[rocq_alias bi.pure_exist]
-theorem pure_exists [BI PROP] {φ : α → Prop} : (∃ x, ⌜φ x⌝ : PROP) ⊣⊢ ⌜∃ x, φ x⌝ :=
+theorem pure_exists [BI PROP] {φ : α → Prop} : (∃ x, ⌜φ x⌝) ⊣⊢ ⌜∃ x, φ x⌝ :=
   ⟨exists_elim fun a => pure_mono (⟨a, ·⟩),
    pure_elim' fun ⟨x, h⟩ => (pure_intro h).trans (exists_intro (Ψ := fun a => iprop(⌜φ a⌝)) x)⟩
 
@@ -870,7 +872,7 @@ theorem pure_exists [BI PROP] {φ : α → Prop} : (∃ x, ⌜φ x⌝ : PROP) �
 
 @[rocq_alias bi.pure_alt]
 theorem pure_alt {PROP : Type _} [BI PROP] (φ : Prop) :
-    (⌜φ⌝ : PROP) ⊣⊢ ∃ _ : φ, True :=
+    ⌜φ⌝ ⊣⊢ ∃ _ : φ, True :=
   (pure_congr ⟨fun h => ⟨h, trivial⟩, fun ⟨h, _⟩ => h⟩).trans pure_exists.symm
 
 @[rocq_alias bi.pure_wand_forall]
@@ -926,10 +928,10 @@ theorem affinely_intro_affinely [BI PROP] {P Q : PROP} (h : P ⊢ <affine> Q) :
     <affine> P ⊢ <affine> Q := (affinely_mono h).trans affinely_idem.1
 
 @[rocq_alias bi.affinely_False]
-theorem affinely_false [BI PROP] : <affine> False ⊣⊢ (False : PROP) := and_false
+theorem affinely_false [BI PROP] : <affine> False ⊣⊢ False := and_false
 
 @[rocq_alias bi.affinely_emp]
-theorem affinely_emp [BI PROP] : <affine> emp ⊣⊢ (emp : PROP) := and_self
+theorem affinely_emp [BI PROP] : <affine> emp ⊣⊢ emp := and_self
 
 @[rocq_alias bi.affinely_or]
 theorem affinely_or [BI PROP] {P Q : PROP} : <affine> (P ∨ Q) ⊣⊢ <affine> P ∨ <affine> Q := and_or_left
@@ -976,7 +978,7 @@ theorem affinely_exists [BI PROP] {Φ : α → PROP} : <affine> (∃ a, Φ a) �
   and_exists_left
 
 @[rocq_alias bi.affinely_True_emp]
-theorem affinely_true [BI PROP] : <affine> True ⊣⊢ (emp : PROP) :=
+theorem affinely_true [BI PROP] : <affine> True ⊣⊢ emp :=
   ⟨and_elim_l, and_intro .rfl true_intro⟩
 
 @[rocq_alias bi.affinely_and_l]
@@ -1073,11 +1075,11 @@ instance absorbingly_absorbing [BI PROP] (P : PROP) : Absorbing iprop(<absorb> P
 #rocq_ignore bi.Absorbing_proper "Derivable from _ne with NonExpansive.eqv."
 
 @[rocq_alias bi.absorbingly_pure]
-theorem absorbingly_pure {φ : Prop} [BI PROP] : <absorb> ⌜φ⌝ ⊣⊢ (⌜φ⌝ : PROP) :=
+theorem absorbingly_pure {φ : Prop} [BI PROP] : <absorb> ⌜φ⌝ ⊣⊢ ⌜φ⌝ :=
   ⟨wand_elim_swap <| pure_elim' fun h => wand_intro_left <| pure_intro h, absorbingly_intro⟩
 
 @[rocq_alias bi.absorbingly_True]
-theorem absorbingly_true [BI PROP] : <absorb> True ⊣⊢ (True : PROP) := absorbingly_pure
+theorem absorbingly_true [BI PROP] : <absorb> True ⊣⊢ True := absorbingly_pure
 
 @[rocq_alias bi.absorbingly_or]
 theorem absorbingly_or [BI PROP] {P Q : PROP} : <absorb> (P ∨ Q) ⊣⊢ <absorb> P ∨ <absorb> Q :=
@@ -1103,7 +1105,7 @@ theorem absorbingly_sep [BI PROP] {P Q : PROP} : <absorb> (P ∗ Q) ⊣⊢ <abso
   _ ⊣⊢ (True ∗ P) ∗ True ∗ Q   := sep_assoc.symm
 
 @[rocq_alias bi.absorbingly_emp_True]
-theorem absorbingly_emp [BI PROP] : <absorb> (emp : PROP) ⊣⊢ True := sep_emp
+theorem absorbingly_emp [BI PROP] : <absorb> emp ⊣⊢ True := sep_emp
 
 @[rocq_alias bi.absorbingly_wand]
 theorem absorbingly_wand [BI PROP] {P Q : PROP} : <absorb> (P -∗ Q) ⊢ <absorb> P -∗ <absorb> Q :=
@@ -1177,7 +1179,7 @@ theorem affine_affinely [BI PROP] (P : PROP) [Affine P] : <affine> P ⊣⊢ P :=
   ⟨affinely_elim, and_intro affine .rfl⟩
 
 @[rocq_alias bi.True_emp_iff_BiAffine]
-theorem biaffine_iff_true_emp [BI PROP] : BIAffine PROP ↔ (True : PROP) ⊢ emp :=
+theorem biaffine_iff_true_emp [BI PROP] : BIAffine PROP ↔ True ⊢ emp :=
   ⟨fun _ => affine, fun h => ⟨fun _ => ⟨true_intro.trans h⟩⟩⟩
 
 theorem biaffine_of_true_affine [BI PROP] [Affine (iprop(True) : PROP)] : BIAffine PROP :=
@@ -1257,12 +1259,12 @@ theorem wandM_sound [BI PROP] {mP : Option PROP} {Q : PROP} :
 theorem or_emp [BI PROP] {P : PROP} [Affine P] : P ∨ emp ⊣⊢ emp := or_comm.trans emp_or
 
 @[rocq_alias bi.True_emp]
-theorem true_emp [BI PROP] [h : BIAffine PROP] : (True : PROP) ⊣⊢ emp :=
+theorem true_emp [BI PROP] [h : BIAffine PROP] : True ⊣⊢ emp :=
   ⟨biaffine_iff_true_emp.1 h, true_intro⟩
 
 @[rocq_alias bi.True_affine_all_affine]
 theorem True_affine_all_affine [BI PROP] [Affine (iprop(True) : PROP)] (P : PROP) : Affine P where
-  affine := true_intro.trans (Affine.affine (P := iprop((True : PROP))))
+  affine := true_intro.trans (Affine.affine (P := iprop(True)))
 
 instance [BI PROP] [BIAffine PROP] (P : PROP) : Absorbing P where
   absorbing := (sep_mono_left affine).trans emp_sep.1
@@ -1290,14 +1292,14 @@ instance bi_affine_positive [BI PROP] [BIAffine PROP] : BIPositive PROP where
 theorem imp_wand_1 [BI PROP] [BIAffine PROP] {P Q : PROP} : (P → Q) ⊢ P -∗ Q :=
   wand_intro <| sep_and.trans imp_elim_left
 
-theorem pure_sep [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∗ (⌜φ2⌝ : PROP) ⊣⊢ ⌜φ1 ∧ φ2⌝ :=
+theorem pure_sep [BI PROP] {φ1 φ2 : Prop} : ⌜φ1⌝ ∗ ⌜φ2⌝ ⊣⊢ ⌜φ1 ∧ φ2⌝ :=
   ⟨sep_and.trans pure_and.1, pure_elim' fun ⟨a, b⟩ => by
     rw [eq_true a, eq_true b]; exact true_sep_mpr⟩
 
-theorem pure_wand_mpr [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊢ (⌜φ1⌝ -∗ (⌜φ2⌝ : PROP)) :=
+theorem pure_wand_mpr [BI PROP] {φ1 φ2 : Prop} : ⌜φ1 → φ2⌝ ⊢ (⌜φ1⌝ -∗ ⌜φ2⌝) :=
   pure_elim' fun a => wand_intro <| absorbing.trans (pure_mono a)
 
-theorem pure_wand [BI PROP] {φ1 φ2 : Prop} : (⌜φ1⌝ -∗ (⌜φ2⌝ : PROP)) ⊣⊢ ⌜φ1 → φ2⌝ := by
+theorem pure_wand [BI PROP] {φ1 φ2 : Prop} : (⌜φ1⌝ -∗ ⌜φ2⌝) ⊣⊢ ⌜φ1 → φ2⌝ := by
   refine ⟨(imp_intro_swap ?_).trans pure_imp.2, pure_wand_mpr⟩
   exact pure_elim_left fun h => true_sep_mpr.trans (eq_true h ▸ wand_elim_right)
 
@@ -1403,17 +1405,17 @@ theorem persistently_emp_intro [BI PROP] {P : PROP} : P ⊢ <pers> emp :=
     _ ⊢ <pers> emp     := persistently_absorb_l (Q := P)
 
 @[rocq_alias bi.persistently_emp]
-theorem persistently_emp [BI PROP] : <pers> (emp : PROP) ⊣⊢ True :=
+theorem persistently_emp [BI PROP] : <pers> emp ⊣⊢ True :=
   ⟨true_intro, persistently_emp_intro⟩
 
 @[rocq_alias bi.persistently_True]
-theorem persistently_true [BI PROP] : <pers> (True : PROP) ⊣⊢ True :=
+theorem persistently_true [BI PROP] : <pers> True ⊣⊢ True :=
   ⟨true_intro, persistently_emp.2.trans <| persistently_mono true_intro⟩
 
 @[rocq_alias bi.persistently_True_emp]
-theorem persistently_True_emp [BI PROP] : <pers> (True : PROP) ⊣⊢ <pers> emp := by
+theorem persistently_True_emp [BI PROP] : <pers> True ⊣⊢ <pers> emp := by
   refine ⟨?_, persistently_mono true_intro⟩
-  exact (persistently_emp_intro : <pers> (True : PROP) ⊢ <pers> emp)
+  exact (persistently_emp_intro : <pers> True ⊢ <pers> emp)
 
 @[rocq_alias bi.persistently_affinely_elim]
 theorem persistently_affinely [BI PROP] {P : PROP} : <pers> <affine> P ⊣⊢ <pers> P :=
@@ -1466,7 +1468,7 @@ theorem persistently_intro_persistently [BI PROP] {P Q : PROP} (h : <pers> P ⊢
  persistently_idem.2.trans (persistently_mono h)
 
 @[rocq_alias bi.persistently_pure]
-theorem persistently_pure {φ : Prop} [BI PROP] : <pers> ⌜φ⌝ ⊣⊢ (⌜φ⌝ : PROP) :=
+theorem persistently_pure {φ : Prop} [BI PROP] : <pers> ⌜φ⌝ ⊣⊢ ⌜φ⌝ :=
   ⟨absorbingly_of_persistently.trans absorbingly_pure.1,
    pure_elim' fun h => persistently_true.2.trans <| persistently_mono <| pure_intro h⟩
 
@@ -1549,7 +1551,7 @@ theorem persistently_imp_wand_mpr [BI PROP] {P Q : PROP} : <pers> (P -∗ Q) ⊢
 theorem imp_wand_persistently_mpr [BI PROP] {P Q : PROP} : (<pers> P -∗ Q) ⊢ (<pers> P → Q) :=
   imp_intro <| and_persistently_imp_sep.trans wand_elim_left
 
-theorem persistently_emp_affine [BI PROP] [BIAffine PROP] : <pers> (emp : PROP) ⊣⊢ emp :=
+theorem persistently_emp_affine [BI PROP] [BIAffine PROP] : <pers> emp ⊣⊢ emp :=
   persistently_emp.trans true_emp
 
 @[rocq_alias bi.persistently_and_sep_l]
@@ -1691,15 +1693,15 @@ theorem intuitionistically_def [BI PROP] {P : PROP} : iprop(□ P) = iprop(<affi
 theorem intuitionistically_elim_emp [BI PROP] {P : PROP} : □ P ⊢ emp := affinely_elim_emp
 
 @[rocq_alias bi.intuitionistically_emp]
-theorem intuitionistically_emp [BI PROP] : □ emp ⊣⊢ (emp : PROP) :=
+theorem intuitionistically_emp [BI PROP] : □ emp ⊣⊢ emp :=
   (affinely_congr persistently_emp).trans affinely_true
 
 @[rocq_alias bi.intuitionistically_False]
-theorem intuitionistically_false [BI PROP] : □ False ⊣⊢ (False : PROP) :=
+theorem intuitionistically_false [BI PROP] : □ False ⊣⊢ False :=
   (affinely_congr persistently_pure).trans affinely_false
 
 @[rocq_alias bi.intuitionistically_True_emp]
-theorem intuitionistically_true [BI PROP] : □ True ⊣⊢ (emp : PROP) :=
+theorem intuitionistically_true [BI PROP] : □ True ⊣⊢ emp :=
   (affinely_congr persistently_true).trans affinely_true
 
 @[rocq_alias bi.intuitionistically_and]
@@ -1915,7 +1917,7 @@ theorem affinelyIf_intro_affinelyIf {p : Bool} [BI PROP] {P Q : PROP} :
   | false => id
 
 @[rocq_alias bi.affinely_if_emp]
-theorem affinelyIf_emp {p : Bool} [BI PROP] : (<affine>?p emp : PROP) ⊣⊢ emp :=
+theorem affinelyIf_emp {p : Bool} [BI PROP] : (<affine>?p emp) ⊣⊢ emp :=
   match p with
   | false => .rfl
   | true => affinely_emp
@@ -2056,7 +2058,7 @@ theorem absorbingly_if_idem [BI PROP] {p : Bool} {P : PROP} : <absorb>?p <absorb
   match p with | true => absorbingly_idem | false => .rfl
 
 @[rocq_alias bi.absorbingly_if_pure]
-theorem absorbinglyIf_pure {p : Bool} [BI PROP] {φ : Prop} : (<absorb>?p ⌜φ⌝ : PROP) ⊣⊢ ⌜φ⌝ :=
+theorem absorbinglyIf_pure {p : Bool} [BI PROP] {φ : Prop} : (<absorb>?p ⌜φ⌝) ⊣⊢ ⌜φ⌝ :=
   match p with
   | false => .rfl
   | true => absorbingly_pure
@@ -2167,7 +2169,7 @@ instance persistentlyIf_absorbing [BI PROP] (P : PROP) (p : Bool) [Absorbing P] 
   cases p <;> simp [persistentlyIf] <;> infer_instance
 
 @[rocq_alias bi.persistently_if_pure]
-theorem persistentlyIf_pure {p : Bool} [BI PROP] {φ : Prop} : (<pers>?p ⌜φ⌝ : PROP) ⊣⊢ ⌜φ⌝ :=
+theorem persistentlyIf_pure {p : Bool} [BI PROP] {φ : Prop} : (<pers>?p ⌜φ⌝) ⊣⊢ ⌜φ⌝ :=
   match p with
   | false => .rfl
   | true => persistently_pure
@@ -2311,13 +2313,13 @@ theorem intuitionisticallyIf_intro_intuitionisticallyIf {p : Bool} [BI PROP] {P 
   | false => id
 
 @[rocq_alias bi.intuitionistically_if_emp]
-theorem intuitionisticallyIf_emp {p : Bool} [BI PROP] : (□?p emp : PROP) ⊣⊢ emp :=
+theorem intuitionisticallyIf_emp {p : Bool} [BI PROP] : (□?p emp) ⊣⊢ emp :=
   match p with
   | false => .rfl
   | true => intuitionistically_emp
 
 @[rocq_alias bi.intuitionistically_if_False]
-theorem intuitionisticallyIf_false {p : Bool} [BI PROP] : (□?p False : PROP) ⊣⊢ False :=
+theorem intuitionisticallyIf_false {p : Bool} [BI PROP] : (□?p False) ⊣⊢ False :=
   match p with
   | false => .rfl
   | true => intuitionistically_false
@@ -2546,9 +2548,9 @@ instance imp_absorbing [BI PROP] (P Q : PROP) [Persistent P] [Absorbing P] [Abso
       _ ⊢ <absorb> Q                      := absorbingly_mono <| persistent_and_affinely_sep_left.mpr.trans imp_elim_right
       _ ⊢ Q                               := absorbing
 
-theorem bigOp_sep_nil [BI PROP] : iprop([∗] []) ⊣⊢ (emp : PROP) := .rfl
+theorem bigOp_sep_nil [BI PROP] : iprop([∗] []) ⊣⊢ emp := .rfl
 
-theorem bigOp_and_nil [BI PROP] : iprop([∧] []) ⊣⊢ (True : PROP) := .rfl
+theorem bigOp_and_nil [BI PROP] : iprop([∧] []) ⊣⊢ True := .rfl
 
 theorem bigOp_sep_cons [BI PROP] {P : PROP} {Ps : List PROP} :
     [∗] (P :: Ps) ⊣⊢ P ∗ [∗] Ps := bigOp_cons
@@ -2563,7 +2565,7 @@ theorem persistent_absorbingly_affinely [BI PROP] {P : PROP}
 
 @[rocq_alias bi.persistent_and_sep_assoc]
 theorem persistent_and_sep_assoc [BI PROP] {P Q R : PROP}
-    [Persistent P] [Absorbing P] : P ∧ (Q ∗ R) ⊣⊢ (P ∧ Q) ∗ R := calc (iprop(P ∧ Q ∗ R) : PROP)
+    [Persistent P] [Absorbing P] : P ∧ (Q ∗ R) ⊣⊢ (P ∧ Q) ∗ R := calc iprop(P ∧ Q ∗ R)
   _ ⊣⊢ <pers> P ∧ Q ∗ R   := and_congr_left persistently_iff.symm
   _ ⊣⊢ (<pers> P ∧ Q) ∗ R := persistently_and_sep_assoc
   _ ⊣⊢ (P ∧ Q) ∗ R        := sep_congr_left <| and_congr_left persistently_iff

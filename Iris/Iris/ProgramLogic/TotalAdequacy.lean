@@ -13,6 +13,8 @@ namespace Iris.ProgramLogic
 open Iris OFE COFE BI Iris.BI Iris.Algebra Iris.Std FromMathlib LawfulSet
 open Language Language.Notation
 
+local bi (IProp GF)
+
 @[expose] public section
 
 /-! ## Total adequacy -/

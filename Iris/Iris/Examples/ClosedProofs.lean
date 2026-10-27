@@ -35,6 +35,7 @@ proposition `P`. The `step_fupdN_soundness_no_lc'` wrapper accounts for the fanc
 update steps required to allocate invariants.
 -/
 section proof
+local bi (IProp GF)
 
 noncomputable def GF : BundledGFunctors := fun n =>
   match n with
