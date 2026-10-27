@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-# Prepare build
-lake build batteries
-lake build Qq
+# Prepare build, shared to make sure that the libraries are precompiled
+lake build Batteries:shared
+lake build Qq:shared
 
 # Mirror the real Lean toolchain in the fake root, except for our `bin/lean` wrapper.
 # Lake derives the include dir, libraries, C compiler etc. from the sysroot
@@ -23,7 +23,7 @@ LAKE_OVERRIDE_LEAN=true \
   WRAPPER_OUT="$OUTPUT_FILE" \
   WRAPPER_PREFIX="$BENCH_DIR/build/fake-root" \
   "$BENCH_DIR/measure.py" -t build -d -a -o "$OUTPUT_FILE" -- \
-  lakeprof record lake build --no-cache
+  lakeprof record lake build Iris IrisTest --no-cache
 
 # Analyze lakeprof data
 "$BENCH_DIR/build/lakeprof_measurements.py" "$OUTPUT_FILE"
