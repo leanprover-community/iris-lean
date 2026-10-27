@@ -31,15 +31,15 @@ syntax:40 term:40 " ≡[" term "] " term:41 : term
 macro_rules
   | `(iprop($a ≡[%$tk $si] $b)) => ``($(wrapIprop tk ``internalEq) (SI := $si) $a $b)
 
-namespace StepIndexSugar
+namespace StepIndex
 /-- Internal equality `a ≡ b` inside `iprop(…)`, at the step index of the section
 (`local stepindex`). -/
 syntax:40 term:40 " ≡ " term:41 : term
 macro_rules
   | `(iprop($a ≡%$tk $b)) => ``($(wrapIprop tk ``internalEq) (SI := stepindex%) $a $b)
-end StepIndexSugar
+end StepIndex
 
-open scoped Iris.StepIndexSugar in
+open scoped Iris.StepIndex in
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- Print `internalEq` as `iprop(a ≡ b)`, recovering the step index argument. -/
 @[app_delab internalEq] meta def delabInternalEq : Delab :=
@@ -49,7 +49,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
     let si ← withNaryArg 0 delab
     let a ← withNaryArg (e.getAppNumArgs - 2) delab
     let b ← withNaryArg (e.getAppNumArgs - 1) delab
-    if ← StepIndexSugar.isSectionSI si then `(iprop($a ≡ $b)) else `(iprop($a ≡[$si] $b))
+    if ← StepIndex.isSectionSI si then `(iprop($a ≡ $b)) else `(iprop($a ≡[$si] $b))
 
 namespace BI
 

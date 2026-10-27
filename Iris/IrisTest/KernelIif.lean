@@ -31,6 +31,7 @@ file takes 0.5 s, imports included.  The same shape in a downstream RISC-V devel
 
 namespace IrisTest.KernelIif
 open Iris Iris.BI Iris.ProofMode
+local stepindex Nat
 
 /-- Byte `j` (little-endian) of an `8*n`-bit word. -/
 def nthByte {n : Nat} (w : BitVec (8 * n)) (j : Nat) : BitVec 8 := w.extractLsb' (8 * j) 8
@@ -41,7 +42,7 @@ structure Cell where
   w8 : Bool
   val : BitVec 64
 
-variable {M : Type} [UCMRA M]
+variable {M : Type} [URA M] [UCMRA M]
 variable (hist : BitVec 64 → List (BitVec 8 × Nat) → UPred M) (win : BitVec 64 → Option (BitVec 64))
 
 /-- The byte at `a` holds `v`: its history's latest entry. -/

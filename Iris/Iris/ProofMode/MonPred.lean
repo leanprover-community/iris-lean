@@ -1073,7 +1073,7 @@ end BIInstances
 
 section SbiInstances
 
-variable {I : BiIndex} {PROP : Type _} [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [SIdxFinite SI]
+variable {I : BiIndex} {PROP : Type _} [BI PROP] [BIStepIndexed PROP] [Sbi PROP] [SIdxFinite]
 
 /-! ### IntoInternalEq -/
 

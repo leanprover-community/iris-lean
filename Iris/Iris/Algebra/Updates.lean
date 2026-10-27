@@ -277,7 +277,7 @@ end Iris
 
 
 /-! Printing of the step-index-free notations (see `Iris.Algebra.StepIndex`). -/
-namespace Iris.StepIndexSugar
+namespace Iris.StepIndex
 
 
 @[app_unexpander Iris.UpdateP] meta def unexpandUpdateP : Lean.PrettyPrinter.Unexpander
@@ -287,4 +287,4 @@ namespace Iris.StepIndexSugar
   | `($_ $x $y) => `($x ~~> $y)
   | _ => throw ()
 
-end Iris.StepIndexSugar
+end Iris.StepIndex

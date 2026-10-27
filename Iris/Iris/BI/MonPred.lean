@@ -699,7 +699,7 @@ class Objective {I : BiIndex} {PROP : Type _} [BI.BIBase PROP] (P : MonPred I PR
   objective_at : ∀ i j : I.car, P.monPred_at i ⊢ P.monPred_at j
 
 namespace MonPred
-variable {I : BiIndex} {PROP : Type _} [BI PROP] [BIStepIndexed PROP] [SIdxFinite SI]
+variable {I : BiIndex} {PROP : Type _} [BI PROP] [BIStepIndexed PROP] [SIdxFinite]
 
 omit [SIdxFinite] in
 @[rocq_alias monPred_at_emp]

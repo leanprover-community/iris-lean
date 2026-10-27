@@ -36,12 +36,12 @@ def internalCmraValid (a : A) : PROP := siPure (cmraValid a)
 macro_rules
   | `(iprop(✓[%$tk $si] $a)) => ``($(wrapIprop tk ``internalCmraValid) (SI := $si) $a)
 
-namespace StepIndexSugar
+namespace StepIndex
 macro_rules
   | `(iprop(✓%$tk $a)) => ``($(wrapIprop tk ``internalCmraValid) (SI := stepindex%) $a)
-end StepIndexSugar
+end StepIndex
 
-open scoped Iris.StepIndexSugar in
+open scoped Iris.StepIndex in
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- Print `internalCmraValid` as `iprop(✓ a)`, recovering the step index argument. -/
 @[app_delab internalCmraValid] meta def delabInternalCmraValid : Delab :=
@@ -50,7 +50,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
     guard (e.getAppNumArgs ≥ 2)
     let si ← withNaryArg 2 delab
     let a ← withNaryArg (e.getAppNumArgs - 1) delab
-    if ← StepIndexSugar.isSectionSI si then `(iprop(✓ $a)) else `(iprop(✓[$si] $a))
+    if ← StepIndex.isSectionSI si then `(iprop(✓ $a)) else `(iprop(✓[$si] $a))
 
 @[rocq_alias internal_cmra_valid_ne]
 instance internalCmraValid_ne : NonExpansive (internalCmraValid (PROP := PROP) (A := A)) where
@@ -146,12 +146,12 @@ syntax:50 term:51 " ≼[" term "] " term:51 : term
 macro_rules
   | `(iprop($a ≼[%$tk $si] $b)) => ``($(wrapIprop tk ``internalCmraIncluded) (SI := $si) $a $b)
 
-namespace StepIndexSugar
+namespace StepIndex
 macro_rules
   | `(iprop($a ≼%$tk $b)) => ``($(wrapIprop tk ``internalCmraIncluded) (SI := stepindex%) $a $b)
-end StepIndexSugar
+end StepIndex
 
-open scoped Iris.StepIndexSugar in
+open scoped Iris.StepIndex in
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- Print `internalCmraIncluded` as `iprop(a ≼ b)`, recovering the step index argument. -/
 @[app_delab internalCmraIncluded] meta def delabInternalCmraIncluded : Delab :=
@@ -161,7 +161,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
     let si ← withNaryArg 2 delab
     let a ← withNaryArg (e.getAppNumArgs - 2) delab
     let b ← withNaryArg (e.getAppNumArgs - 1) delab
-    if ← StepIndexSugar.isSectionSI si then `(iprop($a ≼ $b)) else `(iprop($a ≼[$si] $b))
+    if ← StepIndex.isSectionSI si then `(iprop($a ≼ $b)) else `(iprop($a ≼[$si] $b))
 
 @[rocq_alias internal_included_nonexpansive]
 instance internalCmraIncluded_ne :
@@ -296,12 +296,12 @@ def internalCmraOrder (a b : A) : PROP := siPure (SiProp.cmraOrder a b)
 macro_rules
   | `(iprop($a ≼ₒ[%$tk $si] $b)) => ``($(wrapIprop tk ``internalCmraOrder) (SI := $si) $a $b)
 
-namespace StepIndexSugar
+namespace StepIndex
 macro_rules
   | `(iprop($a ≼ₒ%$tk $b)) => ``($(wrapIprop tk ``internalCmraOrder) (SI := stepindex%) $a $b)
-end StepIndexSugar
+end StepIndex
 
-open scoped Iris.StepIndexSugar in
+open scoped Iris.StepIndex in
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- Print `internalCmraOrder` as `iprop(a ≼ₒ b)`, recovering the step index argument. -/
 @[app_delab internalCmraOrder] meta def delabInternalCmraOrder : Delab :=
@@ -311,7 +311,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
     let si ← withNaryArg 2 delab
     let a ← withNaryArg (e.getAppNumArgs - 2) delab
     let b ← withNaryArg (e.getAppNumArgs - 1) delab
-    if ← StepIndexSugar.isSectionSI si then `(iprop($a ≼ₒ $b)) else `(iprop($a ≼ₒ[$si] $b))
+    if ← StepIndex.isSectionSI si then `(iprop($a ≼ₒ $b)) else `(iprop($a ≼ₒ[$si] $b))
 
 instance internalCmraOrder_ne :
     NonExpansive₂ (internalCmraOrder (PROP := PROP) (A := A)) where

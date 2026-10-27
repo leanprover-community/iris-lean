@@ -6,8 +6,8 @@ Authors: Michael Sammler, Alvin Tang, Markus de Medeiros
 module
 
 public import Iris.Std.Classes
-public meta import IrisSugar.Registry
-public meta import IrisSugar.Elab
+public meta import IrisStepIndex.Registry
+public meta import IrisStepIndex.Elab
 
 @[expose] public section
 
@@ -497,7 +497,7 @@ end Iris
 Code that works at one fixed step index type (e.g. HeapLang at `Nat`) writes `local stepindex Nat`
 once, and then uses the step-index-free API: `CMRA α`, `Auth α`, `✓ x`, `α -n> β`, … . The command
 records `T` as the step index of the current section (read by `stepindex%`) and opens the scope
-`Iris.StepIndexSugar`, in which every `@[indexed]` declaration gets its step index (the binder of
+`Iris.StepIndex`, in which every `@[indexed]` declaration gets its step index (the binder of
 type `stepindex (Type _)`) filled in with `stepindex%` when it is not given, and prints back
 without it. Both last until the end of the current section.
 

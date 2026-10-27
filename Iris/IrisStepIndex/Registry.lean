@@ -13,7 +13,7 @@ public meta import Lean.Elab.Term
 # Step Index Registry
 
 The step index type of the current scope, set by `local stepindex T` (see `Iris.Algebra.StepIndex`).
-The `Iris.StepIndexSugar` notations read it through `stepindex%`.
+The `Iris.StepIndex` notations read it through `stepindex%`.
 -/
 
 open Lean Elab Command Tactic
@@ -33,7 +33,7 @@ public meta initialize siExt : SimpleScopedEnvExtension Name Name ←
 
 /--
 `stepindex%` elaborates to the step index type of the current scope (set by `local stepindex T`).
-The `Iris.StepIndexSugar` notations expand to it, so that the step index is read at the use site.
+The `Iris.StepIndex` notations expand to it, so that the step index is read at the use site.
 It elaborates to a hole when no step index is set.
 -/
 @[expose] elab "stepindex%" : term <= expectedType? => do
@@ -64,8 +64,6 @@ public structure IndexedInfo where
   argIdx : Nat
   /-- Its position among the explicit arguments, or `none` when it is not explicit. -/
   explicitPos : Option Nat
-  /-- The number of explicit arguments. -/
-  arity : Nat
   deriving Inhabited, Repr
 
 /-- The `@[indexed]` declarations, and the last components of their names (a fast check that an
@@ -105,10 +103,10 @@ meta initialize registerBuiltinAttribute {
       for i in [:xs.size] do
         let d ← xs[i]!.fvarId!.getDecl
         if r.isNone && isStepIndexBinder d.type then
-          r := some { name := d.userName, argIdx := i, arity := 0,
+          r := some { name := d.userName, argIdx := i,
                       explicitPos := if d.binderInfo.isExplicit then some expl else none }
         if d.binderInfo.isExplicit then expl := expl + 1
-      return r.map ({ · with arity := expl })
+      return r
     let some i := r
       | throwError "`@[indexed]`: `{decl}` has no step index binder of type `stepindex (Type _)`"
     modifyEnv (indexedExt.addEntry · (decl, i))

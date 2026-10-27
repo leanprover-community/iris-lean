@@ -10,8 +10,9 @@ public import Iris.Algebra.COFESolver
 
 @[expose] public section
 
-variable {SI : stepindex (Type _)} [Iris.SIdx SI] [Iris.SIdxSucc SI]
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
 local stepindex SI
+variable [Iris.SIdxSucc]
 
 attribute [local instance] Iris.Enriched.COFE.classicalOFunctorTruncatable
 

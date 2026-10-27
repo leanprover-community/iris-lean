@@ -181,7 +181,7 @@ namespace Ordered
 @[inherit_doc Order] notation:50 x " ≼ₒ[" S "] " y:51 => Order (SI := S) x y
 @[inherit_doc Ordered.Order] notation:50 x:51 " ≼ₒ " y:51 => Ordered.Order (SI := stepindex%) x y
 
-variable [OFE α] [Ordered SI α]
+variable [OFE α] [Ordered α]
 
 /-- The reflexive closure of the step-indexed order. -/
 @[indexed]
@@ -279,7 +279,7 @@ class IsInc (SI : stepindex (Type _)) [SIdx SI] (α : Type _) [HasDist α] [Op �
 attribute [indexed] IncOrd.inc_ord OrdInc.ord_inc OrdInc.ordN_incN
 
 section
-variable {α : Type _} [OFE α] [Op α] [Ordered SI α]
+variable {α : Type _} [OFE α] [Op α] [Ordered α]
 
 theorem IncOrd.increasing [IncOrd α] (x : α) : Increasing x :=
   ⟨fun _ => IncOrd.inc_ord ⟨x, Op.comm⟩⟩
@@ -996,7 +996,7 @@ theorem core_mono_of_pcore_op_mono [Op α] [PCore α] [IsTotal α]
 of it (Mathlib-style constructors); `ORA.ofCMRAData` instantiates them. -/
 
 section build
-variable [OFE α] [RA α] [Valid SI α] [OpNE α] [PCoreNE α] [ValidNE α]
+variable [OFE α] [RA α] [Valid α] [OpNE α] [PCoreNE α] [ValidNE α]
 variable (hv : ∀ {n : SI} {x y : α}, ✓{n} (x • y) → ✓{n} x)
 variable (hpm : ∀ {x cx : α}, pcore x = some cx → ∀ y, ∃ cy : α, pcore (x • y) = some (cx • cy))
 
@@ -1188,7 +1188,7 @@ variable [RA α] [ORA α]
 
 section orderN
 omit [RA α] [ORA α]
-variable [OFE α] [Ordered SI α] [OrderedNE α]
+variable [OFE α] [Ordered α] [OrderedNE α]
 
 theorem ordN_of_ordN_of_dist {n} (h : (a : α) ≼ₒ{n} b) (e : b ≡{n}≡ c) : a ≼ₒ{n} c := ordN_ne .rfl e h
 
@@ -3871,7 +3871,7 @@ end Iris
 
 
 /-! Printing of the step-index-free notations (see `Iris.Algebra.StepIndex`). -/
-namespace Iris.StepIndexSugar
+namespace Iris.StepIndex
 
 
 @[app_unexpander Valid.Valid] meta def unexpandValid : Lean.PrettyPrinter.Unexpander
@@ -3887,4 +3887,4 @@ namespace Iris.StepIndexSugar
   | `($_ $a $b) => `($a -C> $b)
   | _ => throw ()
 
-end Iris.StepIndexSugar
+end Iris.StepIndex
