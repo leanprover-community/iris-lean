@@ -336,7 +336,7 @@ public meta def iWpBindCore {u}
       Qq.withLocalDeclDQ `v q(Val) fun v => do
         mkLambdaFVars #[v] <|
           q(Wp.wp $s $E $(← HeapLang.fill K q(.ofVal $v)) $Φ)
-    have _ : $Φ' =Q (fun v : Val => Wp.wp (PROP := IProp $GF) $s $E (ProgramLogic.fill $K (v : Exp)) $Φ) := ⟨⟩
+    have _ : $Φ' =Q (fun v : Val => Wp.wp $s $E (ProgramLogic.fill $K (v : Exp)) $Φ) := ⟨⟩
 
     let pf ← k q(Wp.wp $s $E $e' $Φ')
     return q(tac_wp_bind $pf)

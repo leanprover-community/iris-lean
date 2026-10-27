@@ -105,6 +105,7 @@ instance bi_nsteps_ne [Sbi PROP] [OFE A] (R : A → A → PROP) [NonExpansive₂
 section General
 
 variable [Sbi PROP] [OFE A] (R : A → A → PROP)
+local bi PROP
 
 @[rocq_alias bi_rtc_ind_l]
 theorem bi_rtc_ind_left (x₂ : A) (Φ : A → PROP) [NonExpansive Φ] :
@@ -470,6 +471,7 @@ end General
 section Timeless
 
 variable [Sbi PROP]
+local bi PROP
 variable [Timeless (emp : PROP)] [OFE A] [OFE.Discrete A]
   (R : A → A → PROP)
 variable [NonExpansive₂ R]

@@ -30,6 +30,7 @@ structure SiProp where
   closed : holds n₁ → n₂ ≤ n₁ → holds n₂
 
 namespace SiProp
+local bi SiProp
 open ORA
 
 /-! ## Connective definitions -/
@@ -257,25 +258,25 @@ theorem biEntails_of_iff {P Q : SiProp} (h : ∀ n, P.holds n ↔ Q.holds n) : P
 @[simp] theorem pure_holds {φ : Prop} {n} : (iprop(⌜φ⌝) : SiProp).holds n ↔ φ := .rfl
 
 @[simp] theorem and_holds {P Q : SiProp} {n} :
-    (iprop(P ∧ Q) : SiProp).holds n ↔ P.holds n ∧ Q.holds n := .rfl
+    iprop(P ∧ Q).holds n ↔ P.holds n ∧ Q.holds n := .rfl
 
 @[simp] theorem sep_holds {P Q : SiProp} {n} :
-    (iprop(P ∗ Q) : SiProp).holds n ↔ P.holds n ∧ Q.holds n := .rfl
+    iprop(P ∗ Q).holds n ↔ P.holds n ∧ Q.holds n := .rfl
 
 @[simp] theorem or_holds {P Q : SiProp} {n} :
-    (iprop(P ∨ Q) : SiProp).holds n ↔ P.holds n ∨ Q.holds n := .rfl
+    iprop(P ∨ Q).holds n ↔ P.holds n ∨ Q.holds n := .rfl
 
-@[simp] theorem later_holds_zero {P : SiProp} : (iprop(▷ P) : SiProp).holds 0 ↔ True := .rfl
+@[simp] theorem later_holds_zero {P : SiProp} : iprop(▷ P).holds 0 ↔ True := .rfl
 
 @[simp] theorem later_holds_succ {P : SiProp} {n} :
-    (iprop(▷ P) : SiProp).holds (n + 1) ↔ P.holds n := .rfl
+    iprop(▷ P).holds (n + 1) ↔ P.holds n := .rfl
 
 @[simp] theorem exists_holds {α : Sort _} {Φ : α → SiProp} {n} :
-    (iprop(∃ x, Φ x) : SiProp).holds n ↔ ∃ x, (Φ x).holds n :=
+    iprop(∃ x, Φ x).holds n ↔ ∃ x, (Φ x).holds n :=
   ⟨fun ⟨_, ⟨x, rfl⟩, h⟩ => ⟨x, h⟩, fun ⟨x, h⟩ => ⟨Φ x, ⟨x, rfl⟩, h⟩⟩
 
 @[simp] theorem forall_holds {α : Sort _} {Φ : α → SiProp} {n} :
-    (iprop(∀ x, Φ x) : SiProp).holds n ↔ ∀ x, (Φ x).holds n := by
+    iprop(∀ x, Φ x).holds n ↔ ∀ x, (Φ x).holds n := by
   refine ⟨fun h x => h (Φ x) ⟨x, rfl⟩, fun h P hP => ?_⟩
   obtain ⟨x, rfl⟩ := hP
   exact h x
@@ -481,10 +482,10 @@ instance cmraValid_timeless [ORA A] [ORA.Discrete A] {a : A} : Timeless (cmraVal
 /-! ## Soundness lemmas -/
 
 @[rocq_alias siProp_primitive.pure_soundness]
-theorem pure_soundness {φ : Prop} (h : True ⊢@{SiProp} ⌜φ⌝) : φ := h 0 trivial
+theorem pure_soundness {φ : Prop} (h : True ⊢ ⌜φ⌝) : φ := h 0 trivial
 
 @[rocq_alias siProp_primitive.internal_eq_soundness]
-theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢@{SiProp} internalEq x y) : x = y :=
+theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢ internalEq x y) : x = y :=
   OFE.eq_dist_2 fun n => h n trivial
 
 @[rocq_alias siProp_primitive.later_soundness]

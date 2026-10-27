@@ -19,6 +19,8 @@ public import Iris.ProofMode.Display
 namespace Iris.ProofMode
 open Iris.BI Iris.Std
 
+local bi PROP
+
 /-! ### AsEmpValid -/
 
 @[rocq_alias as_emp_valid_emp_valid]
@@ -1276,7 +1278,7 @@ instance fromPure_pure_sep_true (a1 a2 : Bool) (φ1 φ2 : Prop) [BI PROP] (P1 P2
   from_pure := by
     calc
       _ ⊢ <affine>?(a1 && a2) (⌜φ1⌝ ∧ ⌜φ2⌝) := affinelyIf_mono pure_and.2
-      _ ⊢@{PROP} <affine>?a1 ⌜φ1⌝ ∗ <affine>?a2 ⌜φ2⌝ := ?_
+      _ ⊢ <affine>?a1 ⌜φ1⌝ ∗ <affine>?a2 ⌜φ2⌝ := ?_
       _ ⊢ P1 ∗ P2 := sep_mono h1.1 h2.1
     exact match a1, a2 with
       | false, false => persistent_and_sep_mp
@@ -1305,7 +1307,7 @@ instance fromPure_persistently [BI PROP] (P : PROP) (a : Bool) (φ : Prop)
     [h : FromPure a P io φ] : FromPure false iprop(<pers> P) io φ where
   from_pure := calc
     _ ⊢ ⌜φ⌝      := affinelyIf_elim
-    _ ⊢@{PROP} <pers> ⌜φ⌝ := persistently_pure.2
+    _ ⊢ <pers> ⌜φ⌝ := persistently_pure.2
     _ ⊢ <pers> <affine> ⌜φ⌝ := persistently_affinely.2
     _ ⊢ <pers> P := persistently_mono <| affinely_affinelyIf.trans h.1
 

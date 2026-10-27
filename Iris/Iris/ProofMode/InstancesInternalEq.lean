@@ -17,6 +17,7 @@ open Iris.BI Iris.Std
 section InternalEq
 
 variable {PROP} [Sbi PROP]
+local bi PROP
 
 /-! ### FromPure -/
 
