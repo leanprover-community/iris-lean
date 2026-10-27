@@ -137,7 +137,7 @@ open ITree.Exec
 variable {E : Effect.{u}} {R : Type u} {σ : Type _}
 variable {PROP} [BI PROP] [BIFUpdate PROP] [BIAffine PROP]
 variable (H : IHandler PROP E) (EH : EHandler E E R σ)
-variable [A : EHandlerAdequate (PROP := PROP) H EH]
+variable [A : EHandlerAdequate H EH]
 
 theorem wpi_adequate_ind (Φ : R → PROP)
     (t : ITree E R) (s : σ) (Ms Mss : List (((ITree E R → PROP) → PROP)))
@@ -149,31 +149,16 @@ theorem wpi_adequate_ind (Φ : R → PROP)
     |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
       (∀ P, M' P ={∅}=∗ P t') ∗
       WPi_tp (M' :: Ms') @> H {{ Φ }} := by
-  letI := ne_of_discrete (fun Ms : DiscreteO (List ((ITree E R → PROP) → PROP)) =>
-    iprop(∀ (t : ITree E R) (s : σ) (M : (ITree E R → PROP) → PROP)
-      (Mss : List ((ITree E R → PROP) → PROP)) (C : ITree E R → σ → Prop),
-      ⌜exec EH t s C⌝ -∗ ⌜Ms.car.Perm (M :: Mss)⌝ -∗
-      A.inv s Mss -∗ (∀ P, M P ={∅}=∗ P t) -∗
-      |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
-        (∀ P, M' P ={∅}=∗ P t') ∗
-        lfp_tp (wpiConstF H Φ) (M' :: Ms')))
-  unfold wpi_tp; iintro Htp; irevert %t %s %M %Mss %C %Hexec %HMs
-  -- [TODO]: find some way to shorten this iapply?
-  iapply (lfp_tp_ind (wpiConstF H Φ) (fun Ms => iprop(
-    ∀ (t : ITree E R) (s : σ) (M : (ITree E R → PROP) → PROP)
-      (Mss : List ((ITree E R → PROP) → PROP)) (C : ITree E R → σ → Prop),
-      ⌜exec EH t s C⌝ -∗ ⌜Ms.car.Perm (M :: Mss)⌝ -∗
-      A.inv s Mss -∗ (∀ P, M P ={∅}=∗ P t) -∗
-      |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
-        (∀ P, M' P ={∅}=∗ P t') ∗
-        lfp_tp (wpiConstF H Φ) (M' :: Ms')))) $$ [] %⟨Ms⟩ Htp
+  unfold wpi_tp; iintro Htp
+  irevert %t %s %M %Mss %C %Hexec %HMs; irevert Htp; irevert %Ms
+  iapply lfp_tp_ind (wpiConstF H Φ)
   iintro !> %Ms IH %t %s %M %Mss %C %Hexec %HMs Hinv Ht
-  rw [← exec.fold] at Hexec; clear this
+  rw [← exec.fold] at Hexec
   cases Hexec with
   | stop _ _ _ HC =>
     imodintro; iexists t, s, Mss, M
     isplitr; itrivial; iframe Hinv Ht
-    iapply lfp_tp_unfold; iapply lfp_tpF_perm _ Ms.car _ _ _ HMs $$ [$]
+    iapply lfp_tp_unfold; iapply lfp_tpF_perm _ Ms _ _ _ HMs $$ [] IH
     iintro %Ns1 %Ns2 %Hperm ⟨-, Htp⟩
     iapply lfp_tp_perm _ _ _ Hperm $$ [$]
   | tau t _ _ Hexec =>
