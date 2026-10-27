@@ -14,22 +14,9 @@ public import IrisStepIndex.Registry
 /-!
 # `local stepindex` and its elaborator
 
-Code that works at one fixed step index type (e.g. HeapLang at `Nat`) writes `local stepindex Nat`
-once, and then uses the step-index-free API: `CMRA α`, `Auth α`, `✓ x`, `α -n> β`, … . The command
-records `T` as the step index of the current section (read by `stepindex%`) and opens the scope
-`Iris.StepIndex`, in which every `@[indexed]` declaration gets its step index (the binder of
-type `stepindex (Type _)`) filled in with `stepindex%` when it is not given, and prints back
-without it. Both last until the end of the current section.
-
-Rules of thumb:
-* every definition, structure or constructor that takes a step index and is used without it is
-  `@[indexed]`; lemmas only when nothing else determines their step index (`have h := lemma`);
-* in a sugared section the step index counts as given only by name (`C (SI := T) …`) or with `@C`;
-* the sugar does not reach `simp [lemma]` lists, dot calls on locals (`h.lemma`) or `@C`: write the
-  step index there.
-
-The elaborator runs on every application and identifier of a sugared section, so its common path is
-one name-set lookup.
+The `stepindex` command, and the scoped elaborator and delaborator that fill in and hide the step
+index of `@[indexed]` declarations (see `Iris.Algebra.StepIndex`). The elaborator runs on every
+application and identifier of a sugared section. 
 -/
 
 namespace Iris.StepIndex
