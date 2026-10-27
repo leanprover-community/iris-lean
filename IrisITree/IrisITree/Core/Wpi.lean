@@ -13,6 +13,11 @@ variable {PROP : Type _} [BI PROP] [BIFUpdate PROP]
 instance {E R} : COFE (ITree E R) := COFE.ofDiscrete _
 instance {E R} : OFE.Discrete (ITree E R) := ⟨fun h => h⟩
 
+/-- Every function out of a discrete OFE is non-expansive (like `ITree E R`). -/
+theorem ne_of_discrete [OFE α] [OFE.Discrete α] [OFE β] (f : α → β) :
+    OFE.NonExpansive f :=
+  ⟨fun _ _ _ Hx => .of_eq (congrArg f <| OFE.discrete Hx)⟩
+
 section wp_itree_def
 
 variable {E} (H : IHandler PROP E)
@@ -245,9 +250,8 @@ theorem wpi_ind :
     ∀ t Φ, WPi t @> H;∅,Me {{ Φ }} -∗ G t Φ := by
   iintro #HPre %t %Φ Hwp
   let G' := fun (Ms : CoPset) t Φ => iprop(<affine> ⌜Ms = ∅⌝ -∗ G t Φ)
-  have : ∀ Ms t, OFE.NonExpansive (G' Ms t) := by
-    intro Ms t; constructor; intro _ Φ1 Φ2 HΦ; simp only [G']
-    exact wand_ne.ne .rfl <| OFE.NonExpansive.ne HΦ
+  have : ∀ Ms t, OFE.NonExpansive (G' Ms t) := fun _ _ =>
+    ⟨fun {_ _ _} HΦ => wand_ne.ne .rfl (OFE.NonExpansive.ne HΦ)⟩
   iapply wpi_ind_mask G' $$ [] Hwp; rotate_left 1; itrivial
   iintro !> %Ms %t %Φ Hwpi %hp; subst hp
   iapply HPre
@@ -295,11 +299,9 @@ theorem wpi_wand (Φ Ψ : R → PROP) :
   iintro >Hwp Hwand
   let G := fun t (Φ : R → PROP) =>
     iprop(∀ Ψ, (∀ r, Φ r -∗ Ψ r) -∗ WPi t @> H;∅,Me {{ Ψ }})
-  have : ∀ t, OFE.NonExpansive (G t) := by
-    intro t; constructor
-    intro n x₁ x₂ Hx; simp [G]
-    refine forall_ne fun Ψ => wand_ne.ne ?_ .rfl
-    exact forall_ne fun r => wand_ne.ne (Hx r) .rfl
+  have : ∀ t, OFE.NonExpansive (G t) := fun t => ⟨
+    fun _ _ _ Hx => forall_ne fun Ψ => wand_ne.ne
+    (forall_ne fun r => wand_ne.ne (Hx r) .rfl) .rfl⟩
   iapply wpi_iter' G $$ [] [] [] Hwp Hwand
   · iintro !> %Φ %r >Hwpi %Ψ Hwand
     iapply wpi_pure; iapply Hwand $$ [$]
@@ -317,11 +319,9 @@ theorem wpi_fupd_empty_2 (Φ : R → PROP) :
      := by
   let G := fun t (Ψ : R → PROP) =>
     iprop(∀ Φ, (∀ r, Ψ r -∗ |={∅, Me}=> Φ r) -∗ WPi t @> H;∅,Me {{ Φ }})
-  have : ∀ t, OFE.NonExpansive (G t) := by
-    intro t; constructor
-    intro n Ψ₁ Ψ₂ HΨ; simp [G]
-    refine forall_ne fun Φ => wand_ne.ne ?_ .rfl
-    exact forall_ne fun r => wand_ne.ne (HΨ r) .rfl
+  have : ∀ t, OFE.NonExpansive (G t) := fun t => ⟨
+    fun _ _ _ HΨ => forall_ne fun Φ => wand_ne.ne
+    (forall_ne fun r => wand_ne.ne (HΨ r) .rfl) .rfl⟩
   iintro >Hwp; iapply wpi_iter' G $$ [] [] [] Hwp
   · iintro !> %Ψ %r >HΨ %Φ Hwand
     iapply wpi_pure'; iapply Hwand $$ [$]
@@ -341,11 +341,9 @@ theorem wpi_fupd_empty_1 (Φ : R → PROP) :
     WPi t @> H; Ms, Me {{ Φ }} ⊢
     WPi t @> H; Ms, ∅ {{ v, iprop(|={∅, Me}=> Φ v) }} := by
   let G := fun t (Ψ : R → PROP) => WPi t @> H; ∅,∅ {{ v, iprop(|={∅, Me}=> Ψ v) }}
-  have : ∀ t, OFE.NonExpansive (G t) := by
-    intro t; constructor
-    intro n Ψ₁ Ψ₂ HΨ; simp [G]
-    exact OFE.NonExpansive.ne (f := wpi H ∅ ∅ t) <|
-      fun v => BIFUpdate.ne.ne (HΨ v)
+  have : ∀ t, OFE.NonExpansive (G t) := fun t => ⟨
+    fun _ _ _ HΨ => OFE.NonExpansive.ne (f := wpi H ∅ ∅ t)
+    fun v => BIFUpdate.ne.ne (HΨ v)⟩
   iintro >Hwp
   iapply wpi_iter' G $$ [] [] [] Hwp
   · iintro !> %Ψ %r HΨ; simp [G]
@@ -382,10 +380,9 @@ theorem wpi_bind' {A} M' t (k : A → ITree E R) (Φ : R → PROP) :
   let G := fun t (Φ : A → PROP) =>
     iprop(∀ Ψ, (∀ r, Φ r -∗ WPi k r @> H; M', Me {{ Ψ }}) -∗
     WPi t >>= k @> H; ∅, Me {{ Ψ }})
-  have : ∀ t, OFE.NonExpansive (G t) := by
-    intro t; constructor; intro n Φ1 Φ2 HΦ; simp only [G];
-    refine forall_ne fun Ψ => wand_ne.ne ?_ .rfl
-    refine forall_ne fun r => wand_ne.ne (HΦ r) .rfl
+  have : ∀ t, OFE.NonExpansive (G t) := fun t => ⟨
+    fun n Φ1 Φ2 HΦ => forall_ne fun Ψ => wand_ne.ne
+    (forall_ne fun r => wand_ne.ne (HΦ r) .rfl) .rfl⟩
   iintro >Hwp; iapply wpi_iter' G $$ [] [] [] Hwp
   rotate_right 1; focus iintro %_ $
   · iintro !> %Φ %r >Hwpi %Ψ Hwand; simp
@@ -580,9 +577,8 @@ theorem wpi_inH {R} (t : ITree E1 R) (Φ : R → PROP) :
     · iintro !> %a $
   · let G : ITree E2 R → (R → PROP) → PROP := fun u Ψ =>
       iprop(∀ t', ⌜ITree.interp (fun i => E1.trigger i) t' = u⌝ -∗ (WPi t' @> H1; ∅ {{ Ψ }}))
-    have : ∀ t, OFE.NonExpansive (G t) := by
-      intro t; constructor; intro n x₁ x₂ Hx; simp [G]
-      exact forall_ne fun t' => wand_ne.ne .rfl <| OFE.NonExpansive.ne Hx
+    have : ∀ t, OFE.NonExpansive (G t) := fun t => ⟨fun _ _ _ Hx =>
+      forall_ne fun t' => wand_ne.ne .rfl <| OFE.NonExpansive.ne Hx⟩
     ihave Hgen : (∀ t Ψ, (WPi t @> H2; ∅ {{ Ψ }}) -∗ G t Ψ) $$ []
     iapply wpi_iter' G
     · iintro !> %Φ %r HΦ; simp [G]; iintro %t' %Heq

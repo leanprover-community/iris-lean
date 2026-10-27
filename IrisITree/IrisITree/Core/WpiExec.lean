@@ -59,8 +59,7 @@ instance wp_itree_const_mono (H : IHandler PROP E) (Φ : R → PROP) :
   mono_pred := by
     iintro %wp1 %wp2 %Hne1 %Hne2 #Hwand %t Hwp
     iapply wpiConstF_mono $$ Hwand Hwp
-  mono_pred_ne.ne n t1 t2 Hdist := by
-    cases Hdist; rfl
+  mono_pred_ne := ne_of_discrete _
 
 /-- The constant-Φ weakest precondition, as the least fixpoint of `wpi_constF`. -/
 def wpiConst (H : IHandler PROP E) (Φ : R → PROP) : ITree E R → PROP :=
@@ -70,9 +69,7 @@ theorem wpi_const_iter (H : IHandler PROP E) (Φ : R → PROP)
     (P : ITree E R → PROP) :
     □ (∀ y, wpiConstF H Φ P y -∗ P y) -∗
     ∀ t, wpiConst H Φ t -∗ P t := by
-  letI : OFE.NonExpansive P := by
-    constructor; intro _ _ _ Hx
-    exact .of_eq (congrArg P Hx)
+  letI := ne_of_discrete P
   iintro #Hwand %t Hwp
   iapply least_fixpoint_iter (wpiConstF H Φ) $$ Hwand
   unfold wpiConst; iexact Hwp
@@ -146,16 +143,14 @@ theorem wpi_adequate_ind (Φ : R → PROP)
     |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
       bi_close Eq (fun t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
       wpi_tp H (M' :: Ms') Φ := by
-  letI : OFE.NonExpansive (fun Ms : DiscreteO (List ((ITree E R → PROP) → PROP)) =>
+  letI := ne_of_discrete (fun Ms : DiscreteO (List ((ITree E R → PROP) → PROP)) =>
     iprop(∀ (t : ITree E R) (s : σ) (M : (ITree E R → PROP) → PROP)
       (Mss : List ((ITree E R → PROP) → PROP)) (C : ITree E R → σ → Prop),
       ⌜exec EH t s C⌝ -∗ ⌜Ms.car.Perm (M :: Mss)⌝ -∗
       A.inv s Mss -∗ (∀ P, M P ={∅}=∗ P t) -∗
       |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
         bi_close Eq (fun t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
-        lfp_tp (wpiConstF H Φ) (M' :: Ms'))) := ⟨
-    fun _ _ _ HMs => by cases HMs; rfl
-  ⟩
+        lfp_tp (wpiConstF H Φ) (M' :: Ms')))
   unfold wpi_tp; iintro Htp; irevert %t %s %M %Mss %C %Hexec %HMs
   -- [TODO]: find some way to shorten this iapply?
   iapply (lfp_tp_ind (wpiConstF H Φ) (fun Ms => iprop(

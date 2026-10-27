@@ -202,8 +202,7 @@ instance : BIMonoPred (lfp_tpF (PROP := PROP) F) where
     iapply lfp_tpF_mono F Φ Ψ $$ [] [HΦ]
     · iexact Hwand
     · iexact HΦ
-  mono_pred_ne.ne n Φ Φ' Hdist := by
-    cases Hdist; rfl
+  mono_pred_ne := ne_of_discrete _
 
 end lfp_tpF
 
@@ -244,12 +243,8 @@ theorem lfp_tp_ind (Φ : DiscreteO (List ((α → PROP) → PROP)) → PROP)
 
 theorem lfp_tp_perm (Ms1 Ms2 : List ((α → PROP) → PROP)) (h : Ms1.Perm Ms2) :
     ⊢ lfp_tp F Ms1 -∗ lfp_tp F Ms2 := by
-  letI : NonExpansive fun (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
-    iprop(∀ Ms2, ⌜Ms.car.Perm Ms2⌝ -∗ lfp_tp F Ms2) := ⟨
-      fun n lst1 lst2 Hlst => by
-        refine forall_ne (fun lst => ?_)
-        cases Hlst; rfl
-    ⟩
+  letI := ne_of_discrete fun (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
+    iprop(∀ Ms2, ⌜Ms.car.Perm Ms2⌝ -∗ lfp_tp F Ms2)
   iintro Htp; irevert %Ms2 %h
   iapply lfp_tp_ind F fun Ms => iprop(∀ Ms2, ⌜Ms.car.Perm Ms2⌝ -∗ lfp_tp F Ms2) $$ [] Htp
   iintro !> %Ms1 Htp %Ms2 %Hperm; iapply lfp_tp_unfold
@@ -259,19 +254,11 @@ theorem lfp_tp_perm (Ms1 Ms2 : List ((α → PROP) → PROP)) (h : Ms1.Perm Ms2)
 
 theorem lfp_tp_app (Ms1 Ms2 : List ((α → PROP) → PROP)) :
     ⊢ lfp_tp F Ms1 -∗ lfp_tp F Ms2 -∗ lfp_tp F (Ms1 ++ Ms2) := by
-  letI : NonExpansive fun (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
-    iprop(∀ Ms2, lfp_tp F Ms2 -∗ lfp_tp F (Ms.car ++ Ms2)) := ⟨
-      fun n ls1 lst2 Hlst => by
-        refine forall_ne (fun Ms2 => ?_)
-        cases Hlst; rfl
-    ⟩
-  letI : NonExpansive fun (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
+  letI := ne_of_discrete fun (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
+    iprop(∀ Ms2, lfp_tp F Ms2 -∗ lfp_tp F (Ms.car ++ Ms2))
+  letI := ne_of_discrete fun (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
     iprop(∀ Ms1, lfp_tpF F (fun x => iprop((∀ Ms, lfp_tp F Ms -∗ lfp_tp F (x.car ++ Ms))
-      ∧ lfp_tp F x.car)) Ms1 -∗ lfp_tp F (Ms1.car ++ Ms.car)) := ⟨
-        fun n lst1 lst2 Hlst => by
-          refine forall_ne (fun Ms1 => ?_)
-          cases Hlst; rfl
-      ⟩
+      ∧ lfp_tp F x.car)) Ms1 -∗ lfp_tp F (Ms1.car ++ Ms.car))
   iintro Hx1 Hx2
   iapply (lfp_tp_ind F fun Ms =>
     iprop(∀ Ms2, lfp_tp F Ms2 -∗ lfp_tp F (Ms.car ++ Ms2))) $$ [] %⟨Ms1⟩ Hx1 %Ms2 Hx2
@@ -331,14 +318,9 @@ theorem lfp_tp_singleton_mod_elim (M : (α → PROP) → PROP) :
 
 variable {α : Type _} [OFE α] [OFE.Discrete α]
 
--- TODO: replace the lean' induction with native tactic `iinduction`
 theorem lfp_tp_intro (G : (α → PROP) → (α → PROP)) (x : α) :
     ⊢ bi_least_fixpoint G x -∗ lfp_tp G [fun P => P x] := by
-  letI : NonExpansive (fun (x : α) => lfp_tp G [fun P => P x] : α → PROP) := ⟨
-    fun {n x1 x2} Hx => by
-      have Heq : x1 = x2 := OFE.Discrete.discrete Hx
-      subst Heq; rfl
-  ⟩
+  letI := ne_of_discrete fun (x : α) => lfp_tp G [fun P => P x]
   have Hlist : ∀ Ms, ([∗list] M ∈ Ms, M (fun x => lfp_tp G [fun P => P x])) -∗ lfp_tp G Ms := by
     intro Ms; iinduction Ms with
     | nil => iintro -; iapply lfp_tp_nil
@@ -361,11 +343,10 @@ theorem lfp_tp_intro (G : (α → PROP) → (α → PROP)) (x : α) :
     iapply bi_mono0_intro0; simp only []
     iexists _; isplitl [HF]
     · iassumption
-    · iintro %Ms HMs; istop
-      induction Ms with
-      | nil => iintro HMs; iapply lfp_tp_nil
+    · iintro %Ms HMs
+      iinduction Ms with
+      | nil => iapply lfp_tp_nil
       | cons M Ms IHM =>
-        iintro HMs
         ihave HMs := BigSepL.bigSepL_cons $$ HMs
         icases HMs with ⟨HM, HMs⟩
         ihave HM := lfp_tp_singleton_mod_elim G M $$ HM
