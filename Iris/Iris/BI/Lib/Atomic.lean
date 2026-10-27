@@ -13,12 +13,16 @@ public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris
 open Iris.Std Iris.ProofMode BI OFE
 
 section definition
 
-variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
+variable {PROP : Type _} [BI PROP] [BIStepIndexed PROP] [BIFUpdate PROP] {TA TB : Tele}
 
 /-- `atomic_acc` as the "introduction form" of atomic updates: An accessor that can be aborted
 back to `P`. -/
@@ -116,7 +120,7 @@ instance atomic_update_pre_mono {Eo Ei : CoPset} {α : TA.Arg → PROP}
     · iintro %_ %_ $
   mono_pred_ne := ⟨fun _ _ _ _ => .rfl⟩
 
-@[rocq_alias atomic_update]
+@[indexed, rocq_alias atomic_update]
 def atomic_update (Eo Ei : CoPset) (α : TA.Arg → PROP)
     (β Φ : TA.Arg → TB.Arg → PROP) : PROP :=
   bi_greatest_fixpoint (atomic_update_pre Eo Ei α β Φ) ()
@@ -197,15 +201,17 @@ def auAllGroup (ys : Array Ident) : DelabM (Option (TSyntax ``auAllBinders)) := 
 @[app_delab Iris.atomic_update]
 def delabAtomicUpdate : Delab := do
   let e ← getExpr
-  unless e.isAppOfArity ``atomic_update 10 do failure
-  let some nA := Tele.literalArity? (e.getArg! 3) | failure
-  let some nB := Tele.literalArity? (e.getArg! 4) | failure
-  let Eo ← withNaryArg 5 delab
-  let Ei ← withNaryArg 6 delab
-  let (xs, α) ← withNaryArg 7 <| Tele.withFun nA fun xs => return (xs, ← delab)
-  let (ys, β) ← withNaryArg 8 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+  -- the leading (step-index and instance) arguments are skipped; `TA` is the 7th-to-last
+  unless e.isAppOf ``atomic_update && e.getAppNumArgs ≥ 7 do failure
+  let o := e.getAppNumArgs - 7
+  let some nA := Tele.literalArity? (e.getArg! o) | failure
+  let some nB := Tele.literalArity? (e.getArg! (o+1)) | failure
+  let Eo ← withNaryArg (o+2) delab
+  let Ei ← withNaryArg (o+3) delab
+  let (xs, α) ← withNaryArg (o+4) <| Tele.withFun nA fun xs => return (xs, ← delab)
+  let (ys, β) ← withNaryArg (o+5) <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
     Tele.withFun nB fun ys => return (ys, ← delab)
-  let Φ ← withNaryArg 9 <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
+  let Φ ← withNaryArg (o+6) <| Tele.withFunUsing nA (xs.map (·.getId)) fun _ =>
     Tele.withFunUsing nB (ys.map (·.getId)) fun _ => delab
   `(iprop(AU <{ $[$(← auExGroup xs)]? $(← unpackIprop α) }> @ $Eo, $Ei
       <{ $[$(← auAllGroup ys)]? $(← unpackIprop β), COMM $(← unpackIprop Φ) }>))
@@ -231,20 +237,20 @@ end
 
 section lemmas
 
-variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
+variable {PROP : Type _} [BI PROP] [BIStepIndexed PROP] [BIFUpdate PROP] {TA TB : Tele}
 
 @[rocq_alias atomic_acc_ne]
-theorem atomic_acc_ne {Eo Ei : CoPset} {n} {α1 α2 : TA.Arg → PROP} {P1 P2 : PROP}
+theorem atomic_acc_ne [FUpdNE PROP] {Eo Ei : CoPset} {n} {α1 α2 : TA.Arg → PROP} {P1 P2 : PROP}
     {β1 β2 Φ1 Φ2 : TA.Arg → TB.Arg → PROP} (hα : ∀ x, α1 x ≡{n}≡ α2 x)
     (hP : P1 ≡{n}≡ P2) (hβ : ∀ x y, β1 x y ≡{n}≡ β2 x y) (hΦ : ∀ x y, Φ1 x y ≡{n}≡ Φ2 x y) :
     atomic_acc Eo Ei α1 P1 β1 Φ1 ≡{n}≡ atomic_acc Eo Ei α2 P2 β2 Φ2 := by
   unfold atomic_acc
-  exact BIFUpdate.ne.ne <| texist_ne fun x => sep_ne.ne (hα x) <| and_ne.ne
-    (wand_ne.ne (hα x) (BIFUpdate.ne.ne hP))
-    (tforall_ne fun y => wand_ne.ne (hβ x y) (BIFUpdate.ne.ne (hΦ x y)))
+  exact FUpdNE.fupd_ne.ne <| texist_ne fun x => sep_ne.ne (hα x) <| and_ne.ne
+    (wand_ne.ne (hα x) (FUpdNE.fupd_ne.ne hP))
+    (tforall_ne fun y => wand_ne.ne (hβ x y) (FUpdNE.fupd_ne.ne (hΦ x y)))
 
 @[rocq_alias atomic_update_ne]
-theorem atomic_update_ne {Eo Ei : CoPset} {n} {α1 α2 : TA.Arg → PROP}
+theorem atomic_update_ne [FUpdNE PROP] {Eo Ei : CoPset} {n} {α1 α2 : TA.Arg → PROP}
     {β1 β2 Φ1 Φ2 : TA.Arg → TB.Arg → PROP} (hα : ∀ x, α1 x ≡{n}≡ α2 x)
     (hβ : ∀ x y, β1 x y ≡{n}≡ β2 x y) (hΦ : ∀ x y, Φ1 x y ≡{n}≡ Φ2 x y) :
     atomic_update Eo Ei α1 β1 Φ1 ≡{n}≡ atomic_update Eo Ei α2 β2 Φ2 := by
@@ -258,7 +264,7 @@ theorem aupd_unfold {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → 
   unfold atomic_update
   exact (greatest_fixpoint_unfold (atomic_update_pre Eo Ei α β Φ)).to_bi
 
-@[rocq_alias aupd_aacc]
+@[indexed, rocq_alias aupd_aacc]
 theorem aupd_aacc {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP} :
     atomic_update Eo Ei α β Φ ⊢ atomic_acc Eo Ei α (atomic_update Eo Ei α β Φ) β Φ :=
   aupd_unfold.mp
@@ -464,7 +470,7 @@ end lemmas
 
 section ProofMode
 
-variable [BI PROP] [BIFUpdate PROP] {TA TB : Tele}
+variable [BI PROP] [BIStepIndexed PROP] [BIFUpdate PROP] {TA TB : Tele}
 
 @[rocq_alias tac_aupd_intro]
 theorem tac_aupd_intro {e eI eS : PROP} {Eo Ei : CoPset} {α : TA.Arg → PROP}
@@ -498,13 +504,30 @@ corresponding atomic accessor (`atomic_acc`), whose abort condition is the
 separating conjunction of the spatial hypotheses.
 -/
 elab "iauintro" : tactic => do
-  ProofModeM.runTactic `iauintro fun mvar { hyps, goal, .. } => do
-    let_expr atomic_update _ _ _ _ _ Eo Ei α β Φ := goal
-      | throwIPMError "the goal {goal} is not an atomic update"
+  ProofModeM.runTactic `iauintro fun mvar { e, hyps, goal, .. } => do
+    -- `atomic_update` genuinely depends on the step index (via `bi_greatest_fixpoint`), so its
+    -- leading arguments vary; only its last five arguments are needed here.
+    let goal' := goal.consumeMData
+    unless goal'.isAppOf ``atomic_update do
+      throwIPMError "the goal {goal} is not an atomic update"
+    let args := goal'.getAppArgs
+    let n := args.size
+    let (Eo, Ei, α, β, Φ) := (args[n-5]!, args[n-4]!, args[n-3]!, args[n-2]!, args[n-1]!)
     -- Split the context into its intuitionistic and spatial parts
     let ⟨_, eS, pfSplit, pfInt⟩ := hyps.splitIntuitionisticSpatial
     let newGoal ← mkAppM ``atomic_acc #[Eo, Ei, α, eS, β, Φ]
-    mvar.assign <| ← mkAppM ``tac_aupd_intro #[pfSplit, pfInt, ← addBIGoal hyps newGoal]
+    let pfAcc ← addBIGoal hyps newGoal
+    -- `tac_aupd_intro` has the step index as an implicit argument that `mkAppM` cannot infer
+    -- from its explicit arguments: unify its conclusion with the goal instead.
+    let thm ← mkConstWithFreshMVarLevels ``tac_aupd_intro
+    let (xs, _, concl) ← forallMetaTelescopeReducing (← inferType thm)
+    let k := xs.size
+    unless ← isDefEq concl (← mkAppM ``BI.BIBase.Entails #[e, goal]) do
+      throwIPMError "internal error: unexpected statement of tac_aupd_intro"
+    for (x, pf) in [(xs[k-3]!, (pfSplit : Expr)), (xs[k-2]!, pfInt), (xs[k-1]!, pfAcc)] do
+      unless ← isDefEq x pf do
+        throwIPMError "internal error: unexpected statement of tac_aupd_intro"
+    mvar.assign (← instantiateMVars (mkAppN thm xs))
 
 /--
 `iaaccintro spats` prove an atomic accessor by applying `aacc_intro`, where

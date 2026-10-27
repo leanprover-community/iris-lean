@@ -15,6 +15,8 @@ public import Iris.Std.CoPset
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open BI ORA OFE Iris Iris.Std LawfulSet DisjointLeibnizSet COFE ProofMode
@@ -40,10 +42,12 @@ instance instNaInvF_discreteE {α β : Type _} (x : DisjointLeibnizSet α) (y : 
 instance coreId_valid_empty_empty : CoreId ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   core_id := by rfl
 
-instance isUnit_valid_empty_empty : IsUnit ((valid (∅ : CoPset), valid (∅ : PosSet))) where
-  unit_valid := ⟨trivial, trivial⟩
+instance isRAUnit_valid_empty_empty : IsRAUnit ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   unit_left_id := Prod.ext ucmra_unit_left_id ucmra_unit_left_id
   pcore_unit := coreId_valid_empty_empty.core_id
+
+instance isUnit_valid_empty_empty : IsUnit ((valid (∅ : CoPset), valid (∅ : PosSet))) where
+  unit_valid := ⟨trivial, trivial⟩
 
 namespace NonAtomicInvariant
 
@@ -65,7 +69,7 @@ instance instTimeless_own (p : NaInvPoolName) (E : CoPset) : Timeless (own (GF :
 @[rocq_alias na_inv_contractive]
 instance instContractive_inv (p : NaInvPoolName) (N : Namespace) :
     Contractive (inv (GF := GF) p N) where
-  distLater_dist {n x y} H := by
+  distLater_dist {n : Nat} {x y} H := by
     refine exists_ne fun i => and_ne.ne .rfl ?_
     refine Contractive.distLater_dist fun m hm => ?_
     exact or_ne.ne (sep_ne.ne (H _ hm) .rfl) .rfl

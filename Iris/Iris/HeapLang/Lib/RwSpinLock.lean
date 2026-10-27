@@ -20,6 +20,8 @@ open BI Iris Iris.Std ProgramLogic ORA OFE LeibnizMultiSet FiniteMultiSet
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace RwSpinLock
 
 @[rocq_alias heap_lang.rw_spin_lock.newlock]

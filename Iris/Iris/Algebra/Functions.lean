@@ -10,6 +10,9 @@ public import Iris.Algebra.Updates
 @[expose] public section
 
 namespace Iris
+
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 open OFE ORA
 
 /-!
@@ -27,7 +30,7 @@ def discreteFunInsert {ι : Type _} [DecidableEq ι] {β : ι → Type _}
 
 @[rocq_alias discrete_fun_singleton]
 def discreteFunSingleton {ι : Type _} [DecidableEq ι] {β : ι → Type _}
-    [∀ i, UORA (β i)] (x : ι) (y : β x) : (a : ι) → β a :=
+    [∀ i, URA (β i)] (x : ι) (y : β x) : (a : ι) → β a :=
   discreteFunInsert x y fun _ => unit
 
 section insert
@@ -63,7 +66,7 @@ theorem discreteE_pi {f : (a : ι) → β a} (hf : ∀ i, DiscreteE (f i)) : Dis
 @[rocq_alias discrete_fun_insert_ne]
 instance instDiscreteFunInsertNonExpansive (x : ι) :
     NonExpansive₂ (discreteFunInsert (β := β) x) where
-  ne {n y₁ y₂} hy {f₁ f₂} hf x' := by
+  ne {n} {y₁ y₂} hy {f₁ f₂} hf x' := by
     by_cases h : x = x'
     · subst h
       simpa using hy
@@ -98,7 +101,7 @@ end OFE
 
 section ORA
 
-variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, UORA (β i)]
+variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, URA (β i)] [∀ i, UORA (β i)]
 
 @[rocq_alias discrete_funR_cmra_discrete]
 instance instDiscreteFunCmraDiscrete [∀ i, ORA.Discrete (β i)] : ORA.Discrete ((i : ι) → β i) where
@@ -129,7 +132,7 @@ instance instDiscreteFunSingletonDiscrete {x : ι} (y : β x)
   instDiscreteFunInsertDiscrete (fun _ => unit) x y
 
 @[rocq_alias discrete_fun_singleton_validN]
-theorem discreteFunSingleton_validN_iff (n : Nat) {x : ι} (y : β x) :
+theorem discreteFunSingleton_validN_iff (n) {x : ι} (y : β x) :
     ✓{n} discreteFunSingleton x y ↔ ✓{n} y := by
   constructor
   · exact fun h => discreteFunSingleton_self y ▸ h x
@@ -172,7 +175,7 @@ theorem discreteFunSingleton_core_eq {x : ι} (y : β x) :
 @[rocq_alias discrete_fun_singleton_core_id]
 instance instDiscreteFunSingletonCoreId (x : ι) (y : β x) [CoreId y] :
     CoreId (discreteFunSingleton x y) :=
-  coreId_iff_core_eqv_self.mpr <| (discreteFunSingleton_core_eq y).trans
+  (coreId_iff_core_eqv_self).mpr <| (discreteFunSingleton_core_eq y).trans
     (congrArg (discreteFunSingleton x) (core_eqv_self y))
 
 @[rocq_alias discrete_fun_singleton_op]
@@ -266,7 +269,7 @@ end ORA
 
 section ORA
 
-variable {ι : Type _} {β : ι → Type _} [∀ i, UORA (β i)]
+variable {ι : Type _} {β : ι → Type _} [∀ i, URA (β i)] [∀ i, UORA (β i)]
 
 @[rocq_alias discrete_fun_updateP]
 theorem discreteFun_updateP {f : (a : ι) → β a} {P : (a : ι) → β a → Prop}

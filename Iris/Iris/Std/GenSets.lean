@@ -968,7 +968,7 @@ theorem map_empty {S' : Type _} {B : Type _} [LawfulFiniteSet S' B] (f : A → B
 
 /-- Mapping identity yields original set. -/
 @[simp]
-theorem map_id {S' : Type _} {B : Type _} [LawfulFiniteSet S' B] (s : S) :
+theorem map_id (s : S) :
     map (S' := S) id s = s := by
   ext x; rw [mem_map]; simp
 

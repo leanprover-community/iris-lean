@@ -10,36 +10,41 @@ public import Iris.BI.BI
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.BI
 
 /-- Require that a separation logic with the carrier type `PROP` is an affine separation logic. -/
 @[rocq_alias BiAffine]
-class BIAffine (PROP : Type _) [BI PROP] where
+class BIAffine (PROP : Type _) [BI.BIBase PROP] where
   affine (P : PROP) : Affine P
 
 attribute [instance (default + 100)] BIAffine.affine
 
 @[rocq_alias BiPositive]
-class BIPositive (PROP : Type _) [BI PROP] where
+class BIPositive (PROP : Type _) [BI.BIBase PROP] where
   affinely_sep_l {P Q : PROP} : <affine> (P ∗ Q) ⊢ <affine> P ∗ Q
 export BIPositive (affinely_sep_l)
 
 @[rocq_alias BiLöb]
-class BILoeb (PROP : Type _) [BI PROP] where
+class BILoeb (PROP : Type _) [BI.BIBase PROP] where
   loeb_weak {P : PROP} : (▷ P ⊢ P) → True ⊢ P
 export BILoeb (loeb_weak)
 
-@[rocq_alias BiLaterContractive]
-class BILaterContractive (PROP : Type _) [BI PROP] extends OFE.Contractive later (α := PROP)
+variable (SI) in
+@[indexed, rocq_alias BiLaterContractive]
+class BILaterContractive (PROP : Type _) [BI PROP] [BIStepIndexed PROP] extends OFE.Contractive later (α := PROP)
 
 #rocq_ignore BiPureForall "BIPureForall is provable for all BIs using classical logic, see pure_forall_2"
 
 @[rocq_alias BiPersistentlyForall]
-class BIPersistentlyForall (PROP : Type _) [BI PROP] where
+class BIPersistentlyForall (PROP : Type _) [BI.BIBase PROP] where
   persistently_sForall_2 (Ψ : PROP → Prop) : (∀ p, ⌜Ψ p⌝ → <pers> p) ⊢ <pers> (sForall Ψ)
 
 @[rocq_alias BiPersistentlyExist]
-class BIPersistentlyExist (PROP : Type _) [BI PROP] where
+class BIPersistentlyExist (PROP : Type _) [BI.BIBase PROP] where
   persistently_sExists_1 (Ψ : PROP → Prop) : <pers> (sExists Ψ) ⊢ ∃ p, ⌜Ψ p⌝ ∧ <pers> p
 
 section PersistentlyExistDiscrete

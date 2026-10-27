@@ -10,11 +10,15 @@ public import Iris.ProofMode.Classes
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 open Iris BI ORA ProofMode Std
 
 namespace UPred
 
-variable [UORA M]
+variable [URA M] [UORA M] [UPred.OrdExtend0 M]
 
 @[rocq_alias from_sep_ownM]
 instance fromSep_ownM {a b1 b2 : M} [h : IsOp .split a b1 b2] :

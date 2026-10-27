@@ -17,6 +17,8 @@ public import Iris
 
 @[expose] public section
 
+local stepindex Nat
+
 /-- Relationship between Mathlib's AddZeroClass to the Stdlib Std.LawfulLeftIdentity on Add. -/
 instance AddZeroClass.to_isLawfulLeftIdentity {M : Type _} [AddZeroClass M] :
     Std.LawfulLeftIdentity (α := M) (· + ·) (Zero.zero : M) where
@@ -33,7 +35,15 @@ open scoped CommMonoidLike
 scoped instance : COFE ℝ := COFE.ofDiscrete ℝ
 scoped instance : OFE.Discrete ℝ := ⟨fun h => h⟩
 
+scoped instance realOp : Op ℝ := CommMonoidLike.instOp
+scoped instance realPCore : PCore ℝ := CommMonoidLike.instPCore
+scoped instance realRA : RA ℝ := CommMonoidLike.instRA
+scoped instance realURA : URA ℝ := CommMonoidLike.instURA
+scoped instance realUCMRA : UCMRA ℝ := CommMonoidLike.instUCMRA
+scoped instance realDiscrete : ORA.Discrete ℝ := CommMonoidLike.instDiscrete
 scoped instance : LeftCancelAdd ℝ := ⟨add_left_cancel⟩
+scoped instance realCancelable {x : ℝ} : ORA.Cancelable x := CommMonoidLike.instCancelable
+scoped instance realCoreIdZero : ORA.CoreId (0 : ℝ) := CommMonoidLike.instCoreIdZero
 
 theorem op_eq {x y : ℝ} : Op.op x y = x + y := rfl
 
@@ -55,6 +65,13 @@ open scoped CommMonoidLike
 scoped instance : COFE ℝ≥0∞ := COFE.ofDiscrete ℝ≥0∞
 scoped instance : OFE.Discrete ℝ≥0∞ := ⟨fun h => h⟩
 
+scoped instance ennrealOp : Op ℝ≥0∞ := CommMonoidLike.instOp
+scoped instance ennrealPCore : PCore ℝ≥0∞ := CommMonoidLike.instPCore
+scoped instance ennrealRA : RA ℝ≥0∞ := CommMonoidLike.instRA
+scoped instance ennrealURA : URA ℝ≥0∞ := CommMonoidLike.instURA
+scoped instance ennrealUCMRA : UCMRA ℝ≥0∞ := CommMonoidLike.instUCMRA
+scoped instance ennrealDiscrete : ORA.Discrete ℝ≥0∞ := CommMonoidLike.instDiscrete
+scoped instance ennrealCoreIdZero : ORA.CoreId (0 : ℝ≥0∞) := CommMonoidLike.instCoreIdZero
 scoped instance : LawfulAddLE ℝ≥0∞ := ⟨le_iff_exists_add⟩
 
 theorem op_eq {x y : ℝ≥0∞} : Op.op x y = x + y := rfl

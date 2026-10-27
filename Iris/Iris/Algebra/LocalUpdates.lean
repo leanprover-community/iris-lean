@@ -11,18 +11,23 @@ public import Iris.Algebra.CMRA
 
 namespace Iris
 
-@[rocq_alias local_update]
-def LocalUpdate [ORA α] (x y : α × α) : Prop :=
-  ∀n mz, ✓{n} x.1 → x.1 ≡{n}≡ x.2 •? mz → ✓{n} y.1 ∧ y.1 ≡{n}≡ y.2 •? mz
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
 
-infixr:50 " ~l~> " => LocalUpdate
+@[indexed, rocq_alias local_update]
+def LocalUpdate [RA α] [ORA α] (x y : α × α) : Prop :=
+  ∀ (n) mz, ✓{n} x.1 → x.1 ≡{n}≡ x.2 •? mz → ✓{n} y.1 ∧ y.1 ≡{n}≡ y.2 •? mz
+
+notation:50 x:51 " ~l~>[" S "] " y:50 => Iris.LocalUpdate (SI := S) x y
+@[inherit_doc Iris.LocalUpdate]
+notation:50 x:51 " ~l~> " y:50 => Iris.LocalUpdate (SI := stepindex%) x y
 
 section LocalUpdate
 open ORA
 
 section ORA
 
-variable [ORA α]
+variable [RA α] [ORA α]
 
 @[refl]
 theorem LocalUpdate.id (x : α × α) : x ~l~> x := fun _ _ vx e => ⟨vx, e⟩
@@ -30,7 +35,7 @@ theorem LocalUpdate.id (x : α × α) : x ~l~> x := fun _ _ vx e => ⟨vx, e⟩
 theorem LocalUpdate.trans {x y z : α × α} (uxy : x ~l~> y) (uyz : y ~l~> z) : x ~l~> z :=
   fun n mz vx e => (uxy n mz vx e).elim (uyz n mz)
 
-instance : Trans LocalUpdate LocalUpdate LocalUpdate (α := α × α) where
+instance : Trans (LocalUpdate (α := α)) (LocalUpdate) (LocalUpdate) where
   trans := LocalUpdate.trans
 
 #rocq_ignore local_update_preorder "Use LocalUpdate.id and LocalUpdate.trans"
@@ -131,11 +136,11 @@ end ORA
 
 section UORA
 
-variable [UORA α]
+variable [URA α] [UORA α]
 
 @[rocq_alias local_update_unital]
 theorem local_update_unital {x y x' y' : α} :
-    (x, y) ~l~> (x', y') ↔ ∀ n z, ✓{n} x → x ≡{n}≡ y • z → (✓{n} x' ∧ x' ≡{n}≡ y' • z) where
+    (x, y) ~l~> (x', y') ↔ ∀ (n) z, ✓{n} x → x ≡{n}≡ y • z → (✓{n} x' ∧ x' ≡{n}≡ y' • z) where
   mp h n z := h n (some z)
   mpr h n mz vx e :=
     match mz with
@@ -175,7 +180,7 @@ end UORA
 theorem LocalUpdate.unit {x y x' y' : Unit} : (x, y) ~l~> (x', y') := .id ((), ())
 
 @[rocq_alias discrete_fun_local_update]
-theorem LocalUpdate.discrete_fun {β : α → Type _} [∀ x, UORA (β x)]
+theorem LocalUpdate.discrete_fun {β : α → Type _} [∀ x, URA (β x)] [∀ x, UORA (β x)]
     {f g f' g' : ∀ x, β x} (h : ∀ x : α, (f x, g x) ~l~> (f' x, g' x)) :
     (f, g) ~l~> (f', g') := by
   refine fun n mz vx e => ⟨fun x => ?_, fun x => ?_⟩
@@ -186,7 +191,7 @@ theorem LocalUpdate.discrete_fun {β : α → Type _} [∀ x, UORA (β x)]
     | none => exact (h x n none (vx x) (e x)).right
     | some z => exact (h x n (some (z x)) (vx x) (e x)).right
 
-variable [ORA α] [ORA β]
+variable [RA α] [ORA α] [RA β] [ORA β]
 
 @[rocq_alias prod_local_update]
 theorem LocalUpdate.prod {x y x' y' : α × β}
@@ -228,8 +233,8 @@ theorem LocalUpdate.option {x y x' y' : α}
   | some (some z) => exact h n (some z)
 
 @[rocq_alias option_local_update_None]
-theorem LocalUpdate.option_none {α} [UORA α] {x x' y' : α}
-    (h : (x, ORA.unit) ~l~> (x', y')) : (some x, none) ~l~> (some x', some y') := by
+theorem LocalUpdate.option_none {α} [URA α] [UORA α] {x x' y' : α}
+    (h : (x, UnitOp.unit) ~l~> (x', y')) : (some x, none) ~l~> (some x', some y') := by
   intro n mz vx e
   let .some (some z) := mz
   exact h n (some z) vx (.trans e (unit_left_id_dist z).symm)
@@ -264,3 +269,14 @@ theorem LocalUpdate.delete_option_cancelable
 end LocalUpdate
 
 end Iris
+
+
+/-! Printing of the step-index-free notations (see `Iris.Algebra.StepIndex`). -/
+namespace Iris.StepIndex
+
+
+@[app_unexpander Iris.LocalUpdate] meta def unexpandLocalUpdate : Lean.PrettyPrinter.Unexpander
+  | `($_ $x $y) => `($x ~l~> $y)
+  | _ => throw ()
+
+end Iris.StepIndex

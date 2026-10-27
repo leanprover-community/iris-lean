@@ -10,6 +10,10 @@ import Iris.BI.DerivedLawsLater
 
 public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.BI
 
 open Iris.Algebra BigOpL BIBase
@@ -109,7 +113,7 @@ theorem bigAndL_impl {Φ Ψ : Nat → A → PROP} {l : List A} :
 @[rocq_alias big_andL_persistently]
 theorem bigAndL_persistently {Φ : Nat → A → PROP} {l : List A} :
     (<pers> [∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, <pers> Φ k x :=
-  letI := MonoidHomomorphism.ofEq (PROP := PROP) persistently_ne
+  letI := MonoidHomomorphism.ofEq (PROP := PROP)
        (BiEntails.to_eq persistently_and) (BiEntails.to_eq persistently_true)
   BiEntails.of_eq <| bigOpL_hom Φ l
 
@@ -156,7 +160,7 @@ theorem bigAndL_flatMap {B : Type _} (f : A → List B) {Φ : B → PROP} {l : L
 @[rocq_alias big_andL_later]
 theorem bigAndL_later {Φ : Nat → A → PROP} {l : List A} :
     (▷ [∧list] k ↦ x ∈ l, Φ k x) ⊣⊢ [∧list] k ↦ x ∈ l, (▷ Φ k x) :=
-  letI := MonoidHomomorphism.ofEq (PROP := PROP) later_ne
+  letI := MonoidHomomorphism.ofEq (PROP := PROP)
     (BiEntails.to_eq later_and) (BiEntails.to_eq later_true)
   BiEntails.of_eq <| bigOpL_hom  Φ l
 
@@ -178,7 +182,7 @@ theorem bigAndL_submseteq {Φ : A → PROP} {l₁ l₂ l : List A} (h : (l₁ ++
   bigAndL_append.1.trans and_elim_l
 
 @[rocq_alias big_andL_ne]
-theorem bigAndL_dist {Φ Ψ : Nat → A → PROP} {l : List A} {n : Nat}
+theorem bigAndL_dist [BIStepIndexed PROP] {Φ Ψ : Nat → A → PROP} {l : List A} {n}
     (h : ∀ {k x}, l[k]? = some x → Φ k x ≡{n}≡ Ψ k x) :
     ([∧list] k ↦ x ∈ l, Φ k x) ≡{n}≡ [∧list] k ↦ x ∈ l, Ψ k x :=
   bigOpL_dist h
@@ -230,14 +234,14 @@ instance bigAndL_persistent_inst {Φ : Nat → A → PROP} {l : List A} [∀ k x
 @[rocq_alias big_andL_nil_timeless]
 instance bigAndL_nil_timeless_inst {Φ : Nat → A → PROP} :
     Timeless ([∧list] k ↦ x ∈ ([] : List A), Φ k x) where
-  timeless := by simpa only [bigOpL] using (later_true.1.trans except0_true.2)
+  timeless := by simpa only [bigOpL] using Timeless.timeless
 
 @[rocq_alias big_andL_timeless]
 theorem bigAndL_timeless {Φ : Nat → A → PROP} {l : List A} (h : ∀ {k x}, l[k]? = some x → Timeless (Φ k x)) :
     Timeless ([∧list] k ↦ x ∈ l, Φ k x) where
-  timeless := bigOpL_closed (P := fun Q => ▷ Q ⊢ ◇ Q)
-    (later_true.1.trans except0_true.2)
-    (later_and.1.trans <| and_mono · ·|>.trans except0_and.2)
+  timeless := bigOpL_closed (P := fun Q => <only0> Q ⊢ Q)
+    Timeless.timeless
+    (only0_and.mp.trans <| and_mono · ·)
     (h · |>.timeless)
 
 @[rocq_alias big_andL_timeless']

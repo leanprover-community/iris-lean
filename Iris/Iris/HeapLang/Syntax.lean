@@ -9,6 +9,8 @@ public import Iris.Std.Infinite
 public import Iris.ProgramLogic.Language
 
 @[expose] public section
+
+local stepindex Nat
 namespace Iris.HeapLang
 
 @[ext, rocq_alias heap_lang.loc]

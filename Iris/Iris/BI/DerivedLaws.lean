@@ -15,6 +15,10 @@ public import Iris.Std.TC
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.BI
 open Iris.Std BI
 
@@ -165,7 +169,7 @@ theorem imp_congr_right [BI PROP] {P Q Q' : PROP} (h : Q ⊣⊢ Q') : (P → Q) 
   imp_congr .rfl h
 
 @[rocq_alias bi.forall_ne]
-theorem forall_ne [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ≡{n}≡ Ψ a) :
+theorem forall_ne {n} [BI PROP] [BIStepIndexed PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ≡{n}≡ Ψ a) :
     iprop(∀ a, Φ a) ≡{n}≡ iprop(∀ a, Ψ a) := sForall_ne <| by
   constructor <;> rintro _ ⟨a, rfl⟩ <;> exact ⟨_, ⟨a, rfl⟩, h _⟩
 
@@ -190,7 +194,7 @@ theorem forall_congr [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ⊣⊢ Ψ 
   ⟨forall_mono fun a => (h a).1, forall_mono fun a => (h a).2⟩
 
 @[rocq_alias bi.exist_ne]
-theorem exists_ne [BI PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ≡{n}≡ Ψ a) :
+theorem exists_ne {n} [BI PROP] [BIStepIndexed PROP] {Φ Ψ : α → PROP} (h : ∀ a, Φ a ≡{n}≡ Ψ a) :
     iprop(∃ a, Φ a) ≡{n}≡ iprop(∃ a, Ψ a) := sExists_ne <| by
   constructor <;> rintro _ ⟨a, rfl⟩ <;> exact ⟨_, ⟨a, rfl⟩, h _⟩
 
@@ -704,7 +708,7 @@ theorem and_parallel [BI PROP] {P1 P2 Q1 Q2 : PROP} :
       _ ⊢ Q2                           := wand_elim_right
 
 @[rocq_alias bi.iff_ne]
-instance iff_ne [BI PROP] : OFE.NonExpansive₂ (BIBase.iff (PROP := PROP)) :=
+instance iff_ne [BI PROP] [BIStepIndexed PROP] : OFE.NonExpansive₂ (BIBase.iff (PROP := PROP)) :=
   ⟨fun {_ _ _} h₁ {_ _} h₂ => and_ne.ne (imp_ne.ne h₁ h₂) (imp_ne.ne h₂ h₁)⟩
 #rocq_ignore bi.iff_proper "Derivable from _ne with NonExpansive.eqv."
 
@@ -755,7 +759,7 @@ theorem iff_equiv [BI PROP] {P Q : PROP} [Affine P] [Affine Q] (h : ⊢ iprop(P 
       _ ⊢ Q → P := and_elim_r
 
 @[rocq_alias bi.wand_iff_ne]
-instance wandIff_ne [BI PROP] : OFE.NonExpansive₂ (wandIff (PROP := PROP)) :=
+instance wandIff_ne [BI PROP] [BIStepIndexed PROP] : OFE.NonExpansive₂ (wandIff (PROP := PROP)) :=
   ⟨fun {_ _ _} h₁ {_ _} h₂ => and_ne.ne (wand_ne.ne h₁ h₂) (wand_ne.ne h₂ h₁)⟩
 #rocq_ignore bi.wand_iff_proper "Derivable from _ne with NonExpansive.eqv."
 
@@ -894,7 +898,7 @@ theorem pure_wand_forall [BI PROP] {φ : Prop} {P : PROP} [Absorbing P] :
 /-! # Affine -/
 
 @[rocq_alias bi.affinely_ne]
-theorem affinely_ne [BI PROP] : OFE.NonExpansive (@affinely PROP _) where
+theorem affinely_ne [BI PROP] [BIStepIndexed PROP] : OFE.NonExpansive (@affinely PROP _) where
   ne _ _ _ h := and_ne.1 .rfl h
 #rocq_ignore bi.affinely_flip_mono' "Use _mono."
 #rocq_ignore bi.affinely_mono' "Use _mono."
@@ -1047,7 +1051,7 @@ theorem pure_imp_forall [BI PROP] {φ : Prop} {P : PROP} :
 /-! # Absorbing -/
 
 @[rocq_alias bi.absorbingly_ne]
-theorem absorbingly_ne [BI PROP] : OFE.NonExpansive (@absorbingly PROP _) where
+theorem absorbingly_ne [BI PROP] [BIStepIndexed PROP] : OFE.NonExpansive (@absorbingly PROP _) where
   ne _ _ _ h := sep_ne.1 .rfl h
 #rocq_ignore bi.absorbingly_flip_mono' "Use _mono."
 #rocq_ignore bi.absorbingly_mono' "Use _mono."
@@ -1659,7 +1663,7 @@ instance absorbingly_persistent [BI PROP] (P : PROP) [Persistent P] :
 /-! # The intuitionistic modality -/
 
 @[rocq_alias bi.intuitionistically_ne]
-theorem intuitionistically_ne [BI PROP] : OFE.NonExpansive (@intuitionistically PROP _) where
+theorem intuitionistically_ne [BI PROP] [BIStepIndexed PROP] : OFE.NonExpansive (@intuitionistically PROP _) where
   ne _ _ _ h := affinely_ne.1 (persistently_ne.1 h)
 #rocq_ignore bi.intuitionistically_flip_mono' "Use _mono."
 #rocq_ignore bi.intuitionistically_mono' "Use _mono."
@@ -1857,7 +1861,7 @@ theorem intuitionistically_into_persistently [BI PROP] {P : PROP} [BIAffine PROP
     iprop(<affine>?true P) = iprop(<affine> P) := rfl
 
 @[rocq_alias bi.affinely_if_ne]
-theorem affinelyIf_ne {p : Bool} [BI PROP] : OFE.NonExpansive (affinelyIf (PROP := PROP) p) :=
+theorem affinelyIf_ne {p : Bool} [BI PROP] [BIStepIndexed PROP] : OFE.NonExpansive (affinelyIf (PROP := PROP) p) :=
   match p with
   | true => affinely_ne
   | false => OFE.id_ne
@@ -1961,7 +1965,7 @@ theorem affinelyIf_sep {p : Bool} [BI PROP] [BIPositive PROP] {P Q : PROP} :
   | false => .rfl
   | true => affinely_sep
 
-theorem affinelyIf_idem {p : Bool} [BI PROP] [BIPositive PROP] {P : PROP} :
+theorem affinelyIf_idem {p : Bool} [BI PROP] {P : PROP} :
     <affine>?p <affine>?p P ⊣⊢ <affine>?p P :=
   match p with
   | false => .rfl
@@ -1997,7 +2001,7 @@ theorem affinelyIf_and_left_right {p : Bool} [BI PROP] {P Q : PROP} :
     iprop(<absorb>?true P) = iprop(<absorb> P) := rfl
 
 @[rocq_alias bi.absorbingly_if_ne]
-theorem absorbinglyIf_ne {p : Bool} [BI PROP] : OFE.NonExpansive (absorbinglyIf (PROP := PROP) p) :=
+theorem absorbinglyIf_ne {p : Bool} [BI PROP] [BIStepIndexed PROP] : OFE.NonExpansive (absorbinglyIf (PROP := PROP) p) :=
   match p with
   | true => absorbingly_ne
   | false => OFE.id_ne
@@ -2140,7 +2144,7 @@ theorem affinely_if_absorbingly_if_elim [BI PROP] {p : Bool} {P : PROP} [BIPosit
     iprop(<pers>?true P) = iprop(<pers> P) := rfl
 
 @[rocq_alias bi.persistently_if_ne]
-theorem persistentlyIf_ne {p : Bool} [BI PROP] :
+theorem persistentlyIf_ne {p : Bool} [BI PROP] [BIStepIndexed PROP] :
     OFE.NonExpansive (persistentlyIf (PROP := PROP) p) :=
   match p with
   | true => persistently_ne
@@ -2227,7 +2231,7 @@ theorem persistentlyIf_sep {p : Bool} [BI PROP] [BIPositive PROP] {P Q : PROP} :
   | false => .rfl
   | true => persistently_sep
 
-theorem persistentlyIf_idem {p : Bool} [BI PROP] [BIPositive PROP] {P : PROP} :
+theorem persistentlyIf_idem {p : Bool} [BI PROP] {P : PROP} :
     <pers>?p <pers>?p P ⊣⊢ <pers>?p P :=
   match p with
   | false => .rfl
@@ -2255,7 +2259,7 @@ theorem persistentlyIf_intutitionistically {p : Bool} [BI PROP] {P : PROP} :
 @[simp] theorem intuitionisticallyIf_true [BI PROP] (P : PROP) : iprop(□?true P) = iprop(□ P) := rfl
 
 @[rocq_alias bi.intuitionistically_if_ne]
-theorem intuitionisticallyIf_ne {p : Bool} [BI PROP] :
+theorem intuitionisticallyIf_ne {p : Bool} [BI PROP] [BIStepIndexed PROP] :
     OFE.NonExpansive (intuitionisticallyIf (PROP := PROP) p) :=
   match p with
   | true => intuitionistically_ne
@@ -2585,7 +2589,7 @@ instance from_option_persistent [BI PROP] {P : PROP} {Ψ : α → PROP} {mx : Op
 /-! # Limits -/
 
 @[rocq_alias bi.limit_preserving_entails]
-theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : OFE.NonExpansive Φ]
+instance LimitPreserving.entails [SIdxFinite] [BI PROP] [BIStepIndexed PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : OFE.NonExpansive Φ]
     [Ψne : OFE.NonExpansive Ψ] : LimitPreserving (fun x ↦ Φ x ⊢ Ψ x) := by
   refine .ext (P := fun x ↦ True ⊣⊢ (Φ x → Ψ x)) (@fun x => ?_) ?_
   · exact ⟨(true_and.2.trans <| imp_elim ·.1), (⟨imp_intro <| true_and.1.trans ·, true_intro⟩)⟩
@@ -2594,33 +2598,33 @@ theorem LimitPreserving.entails [BI PROP] [COFE A] (Φ Ψ : A → PROP) [Φne : 
        f x := iprop(Φ x → Ψ x),
        ne.ne _ {_ _} x := imp_ne.ne (Φne.ne x) (Ψne.ne x)
     }
-    refine ⟨fun c h' => ?_⟩
+    refine ⟨fun c h' => ?_, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
     refine BIBase.BiEntails.of_eq ((LimitPreserving.equiv f g).compl _ ?_)
     exact fun n => (h' n).to_eq
 
 @[rocq_alias bi.limit_preserving_emp_valid]
-theorem limitPreserving_emp_valid [BI PROP] [COFE A] (Φ : A → PROP)
+instance limitPreserving_emp_valid [SIdxFinite] [BI PROP] [BIStepIndexed PROP] [COFE A] (Φ : A → PROP)
     [OFE.NonExpansive Φ] : LimitPreserving (fun x => ⊢ Φ x) :=
   LimitPreserving.entails (fun _ => iprop(emp)) Φ
 
 @[rocq_alias bi.limit_preserving_Persistent]
-theorem limitPreserving_persistent [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+instance limitPreserving_persistent [SIdxFinite] [BI PROP] [BIStepIndexed PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
     LimitPreserving (fun x => Persistent (Φ x)) := by
   letI _ : OFE.NonExpansive fun x => iprop(<pers> Φ x) := .comp persistently_ne Φne
-  refine ⟨fun c h => ⟨?_⟩⟩
+  refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
   refine (LimitPreserving.entails _ (fun x => iprop(<pers> (Φ x)))).compl _ ?_
   exact (fun n => h n |>.persistent)
 
-theorem limitPreserving_absorbing [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+instance limitPreserving_absorbing [SIdxFinite] [BI PROP] [BIStepIndexed PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
     LimitPreserving (fun x => Absorbing (Φ x)) := by
   letI _ : OFE.NonExpansive fun x => iprop(<absorb> Φ x) := .comp absorbingly_ne Φne
-  refine ⟨fun c h => ⟨?_⟩⟩
+  refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
   refine (LimitPreserving.entails (fun x => iprop(<absorb> (Φ x))) _).compl _ ?_
   exact (fun n => h n |>.absorbing)
 
-theorem limitPreserving_affine [BI PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
+instance limitPreserving_affine [SIdxFinite] [BI PROP] [BIStepIndexed PROP] [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
     LimitPreserving (fun x => Affine (Φ x)) := by
-  refine ⟨fun c h => ⟨?_⟩⟩
+  refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
   refine (LimitPreserving.entails (fun x => iprop((Φ x))) (fun _ => iprop(emp))).compl _ ?_
   exact (fun n => h n |>.affine)
 

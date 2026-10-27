@@ -13,17 +13,21 @@ public import Iris.Std.DelabRule
 
 @[expose] public section
 
+
+variable {SI : stepindex (Type _)} [Iris.SIdx SI]
+local stepindex SI
+
 namespace Iris.BI
 open Iris.Std Lean
 
 /-- Telescopic universal quantification: quantify over every binder of the telescope `TT`. -/
 @[rocq_alias bi_tforall]
-def tforall [BI PROP] {TT : Tele} (Ψ : TT.Arg → PROP) : PROP :=
+def tforall [BI.BIBase PROP] {TT : Tele} (Ψ : TT.Arg → PROP) : PROP :=
   Tele.fold (fun _ => BIBase.forall) (Tele.bind Ψ)
 
 /-- Telescopic existential quantification: quantify over every binder of the telescope `TT`. -/
 @[rocq_alias bi_texist]
-def texist [BI PROP] {TT : Tele} (Ψ : TT.Arg → PROP) : PROP :=
+def texist [BI.BIBase PROP] {TT : Tele} (Ψ : TT.Arg → PROP) : PROP :=
   Tele.fold (fun _ => BIBase.exists) (Tele.bind Ψ)
 
 macro_rules
@@ -88,7 +92,7 @@ theorem texist_exist (Ψ : TT.Arg → PROP) : texist Ψ ⊣⊢ ∃ x, Ψ x := by
       exact (exists_intro (Ψ := fun ys => Ψ (.cons x ys)) xs).trans (ih x _).mpr
 
 @[rocq_alias bi_tforall_ne]
-theorem tforall_ne {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ≡{n}≡ Ψ x) :
+theorem tforall_ne [BIStepIndexed PROP] {n} {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ≡{n}≡ Ψ x) :
     tforall Φ ≡{n}≡ tforall Ψ := by
   rw [(tforall_forall Φ).to_eq, (tforall_forall Ψ).to_eq]
   exact forall_ne h
@@ -103,7 +107,7 @@ theorem tforall_congr {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ⊣⊢ Ψ x) :
 #rocq_ignore bi_tforall_proper "Use `tforall_congr`."
 
 @[rocq_alias bi_texist_ne]
-theorem texist_ne {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ≡{n}≡ Ψ x) :
+theorem texist_ne [BIStepIndexed PROP] {n} {Φ Ψ : TT.Arg → PROP} (h : ∀ x, Φ x ≡{n}≡ Ψ x) :
     texist Φ ≡{n}≡ texist Ψ := by
   rw [(texist_exist Φ).to_eq, (texist_exist Ψ).to_eq]
   exact exists_ne h

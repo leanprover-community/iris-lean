@@ -18,13 +18,15 @@ public import Iris.BI.Plainly
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris OFE BI
 
 section fupd
 
-variable {M : Type u} [UORA M]
+variable {M : Type u} [URA M] [UORA M]
 variable (vs : CoPset → CoPset → UPred M → UPred M → UPred M)
 
 @[rocq_alias fupd]

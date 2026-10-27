@@ -8,6 +8,8 @@ module
 public import Iris.HeapLang
 public import Iris.HeapLang.Lib.NondetBool
 
+local stepindex Nat
+
 /-! # The clairvoyant coin -/
 
 namespace Iris.HeapLang

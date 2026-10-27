@@ -13,12 +13,14 @@ public import Iris.Algebra.Agree
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.Examples
 open Iris.BI COFE
 
 section no_resources
 
-variable [UORA M]
+variable [URA M] [UORA M]
 
 -- A proof with no resources
 example (P Q : UPred M) : P ∗ Q ⊢ ⌜True⌝ := by

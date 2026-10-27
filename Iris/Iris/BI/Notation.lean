@@ -12,6 +12,7 @@ public import Iris.Init
 public meta section
 
 namespace Iris.BI
+
 open Lean Lean.Parser.Term PrettyPrinter Delaborator
 
 /- `iprop(P)` embeds a separation logic proposition `P` into `term`. -/

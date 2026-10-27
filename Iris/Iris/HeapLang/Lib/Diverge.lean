@@ -17,6 +17,8 @@ open BI Iris ProgramLogic
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Diverge
 
 @[rocq_alias heap_lang.diverge]

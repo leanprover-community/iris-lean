@@ -13,7 +13,10 @@ public import Iris.Algebra.Numbers
 
 namespace Iris
 
-@[rocq_alias mono_nat]
+variable {SI : stepindex (Type _)} [instSI : SIdx SI]
+local stepindex SI
+
+@[indexed, rocq_alias mono_nat]
 abbrev MonoNat := Auth MaxNat
 
 #rocq_ignore mono_natR "Use the MonoNat type and View.instCMRA typeclass"
@@ -35,10 +38,11 @@ notation "◯MN " n => lb n
 scoped instance : OFE.DiscreteE (◯MN n : MonoNat) := Auth.frag_discrete
 scoped instance : OFE.DiscreteE (●MN{dq} n : MonoNat) :=
   ⟨fun h => OFE.discrete h⟩
-scoped instance : IsUnit (◯MN 0 : MonoNat) where
-  unit_valid := Auth.frag_valid.mpr trivial
+scoped instance : IsRAUnit (◯MN 0 : MonoNat) where
   unit_left_id := rfl
   pcore_unit := rfl
+scoped instance : IsUnit (◯MN 0 : MonoNat) where
+  unit_valid := Auth.frag_valid.mpr trivial
 
 @[rocq_alias mono_nat_lb_core_id]
 instance {n : MaxNat} : CoreId (◯MN n : MonoNat) := by
@@ -50,7 +54,7 @@ instance {l : MaxNat} : CoreId (●MN□ l : MonoNat) := by
   unfold auth
   infer_instance
 
-@[rocq_alias mono_nat_auth_dfrac_op]
+@[indexed, rocq_alias mono_nat_auth_dfrac_op]
 theorem auth_dfrac_op (dq1 dq2 : DFrac) (n : MaxNat) :
   (●MN{dq1 • dq2} n : MonoNat) = (●MN{dq1} n) • (●MN{dq2} n) := by
   unfold auth
@@ -104,7 +108,8 @@ theorem both_dfrac_valid (dq : DFrac) (n m : MaxNat) :
   (✓ ((●MN{dq} n) • (◯MN m) : MonoNat)) ↔ ✓ dq ∧ m ≤ n := by
   unfold auth lb
   rw [assoc'.symm, ← Auth.frag_op, Auth.both_dfrac_valid_discrete, MaxNat.inc_iff]
-  exact ⟨fun ⟨hdq, hle, _⟩ => ⟨hdq, by grind⟩, fun ⟨hdq, hle⟩ => ⟨hdq, by grind, trivial⟩⟩
+  exact ⟨fun ⟨hdq, hle, _⟩ => ⟨hdq, by grind [MaxNat.toNat_op]⟩,
+    fun ⟨hdq, hle⟩ => ⟨hdq, by grind [MaxNat.toNat_op], trivial⟩⟩
 
 @[rocq_alias mono_nat_both_valid]
 theorem both_valid (n m : MaxNat) :
@@ -146,7 +151,7 @@ set_option synthInstance.checkSynthOrder false in
 @[rocq_alias mono_nat_auth_dfrac_is_op]
 instance {dq dq1 dq2 : DFrac} {n : MaxNat}
     [h : IsOp d dq dq1 dq2] :
-    IsOp d (●MN{dq} n) (●MN{dq1} n) (●MN{dq2} n) where
+    IsOp d (●MN{dq} n : MonoNat) (●MN{dq1} n) (●MN{dq2} n) where
   is_op := by rw [h.is_op]; exact auth_dfrac_op ..
 
 @[rocq_alias mono_nat_lb_max_is_op]
