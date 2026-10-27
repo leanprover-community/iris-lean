@@ -17,8 +17,11 @@ namespace IrisITree
 
 open Iris BI ITree Effects
 
--- TODO: Why can’t we make this universe-polymorphic? `Loc` and `Val` should have type `Type _`
--- The restriction seems to come from `GhostMapG`; More concretely, `constOF` is too conservative.
+/--
+  `Loc` and `Val` must live in `Type`: `GhostMapG` needs its map type to land in `Type`
+  (upstream `constOF (B : Type)`), and `heap_inv` needs `InvGS_gen hlc GF`, which fixes
+  `GF : BundledGFunctors.{0, 0, 0}`. Lifting this needs universe-polymorphic ghost state upstream.
+-/
 class heapHGpreS (GF : BundledGFunctors) (Loc Val : Type)
     [Ord Loc] [Std.TransOrd Loc] [Std.LawfulEqOrd Loc] where
   heapH_ghost_varG : GhostMapG GF Loc (Option Val) (Std.ExtTreeMap Loc · compare)
@@ -83,12 +86,15 @@ variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 variable {Loc Val : Type} [Ord Loc] [Std.TransOrd Loc] [Std.LawfulEqOrd Loc] [DecidableEq Loc]
 variable [Gpre : heapHGpreS GF Loc Val]
 
--- TODO: find way to eliminate the parameter M and use the syntax sugar instead of `bigSepM`
-theorem heapH_init (σ : heapE.T Loc Val) :
+/-- The heap's map type as a functor in the value type. Typing a heap as
+  `heapF Loc (Option Val)` lets `[∗map]` infer the map type (like upstream's `HeapF`). -/
+abbrev heapF (Loc : Type) [Ord Loc] : Type → Type := (Std.ExtTreeMap Loc · compare)
+
+theorem heapH_init (σ : heapF Loc (Option Val)) :
     ⊢ |={∅}=> ∃ G : heapHGS GF Loc Val,
       heap_inv (G := G) ∗
       stateInterp_heap σ ∗
-      bigSepM (M := (Std.ExtTreeMap Loc · compare)) (fun k v => k ↦? v) σ := by
+      [∗map] k ↦ v ∈ σ, k ↦? v := by
   icases (ghost_map_alloc (K := Loc) (V := Option Val) σ) with Hgmap
   imod Hgmap; icases Hgmap with ⟨%γ, ⟨⟨Hauth, Hauth'⟩, Hfrag⟩⟩
   imod (inv_alloc ((nroot.@"heapH").@"") ∅
@@ -203,13 +209,11 @@ theorem wpi_load! M (l : Loc) (v : Val) (dq : DFrac) (Φ : Val → IProp GF) :
 
 end fail
 
--- TODO: why we use `Int` here instead of `Nat`, given that locations are already monotonically ordered?
--- TODO: unify the notation for int, `i : Int` and `Int.ofNat i` are different
--- TODO: upstream?
+/-- `Int` is adopted here since we can enable program to compute `l +ₗ i` with negative `i`. -/
 class LawfulLoc (Loc : Type) [Ord Loc] extends Zero Loc, HAdd Loc Int Loc where
   decEq : DecidableEq Loc
   add_zero (l : Loc) : l + (0 : Int) = l
-  add_nat_inj (l : Loc) : Function.Injective (fun i => l + Int.ofNat i)
+  add_nat_inj (l : Loc) : Function.Injective (fun (i : Nat) => l + (i : Int))
   add_pos_nle (l : Loc) (m : Nat) :
     ¬(compare (l + (1 : Int) + (m : Int)) l).isLE = true
 
