@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-# Prepare build
-lake build batteries
-lake build Qq
+# Prepare build, shared to make sure that the libraries are precompiled
+lake build Batteries:shared
+lake build Qq:shared
 
 # Mirror the real Lean toolchain in the fake root, except for our `bin/lean` wrapper.
 # Lake derives the include dir, libraries, C compiler etc. from the sysroot
