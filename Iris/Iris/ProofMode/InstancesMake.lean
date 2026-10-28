@@ -13,6 +13,8 @@ public import Iris.ProofMode.ClassesMake
 namespace Iris.ProofMode
 open Iris.BI
 
+local bi PROP
+
 /- For classes that are not IPM classes (like QuickAffine and QuickAbsorbing), the BIAffine
   instances must have a higher priority than the instances that match on the proposition
   since if the proposition P is a meta variable, instances that try to match on it will generate an

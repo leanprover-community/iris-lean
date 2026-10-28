@@ -142,7 +142,7 @@ section Adequacy
 
 @[rocq_alias heap_lang.heap_adequacy]
 theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
-    (Hwp : ∀ [HeapLangGS .hasLC GF], ⊢@{IProp GF} invHeapInv -∗ (WP e {{ v, ⌜φ v⌝ }})) :
+    (Hwp : ∀ [HeapLangGS .hasLC GF], ⊢ invHeapInv -∗ (WP e {{ v, ⌜φ v⌝ }})) :
     adequate .NotStuck e σ (fun v _ => φ v) := by
   refine wp_adequacy (GF := GF) .NotStuck e σ φ ?_
   intro inst κs
@@ -165,6 +165,7 @@ section Lifting
 variable {GF : BundledGFunctors} {hlc : HasLC}
 variable [HeapLangGS hlc GF]
 variable {s : Stuckness} {E : CoPset} {Φ : Val → IProp GF}
+local bi (IProp GF)
 
 open EctxLanguage
 

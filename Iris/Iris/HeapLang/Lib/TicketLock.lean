@@ -69,6 +69,7 @@ attribute [reducible, instance] TicketLockG.elemG
 section proof
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [TicketLockG GF]
+local bi (IProp GF)
 
 def ticketLockN : Namespace := nroot .@ "ticket_lock"
 
@@ -127,7 +128,7 @@ private theorem own_ticket_exclusive {γ : GName} {x : Nat} :
     (valid_op_iff_disj.mp (Auth.frag_op_valid.mp h).2) (mem_singleton.mpr rfl)).elim
 
 @[rocq_alias heap_lang.ticket_lock.locked_exclusive]
-theorem locked_exclusive (γ : GName) : locked γ ∗ locked γ ⊢@{IProp GF} False := by
+theorem locked_exclusive (γ : GName) : locked γ ∗ locked γ ⊢ False := by
   unfold locked
   iintro ⟨H₁, H₂⟩
   iapply own_owner_exclusive $$ [$H₁ $H₂]
