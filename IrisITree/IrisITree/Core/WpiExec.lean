@@ -1,3 +1,9 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yunsong Yang, Michael Sammler
+-/
+
 module
 
 public import IrisITree.Core.Exec
@@ -18,12 +24,12 @@ def wpiConstF {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PRO
     (H : IHandler PROP E) (Φ : R → PROP)
     (wpi : ITree E R → PROP) :
     ITree E R → PROP :=
-  fun t => iprop(|={∅}=>
+  fun t => iprop% |={∅}=>
       match t.unfold with
       | ITreeF.ret r => Φ r
       | ITreeF.tau t' => wpi t'
       | ITreeF.vis i k => H.ihandle i (fun a => wpi (k a)) (fun a => wpi (k a))
-    )
+
 
 section wp_itree_const
 
@@ -83,7 +89,7 @@ def wpi_tp {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PROP]
     (Φ : R → PROP) : PROP :=
   lfp_tp (wpiConstF H Φ) Ms
 
-syntax:20 (name := wpiTpNotation) "WPi_tp " term:20 " @> " term:max wpPostcond : term
+syntax (name := wpiTpNotation) "WPi_tp " term:20 " @> " term:max wpPostcond : term
 
 @[macro wpiTpNotation]
 meta def wpiTpMacro : Lean.Macro := fun stx => do
@@ -137,19 +143,19 @@ theorem wpi_adequate_ind (Φ : R → PROP)
     (t : ITree E R) (s : σ) (Ms Mss : List (((ITree E R → PROP) → PROP)))
     (M : (ITree E R → PROP) → PROP) (C : ITree E R → σ → Prop)
     (Hexec : exec EH t s C) (HMs : Ms.Perm (M :: Mss)) :
-    (WPi_tp Ms @> H {{ Φ }}) -∗
+    WPi_tp Ms @> H {{ Φ }} -∗
     A.inv s Mss -∗
     (∀ P, M P ={∅}=∗ P t) -∗
     |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
-      bi_close Eq (fun t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
-      wpi_tp H (M' :: Ms') Φ := by
+      (∀ P, M' P ={∅}=∗ P t') ∗
+      WPi_tp (M' :: Ms') @> H {{ Φ }} := by
   letI := ne_of_discrete (fun Ms : DiscreteO (List ((ITree E R → PROP) → PROP)) =>
     iprop(∀ (t : ITree E R) (s : σ) (M : (ITree E R → PROP) → PROP)
       (Mss : List ((ITree E R → PROP) → PROP)) (C : ITree E R → σ → Prop),
       ⌜exec EH t s C⌝ -∗ ⌜Ms.car.Perm (M :: Mss)⌝ -∗
       A.inv s Mss -∗ (∀ P, M P ={∅}=∗ P t) -∗
       |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
-        bi_close Eq (fun t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
+        (∀ P, M' P ={∅}=∗ P t') ∗
         lfp_tp (wpiConstF H Φ) (M' :: Ms')))
   unfold wpi_tp; iintro Htp; irevert %t %s %M %Mss %C %Hexec %HMs
   -- [TODO]: find some way to shorten this iapply?
@@ -159,16 +165,14 @@ theorem wpi_adequate_ind (Φ : R → PROP)
       ⌜exec EH t s C⌝ -∗ ⌜Ms.car.Perm (M :: Mss)⌝ -∗
       A.inv s Mss -∗ (∀ P, M P ={∅}=∗ P t) -∗
       |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
-        bi_close Eq (fun t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
+        (∀ P, M' P ={∅}=∗ P t') ∗
         lfp_tp (wpiConstF H Φ) (M' :: Ms')))) $$ [] %⟨Ms⟩ Htp
   iintro !> %Ms IH %t %s %M %Mss %C %Hexec %HMs Hinv Ht
   rw [← exec.fold] at Hexec; clear this
   cases Hexec with
   | stop _ _ _ HC =>
     imodintro; iexists t, s, Mss, M
-    isplitr; itrivial; iframe Hinv
-    simp only [bi_close]; isplitl [Ht]
-    · iexists t; iframe; itrivial
+    isplitr; itrivial; iframe Hinv Ht
     iapply lfp_tp_unfold; iapply lfp_tpF_perm _ Ms.car _ _ _ HMs $$ [$]
     iintro %Ns1 %Ns2 %Hperm ⟨-, Htp⟩
     iapply lfp_tp_perm _ _ _ Hperm $$ [$]
@@ -206,8 +210,8 @@ theorem wpi_adequate (Φ : R → PROP)
     ⊢ WPi t @> H;m {{ Φ }} -∗
       A.inv s [] -∗
       |={m, ∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
-      bi_close Eq (fun t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
-      wpi_tp H (M' :: Ms') (fun v => iprop(|={∅,m}=> Φ v)) := by
+      (∀ P, M' P ={∅}=∗ P t') ∗
+      WPi_tp M' :: Ms' @> H {{ v, |={∅,m}=> Φ v}} := by
   iintro >Hwpi Hinv
   ihave Hwpi := wpi_fupd_empty $$ Hwpi
   iapply wpi_adequate_ind _ _ _ t s [fun P => P t] []
@@ -227,12 +231,12 @@ theorem wpi_adequate_pure (hlc : HasLC) (n : Nat) (m : CoPset)
     (EH : EHandler E E R σ) (t : ITree E R) (s : σ)
     (C : ITree E R → σ → Prop) (Ψ : Prop) :
     exec EH t s C →
-    (∀ (_ : InvGS_gen hlc GF), ⊢ £ n -∗ |={⊤,m}=>
+    (∀ (_ : InvGS_gen hlc GF), £ n ={⊤,m}=∗
       ∃ (H : IHandler (IProp GF) E) (A : EHandlerAdequate H EH) (Φ : R → IProp GF),
         WPi t @> H;m {{ Φ }} ∗ A.inv s [] ∗
         (∀ t' s' Ms' M', ⌜C t' s'⌝ -∗ A.inv s' Ms' -∗
-          bi_close Eq (fun t'' => iprop(∀ P, M' P ={∅}=∗ P t'')) t' ∗
-            (WPi_tp (M' :: Ms') @> H {{ v, iprop(|={∅,m}=> Φ v) }})={∅}=∗ ⌜Ψ⌝)) →
+          (∀ P, M' P ={∅}=∗ P t') ∗
+            (WPi_tp M' :: Ms' @> H {{ v, |={∅,m}=> Φ v }})={∅}=∗ ⌜Ψ⌝)) →
     Ψ := by
   intro Hexec Hwp
   apply pure_soundness (PROP := IProp GF)

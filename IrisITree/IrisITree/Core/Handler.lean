@@ -1,3 +1,9 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yunsong Yang, Michael Sammler
+-/
+
 module
 
 public import Iris.BI
@@ -19,11 +25,10 @@ open Iris BI ITree
 structure IHandler (PROP : Type u) [BI PROP] (E : Effect.{v}) where
   ihandle :
     (i : E.I) →
-    -- Continuation conditions `λ a, ▷ WPi k a @ H; ∅ {{ Φ }}`
+    -- Main continuation with the postcondition, must be used at most once
     (E.O i → PROP) →
-    -- Conditions for spawning threads `λ a, ▷ WPi k a @ H; ⊤ {{ False }}`
+    -- Continuation for without postcondition, can be used multiple times (e.g., for spawning threads)
     (E.O i → PROP) →
-    -- Condition `WPi (Vis i k) @ H; ∅ {{ Φ }}`
     PROP
 
   ihandle_mono : ∀ (i : E.I) (Φ Φ' s s' : E.O i → PROP),
@@ -33,6 +38,7 @@ structure IHandler (PROP : Type u) [BI PROP] (E : Effect.{v}) where
 
 instance {PROP E} [BI PROP] (H : IHandler PROP E) (i : E.I) :
     OFE.NonExpansive₂ (H.ihandle i) := by
+  -- TODO automate this
   constructor
   intro n Φ₁ Φ₂ HΦ s₁ s₂ Hs
   have Hmon : ∀ Φ s, H.ihandle i Φ s = iprop(∃ Φ' s', (∀ a, Φ' a -∗ Φ a) ∗ □ (∀ a, s' a -∗ s a) ∗ H.ihandle i Φ' s') := by
@@ -140,7 +146,7 @@ section handler_Sequential
 /-- `Sequential` handlers ignore the spawning continuation and do not model concurrency. -/
 class Sequential {PROP} [BI PROP] {E : Effect} (H : IHandler PROP E) where
   is_seq : ∀ (i : E.I) (Φ s : E.O i → PROP),
-    H.ihandle i Φ s -∗ H.ihandle i Φ (fun _ => iprop(⌜False⌝))
+    H.ihandle i Φ s -∗ H.ihandle i Φ (fun _ => iprop% False)
 
 instance {PROP E₁ E₂} [BI PROP]
     (H1 : IHandler PROP E₁) (H2 : IHandler PROP E₂)
@@ -181,7 +187,7 @@ class SEHandlerAdequate {E : Effect.{_}} {σ : Type _}
   adequate :
     ∀ (i : E.I) (s : σ) (C : E.O i → σ → Prop) (Φ1 Φ2 : E.O i → PROP),
       EH.handle i s C →
-      H.ihandle i Φ1 Φ2 ⊢
+      H.ihandle i Φ1 Φ2 -∗
       inv s -∗
       |={∅}=> ∃ a s', <affine> ⌜C a s'⌝ ∗ inv s' ∗ Φ1 a
 

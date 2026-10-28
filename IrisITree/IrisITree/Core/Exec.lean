@@ -1,3 +1,9 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yunsong Yang, Michael Sammler
+-/
+
 module
 
 public import Iris.BI.BigOp.BigSepList
@@ -49,7 +55,7 @@ end bi_close
 
 /-- linear monotone closure of a predicate transformer. -/
 def bi_mono0 {PROP : Type _} [BI PROP] {α : Type _} (P : (α → PROP) → PROP) : (α → PROP) → PROP :=
-  fun Q => iprop(∃ Q' : α → PROP, P Q' ∗ ∀ x, Q' x -∗ Q x)
+  fun Q => iprop% ∃ Q' : α → PROP, P Q' ∗ ∀ x, Q' x -∗ Q x
 
 section bi_mono0
 
@@ -108,12 +114,12 @@ def lfp_tpF {PROP : Type _} [BI PROP] {α : Type _}
     (F : (α → PROP) → (α → PROP))
     (rec_tp : DiscreteO (List ((α → PROP) → PROP)) → PROP) :
     DiscreteO (List ((α → PROP) → PROP)) → PROP :=
-  fun Ms => iprop(
+  fun Ms => iprop%
     ∀ (i : Nat) (M : (α → PROP) → PROP), ⌜Ms.car[i]? = some M⌝ -∗
-      bi_mono0 M fun x => iprop(
+      bi_mono0 M fun x => iprop%
         ∃ G, F G x ∗ ∀ Ms', ([∗list] M' ∈ Ms', M' G) -∗ rec_tp ⟨Ms' ++ Ms.car.eraseIdx i⟩
-      )
-  )
+
+
 
 section lfp_tpF
 
@@ -147,16 +153,16 @@ private theorem perm_pick_erase {β : Type _} {Ms1 Ms2 : List β} {i : Nat} {M :
   induction hperm generalizing i M with
   | nil => simp at Hi
   | cons x hperm ih => cases i with
-    | zero => simp at Hi; subst M; refine ⟨0, ?_, ?_⟩; simp; simpa
+    | zero => simp at Hi; subst M; refine ⟨0, ?_, ?_⟩ <;> simp [*]
     | succ i =>
       simp at Hi; rcases ih Hi with ⟨j, Hj, Hperm⟩
       refine ⟨j + 1, ?_, ?_⟩
       · simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using Hj
       · simpa [List.eraseIdx_cons_succ] using List.Perm.cons x Hperm
   | swap x y l => cases i with
-    | zero => simp at Hi; subst M; refine ⟨1, ?_, ?_⟩; simp; simp
+    | zero => simp at Hi; subst M; refine ⟨1, ?_, ?_⟩ <;> simp
     | succ i => cases i with
-      | zero => simp at Hi; subst M; refine ⟨0, ?_, ?_⟩; simp; simp
+      | zero => simp at Hi; subst M; refine ⟨0, ?_, ?_⟩ <;> simp
       | succ i =>
         simp at Hi; refine ⟨i + 2, ?_, ?_⟩
         · simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using Hi
@@ -231,8 +237,8 @@ theorem lfp_tp_nil : ⊢ (lfp_tp F [] : PROP) := by
 
 theorem lfp_tp_ind (Φ : DiscreteO (List ((α → PROP) → PROP)) → PROP)
     [NonExpansive Φ] :
-    ⊢ □ (∀ y, lfp_tpF F (fun x => iprop(Φ x ∧ lfp_tp F x.car)) y -∗ Φ y) -∗
-      (∀ Ms, lfp_tp F Ms.car -∗ Φ Ms) := by
+    □ (∀ y, lfp_tpF F (fun x => iprop(Φ x ∧ lfp_tp F x.car)) y -∗ Φ y) -∗
+    (∀ Ms, lfp_tp F Ms.car -∗ Φ Ms) := by
   iintro #Hwand %Ms Hlfp
   iapply least_fixpoint_ind (lfp_tpF (PROP := PROP) F)
   · iintro !> %y Hlfp; iapply Hwand;
@@ -242,7 +248,7 @@ theorem lfp_tp_ind (Φ : DiscreteO (List ((α → PROP) → PROP)) → PROP)
   · simp [lfp_tp]; iexact Hlfp
 
 theorem lfp_tp_perm (Ms1 Ms2 : List ((α → PROP) → PROP)) (h : Ms1.Perm Ms2) :
-    ⊢ lfp_tp F Ms1 -∗ lfp_tp F Ms2 := by
+    lfp_tp F Ms1 -∗ lfp_tp F Ms2 := by
   letI := ne_of_discrete fun (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
     iprop(∀ Ms2, ⌜Ms.car.Perm Ms2⌝ -∗ lfp_tp F Ms2)
   iintro Htp; irevert %Ms2 %h
@@ -253,7 +259,7 @@ theorem lfp_tp_perm (Ms1 Ms2 : List ((α → PROP) → PROP)) (h : Ms1.Perm Ms2)
   iapply H; ipureintro; exact Hperm
 
 theorem lfp_tp_app (Ms1 Ms2 : List ((α → PROP) → PROP)) :
-    ⊢ lfp_tp F Ms1 -∗ lfp_tp F Ms2 -∗ lfp_tp F (Ms1 ++ Ms2) := by
+    lfp_tp F Ms1 -∗ lfp_tp F Ms2 -∗ lfp_tp F (Ms1 ++ Ms2) := by
   letI := ne_of_discrete fun (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
     iprop(∀ Ms2, lfp_tp F Ms2 -∗ lfp_tp F (Ms.car ++ Ms2))
   letI := ne_of_discrete fun (Ms : DiscreteO (List ((α → PROP) → PROP))) =>
@@ -302,7 +308,7 @@ theorem lfp_tp_cons (M : (α → PROP) → PROP) (Ms : List ((α → PROP) → P
   simpa using (lfp_tp_app F [M] Ms)
 
 theorem lfp_tp_singleton_mod_elim (M : (α → PROP) → PROP) :
-    ⊢ M (fun x => lfp_tp F [fun P => P x]) -∗ lfp_tp F [M] := by
+    M (fun x => lfp_tp F [fun P => P x]) -∗ lfp_tp F [M] := by
   iintro Hx; iapply lfp_tp_unfold; simp only [lfp_tpF]
   iintro %i %M' %Hi; cases i with
   | zero =>
@@ -319,7 +325,7 @@ theorem lfp_tp_singleton_mod_elim (M : (α → PROP) → PROP) :
 variable {α : Type _} [OFE α] [OFE.Discrete α]
 
 theorem lfp_tp_intro (G : (α → PROP) → (α → PROP)) (x : α) :
-    ⊢ bi_least_fixpoint G x -∗ lfp_tp G [fun P => P x] := by
+    bi_least_fixpoint G x -∗ lfp_tp G [fun P => P x] := by
   letI := ne_of_discrete fun (x : α) => lfp_tp G [fun P => P x]
   have Hlist : ∀ Ms, ([∗list] M ∈ Ms, M (fun x => lfp_tp G [fun P => P x])) -∗ lfp_tp G Ms := by
     intro Ms; iinduction Ms with

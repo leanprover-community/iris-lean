@@ -1,3 +1,9 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yunsong Yang, Michael Sammler
+-/
+
 module
 
 import Iris.ProofMode
@@ -38,7 +44,6 @@ variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {S : Type _}
   {E : Effect} {H : IHandler PROP E}
   [stateE S -< E] [Hin : InH (stateH stateInterp) H]
 
-/-- Allow a mask-changing fancy update from `Ms` to `Me` while handling `get`. -/
 theorem wpi_stateE_get Ms Me (Φ : S → PROP) :
     (∀ s, stateInterp s ={Ms, Me}=∗ stateInterp s ∗ Φ s) -∗
     WPi StateE.get @> H; Ms, Me {{Φ}} := by
@@ -53,7 +58,6 @@ theorem wpi_get Ms Me (Φ : S → PROP) :
     (∀ s, stateInterp s ={Ms, Me}=∗ stateInterp s ∗ Φ s) -∗
     WPi get @> H; Ms, Me {{Φ}} := wpi_stateE_get _ _ _ _
 
-/-- Allow a mask-changing fancy update from `Ms` to `Me` while handling `get`. -/
 theorem wpi_stateE_set Ms Me s' (Φ : PUnit → PROP) :
     (∀ s, stateInterp s ={Ms, Me}=∗ stateInterp s' ∗ Φ ⟨⟩) -∗
     WPi StateE.set s' @> H; Ms, Me {{Φ}} := by

@@ -1,3 +1,9 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yunsong Yang, Michael Sammler
+-/
+
 module
 
 import Iris.ProofMode
@@ -31,7 +37,7 @@ variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {E : Effect}
   {H : IHandler PROP E} [sub : failE -< E] [Hin : InH failH H]
 
 theorem wpi_fail {R} (M : CoPset) (Φ : R → PROP) (s : String) :
-    (WPi fail s @> H; M {{ Φ }}) ⊢ |={M}=> iprop(False) := by
+    WPi fail s @> H; M {{ Φ }} ={M}=∗ False := by
   iintro Hwp; simp [fail, Effect.trigger]
   let e := @Subeffect.map failE E sub ({ down := s } : failE.I)
   ihave >Hwp := wpi_vis $$ Hwp

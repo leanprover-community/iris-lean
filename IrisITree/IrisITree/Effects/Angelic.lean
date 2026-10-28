@@ -1,3 +1,9 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yunsong Yang, Michael Sammler
+-/
+
 module
 
 import Iris.ProofMode
@@ -22,7 +28,7 @@ def angelicH (α : Type _) : IHandler PROP (angelicE α) where
     iexists a; iapply HΦwand $$ HΦ
 
 instance angelicH_sequential {α : Type _} :
-    Sequential (PROP := PROP) (angelicH (PROP := PROP) α) := by
+    Sequential (angelicH (PROP := PROP) α) := by
   constructor
   unfold angelicH
   iintro %p %Φ %s H
@@ -39,7 +45,7 @@ variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {E : Effect}
   [sub : angelicE α -< E] [Hin : InH (angelicH (PROP := PROP) α) H]
 
 theorem wpi_angelic (M : CoPset) (p : α → Prop) (a : {x // p x}) (Ψ : {x // p x} → PROP) :
-    Ψ a ⊢ (WPi (choose_angelic p) @> H; M {{ Ψ }}) := by
+    Ψ a ⊢ WPi (choose_angelic p) @> H; M {{ Ψ }} := by
   iintro HΨ; unfold choose_angelic
   iapply wpi_trigger
   iapply fupd_mask_intro

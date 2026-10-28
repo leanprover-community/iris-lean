@@ -1,3 +1,9 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yunsong Yang, Michael Sammler
+-/
+
 module
 
 public import Iris.BI.Lib.Fixpoint
@@ -13,6 +19,7 @@ variable {PROP : Type _} [BI PROP] [BIFUpdate PROP]
 instance {E R} : COFE (ITree E R) := COFE.ofDiscrete _
 instance {E R} : OFE.Discrete (ITree E R) := ⟨fun h => h⟩
 
+-- TODO: upstream? Make this an instance?
 /-- Every function out of a discrete OFE is non-expansive (like `ITree E R`). -/
 theorem ne_of_discrete [OFE α] [OFE.Discrete α] [OFE β] (f : α → β) :
     OFE.NonExpansive f :=
@@ -25,14 +32,14 @@ variable {E} (H : IHandler PROP E)
 @[expose]
 def wpiF {R} (wpi : CoPset → ITree E R → (R → PROP) → PROP) :
     CoPset → CoPset → ITree E R → (R → PROP) → PROP :=
-  fun Ms Me t Φ => iprop(
+  fun Ms Me t Φ => iprop%
     |={Ms, ∅}=> match t.unfold with
-      | ITreeF.ret r => iprop(|={∅, Me}=> Φ r)
+      | ITreeF.ret r => |={∅, Me}=> Φ r
       | ITreeF.tau t' => wpi ∅ t' Φ
       | ITreeF.vis i k => H.ihandle i
         (fun a => wpi ∅ (k a) Φ)
         (fun a => wpi ∅ (k a) (fun _ => iprop(False)))
-    )
+
 
 private def wpiF' {R} (Me : CoPset) (wpi : DiscreteO CoPset × ITree E R × (R → PROP) → PROP) :
     DiscreteO CoPset × ITree E R × (R → PROP) → PROP :=
@@ -190,14 +197,14 @@ theorem wpi_vis {R} (Φ : R → PROP) (i : E.I) (k : E.O i → ITree E R) :
     (WPi (ITree.vis i k) @> H;Ms,Me {{ Φ }}) ⊣⊢
     (|={Ms, ∅}=> H.ihandle i
       (fun a => WPi (k a) @> H; ∅,Me {{ Φ }})
-      (fun a => WPi (k a) @> H; ∅,Me {{ fun _ => iprop(False) }})) :=
+      (fun a => WPi (k a) @> H; ∅,Me {{ _x, False }})) :=
   wpi_unfold _ _
 
 theorem wpi_trigger_bind {E' A} [E' -< E] (H' : IHandler PROP E') [InH H' H]
     (i : E'.I) (k : E'.O i → ITree E A) (Φ : A → PROP) :
     (|={Ms, ∅}=> H'.ihandle i
       (fun a => WPi (k a) @> H; ∅,Me {{ Φ }})
-      (fun a => WPi (k a) @> H; ∅,Me {{ fun _ => iprop(False) }})) -∗
+      (fun a => WPi (k a) @> H; ∅,Me {{ _x, False }})) -∗
     WPi E'.trigger i >>= k @> H; Ms, Me {{ Φ }} := by
   iintro >HH; simp [Effect.trigger]
   iapply wpi_vis; imodintro
@@ -211,7 +218,7 @@ theorem wpi_trigger {E'} [E' -< E] (H' : IHandler PROP E') [InH H' H]
     (|={Ms, ∅}=> H'.ihandle i
       (fun a => iprop(|={∅, Me}=> Φ a))
       (fun _ => iprop(False))) -∗
-    WPi (E'.trigger i) @> H; Ms,Me {{ Φ }} := by
+    WPi E'.trigger i @> H; Ms,Me {{ Φ }} := by
   iintro HH; unfold Effect.trigger
   iapply wpi_vis; imod HH; imodintro
   iapply H.ihandle_mono
@@ -290,7 +297,7 @@ end wpi_induction
 
 section wpi_lemmas
 
-variable {E R} {Ms Me : CoPset} {H : IHandler PROP E}
+variable {E R} {Ms Me : CoPset} {H : IHandler PROP E} {t : ITree E R}
 
 theorem wpi_wand (Φ Ψ : R → PROP) :
     WPi t @> H;Ms,Me {{ Φ }} -∗
@@ -314,7 +321,7 @@ theorem wpi_wand (Φ Ψ : R → PROP) :
     · iintro !> %_ HG; iapply HG; iintro %_ ⟨⟩
 
 theorem wpi_fupd_empty_2 (Φ : R → PROP) :
-    WPi t @> H; Ms, ∅ {{ v, iprop(|={∅, Me}=> Φ v) }} ⊢
+    WPi t @> H; Ms, ∅ {{ v, |={∅, Me}=> Φ v }} ⊢
     WPi t @> H; Ms, Me {{ Φ }}
      := by
   let G := fun t (Ψ : R → PROP) =>
@@ -339,8 +346,8 @@ theorem wpi_fupd_empty_2 (Φ : R → PROP) :
 
 theorem wpi_fupd_empty_1 (Φ : R → PROP) :
     WPi t @> H; Ms, Me {{ Φ }} ⊢
-    WPi t @> H; Ms, ∅ {{ v, iprop(|={∅, Me}=> Φ v) }} := by
-  let G := fun t (Ψ : R → PROP) => WPi t @> H; ∅,∅ {{ v, iprop(|={∅, Me}=> Ψ v) }}
+    WPi t @> H; Ms, ∅ {{ v, |={∅, Me}=> Φ v }} := by
+  let G := fun t (Ψ : R → PROP) => WPi t @> H; ∅,∅ {{ v, |={∅, Me}=> Ψ v }}
   have : ∀ t, OFE.NonExpansive (G t) := fun t => ⟨
     fun _ _ _ HΨ => OFE.NonExpansive.ne (f := wpi H ∅ ∅ t)
     fun v => BIFUpdate.ne.ne (HΨ v)⟩
@@ -361,12 +368,12 @@ theorem wpi_fupd_empty_1 (Φ : R → PROP) :
 
 theorem wpi_fupd_empty (Φ : R → PROP) :
     WPi t @> H; Ms, Me {{ Φ }} ⊣⊢
-    WPi t @> H; Ms, ∅ {{ v, iprop(|={∅, Me}=> Φ v) }}
+    WPi t @> H; Ms, ∅ {{ v, |={∅, Me}=> Φ v }}
      := ⟨wpi_fupd_empty_1 _, wpi_fupd_empty_2 _⟩
 
 theorem wpi_fupd (Φ : R → PROP) :
     (WPi t @> H; Ms, Me {{ Φ }}) ⊣⊢
-    (WPi t @> H; Ms, Me {{ v, iprop(|={Me}=> Φ v) }}) := by
+    (WPi t @> H; Ms, Me {{ v, |={Me}=> Φ v }}) := by
   isplit <;> iintro Hwp
   · iapply wpi_wand $$ Hwp; iintro %_ $ //
   · iapply wpi_fupd_empty
@@ -384,7 +391,6 @@ theorem wpi_bind' {A} M' t (k : A → ITree E R) (Φ : R → PROP) :
     fun n Φ1 Φ2 HΦ => forall_ne fun Ψ => wand_ne.ne
     (forall_ne fun r => wand_ne.ne (HΦ r) .rfl) .rfl⟩
   iintro >Hwp; iapply wpi_iter' G $$ [] [] [] Hwp
-  rotate_right 1; focus iintro %_ $
   · iintro !> %Φ %r >Hwpi %Ψ Hwand; simp
     iapply Hwand $$ [$]
   · iintro !> %Φ %t >Hwpi %Ψ Hwand; simp
@@ -394,6 +400,7 @@ theorem wpi_bind' {A} M' t (k : A → ITree E R) (Φ : R → PROP) :
     iapply H.ihandle_mono $$ [Hwand] [] Hwpi
     · iintro %_ HG; iapply HG $$ Hwand
     · iintro !> %_ HG; iapply HG; iintro %_ ⟨⟩
+  · iintro %_ $
 
 /-- Specialized version where M' = Ms. This is especially useful for the Ms = Me case. -/
 theorem wpi_bind {A} t (k : A → ITree E R) (Φ : R → PROP) :
@@ -407,7 +414,6 @@ section wp_itree_invariant
 variable {E R} {Ms Me : CoPset} {H : IHandler PROP E}
 
 /-- Re-mask a `WPi`: change the start mask from `Ms` to `Ms'` up front, and the end mask from `Me'` back to `Me` in the postcondition. -/
-@[rocq_alias wpi_reduce_mask]
 theorem fupd_wpi_fupd Ms' Me' t (Φ : R → PROP) :
     (|={Ms, Ms'}=> WPi t @> H; Ms', Me' {{ v, |={Me', Me}=> Φ v}}) -∗
     WPi t @> H; Ms, Me {{ Φ }} := by
@@ -417,7 +423,6 @@ theorem fupd_wpi_fupd Ms' Me' t (Φ : R → PROP) :
   iapply wpi_wand $$ Hwp
   iintro %_ > $
 
-@[rocq_alias wpi_clear_mask]
 theorem wpi_atomic t (Φ : R → PROP) :
     (|={Ms, ∅}=> WPi t @> H; ∅ {{ v, |={∅, Me}=> Φ v}}) ⊣⊢
     WPi t @> H; Ms, Me {{ Φ }} := by
@@ -426,10 +431,9 @@ theorem wpi_atomic t (Φ : R → PROP) :
   · iintro Hwp; imod Hwp; imodintro
     iapply wpi_fupd_empty $$ Hwp
 
-@[rocq_alias wpi_clear_mask_false]
 theorem wpi_atomic_false (t : ITree E R) :
-    (|={Ms, ∅}=> WPi t @> H; ∅ {{ _v, iprop(False)}}) -∗
-    WPi t @> H; Ms, Me {{ _v, iprop(False)}} := by
+    (|={Ms, ∅}=> WPi t @> H; ∅ {{ _v, False}}) -∗
+    WPi t @> H; Ms, Me {{ _v, False}} := by
   iintro Hwp; iapply wpi_atomic
   imod Hwp; imodintro; iapply wpi_wand $$ Hwp
   iintro %_ ⟨⟩
@@ -453,9 +457,6 @@ theorem wpi_mask_mono_end {Me'} [BIAffine PROP] t (Φ : R → PROP) :
   iintro %_ HΦ
   imod (fupd_mask_subseteq Hsub) with -
   imodintro; iframe
-
-#rocq_ignore wpi_open_invariant "Use `iinv` (via `elimAcc_wpi`), or `wpi_acc` with `inv_acc`."
-#rocq_ignore wpi_open_invariant_timeless "Use `iinv … with >HP` (via `isExcept0_wpi`)."
 
 theorem wpi_acc {X} M (α β : X → PROP) (γ : X → Option PROP)
     t (Φ : R → PROP) :
@@ -511,11 +512,11 @@ theorem wpi_translation {R} (t : ITree E1 R) (Φ : R → PROP) :
     WPi t @> H1; Ms, Me {{ Φ }} -∗
     □ (∀ i (k : E1.O i → ITree E1 R) Ψ,
       H1.ihandle i
-        (fun a => WPi (ITree.interp f (k a)) @> H2; ∅,Me {{ Ψ }})
-        (fun a => WPi (ITree.interp f (k a)) @> H2; ∅,Me {{ fun _ => iprop(False) }}) -∗
+        (fun a => WPi ITree.interp f (k a) @> H2; ∅,Me {{ Ψ }})
+        (fun a => WPi ITree.interp f (k a) @> H2; ∅,Me {{ _v, False }}) -∗
       WPi (f i >>= fun a => ITree.interp f (k a)) @> H2; ∅,Me {{ Ψ }}) -∗
-    WPi (ITree.interp f t) @> H2; Ms, Me {{ Φ }} := by
-  let G : ITree E1 R → (R → PROP) → PROP := fun t Φ => WPi (ITree.interp f t) @> H2; ∅,Me {{Φ}}
+    WPi ITree.interp f t @> H2; Ms, Me {{ Φ }} := by
+  let G : ITree E1 R → (R → PROP) → PROP := fun t Φ => WPi ITree.interp f t @> H2; ∅,Me {{Φ}}
   iintro >Hwp #HH; iapply (wpi_iter' G) $$ [] [] [] Hwp
   · iintro !> %Φ %r >Hret; simp only [interp_pure]
     iapply wpi_pure $$ [$]
@@ -527,8 +528,8 @@ theorem wpi_translation {R} (t : ITree E1 R) (Φ : R → PROP) :
 /-- A sequential special case of `wpi_translation` with a simpler handler-side premise. -/
 theorem wpi_translation_seq {R} (t : ITree E1 R) (Φ : R → PROP) :
     WPi t @> H1; Ms,Me {{ Φ }} -∗
-    □ (∀ i Ψ, H1.ihandle i Ψ (fun _ => iprop(True)) -∗ WPi (f i) @> H2; ∅ {{ Ψ }}) -∗
-    WPi (ITree.interp f t) @> H2; Ms,Me {{ Φ }} := by
+    □ (∀ i Ψ, H1.ihandle i Ψ (fun _ => iprop(True)) -∗ WPi f i @> H2; ∅ {{ Ψ }}) -∗
+    WPi ITree.interp f t @> H2; Ms,Me {{ Φ }} := by
   iintro Hwp #Hwand; iapply wpi_translation $$ [$]
   iintro !> %i %k %Ψ Hh; iapply wpi_bind; iapply Hwand
   iapply H1.ihandle_mono $$ [] [] Hh
@@ -567,7 +568,7 @@ variable {E1 E2 : Effect} {Ms Me : CoPset}
 
 theorem wpi_inH {R} (t : ITree E1 R) (Φ : R → PROP) :
     (WPi t @> H1; Ms, Me {{ Φ }}) ⊣⊢
-    (WPi (t.interp (fun i => E1.trigger i)) @> H2; Ms, Me {{ Φ }}) := by
+    (WPi t.interp (fun i => E1.trigger i) @> H2; Ms, Me {{ Φ }}) := by
   isplit
   · iintro Hwp; iapply wpi_translation $$ Hwp
     iintro !> %i %k %Ψ Hh

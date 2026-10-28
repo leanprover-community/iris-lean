@@ -1,3 +1,9 @@
+/-
+Copyright (c) The Iris-Lean Contributors
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yunsong Yang, Michael Sammler
+-/
+
 module
 
 import Iris.ProofMode
@@ -45,7 +51,7 @@ theorem wpi_kill M (Φ : PUnit → PROP) :
   simp [concH]
   iapply fupd_mask_intro_subseteq (by simp) $$ [$]
 
-theorem wpi_fork M (Φ : PUnit → PROP) :
+theorem wpi_fork t M (Φ : PUnit → PROP) :
     Φ ⟨⟩ -∗
     WPi t @> H; ⊤ {{ _v, iprop(True) }} -∗
     WPi fork t @> H; M {{Φ}} := by
