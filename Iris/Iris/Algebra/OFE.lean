@@ -6,7 +6,6 @@ Authors: Mario Carneiro, Sebastian Graf, Sergei Stepanenko, Markus de Medeiros
 module
 
 public import Iris.Std.Nat
-meta import Iris.Std.StepIndex
 public import Iris.Algebra.StepIndex
 public import Iris.Std.Option
 

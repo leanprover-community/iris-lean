@@ -13,6 +13,8 @@ public import Iris.Instances.UPred
 public import Iris.ProofMode
 
 @[expose] public section
+
+local stepindex Nat
 namespace Iris
 
 open COFE Iris.Std ORA
@@ -160,7 +162,7 @@ theorem ElemG.bundle_unit {GF} (E : ElemG GF F) {ε : F.ap (IProp GF)} [IsUnit �
      _ = Option.map E.bundle (some ε) := by
         have h_pcore := ‹IsUnit ε›.pcore_unit
         rcases eqn : pcore ε with (_ | c)
-        · exact absurd (eqn ▸ h_pcore) OFE.not_none_eqv_some
+        · exact nomatch eqn.symm.trans h_pcore
         · simp only [Option.map]
           exact congrArg (fun z => some (E.bundle z)) (Option.some.inj (eqn ▸ h_pcore))
      _ = E.bundle ε := by rfl
@@ -186,7 +188,7 @@ def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
 
 @[rocq_alias inG_unfold_fold]
 theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) = x := by
-  refine OFE.eq_dist_2 fun n => ?_
+  refine OFE.eq_of_dist fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.F) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.F) x).dist
   apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold] <;>
@@ -194,7 +196,7 @@ theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) = x :=
 
 @[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x := by
-  refine OFE.eq_dist_2 fun n => ?_
+  refine OFE.eq_of_dist fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.F) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.F) x).dist
   apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold] <;>
@@ -296,7 +298,7 @@ instance : OFE.NonExpansive (iSingleton F γ (GF := GF)) where
 
 @[rocq_alias iRes_singleton_op]
 theorem iSingleton_op (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSingleton F γ y = iSingleton F γ (x • y) := by
-  refine OFE.eq_dist_2 fun n => ?_
+  refine OFE.eq_of_dist fun n => ?_
   intro τ' γ'
   simp only [iSingleton]
   split
@@ -349,7 +351,7 @@ theorem unfoldi_bundle_coreId {a : F.ap (IProp GF)} [CoreId a] :
 
 @[rocq_alias iRes_singleton_core_id]
 instance {a : F.ap (IProp GF)} [CoreId a] : CoreId (iSingleton F γ a) where
-  core_id := OFE.eq_dist_2 fun n τ' γ' => by
+  core_id := OFE.eq_of_dist fun n τ' γ' => by
     change core ((iSingleton F γ a τ').car γ') ≡{n}≡ (iSingleton F γ a τ').car γ'
     simp only [iSingleton]
     split
@@ -486,7 +488,7 @@ theorem iSingleton_op_validN_at_γ {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
 instance iSingleton_discreteE {v : F.ap (IProp GF)} [inst : OFE.DiscreteE v] :
     OFE.DiscreteE (iSingleton F γ v) where
   discrete {w} H := by
-    refine OFE.eq_dist_2 fun n τ => ?_
+    refine OFE.eq_of_dist fun n τ => ?_
     simp only [iSingleton] at ⊢
     split
     next h =>

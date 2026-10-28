@@ -11,6 +11,8 @@ public import Iris.Algebra.Numbers
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!
 # Authoritative ORA over `MaxInt`
 -/

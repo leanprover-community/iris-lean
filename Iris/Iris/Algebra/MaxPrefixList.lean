@@ -20,6 +20,8 @@ the List type itself. However, there is an embedding of Lists in to this data st
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open OFE ORA Iris.Std
@@ -110,7 +112,7 @@ theorem toMaxPrefixList_dist_inj {n} {l1 l2 : List α}
 @[rocq_alias to_max_prefix_list_inj]
 theorem toMaxPrefixList_inj {l1 l2 : List α}
     (h : toMaxPrefixList l1 = toMaxPrefixList l2) : l1 = l2 :=
-  eq_dist_2 fun _ => toMaxPrefixList_dist_inj (Dist.of_eq h)
+  eq_of_dist fun _ => toMaxPrefixList_dist_inj (Dist.of_eq h)
 
 /-! ## ORA Properties -/
 
@@ -149,7 +151,7 @@ theorem toMaxPrefixList_op_right {l1 l2 : List α} (h : l1 <+: l2) :
 @[rocq_alias max_prefix_list_included_includedN]
 theorem inc_iff_forall_incN {ml1 ml2 : MaxPrefixList α} :
     ml1 ≼ ml2 ↔ ∀ n, ml1 ≼{n} ml2 := by
-  refine ⟨fun h n => incN_of_inc n h, fun h => ⟨ml2, eq_dist_2 fun n => ?_⟩⟩
+  refine ⟨fun h n => incN_of_inc n h, fun h => ⟨ml2, eq_of_dist fun n => ?_⟩⟩
   obtain ⟨l, hl⟩ := h n
   calc ml2 ≡{n}≡ ml1 • l := hl
     _ ≡{n}≡ (ml1 • ml1) • l := (congrArg (· • l) (op_self ml1)).symm.dist
@@ -191,7 +193,7 @@ theorem toMaxPrefixList_ordN_iff {n} {l1 l2 : List α} :
 @[rocq_alias to_max_prefix_list_included]
 theorem toMaxPrefixList_inc_iff {l1 l2 : List α} :
     toMaxPrefixList l1 ≼ toMaxPrefixList l2 ↔ l1 <+: l2 := by
-  refine ⟨fun h => ⟨_, eq_dist_2 fun n =>
+  refine ⟨fun h => ⟨_, eq_of_dist fun n =>
     (toMaxPrefixList_incN_aux (incN_of_inc n h)).symm⟩, ?_⟩
   grind [inc_op_left]
 
@@ -240,8 +242,8 @@ theorem toMaxPrefixList_op_valid {l1 l2 : List α} :
     ✓ (toMaxPrefixList l1 • toMaxPrefixList l2) ↔ l1 <+: l2 ∨ l2 <+: l1 := by
   refine ⟨fun h => ?_, ?_⟩
   · by_cases hlen : l1.length ≤ l2.length
-    · exact .inl ⟨_, eq_dist_2 fun n => (toMaxPrefixList_op_validN_aux hlen h.validN).symm⟩
-    · exact .inr ⟨_, eq_dist_2 fun n =>
+    · exact .inl ⟨_, eq_of_dist fun n => (toMaxPrefixList_op_validN_aux hlen h.validN).symm⟩
+    · exact .inr ⟨_, eq_of_dist fun n =>
         (toMaxPrefixList_op_validN_aux (by omega) (comm'.dist.validN.mp h.validN)).symm⟩
   · rintro (⟨l, rfl⟩ | ⟨l, rfl⟩) <;> grind [List.prefix_append]
 

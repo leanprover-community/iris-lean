@@ -12,6 +12,8 @@ public import Iris.BI.InternalEq
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!
 # Generic ORA validity in a BI logic
 

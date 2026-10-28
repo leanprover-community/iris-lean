@@ -10,6 +10,8 @@ public import Iris.ProofMode.Tactics.RevertIntro
 namespace Iris.ProofMode
 
 public section
+
+local stepindex Nat
 open BI
 
 /--

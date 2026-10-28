@@ -14,6 +14,8 @@ open Lean Meta Elab.Tactic Qq
 
 public section
 
+local stepindex Nat
+
 #rocq_ignore tac_löb "No need for a dedicated theorem as iRevertIntro is used"
 
 public meta section

@@ -6,7 +6,7 @@ Authors: Markus de Medeiros
 module
 
 public import Iris.Algebra.StepIndex
-public meta import IrisStepIndex.Elab
+public meta import Iris.Std.StepIndex.Elab
 
 @[expose] public section
 

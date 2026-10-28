@@ -17,6 +17,8 @@ convenience definitions and lemmas.
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open OFE ORA DFrac
@@ -60,7 +62,7 @@ theorem mk_inj {d₁ d₂ : DFrac} {a₁ a₂ : A} (h : mk d₁ a₁ = mk d₂ a
 
 @[rocq_alias dfrac_agree_op]
 theorem mk_op {d₁ d₂ : DFrac} {a : A} : mk (d₁ • d₂) a = mk d₁ a • mk d₂ a :=
-  equiv_prod_ext rfl Agree.idemp.symm
+  Prod.ext rfl Agree.idemp.symm
 
 @[rocq_alias dfrac_agree_op_valid]
 theorem op_valid {d₁ d₂ : DFrac} {a₁ a₂ : A} : ✓ (mk d₁ a₁ • mk d₂ a₂) ↔ ✓ (d₁ • d₂) ∧ a₁ = a₂ := by

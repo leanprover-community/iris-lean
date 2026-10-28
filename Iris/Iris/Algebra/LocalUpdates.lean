@@ -9,6 +9,8 @@ public import Iris.Algebra.CMRA
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 @[rocq_alias local_update]
@@ -157,7 +159,7 @@ theorem local_update_unital_discrete [Discrete α] (x y x' y' : α) :
 
 @[rocq_alias cancel_local_update_unit]
 theorem cancel_local_update_unit (x y : α) [Cancelable x] : (x • y, x) ~l~> (y, unit) :=
-  have e : (x • y, x • unit) = (x • y, x) := OFE.equiv_prod_ext rfl unit_right_id
+  have e : (x • y, x • unit) = (x • y, x) := Prod.ext rfl unit_right_id
   e ▸ LocalUpdate.cancel x y unit
 
 /-- Necessary and sufficient condition for a local update on a unital discrete leibniz ORA

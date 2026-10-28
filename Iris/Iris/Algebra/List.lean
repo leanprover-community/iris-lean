@@ -5,11 +5,13 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.Algebra.BigOp
 public import Iris.Std.List
 
 @[expose] public section
+
+local stepindex Nat
 
 namespace Iris
 
@@ -26,12 +28,12 @@ theorem forall₂_eq_of_forall₂_dist : ∀ {l k : List α},
   | [], _ :: _, h => nomatch h 0
   | _ :: _, [], h => nomatch h 0
   | _ :: _, _ :: _, h => List.cons_eq_cons.mpr
-    ⟨eq_dist_2 (fun n => (List.forall₂_cons.mp <| h n).1),
+    ⟨eq_of_dist (fun n => (List.forall₂_cons.mp <| h n).1),
      forall₂_eq_of_forall₂_dist fun n => (List.forall₂_cons.mp (h n)).2⟩
 
 @[rocq_alias list_ofe_mixin]
 instance : OFE (List α) where
-  Dist n := List.Forall₂ (Dist n)
+  dist n := List.Forall₂ (Dist n)
   dist_eqv := List.Forall₂.equivalence dist_eqv
   eq_dist' := ⟨fun h _ => h ▸ (List.Forall₂.rfl .refl), forall₂_eq_of_forall₂_dist⟩
   dist_lt h hlt := h.imp fun hab => hab.lt hlt
@@ -240,6 +242,9 @@ theorem listComplGo_conv_compl {n : Nat} (c : Chain (List α)) :
 
 @[rocq_alias list.list_cofe]
 instance : IsCOFE (List α) where
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
   compl c := listComplGo (c 0) c
   conv_compl {n c} := listComplGo_conv_compl c (c 0) (c.cauchy (Nat.zero_le n)).symm
 

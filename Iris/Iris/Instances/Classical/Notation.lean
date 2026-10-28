@@ -9,6 +9,8 @@ public import Iris.Instances.Classical.Instance
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.Instances.Classical
 open Iris.Instances.Data
 

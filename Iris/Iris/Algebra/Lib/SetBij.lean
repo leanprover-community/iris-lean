@@ -12,6 +12,8 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! # RA for monotone partial bijections -/
 
 namespace Iris

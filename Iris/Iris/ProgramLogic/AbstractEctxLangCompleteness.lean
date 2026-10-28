@@ -27,6 +27,8 @@ open Language Language.Notation
 
 @[expose] public section
 
+local stepindex Nat
+
 section AbstractEctxCompleteness
 
 variable {Expr State Obs Val Ectx : Type _}

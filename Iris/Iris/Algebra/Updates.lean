@@ -9,6 +9,8 @@ public import Iris.Algebra.CMRA
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 @[rocq_alias cmra_updateP]

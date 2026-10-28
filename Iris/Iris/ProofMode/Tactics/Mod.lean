@@ -13,6 +13,8 @@ public import Iris.ProofMode.Tactics.Basic
 namespace Iris.ProofMode
 
 public section
+
+local stepindex Nat
 open BI
 
 @[rocq_alias tac_modal_elim]

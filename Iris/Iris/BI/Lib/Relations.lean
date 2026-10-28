@@ -9,6 +9,8 @@ public import Iris.BI.Lib.Fixpoint
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!  # Logical Relation Closures -/
 
 namespace Iris

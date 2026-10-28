@@ -10,6 +10,8 @@ public import Iris.ProofMode.Classes
 
 @[expose] public section
 
+local stepindex Nat
+
 open Iris BI ORA ProofMode Std
 
 namespace UPred

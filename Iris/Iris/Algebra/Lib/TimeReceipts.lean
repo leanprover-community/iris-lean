@@ -11,6 +11,8 @@ public import Iris.Algebra.IsOp
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! # RA for time receipts -/
 
 namespace Iris

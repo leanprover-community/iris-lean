@@ -29,6 +29,8 @@ file takes 0.5 s, imports included.  The same shape in a downstream RISC-V devel
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace IrisTest.KernelIif
 open Iris Iris.BI Iris.ProofMode
 

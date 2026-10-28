@@ -9,6 +9,8 @@ public import Iris.Algebra.CMRA
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 section excl
@@ -48,10 +50,10 @@ theorem dist_eqv [OFE α] {n} : Equivalence (Excl.Dist (α := α) n) where
 
 @[rocq_alias exclO]
 instance [OFE α] : OFE (Excl α) where
-  Dist := Excl.Dist
+  dist := Excl.Dist
   dist_eqv
   eq_dist' {x y} := by
-    cases x <;> cases y <;> simp [Excl.Dist, eq_dist]
+    cases x <;> cases y <;> simp [Excl.Dist, eq_dist (SI := Nat)]
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> simp at *
     exact Dist.lt hn hlt
@@ -110,15 +112,18 @@ instance [OFE α] : DiscreteE (@invalid α) where
 def exclChain [OFE α] (c : Chain (Excl α)) (a : α) : Chain α := by
   refine ⟨fun n => (c n).getD a, fun {n i} H => ?_⟩
   dsimp; have := c.cauchy H; revert this
-  cases c.chain i <;> cases c.chain n <;> simp [Dist]
+  cases c.chain i <;> cases c.chain n <;> simp [HasDist.dist, Dist]
 
 @[rocq_alias excl_cofe]
 instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
   compl c := (c 0).map fun x => IsCOFE.compl (exclChain c x)
   conv_compl {n} c := by
     have := c.cauchy (Nat.zero_le n); revert this
-    obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [Dist]
-    refine fun _ => .trans IsCOFE.conv_compl ?_
+    obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [HasDist.dist, Dist]
+    refine fun _ => Dist.trans IsCOFE.conv_compl ?_
     simp [exclChain, e]
 
 /-! ## ORA -/
@@ -189,7 +194,7 @@ theorem excl_ord [OFE α] {a b : α} :
   refine ⟨fun h => ?_, fun h => Or.inl (congrArg excl h)⟩
   rcases h with h | ⟨_, hz⟩
   · exact excl.inj h
-  · exact (hz.dist (n := 0)).elim
+  · exact (hz.dist (n := (0 : Nat))).elim
 
 @[rocq_alias Excl_included]
 theorem excl_included [OFE α] {a b : α} :

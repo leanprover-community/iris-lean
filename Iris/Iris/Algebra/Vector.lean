@@ -10,6 +10,8 @@ public import Iris.Std.Vector
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open OFE COFE
@@ -23,9 +25,9 @@ variable [OFE α]
 
 @[rocq_alias vec_ofe_mixin]
 instance : OFE (Vector α n) where
-  Dist k u v := u.toList ≡{k}≡ v.toList
+  dist k u v := u.toList ≡{k}≡ v.toList
   dist_eqv := InvImage.equivalence dist_eqv
-  eq_dist' := ⟨fun h _ => h ▸ .rfl, fun h => Vector.toList_inj.mp (eq_dist_2 h)⟩
+  eq_dist' := ⟨fun h _ => h ▸ .rfl, fun h => Vector.toList_inj.mp (eq_of_dist h)⟩
   dist_lt h hlt := h.lt hlt
 #rocq_ignore vecO "Use Vector"
 #rocq_ignore vec_equiv "OFE is Leibniz; use equality"
@@ -75,6 +77,9 @@ theorem length_compl_vecToListHom (c : Chain (Vector α n)) :
 
 @[rocq_alias vector.list_cofe]
 instance : IsCOFE (Vector α n) where
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
   compl c := .ofList (compl (c.map vecToListHom)) (length_compl_vecToListHom c)
   conv_compl {k c} := vec_dist_toList.mpr <| by
     rw [Vector.toList_ofList]

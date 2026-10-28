@@ -13,6 +13,8 @@ public import Iris.Instances.Lib.Invariants
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris.Std Std.PartialMap Std.LawfulPartialMap Iris.Algebra ORA BI ProofMode

@@ -6,13 +6,15 @@ Authors: Markus de Medeiros, Mario Carneiro, Viet Anh Nguyen, Janine Lohse
 module
 
 public import Iris.BI
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.Algebra.CMRA
 public import Iris.Algebra.UPred
 public import Iris.Algebra.Updates
 public import Iris.BI.Lib.BUpdPlain
 
 @[expose] public section
+
+local stepindex Nat
 
 section UPredInstance
 

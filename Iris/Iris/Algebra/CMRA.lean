@@ -5,10 +5,12 @@ Authors: Mario Carneiro, Сухарик (@suhr), Markus de Medeiros, Puming Liu,
 -/
 module
 
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.Algebra.Monoid
 
 @[expose] public section
+
+local stepindex Nat
 
 namespace Iris
 open OFE
@@ -1288,7 +1290,7 @@ section cancelableElements
 
 @[rocq_alias cancelable]
 theorem cancelable {x y z : α} [Cancelable x] (v : ✓ (x • y)) (e : x • y = x • z) : y = z :=
-  OFE.eq_dist_2 fun _ => cancelableN v.validN e.dist
+  OFE.eq_of_dist fun _ => cancelableN v.validN e.dist
 
 @[rocq_alias discrete_cancelable]
 theorem discrete_cancelable {x : α} [Discrete α]
@@ -1558,7 +1560,7 @@ infixr:25 " -C> " => Hom
 instance [ORA β] : CoeFun (α -C> β) (fun _ => α → β) := ⟨fun F => F.f⟩
 
 instance [ORA β] : OFE (α -C> β) where
-  Dist n f g := f.toHom ≡{n}≡ g.toHom
+  dist n f g := f.toHom ≡{n}≡ g.toHom
   dist_eqv := {
     refl _ := dist_eqv.refl _
     symm h := dist_eqv.symm h
@@ -2138,13 +2140,15 @@ def raPCore : PCore (Option α) where
   pcore x := some (optionCore x)
   pcore_ne {n} x y cx H := by
     simp only [Option.some.injEq]; rintro rfl
-    rcases x, y with ⟨_|x, _|y⟩ <;> simp_all [Dist, Option.Forall₂]
-    cases Hv : pcore x <;> cases Hv' : pcore y <;> simp only []
-    · cases pcore_ne H.symm Hv'; simp_all
-    · cases pcore_ne H Hv; simp_all
-    · obtain ⟨w, Hw1, Hw2⟩ := pcore_ne H.symm Hv'
-      cases Hv.symm.trans Hw1
-      exact Hw2.symm
+    refine ⟨_, rfl, ?_⟩
+    rcases x, y with ⟨_|x, _|y⟩ <;> simp_all [optionCore]
+    cases Hv : pcore x <;> cases Hv' : pcore y
+    · rfl
+    · obtain ⟨_, Hw, -⟩ := pcore_ne H.symm Hv'; simp_all
+    · obtain ⟨_, Hw, -⟩ := pcore_ne H Hv; simp_all
+    · obtain ⟨_, Hw1, Hw2⟩ := pcore_ne H Hv
+      cases Hv'.symm.trans Hw1
+      exact Hw2
   pcore_idem := by
     rintro (_|x) <;> simp
     rcases H : pcore x with _|y <;> simp
@@ -2155,7 +2159,7 @@ def raValid : _root_.Iris.Valid (Option α) where
   ValidN := optionValidN
   Valid := optionValid
   validN_ne {n} x y H := by
-    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Dist, Option.Forall₂]
+    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Dist]
     exact Dist.validN H |>.mp
   valid_iff_validN {x} := by
     rcases x with ⟨_|_⟩ <;> simp [valid_iff_validN]
@@ -2166,7 +2170,7 @@ def raValid : _root_.Iris.Valid (Option α) where
   OrderN := optionOrderN
   Order := optionOrder
   ordN_ne {n x x' y y'} ex ey h := by
-    rcases x, x', y, y' with ⟨_|x, _|x', _|y, _|y'⟩ <;> simp_all [Dist, Option.Forall₂]
+    rcases x, x', y, y' with ⟨_|x, _|x', _|y, _|y'⟩ <;> simp_all [Dist]
     · exact h.of_dist ey
     · exact Ordered.OrderNR.ne ex ey h
   ordN_succ {n x y} h := by
@@ -2941,8 +2945,8 @@ abbrev Order (x y : α × β) := x.fst ≼ₒ y.fst ∧ x.snd ≼ₒ y.snd
 def raOp : Op (α × β) where
   op := op
   op_ne.ne _ _ _ h := dist_prod_ext (Dist.op_r <| dist_fst h) (Dist.op_r <| dist_snd h)
-  assoc := equiv_prod_ext assoc assoc
-  comm := equiv_prod_ext comm comm
+  assoc := Prod.ext assoc assoc
+  comm := Prod.ext comm comm
 
 @[reducible, rocq_alias prod_pcore_instance]
 def raPCore : PCore (α × β) where
@@ -2961,7 +2965,7 @@ def raPCore : PCore (α × β) where
     have ⟨cx₂, hcx₂, hcx⟩ := Option.bind_eq_some_iff.mp this
     have ⟨a, ha, ea⟩ := equiv_some (pcore_idem hcx₁)
     have ⟨b, hb, eb⟩ := equiv_some (pcore_idem hcx₂)
-    have g : (a, b) = (cx₁, cx₂) := equiv_prod_ext ea eb
+    have g : (a, b) = (cx₁, cx₂) := Prod.ext ea eb
     rw [Option.some.inj hcx.symm]
     simp only [ha, hb, pcore]
     exact congrArg some g
@@ -3017,11 +3021,11 @@ instance cmraProd : ORA (α × β) where
   pcore_op_left h :=
     let ⟨_, ha, ho⟩ := Option.bind_eq_some_iff.mp h
     let ⟨_, hb, hh⟩ := Option.bind_eq_some_iff.mp ho
-    (Option.some.inj hh) ▸ (equiv_prod_ext (pcore_op_left ha) (pcore_op_left hb))
+    (Option.some.inj hh) ▸ (Prod.ext (pcore_op_left ha) (pcore_op_left hb))
   extend := fun ⟨vx₁, vx₂⟩ e =>
     let ⟨z₁, w₁, hx₁, hz₁, hw₁⟩ := extend vx₁ (OFE.dist_fst e)
     let ⟨z₂, w₂, hx₂, hz₂, hw₂⟩ := extend vx₂ (OFE.dist_snd e)
-    ⟨(z₁, z₂), (w₁, w₂), equiv_prod_ext hx₁ hx₂, ⟨hz₁, hz₂⟩, ⟨hw₁, hw₂⟩⟩
+    ⟨(z₁, z₂), (w₁, w₂), Prod.ext hx₁ hx₂, ⟨hz₁, hz₂⟩, ⟨hw₁, hw₂⟩⟩
   toOrdered := raOrdered
   op_monoN_left_ord z h := ⟨op_monoN_left_ord z.1 h.1, op_monoN_left_ord z.2 h.2⟩
   op_mono_left_ord z h := ⟨op_mono_left_ord z.1 h.1, op_mono_left_ord z.2 h.2⟩
@@ -3342,7 +3346,7 @@ def Prod.mapC (f : A -C> A') (g : B -C> B') : A × B -C> A' × B' where
       cases _ : ORA.pcore (f.f x.fst) <;>
       cases _ : ORA.pcore (g.f x.snd) <;>
       simp_all
-  op x y := equiv_prod_ext (f.op x.fst y.fst) (g.op x.snd y.snd)
+  op x y := Prod.ext (f.op x.fst y.fst) (g.op x.snd y.snd)
   monoN_ord h := ⟨f.monoN_ord h.1, g.monoN_ord h.2⟩
   mono_ord h := ⟨f.mono_ord h.1, g.mono_ord h.2⟩
   increasing h :=
@@ -3359,9 +3363,9 @@ instance instRFunctorProdOF [RFunctor F1] [RFunctor F2] : RFunctor (ProdOF F1 F2
   map f g := Prod.mapC (map f g) (map f g)
   map_ne.ne _ _ _ Hx _ _ Hy _ :=
     Prod.map_ne (fun _ => map_ne.ne Hx Hy _) (fun _ => map_ne.ne Hx Hy _)
-  map_id _ := equiv_prod_ext (map_id _) (map_id _)
+  map_id _ := Prod.ext (map_id _) (map_id _)
   map_comp _ _ _ _ _ :=
-    equiv_prod_ext (map_comp _ _ _ _ _) (map_comp _ _ _ _ _)
+    Prod.ext (map_comp _ _ _ _ _) (map_comp _ _ _ _ _)
 
 instance instRFunctorAffineProdOF [RFunctor F1] [RFunctor F2] [RFunctorAffine F1]
     [RFunctorAffine F2] : RFunctorAffine (ProdOF F1 F2) where
@@ -3380,9 +3384,9 @@ instance instURFunctorProdOF [URFunctor F1] [URFunctor F2] : URFunctor (ProdOF F
   map f g := Prod.mapC (URFunctor.map f g) (URFunctor.map f g)
   map_ne.ne _ _ _ Hx _ _ Hy _ :=
     Prod.map_ne (fun _ => URFunctor.map_ne.ne Hx Hy _) (fun _ => URFunctor.map_ne.ne Hx Hy _)
-  map_id _ := equiv_prod_ext (URFunctor.map_id _) (URFunctor.map_id _)
+  map_id _ := Prod.ext (URFunctor.map_id _) (URFunctor.map_id _)
   map_comp _ _ _ _ _ :=
-    equiv_prod_ext (URFunctor.map_comp _ _ _ _ _) (URFunctor.map_comp _ _ _ _ _)
+    Prod.ext (URFunctor.map_comp _ _ _ _ _) (URFunctor.map_comp _ _ _ _ _)
 
 @[rocq_alias prodURF_contractive]
 instance instURFunctorContractiveProdOF

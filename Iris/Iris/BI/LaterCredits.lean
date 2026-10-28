@@ -13,6 +13,8 @@ public import Iris.BI.Updates
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! # Later credits -/
 
 namespace Iris

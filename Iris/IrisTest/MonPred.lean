@@ -11,6 +11,8 @@ public import Iris.ProofMode.MonPred
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace IrisTest.MonPredAsEmpValid
 open Iris BI ProofMode MonPred
 

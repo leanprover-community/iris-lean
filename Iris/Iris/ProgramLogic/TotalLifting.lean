@@ -13,6 +13,8 @@ open Iris Language Language.Notation BI
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## Total lifting rules -/
 namespace twp
 

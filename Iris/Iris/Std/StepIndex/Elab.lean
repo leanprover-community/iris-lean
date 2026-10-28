@@ -9,7 +9,7 @@ public meta import Lean.Elab.Command
 public meta import Lean.Elab.Term
 public meta import Lean.PrettyPrinter.Delaborator.Builtins
 public meta import Lean.Elab.App
-public import IrisStepIndex.Registry
+public import Iris.Std.StepIndex.Registry
 
 /-!
 # `local stepindex` and its elaborator

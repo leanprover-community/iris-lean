@@ -10,6 +10,8 @@ public import Iris.BI.BI
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.BI
 
 /-- Require that a separation logic with the carrier type `PROP` is an affine separation logic. -/

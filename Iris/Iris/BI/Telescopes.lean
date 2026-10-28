@@ -13,6 +13,8 @@ public import Iris.Std.DelabRule
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.BI
 open Iris.Std Lean
 

@@ -14,6 +14,8 @@ open Language.Notation EctxLanguage.Notation FromMathlib
 
 @[expose] public section
 
+local stepindex Nat
+
 variable {Expr Val State Obs EctxItem : Type _}
 
 @[rocq_alias ectxiLanguage, rocq_alias EctxiLanguageMixin]
