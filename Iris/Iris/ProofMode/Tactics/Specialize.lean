@@ -13,6 +13,8 @@ public import Iris.ProofMode.Tactics.Frame
 namespace Iris.ProofMode
 
 public section
+
+local stepindex Nat
 open BI
 
 theorem specialize_wand [BI PROP] {q p : Bool} {A Q P1 P2 : PROP}

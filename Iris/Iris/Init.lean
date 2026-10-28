@@ -6,3 +6,4 @@ module
 
 public meta import Iris.Std.RocqPorting
 public meta import Iris.Std.Linter
+public meta import Iris.Std.StepIndex

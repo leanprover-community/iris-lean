@@ -22,6 +22,8 @@ local bi (IProp GF)
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!
 TODO: AddModal, ElimAcc instances
 -/
@@ -130,8 +132,8 @@ section Wp
 @[rocq_alias wp_unfold]
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp s) E e Φ :=
-  BI.equiv_iff.1 <| OFE.eq_dist_2 <|
-    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist E e Φ
+  BI.equiv_iff.1 <| OFE.eq_of_dist <|
+    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist (SI := Nat) E e Φ
 
 @[rocq_alias wp_ne]
 instance wp_ne {s : Stuckness} {E} {e : Expr} :

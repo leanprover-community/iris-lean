@@ -13,6 +13,8 @@ meta import Iris.Std.RocqPorting
 
 public section
 
+local stepindex Nat
+
 namespace Iris.BI
 
 open Iris.Algebra BigOpM BIBase Iris.Std BigSepM LawfulPartialMap PartialMap

@@ -13,6 +13,8 @@ public import Iris.Algebra.CMRA
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!
 # Step-Indexed Propositions (siProp)
 
@@ -112,7 +114,7 @@ def entails (P Q : SiProp) : Prop := ∀ n, P.holds n → Q.holds n
 
 @[rocq_alias siPropO]
 instance : OFE SiProp where
-  Dist n P Q := ∀ {m}, m ≤ n → (P.holds m ↔ Q.holds m)
+  dist n P Q := ∀ {m}, m ≤ n → (P.holds m ↔ Q.holds m)
   dist_eqv.refl _ _ _ := Iff.rfl
   dist_eqv.symm h _ hle := (h hle).symm
   dist_eqv.trans h₁ h₂ _ hle := (h₁ hle).trans (h₂ hle)
@@ -132,6 +134,9 @@ instance : OFE SiProp where
 
 @[rocq_alias siProp_cofe]
 instance : IsCOFE SiProp where
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
   compl c := {
     holds n := (c n).holds n
     closed {n₁ _} h hle := (c.cauchy hle .refl).mp (c n₁ |>.closed h hle)
@@ -486,7 +491,7 @@ theorem pure_soundness {φ : Prop} (h : True ⊢ ⌜φ⌝) : φ := h 0 trivial
 
 @[rocq_alias siProp_primitive.internal_eq_soundness]
 theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢ internalEq x y) : x = y :=
-  OFE.eq_dist_2 fun n => h n trivial
+  OFE.eq_of_dist fun n => h n trivial
 
 @[rocq_alias siProp_primitive.later_soundness]
 theorem later_soundness {P : SiProp} (h : True ⊢ ▷ P) : True ⊢ P := fun n _ => h (n + 1) trivial

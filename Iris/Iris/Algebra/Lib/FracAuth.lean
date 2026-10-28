@@ -20,6 +20,8 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 
 @[expose] public section
 
+local stepindex Nat
+
 open Iris OFE ORA UORA Auth Option OrdInc
 
 /-! ## Definitions -/
@@ -109,7 +111,7 @@ theorem agreeN {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F b) : a �
 
 @[rocq_alias frac_auth_agree]
 theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :=
-  OFE.eq_dist_2 fun n => agreeN (valid_iff_validN.mp h n)
+  OFE.eq_of_dist fun n => agreeN (valid_iff_validN.mp h n)
 
 #rocq_ignore frac_auth_agree_L "Use agree"
 
@@ -223,7 +225,7 @@ theorem auth_op_validN {a b : A} (h : ✓{n} (●F a : FracAuth) • ●F b) : F
 theorem auth_dfrac_op_valid {dq1 dq2 : DFrac} {a b : A} (h : ✓ (●F{dq1} a) • ●F{dq2} b) :
     ✓ (dq1 • dq2) ∧ a = b := by
   rw [Auth.auth_dfrac_op_valid] at h
-  exact ⟨h.1, (Prod.mk.injEq .. ▸ OFE.some_eqv_some.mp h.2.1).2⟩
+  exact ⟨h.1, (Prod.mk.injEq .. ▸ Option.some_inj.mp h.2.1).2⟩
 
 @[rocq_alias frac_auth_auth_op_valid]
 theorem auth_op_valid {a b : A} (h : ✓ (●F a : FracAuth) • ●F b) : False :=

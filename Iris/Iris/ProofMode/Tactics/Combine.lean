@@ -11,6 +11,8 @@ public import Iris.ProofMode.ClassesMake
 namespace Iris.ProofMode
 
 public section
+
+local stepindex Nat
 open BI Iris.Std
 
 /-- Auxiliary lemma for combining two hypotheses using `CombineSepAs` -/

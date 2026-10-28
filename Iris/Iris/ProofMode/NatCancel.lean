@@ -9,6 +9,8 @@ public import Iris.ProofMode.SynthInstance
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 
 /--

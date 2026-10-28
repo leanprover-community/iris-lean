@@ -9,6 +9,8 @@ public import Iris.BI.BI
 
 public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Lean

@@ -14,6 +14,8 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open OFE ORA UORA
@@ -23,7 +25,7 @@ variable {α : Type _} [OFE α]
 @[rocq_alias mono_listR, rocq_alias mono_listUR, implicit_reducible]
 def MonoList (α : Type _) [OFE α] := Auth (MaxPrefixList α)
 
-instance : OFE (MonoList α) := Auth.instOFE
+instance : OFE (MonoList α) := Auth.instOFENat
 instance : ORA (MonoList α) := Auth.instORA
 instance : UORA (MonoList α) := Auth.instUORA
 
@@ -167,7 +169,7 @@ theorem auth_op_validN {n} (l1 l2 : List α) : ✓{n} (●ML l1 • ●ML l2) �
 @[rocq_alias mono_list_auth_dfrac_op_valid]
 theorem auth_dfrac_op_valid (dq1 dq2 : DFrac) (l1 l2 : List α) :
     ✓ (●ML{dq1} l1 • ●ML{dq2} l2) ↔ ✓ (dq1 • dq2) ∧ l1 = l2 := by
-  simp only [valid_iff_validN, eq_dist, auth_dfrac_op_validN]
+  simp only [valid_iff_validN, eq_dist (SI := Nat), auth_dfrac_op_validN]
   exact ⟨fun h => ⟨(h 0).1, fun n => (h n).2⟩, fun ⟨hdq, hl⟩ n => ⟨hdq, hl n⟩⟩
 
 @[rocq_alias mono_list_auth_op_valid]

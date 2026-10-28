@@ -24,6 +24,8 @@ public import Iris.BI.BigOp.BigSepSet
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.BI
 open Iris Iris.Std OFE
 
@@ -86,14 +88,14 @@ variable {I : BiIndex} {PROP : Type _} [BI PROP]
 (Rocq `monPredO`). -/
 @[rocq_alias monPredO]
 instance : OFE (MonPred I PROP) where
-  Dist n P Q := ∀ i, P.monPred_at i ≡{n}≡ Q.monPred_at i
+  dist n P Q := ∀ i, P.monPred_at i ≡{n}≡ Q.monPred_at i
   dist_eqv :=
     { refl _ _ := dist_eqv.refl _
       symm h i := dist_eqv.symm (h i)
       trans h1 h2 i := dist_eqv.trans (h1 i) (h2 i) }
   eq_dist' {P Q} := by
     refine ⟨fun h _ _ => h ▸ .rfl, fun h => ?_⟩
-    exact MonPred.ext fun i => eq_dist_2 fun n => h n i
+    exact MonPred.ext fun i => eq_of_dist fun n => h n i
   dist_lt h1 h2 i := dist_lt (h1 i) h2
 
 #rocq_ignore monPred_ofe_mixin "Rocq mixin record; subsumed by the OFE instance."
@@ -141,6 +143,9 @@ end MonPred
 
 @[rocq_alias monPred_cofe]
 instance : IsCOFE (MonPred I PROP) where
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
   compl c :=
     let cf := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n> (I.car → PROP)).comp MonPred.toSig)
     { monPred_at := fun i => COFE.compl cf i

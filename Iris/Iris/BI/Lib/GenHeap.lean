@@ -13,6 +13,8 @@ public import Iris.Std.Namespaces
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris.Std Iris.Algebra ORA BI ProofMode

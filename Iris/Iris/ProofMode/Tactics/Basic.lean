@@ -12,6 +12,8 @@ public import Iris.ProofMode.ProofModeM
 
 public section
 
+local stepindex Nat
+
 #rocq_ignore tac_start "Functionality already handled by ProofModeM infrastructure"
 #rocq_ignore tac_stop "Functionality already handled by ProofModeM infrastructure"
 

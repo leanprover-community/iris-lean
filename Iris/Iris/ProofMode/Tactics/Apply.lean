@@ -11,6 +11,8 @@ public import Iris.ProofMode.Tactics.HaveCore
 namespace Iris.ProofMode
 
 public section
+
+local stepindex Nat
 open BI
 
 @[rocq_alias tac_apply]

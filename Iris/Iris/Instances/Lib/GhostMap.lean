@@ -12,6 +12,8 @@ public import Iris.ProofMode
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris.Std HeapView PartialMap Iris.Algebra ORA BI ProofMode
@@ -230,7 +232,7 @@ theorem ghost_map_alloc_strong_empty [DecidableEq K] (P : GName → Prop)
 theorem ghost_map_alloc [DecidableEq K] (m : H V) :
     ⊢ |==> ∃ γ, (γ ↪●MAP m) ∗ [∗map] k ↦ v ∈ m, γ ↪◯MAP[k] v := by
   imod (ghost_map_alloc_strong (fun _ => True) m) with ⟨%γ, -, H1, H2⟩
-  · intro N; exists N; simp
+  · intro N; exists N
   · iexists γ
     iframe H1 H2
 
@@ -289,8 +291,8 @@ theorem ghost_map_auth_valid_2 {γ} {dq1 dq2 : DFrac} {m1 m2 : H V} :
   simp only [LawfulPartialMap.get?_map, Option.map] at h
   cases h₁ : get? m1 k <;> cases h₂ : get? m2 k <;> simp only [h₁, h₂] at h
   · rfl
-  · exact (OFE.not_none_eqv_some h).elim
-  · exact (OFE.not_some_eqv_none h).elim
+  · exact nomatch h
+  · exact nomatch h
   · exact congrArg some (DiscreteO.eqv_inj (Agree.toAgree_inj (Option.some.inj h)))
 
 @[rocq_alias ghost_map_auth_agree]

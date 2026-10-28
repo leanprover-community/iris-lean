@@ -6,7 +6,7 @@ Authors: Markus de Medeiros, Puming Liu, Janine Lohse
 module
 
 public import Iris.Algebra.CMRA
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.Algebra.Frac
 public import Iris.Algebra.DFrac
 public import Iris.Algebra.Agree
@@ -15,6 +15,8 @@ public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates
 
 @[expose] public section
+
+local stepindex Nat
 
 open Iris
 
@@ -95,7 +97,7 @@ def dist (n : Nat) (x y : View R) : Prop := x.auth ≡{n}≡ y.auth ∧ x.frag �
 
 @[rocq_alias view_ofe_mixin]
 instance instOFE : OFE (View R) where
-  Dist := dist
+  dist := dist
   dist_eqv := {
     refl _ := ⟨.of_eq rfl, .of_eq rfl⟩
     symm H := ⟨H.1.symm, H.2.symm⟩
@@ -105,7 +107,7 @@ instance instOFE : OFE (View R) where
     refine ⟨fun H _ => H ▸ ⟨.rfl, .rfl⟩, fun H => ?_⟩
     obtain ⟨xa, xf⟩ := x; obtain ⟨ya, yf⟩ := y
     simp only [View.mk.injEq]
-    exact ⟨eq_dist_2 fun n => (H n).1, eq_dist_2 fun n => (H n).2⟩
+    exact ⟨eq_of_dist fun n => (H n).1, eq_of_dist fun n => (H n).2⟩
   dist_lt H Hn := ⟨dist_lt H.1 Hn, dist_lt H.2 Hn⟩
 
 #rocq_ignore viewO "Use the plain View type and typeclass inference"
@@ -149,16 +151,16 @@ theorem auth_dist_inj [UORA B] {q1 q2 : DFrac} {a1 a2 : A} {n}
 @[rocq_alias view_auth_inj]
 theorem auth_eqv_inj [UORA B] {q1 q2 : DFrac} {a1 a2 : A}
     (H : (●V{q1} a1 : View R) = ●V{q2} a2) : q1 = q2 ∧ a1 = a2 := by
-  refine ⟨(auth_dist_inj (n := 0) H.dist).1, OFE.eq_dist_2 fun n => ?_⟩
+  refine ⟨(auth_dist_inj (n := 0) H.dist).1, OFE.eq_of_dist fun n => ?_⟩
   exact (auth_dist_inj H.dist).2
-
-@[rocq_alias view_frag_inj]
-theorem frag_eqv_inj [UORA B] {b1 b2 : B}
-    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.eq_dist_2 fun _ => H.dist.2
 
 @[rocq_alias view_frag_dist_inj]
 theorem dist_of_frag_dist [UORA B] {b1 b2 : B} {n} (H : (◯V b1 : View R) ≡{n}≡ ◯V b2) :
     b1 ≡{n}≡ b2 := H.2
+
+@[rocq_alias view_frag_inj]
+theorem frag_eqv_inj [UORA B] {b1 b2 : B}
+    (H : (◯V b1 : View R) = ◯V b2) : b1 = b2 := OFE.eq_of_dist fun _ => dist_of_frag_dist H.dist
 
 @[rocq_alias view_auth_discrete]
 instance auth_discrete [UORA B] {dq a} [Ha : DiscreteE a] [He : DiscreteE (unit : B)] :
@@ -536,7 +538,7 @@ theorem dist_of_validN_auth (H : ✓{n} ((●V{dq1} a1 : View R) • ●V{dq2} a
 @[rocq_alias view_auth_dfrac_op_inv_L]
 theorem eq_of_valid_auth
     (H : ✓ ((●V{dq1} a1 : View R) • ●V{dq2} a2)) : a1 = a2 :=
-  OFE.eq_dist_2 fun _ => dist_of_validN_auth H.validN
+  OFE.eq_of_dist fun _ => dist_of_validN_auth H.validN
 
 @[rocq_alias view_auth_dfrac_validN]
 theorem auth_validN_iff : ✓{n} (●V{dq} a : View R) ↔ ✓{n}dq ∧ R n a unit :=
@@ -597,7 +599,7 @@ theorem auth_op_auth_valid_iff : ✓ ((●V{dq1} a1 : View R) • ●V{dq2} a2) 
   refine ⟨fun H => ?_, fun H n => ?_⟩
   · simp [valid, ORA.op, DFrac.op, optionOp, ORA.ValidN, ValidN] at H
     let Hn n := dist_of_validN_auth <| H n
-    refine ⟨(H 0).1, OFE.eq_dist_2 Hn, fun n => ?_⟩
+    refine ⟨(H 0).1, OFE.eq_of_dist Hn, fun n => ?_⟩
     · rcases (H n) with ⟨_, _, Hl, H⟩
       apply mono_inc H ?_ incN_unit n.le_refl
       apply toAgree.inj (Hl.symm.trans ?_)
@@ -653,7 +655,7 @@ theorem auth_inc_auth_op_frag_iff :
       (dq1 ≼ dq2 ∨ dq1 = dq2) ∧ a1 = a2 := by
   refine ⟨fun H => ⟨?_, ?_⟩, fun H => ?_⟩
   · exact auth_incN_auth_op_frag_iff (n := 0) |>.mp (incN_of_inc _ H) |>.1
-  · refine OFE.eq_dist_2 (fun n => ?_)
+  · refine OFE.eq_of_dist (fun n => ?_)
     exact auth_incN_auth_op_frag_iff |>.mp (incN_of_inc _ H) |>.2
   · rcases H with ⟨(⟨q, Hq⟩|Hq), Ha⟩
     · calc (●V{dq1} a1 : View R)

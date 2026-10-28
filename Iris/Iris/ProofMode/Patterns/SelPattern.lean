@@ -9,6 +9,8 @@ public import Iris.ProofMode.ProofModeM
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 open Lean Meta Iris.Std
 

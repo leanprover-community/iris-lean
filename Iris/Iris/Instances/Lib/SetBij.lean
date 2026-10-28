@@ -14,6 +14,8 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
+local stepindex Nat
+
 /-!
 # Propositions for reasoning about monotone partial bijections
 -/

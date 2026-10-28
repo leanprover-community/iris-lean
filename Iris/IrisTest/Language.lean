@@ -9,6 +9,8 @@ public import Iris.ProgramLogic.Language
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace IrisTest
 open Iris ProgramLogic Language Notation
 

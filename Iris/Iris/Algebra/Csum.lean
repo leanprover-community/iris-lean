@@ -11,6 +11,8 @@ public import Iris.Algebra.LocalUpdates
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 @[rocq_alias csum]
@@ -48,10 +50,10 @@ theorem dist_eqv [OFE α] [OFE β] {n} : Equivalence (Csum.Dist (α := α) (β :
 
 @[rocq_alias csumO]
 instance [OFE α] [OFE β] : OFE (Csum α β) where
-  Dist := Csum.Dist
+  dist := Csum.Dist
   dist_eqv := dist_eqv
   eq_dist' {x y} := by
-    cases x <;> cases y <;> simp [Csum.Dist, eq_dist]
+    cases x <;> cases y <;> simp [Csum.Dist, eq_dist (SI := Nat)]
   dist_lt {n x y m} hn hlt := by
     cases x <;> cases y <;> first | exact OFE.Dist.lt hn hlt | exact hn.elim | trivial
 
@@ -129,17 +131,20 @@ def chainL [OFE α] [OFE β] (c : Chain (Csum α β)) (a : α) : Chain α where
   chain n := (c n).getInlD a
   cauchy {n i} h := by
     have hc := c.cauchy h; revert hc
-    cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist]
+    cases c.chain i <;> cases c.chain n <;> simp [HasDist.dist, OFE.Dist]
 
 @[rocq_alias csum_chain_r]
 def chainR [OFE α] [OFE β] (c : Chain (Csum α β)) (b : β) : Chain β where
   chain n := (c n).getInrD b
   cauchy {n i} h := by
     have hc := c.cauchy h; revert hc
-    cases c.chain i <;> cases c.chain n <;> simp [OFE.Dist]
+    cases c.chain i <;> cases c.chain n <;> simp [HasDist.dist, OFE.Dist]
 
 @[rocq_alias csum_cofe]
 instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
   compl c :=
     match c 0 with
     | inl a => inl (IsCOFE.compl (chainL c a))

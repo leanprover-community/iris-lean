@@ -5,10 +5,12 @@ Authors: Sergei Stepanenko
 -/
 module
 
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 meta import Iris.Std.RocqPorting
 
 @[expose] public section
+
+local stepindex Nat
 
 namespace Iris
 
@@ -145,9 +147,12 @@ noncomputable def diagonal (c : Chain (Completion α)) : Completion α :=
 noncomputable instance instIsCOFE : IsCOFE (Completion α) where
   compl := diagonal
   conv_compl {n c} := Classical.choose_spec (exists_limit c) n
+  lbcompl := (·.elim)
+  conv_lbcompl := (·.elim)
+  lbcompl_ne := (·.elim)
 
 def complete [IsCOFE α] : Completion α -n> α where
-  f := lift COFE.compl fun x y h => OFE.eq_dist_2 fun n =>
+  f := lift COFE.compl fun x y h => OFE.eq_of_dist fun n =>
     (COFE.conv_compl (c := x)).trans ((h n).trans (COFE.conv_compl (c := y)).symm)
   ne.ne {n x y} h := by
     induction x, y using ind₂ with
@@ -217,8 +222,7 @@ theorem map_ext_ne {β : Type v} [OFE β] (f g : α -n> β) (x : Completion α) 
 @[rocq_alias chain_map_ext]
 theorem map_ext {β : Type v} [OFE β] (f g : α -n> β) (x : Completion α)
     (h : ∀ a, f a = g a) : map f x = map g x := by
-  apply OFE.eq_dist_2
-  intro n
+  refine OFE.eq_of_dist fun n => ?_
   exact map_ext_ne f g x fun a => (h a).dist
 
 @[rocq_alias chainO_map_ne]

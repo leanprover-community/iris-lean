@@ -10,6 +10,8 @@ public import Iris.Std.GenSets
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open Iris.Std PartialMap LawfulPartialMap LawfulSet Iris.Algebra ORA BI ProofMode

@@ -17,6 +17,8 @@ local bi (IProp GF)
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## Total adequacy -/
 
 section ThreadPool
@@ -28,7 +30,7 @@ variable [ι : IrisGS_gen hlc Expr GF]
 local instance : OFE (List Expr) := OFE.ofDiscrete _
 local instance list_nonexpansive (Ψ : List Expr → IProp GF) : NonExpansive Ψ :=
   ⟨fun _ _ _ hxy => hxy ▸ .rfl⟩
-local instance : OFE Val := OFE.ofDiscrete _
+local instance (priority := low) : OFE Val := OFE.ofDiscrete _
 
 namespace twptp
 

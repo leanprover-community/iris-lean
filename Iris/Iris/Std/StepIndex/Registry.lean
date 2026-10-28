@@ -12,7 +12,7 @@ public meta import Lean.Elab.Term
 /-!
 # Step Index Registry
 
-The step index type of the current scope, set by `local stepindex T` (see `IrisStepIndex.Elab`).
+The step index type of the current scope, set by `local stepindex T` (see `Iris.Std.StepIndex.Elab`).
 Notations read it through `stepindex%`.
 -/
 

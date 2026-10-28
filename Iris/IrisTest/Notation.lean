@@ -11,6 +11,8 @@ public import Iris.BI.Updates
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace IrisTest
 open Iris BI
 
