@@ -28,58 +28,58 @@ class heaplangHGS (GF : BundledGFunctors) where
 
 attribute [reducible, instance] heaplangHGS.heaplangH_heapHGS
 
-instance lawfulLoc_heaplang : LawfulLoc Loc where
-  decEq := inferInstance
-  add_zero l := by ext; simp
-  add_nat_inj l := by
-    intro i j Hij
-    have Hn := congrArg Loc.n Hij
-    simp at Hn
-    omega
-  add_pos_nle := by
-    intro l m
-    simp [compare, compareOfLessAndEq, Ordering.isLE]
-    grind
-
 section handler
 
-variable {GF} [InvGS GF] [heaplangHGS GF]
+variable {GF} [InvGS GF] [heaplangHGS GF] (m : StepMod (IProp GF))
 
-def heaplangH (m : StepMod (IProp GF)) : IHandler (IProp GF) heaplangE :=
+/-- HeapLang's logical handler: one handler per effect in `heaplangE`, with steps interpreted by `m`. -/
+def heaplangH : IHandler (IProp GF) heaplangE :=
   concH ⊕ₕ heapH ⊕ₕ failH ⊕ₕ demonicH Loc ⊕ₕ stepH m
 
-instance inH_conc_heaplang (m : StepMod (IProp GF)) :
-    InH concH (heaplangH m) := by
+instance : InH concH (heaplangH m) := by
   unfold heaplangH
   infer_instance
 
-instance inH_heap_heaplang (m : StepMod (IProp GF)) :
-    InH (heapH (Loc := Loc) (Val := Val)) (heaplangH m) := by
+instance : InH (heapH (Loc := Loc) (Val := Val)) (heaplangH m) := by
   unfold heaplangH
   infer_instance
 
-instance inH_fail_heaplang (m : StepMod (IProp GF)) :
-    InH failH (heaplangH m) := by
+instance : InH failH (heaplangH m) := by
   unfold heaplangH
   infer_instance
 
-instance inH_demonic_heaplang (m : StepMod (IProp GF)) :
-    InH (demonicH Loc) (heaplangH m) := by
+instance : InH (demonicH Loc) (heaplangH m) := by
   unfold heaplangH
   infer_instance
 
-instance inH_step_heaplang (m : StepMod (IProp GF)) :
-    InH (stepH m) (heaplangH m) := by
+instance : InH (stepH m) (heaplangH m) := by
   unfold heaplangH
   infer_instance
 
-instance wandH_heaplang_ident_later :
-    WandH (heaplangH (.ident (PROP := IProp GF))) (heaplangH .later) := by
+instance : WandH (heaplangH (.id (PROP := IProp GF))) (heaplangH .later) := by
   unfold heaplangH
   infer_instance
 
 instance wp_heaplang : Wp (IProp GF) Exp Val (StepMod (IProp GF)) where
   wp m M e Φ := WPi e.denote @> heaplangH m; M {{ Φ }}
+
+section proofmode_instances
+
+open ProofMode
+
+variable {m : StepMod (IProp GF)}
+
+instance elimAcc_wp (e : Exp) (Φ : Val → IProp GF) {X} (Ms M : CoPset) (α β : X → IProp GF)
+    (γ : X → Option (IProp GF)) :
+    ElimAcc True (fupd Ms M) (fupd M Ms) α β γ (WP e @ m; Ms {{ Φ }})
+      (fun x => WP e @ m; M {{ v, |={M}=> β x ∗ (γ x -∗? |={Ms}=> Φ v) }}) :=
+  elimAcc_wpi (H := heaplangH m) (Ms := Ms) (Me := Ms) e.denote Φ M α β γ
+
+instance isExcept0_wp (e : Exp) (Φ : Val → IProp GF) (M : CoPset) :
+    IsExcept0 (WP e @ m; M {{ Φ }}) :=
+  isExcept0_wpi (H := heaplangH m) (Ms := M) (Me := M) e.denote Φ
+
+end proofmode_instances
 
 end handler
 
@@ -94,11 +94,9 @@ theorem wpi_step_pure E (v : Val) (Φ : Val → IProp GF) :
       step
       pure v) @> heaplangH m; E {{ Φ }} := by
   iintro HΦ
-  iapply wpi_bind
-  iapply wpi_step
+  iapply wpi_bind; iapply wpi_step
   iapply m.map $$ HΦ
-  iintro HΦ
-  imodintro
+  iintro HΦ !>
   iapply wpi_pure $$ HΦ
 
 theorem wpi_yieldIfNotVal (e : Exp) (Φ : Unit → IProp GF) :
@@ -114,40 +112,47 @@ theorem wpi_cont (e : Exp) (Φ : Val → IProp GF) :
     WPi (do
       step
       e.yieldIfNotVal
-      e.denote) @> heaplangH m; ⊤ {{ Φ }} := by
+      e.denote
+    ) @> heaplangH m; ⊤ {{ Φ }} := by
   iintro Hwp; iapply wpi_bind
   iapply wpi_step
   iapply m.map $$ Hwp
   iintro Hwp !>; iapply wpi_bind
   iapply wpi_yieldIfNotVal; iframe
 
+theorem wpi_denoteYield (e : Exp) (Φ : Val → IProp GF) :
+    WPi e.denote @> heaplangH m; ⊤ {{ Φ }} -∗
+    WPi (if e.isVal then e.denote else yieldAfter e.denote) @> heaplangH m; ⊤ {{ Φ }} := by
+  split
+  · iintro Hwp; iexact Hwp
+  · rw [ConcE.yieldAfter]
+    iintro Hwp; iapply wpi_bind; iapply wpi_wand $$ Hwp
+    iintro %v HΦ; iapply wpi_bind; iapply wpi_yield
+    iapply wpi_pure $$ HΦ
+
 end wpi_rules
 
 section wp_rules
 
-variable {GF} [InvGS GF] [heaplangHGS GF]
-  {m : StepMod (IProp GF)}
+variable {GF} [InvGS GF] [heaplangHGS GF] {m : StepMod (IProp GF)}
 
 theorem wp_unfold {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
   WP e @ m; M {{ Φ }} = WPi e.denote @> heaplangH m; M {{ Φ }} := rfl
 
 /-- The identity (total) WP implies the later (partial) WP. -/
 theorem wp_later_weaken {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
-    WP e @ (StepMod.ident (PROP := IProp GF)); M {{ Φ }} -∗
+    WP e @ (StepMod.id (PROP := IProp GF)); M {{ Φ }} -∗
     WP e @ (StepMod.later (PROP := IProp GF)); M {{ Φ }} := by
   simp only [wp_unfold]
   iintro Hwp
-  iapply (wpi_wandH
-    (H1 := heaplangH (StepMod.ident (PROP := IProp GF)))
-    (H2 := heaplangH (StepMod.later (PROP := IProp GF))))
-  iexact Hwp
+  iapply wpi_wandH $$ Hwp
 
-theorem wp_bind (K : List ECtxItem) (e : Exp) (Φ : Val → IProp GF) :
-    WP e @ m; ⊤ {{ v,
-      WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) v)) @ m; ⊤ {{ Φ }}
-    }} -∗
-    WP (ProgramLogic.fill K e) @ m; ⊤ {{ Φ }} := by
-  sorry
+-- theorem wp_bind (K : List ECtxItem) (e : Exp) (Φ : Val → IProp GF) :
+--     WP e @ m; ⊤ {{ v,
+--       WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) v)) @ m; ⊤ {{ Φ }}
+--     }} -∗
+--     WP (ProgramLogic.fill K e) @ m; ⊤ {{ Φ }} := by
+--   sorry
 
 theorem wp_wand {M : CoPset} (e : Exp) (Φ Ψ : Val → IProp GF) :
     WP e @ m ; M {{ Φ }} -∗
