@@ -1,5 +1,6 @@
 name = "irisitree"
 defaultTargets = ["IrisITree"]
+testDriver = "IrisITreeTest"
 builtinLint = true
 
 [[require]]
@@ -13,6 +14,10 @@ rev = "80bf0dc38320e3a5729f668cb9a2c7026f6e5cea"
 
 [[lean_lib]]
 name = "IrisITree"
+
+[[lean_lib]]
+name = "IrisITreeTest"
+globs = ["IrisITreeTest.+"]
 
 [leanOptions]
 # Built-in linters
