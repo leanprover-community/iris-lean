@@ -25,7 +25,7 @@ def lfp_tpF {PROP : Type _} [BI PROP] {α : Type _}
     (rec_tp : List ((α → PROP) → PROP) → PROP) :
     List ((α → PROP) → PROP) → PROP :=
   fun Ms => iprop%
-    ∀ (i : Nat) (M : (α → PROP) → PROP), ⌜Ms[i]? = some M⌝ -∗
+    ∀ i M, ⌜Ms[i]? = some M⌝ -∗
       bi_mono0 M fun x => iprop%
         ∃ G, F G x ∗ ∀ Ms', ([∗list] M' ∈ Ms', M' G) -∗ rec_tp (Ms' ++ Ms.eraseIdx i)
 
@@ -61,10 +61,10 @@ private theorem perm_pick_erase {β : Type _} {Ms1 Ms2 : List β} {i : Nat} {M :
     ∃ j, Ms1[j]? = some M ∧ (Ms1.eraseIdx j).Perm (Ms2.eraseIdx i) := by
   induction hperm generalizing i M with
   | nil => simp at Hi
-  | cons x hperm ih => cases i with
-    | zero => simp at Hi; subst M; refine ⟨0, ?_, ?_⟩ <;> simp [*]
+  | cons x hperm ih => cases i with simp at Hi
+    | zero => refine ⟨0, ?_, ?_⟩ <;> simp [*]
     | succ i =>
-      simp at Hi; rcases ih Hi with ⟨j, Hj, Hperm⟩
+      rcases ih Hi with ⟨j, Hj, Hperm⟩
       refine ⟨j + 1, ?_, ?_⟩
       · simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using Hj
       · simpa [List.eraseIdx_cons_succ] using List.Perm.cons x Hperm
@@ -225,15 +225,6 @@ variable {α : Type _} [OFE α] [OFE.Discrete α]
 theorem lfp_tp_intro (G : (α → PROP) → (α → PROP)) (x : α) :
     bi_least_fixpoint G x -∗ lfp_tp G [fun P => P x] := by
   letI := ne_of_discrete fun (x : α) => lfp_tp G [fun P => P x]
-  have Hlist : ∀ Ms, ([∗list] M ∈ Ms, M (fun x => lfp_tp G [fun P => P x])) -∗ lfp_tp G Ms := by
-    intro Ms; iinduction Ms with
-    | nil => iintro -; iapply lfp_tp_nil
-    | cons M Ms IH =>
-      iintro HMs
-      icases BigSepL.bigSepL_cons $$ HMs with ⟨HM, HMs⟩
-      ihave HM := lfp_tp_singleton $$ HM
-      iapply lfp_tp_cons G M Ms $$ HM
-      iapply IH $$ HMs
   iintro Hlfp; irevert %x Hlfp
   iapply least_fixpoint_iter
   clear this
@@ -245,17 +236,15 @@ theorem lfp_tp_intro (G : (α → PROP) → (α → PROP)) (x : α) :
     simp at Hi; subst M
     simp only [List.eraseIdx, List.append_nil]
     iapply bi_mono0_intro0; simp only []
-    iexists _; isplitl [HF]
-    · iassumption
-    · iintro %Ms HMs
-      iinduction Ms with
-      | nil => iapply lfp_tp_nil
-      | cons M Ms IHM =>
-        ihave HMs := BigSepL.bigSepL_cons $$ HMs
-        icases HMs with ⟨HM, HMs⟩
-        ihave HM := lfp_tp_singleton G M $$ HM
-        iapply lfp_tp_cons G M Ms $$ HM
-        iapply IHM $$ [$]
+    iframe HF
+    iintro %Ms HMs
+    iinduction Ms with
+    | nil => iapply lfp_tp_nil
+    | cons M Ms IHM =>
+      icases BigSepL.bigSepL_cons $$ HMs with ⟨HM, HMs⟩
+      ihave HM := lfp_tp_singleton G M $$ HM
+      iapply lfp_tp_cons G M Ms $$ HM
+      iapply IHM $$ [$]
   | succ i => simp at Hi
 
 end lfp_tp_lemmas
