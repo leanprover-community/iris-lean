@@ -7,6 +7,7 @@ Authors: Yunsong Yang, Michael Sammler
 module
 
 public import ITree
+public import IrisITree.Effects.Heap
 public import Iris.HeapLang
 public import Iris.Std.BitOp
 
@@ -15,6 +16,20 @@ public import Iris.Std.BitOp
 namespace IrisITree
 
 open Iris.HeapLang ITree ITree.Effects ITree.Exec
+
+-- TODO: decide where `LawfulLoc` should live; for now it comes from `IrisITree.Effects.Heap`.
+instance lawfulLoc_heaplang : LawfulLoc Loc where
+  decEq := inferInstance
+  add_zero l := by ext; simp
+  add_nat_inj l := by
+    intro i j Hij
+    have Hn := congrArg Loc.n Hij
+    simp at Hn
+    omega
+  add_pos_nle := by
+    intro l m
+    simp [compare, compareOfLessAndEq, Ordering.isLE]
+    grind
 
 abbrev heaplangE := concE ⊕ₑ heapE Loc Val ⊕ₑ failE ⊕ₑ demonicE Loc ⊕ₑ stepE
 
@@ -34,9 +49,19 @@ def HeaplangStateIso T : Iso (ConcState T × heapE.T Loc Val × PUnit × PUnit �
 abbrev heaplangEH {GE GR} (nl : Nat → Nat) : EHandler heaplangE GE GR (HeaplangState (ITree GE GR)) :=
   isoEH (HeaplangStateIso (ITree GE GR)) (concEH ⊕ₑₕ (heapEH Loc Val ⊕ₛₑₕ failEH ⊕ₛₑₕ demonicEH Loc ⊕ₛₑₕ stepEH nl).toEHandler)
 
-/- TODO: define EHandlerBind -/
--- instance {GE GR GR'} : EHandlerBind (GE:=GE) (GR:=GR) (GR':=GR')
-  -- heaplangEH (failingEH ⊕ₑₕ (heapEH Loc Val ⊕ₛₑₕ failEH ⊕ₛₑₕ demonicEH (List Loc)).toEHandler) := inferInstanceAs (EHandlerBind (concEH ⊕ₑₕ _) _)
+instance isoEHBind {E GE : Effect} {GR GR' : Type _} {σ₁ σ₂ : Type _} (iso : Iso σ₁ σ₂)
+    (eh : EHandler E GE GR σ₁) (ehb : EHandler E GE GR' σ₁) [ib : EHandlerBind eh ehb] :
+    EHandlerBind (isoEH iso eh) (isoEH iso ehb) where
+  bind_handle i s k₁ k₂ p h :=
+    ib.bind_handle i (iso.invFun s) k₁ k₂ (fun t s' => p t (iso.toFun s')) h
+
+/-- Binding inside a HeapLang program: the heap, failure, demonic and step effects keep working
+in the bound computation, while concurrency (`fork`, `yield`) fails there (`failingEH`). -/
+instance heaplangEHBind {GE GR GR'} (nl : Nat → Nat) :
+    EHandlerBind (GR' := GR') (heaplangEH nl)
+      (isoEH (HeaplangStateIso (ITree GE GR))
+        (failingEH ⊕ₑₕ (heapEH Loc Val ⊕ₛₑₕ failEH ⊕ₛₑₕ demonicEH Loc ⊕ₛₑₕ stepEH nl).toEHandler)) :=
+  inferInstance
 
 abbrev heaplangM := StateT (ConcState ((n : Nat) × ITreeN heaplangE Val n)) (StateT (heapE.T Loc Val) (ExceptT String IO))
 
@@ -49,9 +74,6 @@ instance : MonadEval heaplangM IO where
 
 end IrisITree
 
-/-! Methods on upstream HeapLang types (`Val`, `UnOp`, `BinOp`, `Exp`). They stay in `Iris.HeapLang`
-so that dot notation (`e.denote`, `v.loc!`, ...) resolves. `BinOp.evalInt`/`evalBool`/`evalLoc`
-come from upstream `Iris.HeapLang.Semantics`. -/
 namespace Iris.HeapLang
 
 open IrisITree ITree ITree.Effects ITree.Exec
@@ -117,8 +139,8 @@ def Exp.yieldIfNotVal : Exp → ITree heaplangE Unit
   | .val _ => return ()
   | _ => yield
 
+/-- Recursively denote the given expression `e`. -/
 def Exp.denote (e : Exp) : ITree heaplangE Val :=
-  -- recursively denote e
   let denoteYield e :=
     if e.isVal then denote e else yieldAfter (denote e)
   -- continue the denotation with expression e
@@ -146,10 +168,8 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
     contVal r
   | .if e₀ e₁ e₂ => do
     let c ← denoteYield e₀
-    if ← c.bool! then
-      cont e₁
-    else
-      cont e₂
+    if ← c.bool! then cont e₁
+    else cont e₂
   | .pair e₁ e₂ => do
     let v₂ ← denoteYield e₂
     let v₁ ← denoteYield e₁
@@ -179,11 +199,7 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
     let vn ← denoteYield e₁
     let n ← vn.int!
     if n ≤ 0 then fail "AllocN: count must be positive"
-    let l ← HeapE.allocN n.toNat v (by
-      -- TODO: move this proof somewhere else?
-      intro l m
-      simp [compare, compareOfLessAndEq, Ordering.isLE]
-      grind)
+    let l ← HeapE.allocN n.toNat v LawfulLoc.add_pos_nle
     contVal <| .lit (.loc l)
   | .free e => do
     let v ← denoteYield e
