@@ -24,7 +24,7 @@ variable {PROP : Type _} [BI PROP]
 /-- A logical modality used to interpret operational `step` events. -/
 class StepMod (PROP : Type _) [BI PROP] where
   apply : PROP → PROP
-  mono (P Q : PROP) : ⊢@{PROP} (P -∗ Q) -∗ apply P -∗ apply Q
+  mono (P Q : PROP) : (P -∗ Q) -∗ apply P -∗ apply Q
 
 instance : CoeFun (StepMod PROP) (fun _ => PROP → PROP) where
   coe m := @StepMod.apply PROP _ m
@@ -32,18 +32,16 @@ instance : CoeFun (StepMod PROP) (fun _ => PROP → PROP) where
 namespace StepMod
 
 theorem map (m : StepMod PROP) (P Q : PROP) :
-    ⊢@{PROP} m P -∗ (P -∗ Q) -∗ m Q := by
+    m P -∗ (P -∗ Q) -∗ m Q := by
   iintro HP Hwand
-  iapply (@StepMod.mono PROP _ m P Q) $$ Hwand HP
+  iapply m.mono $$ Hwand HP
 
-/-- Interpret a step without adding a logical modality. -/
-@[reducible] def ident : StepMod PROP where
-  apply P := P
-  mono _ _ := by
-    iintro Hwand HP
-    iapply Hwand $$ [$]
+/-- Interpret a step with the identity modality, giving the *total* logic. -/
+@[reducible] def id : StepMod PROP where
+  apply := fun P => P
+  mono _ _ := by iintro $
 
-/-- Interpret a step as one logical later. -/
+/-- Interpret a step as one later modality, giving the *partial* logic. -/
 @[reducible] def later : StepMod PROP where
   apply P := iprop(▷ P)
   mono _ _ := by
@@ -51,7 +49,7 @@ theorem map (m : StepMod PROP) (P Q : PROP) :
     inext; iapply Hwand $$ [$]
 
 theorem wand (m : StepMod PROP) (P Q : PROP) :
-    ⊢@{PROP} m iprop(P -∗ Q) -∗ P -∗ m Q := by
+    m iprop(P -∗ Q) -∗ P -∗ m Q := by
   iintro Hwand HP
   iapply m.map $$ Hwand
   iintro HPQ
@@ -75,7 +73,7 @@ instance stepH_sequential (m : StepMod PROP) : Sequential (stepH m) := by
 
 /-- An identity step interpretation implies a later step interpretation. -/
 instance stepH_ident_later :
-    WandH (stepH .ident (PROP := PROP)) (stepH .later) := by
+    WandH (stepH .id (PROP := PROP)) (stepH .later) := by
   constructor
   intro _ _ _
   exact entails_wand later_intro
@@ -92,8 +90,7 @@ variable {PROP : Type _} [BI PROP] [BIFUpdate PROP]
 theorem wpi_step M (Φ : PUnit → PROP) :
     m iprop(|={M}=> Φ ⟨⟩) -∗
     WPi step @> H; M {{ Φ }} := by
-  change m iprop(|={M}=> Φ ⟨⟩) -∗
-    WPi (@Effect.trigger stepE E sub ⟨⟩) @> H; M {{ Φ }}
+  unfold step
   iintro HΦ; iapply wpi_trigger
   iapply fupd_mask_intro (by simp)
   iintro Hclose; simp only [stepH]
@@ -107,37 +104,38 @@ section exec
 
 open ITree.Exec
 
-variable {GF : BundledGFunctors} [InvGS GF]
+variable {PROP : Type _} [BI PROP] [BIFUpdate PROP]
 
 /-- Executing an identity-interpreted step requires no later credits. -/
-instance stepEH_ident_adequate :
-    SEHandlerAdequate (stepH (.ident (PROP := IProp GF))) (stepEH (fun _ => 0)) where
-  inv _ := iprop(True)
+instance stepEH_id_adequate :
+    SEHandlerAdequate (stepH (.id (PROP := PROP))) (stepEH (fun _ => 0)) where
+  inv _ := iprop(emp)
   adequate := by
-    intro i s C Φ₁ Φ₂ Hhandle
+    intro i ⟨st, sl⟩ C Φ₁ Φ₂ Hhandle
     simp only [stepH, stepEH] at *
     simp only [Nat.zero_le, true_and, Nat.sub_zero] at Hhandle
     iintro HΦ _ !>
-    iexists ⟨⟩, (ULift.up (s.1.down + 1), ULift.up s.2.down)
+    iexists ⟨⟩, (ULift.up (st.down + 1), ULift.up sl.down)
     iframe; itrivial
+
+variable [BILaterCredits PROP] [BIFUpdLaterCredits PROP]
 
 /-- Executing a later-interpreted step consumes one later credit. -/
 instance stepEH_later_adequate :
-    SEHandlerAdequate (stepH (.later (PROP := IProp GF))) (stepEH (fun _ => 1)) where
+    SEHandlerAdequate (stepH (.later (PROP := PROP))) (stepEH (fun _ => 1)) where
   inv s := £ s.2.down
   adequate := by
-    intro i s C Φ₁ Φ₂ Hhandle
-    simp only [stepH, stepEH] at *
-    obtain ⟨Hcredit, HC⟩ := Hhandle
+    intro i ⟨st, sl⟩ C Φ₁ Φ₂ ⟨Hcredit, HC⟩
+    simp only [stepH] at *
     iintro HΦ Hlc
-    ihave Hparts : £ 1 ∗ £ (s.2.down - 1) $$ [Hlc]
+    ihave Hparts : £ 1 ∗ £ (sl.down - 1) $$ [Hlc]
     · iapply lc_split.mp
       rw [Nat.add_sub_of_le Hcredit]
       iexact Hlc
     icases Hparts with ⟨Hone, Hrest⟩
     imod lc_fupd_elim_later $$ Hone HΦ with HΦ
     imodintro
-    iexists ⟨⟩, (ULift.up (s.1.down + 1), ULift.up (s.2.down - 1))
+    iexists ⟨⟩, (ULift.up (st.down + 1), ULift.up (sl.down - 1))
     iframe; itrivial
 
 end exec
