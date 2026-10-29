@@ -6,7 +6,7 @@ Authors: Yunsong Yang, Michael Sammler
 
 module
 
-public import IrisITree.Core.Exec
+public import IrisITree.Core.LfpTp
 public import Iris.Instances.Lib.FUpd
 
 public section
@@ -158,7 +158,7 @@ theorem wpi_adequate_ind (Φ : R → PROP)
   | stop _ _ _ HC =>
     imodintro; iexists t, s, Mss, M
     isplitr; itrivial; iframe Hinv Ht
-    iapply lfp_tp_unfold; iapply lfp_tpF_perm _ Ms _ _ _ HMs $$ [] IH
+    iapply lfp_tp_unfold; iapply lfp_tpF_perm _ Ms _ _ _ HMs $$ IH
     iintro %Ns1 %Ns2 %Hperm ⟨-, Htp⟩
     iapply lfp_tp_perm _ _ _ Hperm $$ [$]
   | tau t _ _ Hexec =>
@@ -171,7 +171,7 @@ theorem wpi_adequate_ind (Φ : R → PROP)
     simp [wpiConstF]; imod Hwpi
     ispecialize Hc $$ %([fun P => P t]) [Hwpi]
     · simp only [Algebra.BigOpL.bigOpL_cons, Algebra.BigOpL.bigOpL_nil]; iframe
-    simp only [bi_close]; icases Hc with ⟨%Ns, %Hperm, ⟨Hadequate, -⟩⟩
+    icases Hc with ⟨%Ns, %Hperm, ⟨Hadequate, -⟩⟩
     iapply Hadequate $$ %t %s %(fun P => P t) %Mss %C %Hexec %Hperm.symm Hinv
     iintro %_ $
   | step i k _ _ Hhandle =>
@@ -185,7 +185,7 @@ theorem wpi_adequate_ind (Φ : R → PROP)
     imod A.adequate _ _ _ Mss _ _ Hhandle $$ Hwpi Hinv with
       ⟨%t', %s', %M', %Ms', %Msn, %HC, %HpermA, Hspawn, Hinv, Hmod⟩
     ispecialize Hc $$ %Msn Hspawn
-    simp only [bi_close]; icases Hc with ⟨%Ns, %HpermClose, ⟨Hadequate, -⟩⟩
+    icases Hc with ⟨%Ns, %HpermClose, ⟨Hadequate, -⟩⟩
     iapply Hadequate $$ %t' %s' %M' %Ms' %C %HC [] Hinv Hmod
     ipureintro; exact HpermA.trans HpermClose |>.symm
 
