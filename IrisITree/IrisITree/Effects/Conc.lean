@@ -53,7 +53,7 @@ theorem wpi_kill M (Φ : PUnit → PROP) :
 
 theorem wpi_fork t M (Φ : PUnit → PROP) :
     Φ ⟨⟩ -∗
-    WPi t @> H; ⊤ {{ _v, iprop(True) }} -∗
+    WPi t @> H; ⊤ {{ _v, True }} -∗
     WPi fork t @> H; M {{Φ}} := by
   iintro HΦ Ht; unfold fork
   iapply wpi_trigger_bind
@@ -66,7 +66,7 @@ theorem wpi_fork t M (Φ : PUnit → PROP) :
 
 theorem wpi_yield (Φ : PUnit → PROP) :
     Φ ⟨⟩ -∗
-    WPi yield @> H; ⊤ {{Φ}} := by
+    WPi yield @> H; ⊤ {{ Φ }} := by
   iintro HΦ; unfold yield
   iapply wpi_trigger; simp [concH]
   iapply fupd_mask_intro_subseteq (by simp)

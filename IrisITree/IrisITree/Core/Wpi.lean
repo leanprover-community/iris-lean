@@ -40,7 +40,6 @@ def wpiF {R} (wpi : CoPset → ITree E R → (R → PROP) → PROP) :
         (fun a => wpi ∅ (k a) Φ)
         (fun a => wpi ∅ (k a) (fun _ => iprop(False)))
 
-
 private def wpiF' {R} (Me : CoPset) (wpi : DiscreteO CoPset × ITree E R × (R → PROP) → PROP) :
     DiscreteO CoPset × ITree E R × (R → PROP) → PROP :=
   fun ⟨Ms, t, Φ⟩ => wpiF H (fun Ms t Φ => wpi ⟨⟨Ms⟩, t, Φ⟩) Ms.1 Me t Φ
