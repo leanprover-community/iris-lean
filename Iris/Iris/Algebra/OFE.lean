@@ -225,6 +225,11 @@ theorem Discrete.discrete [OFE α] [Discrete α] {n} {x y : α} (h : x ≡{n}≡
   discrete_0 (h.le (Nat.zero_le _))
 export OFE.Discrete (discrete)
 
+/-- Every function out of a discrete OFE is non-expansive. -/
+instance (priority := low) ne_of_discrete [OFE α] [Discrete α] [OFE β] (f : α → β) :
+    NonExpansive f :=
+  ⟨fun _ _ _ Hx => .of_eq (congrArg f <| discrete Hx)⟩
+
 instance Discrete.toDiscreteE [OFE α] [Discrete α] (x : α) : DiscreteE x := ⟨discrete_0⟩
 
 /-- For discrete OFEs, `0`-equivalence implies equivalence for any `n`. -/
