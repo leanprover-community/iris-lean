@@ -30,54 +30,59 @@ attribute [reducible, instance] heaplangHGS.heaplangH_heapHGS
 
 section handler
 
-variable {GF} [InvGS GF] [heaplangHGS GF] (m : StepMod (IProp GF))
+variable {GF} [InvGS GF] [heaplangHGS GF]
 
-/-- HeapLang's logical handler: one handler per effect in `heaplangE`, with steps interpreted by `m`. -/
-def heaplangH : IHandler (IProp GF) heaplangE :=
-  concH ⊕ₕ heapH ⊕ₕ failH ⊕ₕ demonicH Loc ⊕ₕ stepH m
+/-- HeapLang's logical handler: one handler per effect in `heaplangE`, with steps interpreted by
+`sm`. -/
+def heaplangH (sm : IProp GF → IProp GF) [StepMod sm] : IHandler (IProp GF) heaplangE :=
+  concH ⊕ₕ heapH ⊕ₕ failH ⊕ₕ demonicH Loc ⊕ₕ stepH sm
 
-instance : InH concH (heaplangH m) := by
+instance {sm : IProp GF → IProp GF} [StepMod sm] : InH concH (heaplangH sm) := by
   unfold heaplangH
   infer_instance
 
-instance : InH (heapH (Loc := Loc) (Val := Val)) (heaplangH m) := by
+instance {sm : IProp GF → IProp GF} [StepMod sm] :
+    InH (heapH (Loc := Loc) (Val := Val)) (heaplangH sm) := by
   unfold heaplangH
   infer_instance
 
-instance : InH failH (heaplangH m) := by
+instance {sm : IProp GF → IProp GF} [StepMod sm] : InH failH (heaplangH sm) := by
   unfold heaplangH
   infer_instance
 
-instance : InH (demonicH Loc) (heaplangH m) := by
+instance {sm : IProp GF → IProp GF} [StepMod sm] : InH (demonicH Loc) (heaplangH sm) := by
   unfold heaplangH
   infer_instance
 
-instance : InH (stepH m) (heaplangH m) := by
+instance {sm : IProp GF → IProp GF} [StepMod sm] : InH (stepH sm) (heaplangH sm) := by
   unfold heaplangH
   infer_instance
 
-instance : WandH (heaplangH (.id (PROP := IProp GF))) (heaplangH .later) := by
+instance : WandH (heaplangH (GF := GF) id) (heaplangH (GF := GF) BI.later) := by
   unfold heaplangH
   infer_instance
 
-instance wp_heaplang : Wp (IProp GF) Exp Val (StepMod (IProp GF)) where
-  wp m M e Φ := WPi e.denote @> heaplangH m; M {{ Φ }}
+/-- HeapLang's `WP`. `Wp` receives its mode as a plain value, so the mode is the proof
+`h : StepMod sm` itself; its type tells which step modality `sm` is used.
+Write `WP e @ h; M {{ Φ }}`, e.g. `WP e @ StepMod.stepMod_later; M {{ Φ }}`. -/
+instance wp_heaplang (sm : IProp GF → IProp GF) : Wp (IProp GF) Exp Val (StepMod sm) where
+  wp h M e Φ := WPi e.denote @> @heaplangH _ _ _ sm h; M {{ Φ }}
 
 section proofmode_instances
 
 open ProofMode
 
-variable {m : StepMod (IProp GF)}
+variable {sm : IProp GF → IProp GF} [hmono : StepMod sm]
 
 instance elimAcc_wp (e : Exp) (Φ : Val → IProp GF) {X} (Ms M : CoPset) (α β : X → IProp GF)
     (γ : X → Option (IProp GF)) :
-    ElimAcc True (fupd Ms M) (fupd M Ms) α β γ (WP e @ m; Ms {{ Φ }})
-      (fun x => WP e @ m; M {{ v, |={M}=> β x ∗ (γ x -∗? |={Ms}=> Φ v) }}) :=
-  elimAcc_wpi (H := heaplangH m) (Ms := Ms) (Me := Ms) e.denote Φ M α β γ
+    ElimAcc True (fupd Ms M) (fupd M Ms) α β γ (WP e @ hmono; Ms {{ Φ }})
+      (fun x => WP e @ hmono; M {{ v, |={M}=> β x ∗ (γ x -∗? |={Ms}=> Φ v) }}) :=
+  elimAcc_wpi (H := heaplangH sm) (Ms := Ms) (Me := Ms) e.denote Φ M α β γ
 
 instance isExcept0_wp (e : Exp) (Φ : Val → IProp GF) (M : CoPset) :
-    IsExcept0 (WP e @ m; M {{ Φ }}) :=
-  isExcept0_wpi (H := heaplangH m) (Ms := M) (Me := M) e.denote Φ
+    IsExcept0 (WP e @ hmono; M {{ Φ }}) :=
+  isExcept0_wpi (H := heaplangH sm) (Ms := M) (Me := M) e.denote Φ
 
 end proofmode_instances
 
@@ -85,44 +90,43 @@ end handler
 
 section wpi_rules
 
-variable {GF} [InvGS GF] [heaplangHGS GF]
-  {m : StepMod (IProp GF)}
+variable {GF} [InvGS GF] [heaplangHGS GF] {sm : IProp GF → IProp GF} [hmono : StepMod sm]
 
 theorem wpi_step_pure E (v : Val) (Φ : Val → IProp GF) :
-    m (Φ v) -∗
+    sm (Φ v) -∗
     WPi (do
       step
-      pure v) @> heaplangH m; E {{ Φ }} := by
+      pure v) @> heaplangH sm; E {{ Φ }} := by
   iintro HΦ
   iapply wpi_bind; iapply wpi_step
-  iapply m.map $$ HΦ
+  iapply StepMod.map (sm := sm) $$ HΦ
   iintro HΦ !>
   iapply wpi_pure $$ HΦ
 
 theorem wpi_yieldIfNotVal (e : Exp) (Φ : Unit → IProp GF) :
     Φ () -∗
-    WPi e.yieldIfNotVal @> heaplangH m; ⊤ {{ Φ }} := by
+    WPi e.yieldIfNotVal @> heaplangH sm; ⊤ {{ Φ }} := by
   cases e <;> simp only [Exp.yieldIfNotVal]
   · iintro HΦ; iapply wpi_pure $$ [$]
   all_goals
     iintro HΦ; iapply wpi_yield $$ [$]
 
 theorem wpi_cont (e : Exp) (Φ : Val → IProp GF) :
-    m (WP e @ m ; ⊤ {{ Φ }}) -∗
+    sm (WP e @ hmono ; ⊤ {{ Φ }}) -∗
     WPi (do
       step
       e.yieldIfNotVal
       e.denote
-    ) @> heaplangH m; ⊤ {{ Φ }} := by
+    ) @> heaplangH sm; ⊤ {{ Φ }} := by
   iintro Hwp; iapply wpi_bind
   iapply wpi_step
-  iapply m.map $$ Hwp
+  iapply StepMod.map (sm := sm) $$ Hwp
   iintro Hwp !>; iapply wpi_bind
   iapply wpi_yieldIfNotVal; iframe
 
 theorem wpi_denoteYield (e : Exp) (Φ : Val → IProp GF) :
-    WPi e.denote @> heaplangH m; ⊤ {{ Φ }} -∗
-    WPi (if e.isVal then e.denote else yieldAfter e.denote) @> heaplangH m; ⊤ {{ Φ }} := by
+    WPi e.denote @> heaplangH sm; ⊤ {{ Φ }} -∗
+    WPi (if e.isVal then e.denote else yieldAfter e.denote) @> heaplangH sm; ⊤ {{ Φ }} := by
   split
   · iintro Hwp; iexact Hwp
   · rw [ConcE.yieldAfter]
@@ -134,41 +138,41 @@ end wpi_rules
 
 section wp_rules
 
-variable {GF} [InvGS GF] [heaplangHGS GF] {m : StepMod (IProp GF)}
+variable {GF} [InvGS GF] [heaplangHGS GF] {sm : IProp GF → IProp GF} [hmono : StepMod sm]
 
 theorem wp_unfold {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
-  WP e @ m; M {{ Φ }} = WPi e.denote @> heaplangH m; M {{ Φ }} := rfl
+    WP e @ hmono; M {{ Φ }} = WPi e.denote @> heaplangH sm; M {{ Φ }} := rfl
 
 /-- The identity (total) WP implies the later (partial) WP. -/
 theorem wp_later_weaken {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
-    WP e @ (StepMod.id (PROP := IProp GF)); M {{ Φ }} -∗
-    WP e @ (StepMod.later (PROP := IProp GF)); M {{ Φ }} := by
+    WP e @ (StepMod.stepMod_id (PROP := IProp GF)); M {{ Φ }} -∗
+    WP e @ (StepMod.stepMod_later (PROP := IProp GF)); M {{ Φ }} := by
   simp only [wp_unfold]
   iintro Hwp
   iapply wpi_wandH $$ Hwp
 
 -- theorem wp_bind (K : List ECtxItem) (e : Exp) (Φ : Val → IProp GF) :
---     WP e @ m; ⊤ {{ v,
---       WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) v)) @ m; ⊤ {{ Φ }}
+--     WP e @ hmono; ⊤ {{ v,
+--       WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) v)) @ hmono; ⊤ {{ Φ }}
 --     }} -∗
---     WP (ProgramLogic.fill K e) @ m; ⊤ {{ Φ }} := by
+--     WP (ProgramLogic.fill K e) @ hmono; ⊤ {{ Φ }} := by
 --   sorry
 
 theorem wp_wand {M : CoPset} (e : Exp) (Φ Ψ : Val → IProp GF) :
-    WP e @ m ; M {{ Φ }} -∗
+    WP e @ hmono ; M {{ Φ }} -∗
     (∀ v, Φ v -∗ Ψ v) -∗
-    WP e @ m ; M {{ Ψ }} := by
+    WP e @ hmono ; M {{ Ψ }} := by
   simp only [wp_unfold]
   apply wpi_wand
 
 theorem wp_frame_l {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
-    P ∗ WP e @ m; M {{ Φ }} -∗ WP e @ m; M {{v , P ∗ Φ v}} := by
+    P ∗ WP e @ hmono; M {{ Φ }} -∗ WP e @ hmono; M {{v , P ∗ Φ v}} := by
   iintro ⟨HP, Hwp⟩
   iapply wp_wand $$ Hwp [HP]
   iintro %_ _; iframe
 
 theorem wp_atomic E1 E2 (e : Exp) (Φ : Val → IProp GF) :
-    (|={E1,E2}=> WP e @ m ; E2 {{ v, |={E2,E1}=> Φ v }}) ⊢ WP e @ m ; E1 {{ Φ }} := by
+    (|={E1,E2}=> WP e @ hmono ; E2 {{ v, |={E2,E1}=> Φ v }}) ⊢ WP e @ hmono ; E1 {{ Φ }} := by
   simp only [wp_unfold]
   iintro > >Hwp
   iapply wpi_fupd_empty
@@ -177,18 +181,18 @@ theorem wp_atomic E1 E2 (e : Exp) (Φ : Val → IProp GF) :
   iintro %_ > > $
 
 theorem fupd_wp {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
-    (|={M}=> WP e @ m ; M {{ v, Φ v }}) ⊢ WP e @ m ; M {{ Φ }} := by
+    (|={M}=> WP e @ hmono ; M {{ v, Φ v }}) ⊢ WP e @ hmono ; M {{ Φ }} := by
   simp only [wp_unfold]
   iapply (fupd_wpi _).2
 
 theorem wp_fupd {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
-    (WP e @ m ; M {{ v, |={M}=> Φ v }}) ⊢ WP e @ m ; M {{ Φ }} := by
+    (WP e @ hmono ; M {{ v, |={M}=> Φ v }}) ⊢ WP e @ hmono ; M {{ Φ }} := by
   simp only [wp_unfold]
   iapply (wpi_fupd _).2
 
 theorem wp_val {M : CoPset} (v : Val) (Φ : Val → IProp GF) :
     Φ v -∗
-    WP hl(v(&v)) @ m ; M {{ Φ }} := by
+    WP hl(v(&v)) @ hmono ; M {{ Φ }} := by
   iintro HΦ
   simp only [wp_unfold]
   rw [← val_to_ofVal, Exp.denote.eq_1]
@@ -196,8 +200,8 @@ theorem wp_val {M : CoPset} (v : Val) (Φ : Val → IProp GF) :
 
 theorem wp_unop {M : CoPset} (op : UnOp) (v v' : Val) (Φ : Val → IProp GF) :
     ⌜op.denote v = pure v'⌝ -∗
-    m (Φ v') -∗
-    WP (Exp.unop op (Exp.val v)) @ m ; M {{ Φ }} := by
+    sm (Φ v') -∗
+    WP (Exp.unop op (Exp.val v)) @ hmono ; M {{ Φ }} := by
   iintro %Hop HΦ
   simp only [wp_unfold, Exp.denote.eq_5, Exp.isVal, ↓reduceIte,
     Exp.denote.eq_1, LawfulMonad.pure_bind]
@@ -207,8 +211,8 @@ theorem wp_unop {M : CoPset} (op : UnOp) (v v' : Val) (Φ : Val → IProp GF) :
 
 theorem wp_binop {M : CoPset} (op : BinOp) (v₁ v₂ v' : Val) (Φ : Val → IProp GF) :
     ⌜op.denote v₁ v₂ = pure v'⌝ -∗
-    m (Φ v') -∗
-    WP (Exp.binop op (Exp.val v₁) (Exp.val v₂)) @ m ; M {{ Φ }} := by
+    sm (Φ v') -∗
+    WP (Exp.binop op (Exp.val v₁) (Exp.val v₂)) @ hmono ; M {{ Φ }} := by
   iintro % Hop HΦ
   simp only [wp_unfold, Exp.denote.eq_6, Exp.isVal, ↓reduceIte,
     Exp.denote.eq_1, LawfulMonad.pure_bind]
@@ -217,8 +221,8 @@ theorem wp_binop {M : CoPset} (op : BinOp) (v₁ v₂ v' : Val) (Φ : Val → IP
   iapply wpi_step_pure $$ [$]
 
 theorem wp_if_true (e₁ e₂ : Exp) (Φ : Val → IProp GF) :
-    m (WP e₁ @ m ; ⊤ {{ Φ }}) -∗
-    WP (Exp.if (Exp.val (Val.lit (BaseLit.bool true))) e₁ e₂) @ m ; ⊤ {{ Φ }} := by
+    sm (WP e₁ @ hmono ; ⊤ {{ Φ }}) -∗
+    WP (Exp.if (Exp.val (Val.lit (BaseLit.bool true))) e₁ e₂) @ hmono ; ⊤ {{ Φ }} := by
   iintro Hwp
   simp only [wp_unfold, Exp.denote.eq_7, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -227,8 +231,8 @@ theorem wp_if_true (e₁ e₂ : Exp) (Φ : Val → IProp GF) :
   iapply wpi_cont $$ [$]
 
 theorem wp_if_false (e₁ e₂ : Exp) (Φ : Val → IProp GF) :
-    m (WP e₂ @ m ; ⊤ {{ Φ }}) -∗
-    WP (Exp.if (Exp.val (Val.lit (BaseLit.bool false))) e₁ e₂) @ m ; ⊤ {{ Φ }} := by
+    sm (WP e₂ @ hmono ; ⊤ {{ Φ }}) -∗
+    WP (Exp.if (Exp.val (Val.lit (BaseLit.bool false))) e₁ e₂) @ hmono ; ⊤ {{ Φ }} := by
   iintro Hwp
   simp only [wp_unfold, Exp.denote.eq_7, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -237,31 +241,31 @@ theorem wp_if_false (e₁ e₂ : Exp) (Φ : Val → IProp GF) :
   iapply wpi_cont $$ [$]
 
 theorem wp_app (f x : Binder) (v : Val) (e : Exp) (Φ : Val → IProp GF) :
-    m (WP ((e.subst f (.rec_ f x e)).subst x v) @ m ; ⊤ {{ Φ }}) -∗
-    WP (Exp.app (Exp.val (Val.rec_ f x e)) (Exp.val v)) @ m ; ⊤ {{ Φ }} := by
+    sm (WP ((e.subst f (.rec_ f x e)).subst x v) @ hmono ; ⊤ {{ Φ }}) -∗
+    WP (Exp.app (Exp.val (Val.rec_ f x e)) (Exp.val v)) @ hmono ; ⊤ {{ Φ }} := by
   iintro Hwp
   simp only [wp_unfold, Exp.denote.eq_4, Exp.isVal, ↓reduceIte,
     Exp.denote.eq_1, LawfulMonad.pure_bind, Val.rec!]
   iapply wpi_cont $$ [$]
 
 theorem wp_rec {M : CoPset} (f x : Binder) (e : Exp) (Φ : Val → IProp GF) :
-    m (Φ (.rec_ f x e)) -∗
-    WP (Exp.rec_ f x e) @ m ; M {{ Φ }} := by
+    sm (Φ (.rec_ f x e)) -∗
+    WP (Exp.rec_ f x e) @ hmono ; M {{ Φ }} := by
   iintro HΦ
   simp only [wp_unfold, Exp.denote.eq_3]
   iapply wpi_step_pure $$ [$]
 
 theorem wp_pair {M : CoPset} (v₁ v₂ : Val) (Φ : Val → IProp GF) :
-    m (Φ (.pair v₁ v₂)) -∗
-    WP (Exp.pair (.val v₁) (.val v₂)) @ m ; M {{ Φ }} := by
+    sm (Φ (.pair v₁ v₂)) -∗
+    WP (Exp.pair (.val v₁) (.val v₂)) @ hmono ; M {{ Φ }} := by
   iintro HΦ
   simp only [wp_unfold, Exp.denote.eq_8, Exp.isVal, ↓reduceIte,
     Exp.denote.eq_1, LawfulMonad.pure_bind]
   iapply wpi_step_pure $$ [$]
 
 theorem wp_fst {M : CoPset} (v₁ v₂ : Val) (Φ : Val → IProp GF) :
-    m (Φ v₁) -∗
-    WP (Exp.fst (.val (.pair v₁ v₂))) @ m ; M {{ Φ }} := by
+    sm (Φ v₁) -∗
+    WP (Exp.fst (.val (.pair v₁ v₂))) @ hmono ; M {{ Φ }} := by
   iintro HΦ
   simp only [wp_unfold, Exp.denote.eq_9, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -270,8 +274,8 @@ theorem wp_fst {M : CoPset} (v₁ v₂ : Val) (Φ : Val → IProp GF) :
   iapply wpi_step_pure $$ [$]
 
 theorem wp_snd {M : CoPset} (v₁ v₂ : Val) (Φ : Val → IProp GF) :
-    m (Φ v₂) -∗
-    WP (Exp.snd (.val (.pair v₁ v₂))) @ m ; M {{ Φ }} := by
+    sm (Φ v₂) -∗
+    WP (Exp.snd (.val (.pair v₁ v₂))) @ hmono ; M {{ Φ }} := by
   iintro HΦ
   simp only [wp_unfold, Exp.denote.eq_10, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -280,41 +284,41 @@ theorem wp_snd {M : CoPset} (v₁ v₂ : Val) (Φ : Val → IProp GF) :
   iapply wpi_step_pure $$ [$]
 
 theorem wp_injL {M : CoPset} (v : Val) (Φ : Val → IProp GF) :
-    m (Φ (.injL v)) -∗
-    WP (Exp.injL (.val v)) @ m ; M {{ Φ }} := by
+    sm (Φ (.injL v)) -∗
+    WP (Exp.injL (.val v)) @ hmono ; M {{ Φ }} := by
   iintro HΦ
   simp only [wp_unfold, Exp.denote.eq_11, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
   iapply wpi_step_pure $$ [$]
 
 theorem wp_injR {M : CoPset} (v : Val) (Φ : Val → IProp GF) :
-    m (Φ (.injR v)) -∗
-    WP (Exp.injR (.val v)) @ m ; M {{ Φ }} := by
+    sm (Φ (.injR v)) -∗
+    WP (Exp.injR (.val v)) @ hmono ; M {{ Φ }} := by
   iintro HΦ
   simp only [wp_unfold, Exp.denote.eq_12, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
   iapply wpi_step_pure $$ [$]
 
 theorem wp_caseL (v : Val) (e₁ e₂ : Exp) (Φ : Val → IProp GF) :
-    m (WP (Exp.app e₁ (Exp.val v)) @ m ; ⊤ {{ Φ }}) -∗
-    WP (Exp.case (Exp.val (Val.injL v)) e₁ e₂) @ m ; ⊤ {{ Φ }} := by
+    sm (WP (Exp.app e₁ (Exp.val v)) @ hmono ; ⊤ {{ Φ }}) -∗
+    WP (Exp.case (Exp.val (Val.injL v)) e₁ e₂) @ hmono ; ⊤ {{ Φ }} := by
   iintro Hwp
   simp only [wp_unfold, Exp.denote.eq_13, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
   iapply wpi_cont $$ [$]
 
 theorem wp_caseR (v : Val) (e₁ e₂ : Exp) (Φ : Val → IProp GF) :
-    m (WP (Exp.app e₂ (Exp.val v)) @ m ; ⊤ {{ Φ }}) -∗
-    WP (Exp.case (Exp.val (Val.injR v)) e₁ e₂) @ m ; ⊤ {{ Φ }} := by
+    sm (WP (Exp.app e₂ (Exp.val v)) @ hmono ; ⊤ {{ Φ }}) -∗
+    WP (Exp.case (Exp.val (Val.injR v)) e₁ e₂) @ hmono ; ⊤ {{ Φ }} := by
   iintro Hwp
   simp only [wp_unfold, Exp.denote.eq_13, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
   iapply wpi_cont $$ [$]
 
 theorem wp_fork (e : Exp) (Φ : Val → IProp GF) :
-    m (Φ (.lit .unit)) -∗
-    WP e @ m; ⊤ {{ v, ⌜v = .lit .unit⌝ }} -∗
-    WP (Exp.fork e) @ m; ⊤ {{ Φ }} := by
+    sm (Φ (.lit .unit)) -∗
+    WP e @ hmono; ⊤ {{ v, ⌜v = .lit .unit⌝ }} -∗
+    WP (Exp.fork e) @ hmono; ⊤ {{ Φ }} := by
   iintro HΦ Hwp
   simp only [wp_unfold, Exp.denote.eq_21, Exp.isVal]
   iapply wpi_bind; iapply wpi_fork $$ [HΦ]
@@ -333,10 +337,10 @@ section heap_rules
 theorem wp_allocN {M : CoPset} (n : Int) (v : Val) (Φ : Val → IProp GF) :
     0 < n →
     ↑(heapH_inv_name (GF := GF) (Loc := Loc) (Val := Val)) ⊆ M →
-    m iprop(∀ l : Loc,
+    sm iprop(∀ l : Loc,
       ([∗list] i ∈ List.range n.toNat, (l + Int.ofNat i) ↦ v) -∗
       Φ (.lit (.loc l))) -∗
-    WP (Exp.allocN (.val (.lit (.int n))) (.val v)) @ m; M {{ Φ }} := by
+    WP (Exp.allocN (.val (.lit (.int n))) (.val v)) @ hmono; M {{ Φ }} := by
   iintro %Hpos %Hmask HΦ
   simp only [wp_unfold, Exp.denote.eq_14, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -345,17 +349,17 @@ theorem wp_allocN {M : CoPset} (n : Int) (v : Val) (Φ : Val → IProp GF) :
   iapply wpi_pure; simp only [Int.not_le.mpr Hpos, ↓reduceIte]
   iapply wpi_bind; iapply wpi_allocN _ _ _ _ Hmask
   iintro %l Hpts; iapply wpi_step_pure
-  iapply m.map $$ HΦ
+  iapply StepMod.map (sm := sm) $$ HΦ
   iintro HΦ; ispecialize HΦ $$ %l
   iapply HΦ $$ Hpts
 
 theorem wp_alloc {M : CoPset} (v : Val) (Φ : Val → IProp GF) :
     ↑(heapH_inv_name (GF := GF) (Loc := Loc) (Val := Val)) ⊆ M →
-    m iprop(∀ l, l ↦ v -∗ Φ (.lit (.loc l))) -∗
-    WP (Exp.allocN (.val (.lit (.int 1))) (.val v)) @ m; M {{ Φ }} := by
+    sm iprop(∀ l, l ↦ v -∗ Φ (.lit (.loc l))) -∗
+    WP (Exp.allocN (.val (.lit (.int 1))) (.val v)) @ hmono; M {{ Φ }} := by
   iintro %Hmask HΦ
   iapply wp_allocN 1 _ _ (by omega) Hmask
-  iapply m.map $$ HΦ
+  iapply StepMod.map (sm := sm) $$ HΦ
   iintro HΦ %l Hpts; ispecialize HΦ $$ %l
   iapply HΦ; simp [List.range_one, LawfulLoc.add_zero]
   icases Hpts with ⟨H, -⟩; iframe
@@ -363,8 +367,8 @@ theorem wp_alloc {M : CoPset} (v : Val) (Φ : Val → IProp GF) :
 theorem wp_load {M : CoPset} (l : Loc) (v : Val) (dq : DFrac) (Φ : Val → IProp GF) :
     ↑(heapH_inv_name (GF := GF) (Loc := Loc) (Val := Val)) ⊆ M →
     l ↦{dq} v -∗
-    m iprop(l ↦{dq} v -∗ Φ v) -∗
-    WP (Exp.load (Exp.val (Val.lit (BaseLit.loc l)))) @ m ; M {{ Φ }} := by
+    sm iprop(l ↦{dq} v -∗ Φ v) -∗
+    WP (Exp.load (Exp.val (Val.lit (BaseLit.loc l)))) @ hmono ; M {{ Φ }} := by
   iintro %Hmask Hpt HΦ
   simp only [wp_unfold, Exp.denote.eq_16, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -372,13 +376,13 @@ theorem wp_load {M : CoPset} (l : Loc) (v : Val) (dq : DFrac) (Φ : Val → IPro
   iapply wpi_pure; iapply wpi_bind
   iapply wpi_load! _ _ _ _ _ Hmask $$ Hpt
   iintro Hpt; iapply wpi_step_pure
-  iapply m.wand $$ HΦ Hpt
+  iapply StepMod.wand (sm := sm) $$ HΦ Hpt
 
 theorem wp_store {M : CoPset} (l : Loc) (v v' : Val) (Φ : Val → IProp GF) :
     ↑(heapH_inv_name (GF := GF) (Loc := Loc) (Val := Val)) ⊆ M →
     l ↦ v -∗
-    m iprop(l ↦ v' -∗ Φ (.lit .unit)) -∗
-    WP (Exp.store (Exp.val (Val.lit (BaseLit.loc l))) (Exp.val v')) @ m ; M {{ Φ }} := by
+    sm iprop(l ↦ v' -∗ Φ (.lit .unit)) -∗
+    WP (Exp.store (Exp.val (Val.lit (BaseLit.loc l))) (Exp.val v')) @ hmono ; M {{ Φ }} := by
   iintro %Hmask Hpt HΦ
   simp only [wp_unfold, Exp.denote.eq_17, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -387,13 +391,13 @@ theorem wp_store {M : CoPset} (l : Loc) (v v' : Val) (Φ : Val → IProp GF) :
   iapply wpi_pure; iapply wpi_bind
   iapply wpi_store! _ _ _ _ _ Hmask $$ Hpt
   iintro Hpt; iapply wpi_step_pure
-  iapply m.wand $$ HΦ Hpt
+  iapply StepMod.wand (sm := sm) $$ HΦ Hpt
 
 theorem wp_free {M : CoPset} (l : Loc) (v : Val) (Φ : Val → IProp GF) :
     ↑(heapH_inv_name (GF := GF) (Loc := Loc) (Val := Val)) ⊆ M →
     l ↦ v -∗
-    m iprop(l ↦? (none : Option Val) -∗ Φ (.lit .unit)) -∗
-    WP (Exp.free (Exp.val (Val.lit (BaseLit.loc l)))) @ m ; M {{ Φ }} := by
+    sm iprop(l ↦? (none : Option Val) -∗ Φ (.lit .unit)) -∗
+    WP (Exp.free (Exp.val (Val.lit (BaseLit.loc l)))) @ hmono ; M {{ Φ }} := by
   iintro %Hmask Hpt HΦ
   simp only [wp_unfold, Exp.denote.eq_15, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -401,13 +405,13 @@ theorem wp_free {M : CoPset} (l : Loc) (v : Val) (Φ : Val → IProp GF) :
   iapply wpi_pure; iapply wpi_bind
   iapply wpi_storeOpt _ _ _ _ _ Hmask $$ Hpt
   iintro Hpt; iapply wpi_step_pure
-  iapply m.wand $$ HΦ Hpt
+  iapply StepMod.wand (sm := sm) $$ HΦ Hpt
 
 theorem wp_xchg {M : CoPset} (l : Loc) (v v' : Val) (Φ : Val → IProp GF) :
     ↑(heapH_inv_name (GF := GF) (Loc := Loc) (Val := Val)) ⊆ M →
     l ↦ v -∗
-    m iprop(l ↦ v' -∗ Φ v) -∗
-    WP (Exp.xchg (Exp.val (Val.lit (BaseLit.loc l))) (Exp.val v')) @ m ; M {{ Φ }} := by
+    sm iprop(l ↦ v' -∗ Φ v) -∗
+    WP (Exp.xchg (Exp.val (Val.lit (BaseLit.loc l))) (Exp.val v')) @ hmono ; M {{ Φ }} := by
   iintro %Hmask Hpt HΦ
   simp only [wp_unfold, Exp.denote.eq_19, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -416,16 +420,16 @@ theorem wp_xchg {M : CoPset} (l : Loc) (v v' : Val) (Φ : Val → IProp GF) :
   iapply wpi_pure; iapply wpi_bind
   iapply wpi_store! _ _ _ _ _ Hmask $$ Hpt
   iintro Hpt; iapply wpi_step_pure
-  iapply m.wand $$ HΦ Hpt
+  iapply StepMod.wand (sm := sm) $$ HΦ Hpt
 
 theorem wp_cmpXchg_fail {M : CoPset} (l : Loc) (dq : DFrac) (v' v₁ v₂ : Val) (Φ : Val → IProp GF) :
     ↑(heapH_inv_name (GF := GF) (Loc := Loc) (Val := Val)) ⊆ M →
     v' ≠ v₁ →
     v'.compareSafe v₁ = true →
     l ↦{dq} v' -∗
-    m iprop(l ↦{dq} v' -∗ Φ (.pair v' (.lit (.bool false)))) -∗
+    sm iprop(l ↦{dq} v' -∗ Φ (.pair v' (.lit (.bool false)))) -∗
     WP (Exp.cmpXchg (Exp.val <| Val.lit <| BaseLit.loc l) (Exp.val v₁) (Exp.val v₂))
-      @ m ; M {{ Φ }} := by
+      @ hmono ; M {{ Φ }} := by
   iintro %Hmask %Hneq %Hcmp Hpt HΦ
   simp only [wp_unfold, Exp.denote.eq_18, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -436,16 +440,16 @@ theorem wp_cmpXchg_fail {M : CoPset} (l : Loc) (dq : DFrac) (v' v₁ v₂ : Val)
   iapply wpi_load! _ _ _ _ _ Hmask $$ Hpt
   simp only [Hcmp, Hneq, Bool.not_true, Bool.false_eq_true, ↓reduceIte]
   iintro Hpt; iapply wpi_step_pure
-  iapply m.wand $$ HΦ Hpt
+  iapply StepMod.wand (sm := sm) $$ HΦ Hpt
 
 theorem wp_cmpXchg_suc {M : CoPset} (l : Loc) (v' v₁ v₂ : Val) (Φ : Val → IProp GF) :
     ↑(heapH_inv_name (GF := GF) (Loc := Loc) (Val := Val)) ⊆ M →
     v' = v₁ →
     v'.compareSafe v₁ = true →
     l ↦ v' -∗
-    m iprop(l ↦ v₂ -∗ Φ (.pair v' (.lit <| .bool true))) -∗
+    sm iprop(l ↦ v₂ -∗ Φ (.pair v' (.lit <| .bool true))) -∗
     WP (Exp.cmpXchg (Exp.val <| Val.lit <| BaseLit.loc l) (Exp.val v₁) (Exp.val v₂))
-      @ m ; M {{ Φ }} := by
+      @ hmono ; M {{ Φ }} := by
   iintro %Hmask %Heq %Hcmp Hpt HΦ; subst Heq
   simp only [wp_unfold, Exp.denote.eq_18, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -458,13 +462,13 @@ theorem wp_cmpXchg_suc {M : CoPset} (l : Loc) (v' v₁ v₂ : Val) (Φ : Val →
   iintro Hpt; iapply wpi_bind
   iapply wpi_store! _ _ _ _ _ Hmask $$ Hpt
   iintro Hpt; iapply wpi_step_pure
-  iapply m.wand $$ HΦ Hpt
+  iapply StepMod.wand (sm := sm) $$ HΦ Hpt
 
 theorem wp_faa {M : CoPset} (l : Loc) (i₁ i₂ : Int) (Φ : Val → IProp GF) :
     ↑(heapH_inv_name (GF := GF) (Loc := Loc) (Val := Val)) ⊆ M →
     l ↦ Val.lit (.int i₁) -∗
-    m iprop(l ↦ (.lit (.int (i₁ + i₂)) : Val) -∗ Φ (.lit (.int i₁))) -∗
-    WP (Exp.faa (.val <| .lit <| .loc l) (.val <| .lit <| .int i₂)) @ m ; M {{ Φ }} := by
+    sm iprop(l ↦ (.lit (.int (i₁ + i₂)) : Val) -∗ Φ (.lit (.int i₁))) -∗
+    WP (Exp.faa (.val <| .lit <| .loc l) (.val <| .lit <| .int i₂)) @ hmono ; M {{ Φ }} := by
   iintro %Hmask Hpt HΦ
   simp only [wp_unfold, Exp.denote.eq_20, Exp.isVal, ↓reduceIte]
   iapply wpi_bind; iapply wp_val
@@ -476,7 +480,7 @@ theorem wp_faa {M : CoPset} (l : Loc) (i₁ i₂ : Int) (Φ : Val → IProp GF) 
   iintro Hpt; iapply wpi_bind; iapply wpi_pure; iapply wpi_bind
   iapply wpi_store! _ _ _ _ _ Hmask $$ Hpt
   iintro Hpt; iapply wpi_step_pure
-  iapply m.wand $$ HΦ Hpt
+  iapply StepMod.wand (sm := sm) $$ HΦ Hpt
 
 end heap_rules
 

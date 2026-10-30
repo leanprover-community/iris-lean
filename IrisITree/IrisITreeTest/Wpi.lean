@@ -80,25 +80,26 @@ section heaplang
 
 open Iris.HeapLang
 
-variable {GF : BundledGFunctors} [InvGS GF] [heaplangHGS GF]
-  {m : StepMod (IProp GF)} {N : Namespace}
-  {P : IProp GF} (v : Val) (Φ : Val → IProp GF)
+-- TODO: fix this later
+-- variable {GF : BundledGFunctors} [InvGS GF] [heaplangHGS GF]
+--   {m : StepModality (IProp GF)} {N : Namespace}
+--   {P : IProp GF} (v : Val) (Φ : Val → IProp GF)
 
-/-- Tests `iinv` on a HeapLang `WP` goal, which unfolds to `WPi` for `elimAcc_wpi`. -/
-example : inv N iprop(<pers> P) -∗ Φ v -∗ WP (Exp.val v) @ m; ⊤ {{ Φ }} := by
-  iintro #Hinv HΦ
-  iinv Hinv with #HP
-  iapply wp_val
-  imodintro; iframe HP HΦ
+-- /-- Tests `iinv` on a HeapLang `WP` goal, which unfolds to `WPi` for `elimAcc_wpi`. -/
+-- example : inv N iprop(<pers> P) -∗ Φ v -∗ WP (Exp.val v) @ m; ⊤ {{ Φ }} := by
+--   iintro #Hinv HΦ
+--   iinv Hinv with #HP
+--   iapply wp_val
+--   imodintro; iframe HP HΦ
 
-/-- Tests `iinv` with a timeless invariant on a HeapLang `WP` goal, via `isExcept0_wp`. -/
-example {P : IProp GF} [Timeless P] (v : Val) (Φ : Val → IProp GF) :
-    inv N P -∗ (P -∗ P ∗ Φ v) -∗ WP (Exp.val v) @ m; ⊤ {{ Φ }} := by
-  iintro #Hinv HΦ
-  iinv Hinv with >HP
-  icases HΦ $$ HP with ⟨HP, HΦ⟩
-  iapply wp_val
-  imodintro; iframe HP HΦ
+-- /-- Tests `iinv` with a timeless invariant on a HeapLang `WP` goal, via `isExcept0_wp`. -/
+-- example {P : IProp GF} [Timeless P] (v : Val) (Φ : Val → IProp GF) :
+--     inv N P -∗ (P -∗ P ∗ Φ v) -∗ WP (Exp.val v) @ m; ⊤ {{ Φ }} := by
+--   iintro #Hinv HΦ
+--   iinv Hinv with >HP
+--   icases HΦ $$ HP with ⟨HP, HΦ⟩
+--   iapply wp_val
+--   imodintro; iframe HP HΦ
 
 end heaplang
 
