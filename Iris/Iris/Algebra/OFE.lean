@@ -1887,10 +1887,9 @@ theorem OFE.ContractiveHom.fixpoint_ind [COFE α] [Inhabited α] (f : α -c> α)
       exact Contractive.succ _ <| IH H
   suffices H : P (COFE.compl chain) by
     refine (congrArg P ?_).mp H
-    refine fixpoint_unique (f := f) (x := COFE.compl chain) ?_
-    refine eq_dist_2 fun n => ?_
-    calc
-      COFE.compl chain ≡{n}≡ chain n := COFE.conv_compl
+    refine fixpoint_unique (eq_dist_2 fun n => ?_)
+    calc COFE.compl chain
+      _ ≡{n}≡ chain n := COFE.conv_compl
       _ ≡{n}≡ f (chain n) := by
         induction n with
         | zero => exact Contractive.zero f.f
