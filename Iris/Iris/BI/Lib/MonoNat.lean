@@ -33,6 +33,7 @@ attribute [reducible, instance] MonoNatG.elem
 namespace MonoNat
 
 variable {GF : BundledGFunctors} [MonoNatG GF]
+local bi (IProp GF)
 open MonoNatG
 
 @[rocq_alias mono_nat_auth_own]
@@ -94,7 +95,7 @@ instance {γ n} (q : Qp) :
 
 @[rocq_alias mono_nat_auth_own_agree]
 theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (n1 n2 : MaxNat) :
-  ⊢@{IProp GF} (γ ↪●MN{dq1} n1) -∗ (γ ↪●MN{dq2} n2) -∗ ⌜✓ (dq1 • dq2) ∧ n1 = n2⌝ := by
+  ⊢ (γ ↪●MN{dq1} n1) -∗ (γ ↪●MN{dq2} n2) -∗ ⌜✓ (dq1 • dq2) ∧ n1 = n2⌝ := by
   unfold auth_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
@@ -103,7 +104,7 @@ theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (n1 n2 : MaxNat) :
 
 @[rocq_alias mono_nat_auth_own_exclusive]
 theorem auth_own_exclusive (γ : GName) (n1 n2 : MaxNat) :
-  ⊢@{IProp GF} (γ ↪●MN n1) -∗ (γ ↪●MN n2) -∗ False := by
+  ⊢ (γ ↪●MN n1) -∗ (γ ↪●MN n2) -∗ False := by
   unfold auth_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
@@ -112,7 +113,7 @@ theorem auth_own_exclusive (γ : GName) (n1 n2 : MaxNat) :
 
 @[rocq_alias mono_nat_auth_lb_own_valid]
 theorem auth_lb_own_valid (γ : GName) (dq : DFrac) (n m : MaxNat) :
-  ⊢@{IProp GF} (γ ↪●MN{dq} n) -∗ (γ ↪◯MN m) -∗ ⌜✓ dq ∧ m ≤ n⌝ := by
+  ⊢ (γ ↪●MN{dq} n) -∗ (γ ↪◯MN m) -∗ ⌜✓ dq ∧ m ≤ n⌝ := by
   unfold auth_own lb_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
@@ -121,7 +122,7 @@ theorem auth_lb_own_valid (γ : GName) (dq : DFrac) (n m : MaxNat) :
 
 @[rocq_alias mono_nat_lb_own_get]
 theorem lb_own_get (γ : GName) (dq : DFrac) (n : MaxNat) :
-  ⊢@{IProp GF} (γ ↪●MN{dq} n) -∗ (γ ↪◯MN n) := by
+  ⊢ (γ ↪●MN{dq} n) -∗ (γ ↪◯MN n) := by
   unfold auth_own lb_own
   iintro H
   iapply iOwn_ord_mono $$ H
@@ -129,7 +130,7 @@ theorem lb_own_get (γ : GName) (dq : DFrac) (n : MaxNat) :
 
 @[rocq_alias mono_nat_lb_own_le]
 theorem lb_own_le (γ : GName) (n n' : MaxNat) (h : n' ≤ n) :
-  ⊢@{IProp GF} (γ ↪◯MN n) -∗ (γ ↪◯MN n') := by
+  ⊢ (γ ↪◯MN n) -∗ (γ ↪◯MN n') := by
   unfold lb_own
   iintro H
   iapply iOwn_ord_mono $$ H
@@ -137,14 +138,14 @@ theorem lb_own_le (γ : GName) (n n' : MaxNat) (h : n' ≤ n) :
 
 @[rocq_alias mono_nat_lb_own_0]
 theorem lb_own_0 {GF : BundledGFunctors} [MonoNatG GF] (γ : GName) :
-  ⊢@{IProp GF} |==> (γ ↪◯MN 0) := by
+  ⊢ |==> (γ ↪◯MN 0) := by
   unfold lb_own
   iapply iOwn_unit
 
 @[rocq_alias mono_nat_own_alloc_strong]
 theorem own_alloc_strong (P : Nat → Prop) n
   (hP : ∀ N, ∃ k, N ≤ k ∧ P k) :
-  ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MN n) ∗ γ ↪◯MN n := by
+  ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ (γ ↪●MN n) ∗ γ ↪◯MN n := by
   unfold auth_own lb_own
   imod iOwn_alloc_strong (F := MonoNatRF) ((●MN n) • (◯MN n)) P hP with ⟨%γ, ⟨H1, H2⟩⟩
   · simp [both_valid]
@@ -155,7 +156,7 @@ theorem own_alloc_strong (P : Nat → Prop) n
 
 @[rocq_alias mono_nat_own_alloc]
 theorem own_alloc {GF : BundledGFunctors} [MonoNatG GF] (n : MaxNat) :
-  ⊢@{IProp GF} |==> (∃ γ, (γ ↪●MN n) ∗ (γ ↪◯MN n)) := by
+  ⊢ |==> (∃ γ, (γ ↪●MN n) ∗ (γ ↪◯MN n)) := by
   imod (own_alloc_strong (fun _ => True) n) with ⟨%γ, ⟨-, H⟩⟩
   · intro n; exists n; simp
   · iexists γ
@@ -164,7 +165,7 @@ theorem own_alloc {GF : BundledGFunctors} [MonoNatG GF] (n : MaxNat) :
 
 @[rocq_alias mono_nat_own_update]
 theorem own_update {GF : BundledGFunctors} [MonoNatG GF] (γ : GName) (n n' : MaxNat) (h : n ≤ n') :
-  ⊢@{IProp GF} (γ ↪●MN n) ==∗ (γ ↪●MN n') ∗ (γ ↪◯MN n') := by
+  ⊢ (γ ↪●MN n) ==∗ (γ ↪●MN n') ∗ (γ ↪◯MN n') := by
   iintro H
   ihave >Hauth : |==> (γ ↪●MN n') $$ [H]
   · unfold auth_own
@@ -176,7 +177,7 @@ theorem own_update {GF : BundledGFunctors} [MonoNatG GF] (γ : GName) (n n' : Ma
 
 @[rocq_alias mono_nat_own_persist]
 theorem own_persist (γ : GName) (dq : DFrac) (a : MaxNat) :
-  ⊢@{IProp GF} (γ ↪●MN{dq} a) ==∗ (γ ↪●MN□ a) := by
+  ⊢ (γ ↪●MN{dq} a) ==∗ (γ ↪●MN□ a) := by
   unfold auth_own
   iintro H
   iapply iOwn_update $$ H
@@ -184,7 +185,7 @@ theorem own_persist (γ : GName) (dq : DFrac) (a : MaxNat) :
 
 @[rocq_alias mono_nat_own_unpersist]
 theorem own_unpersist {GF : BundledGFunctors} [MonoNatG GF] (γ : GName) (a : MaxNat) :
-  ⊢@{IProp GF} (γ ↪●MN□ a) ==∗ (∃ q, γ ↪●MN{DFrac.own q} a) := by
+  ⊢ (γ ↪●MN□ a) ==∗ (∃ q, γ ↪●MN{DFrac.own q} a) := by
   unfold auth_own
   iintro H
   imod iOwn_updateP (auth_unpersist _) $$ H with ⟨%a, ⟨%H, H⟩⟩

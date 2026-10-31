@@ -19,6 +19,8 @@ public import Iris.Std.CoPset
 namespace Iris
 open Iris.Std BI
 
+local bi PROP
+
 /--
 Basic update modality.
 
@@ -200,7 +202,7 @@ class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
 @[rocq_alias BiFUpd]
 class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
   [ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP))]
-  subset {E1 E2 : CoPset} : E2 ⊆ E1 → ⊢ |={E1,E2}=> |={E2,E1}=> (emp : PROP)
+  subset {E1 E2 : CoPset} : E2 ⊆ E1 → ⊢ |={E1,E2}=> |={E2,E1}=> emp
   except0 {E1 E2 : CoPset} {P : PROP} : (◇ |={E1,E2}=> P) ⊢ |={E1,E2}=> P
   mono {E1 E2 : CoPset} {P Q : PROP} : (P ⊢ Q) → (|={E1,E2}=> P) ⊢ |={E1,E2}=> Q
   trans {E1 E2 E3 : CoPset} {P : PROP} : (|={E1,E2}=> |={E2,E3}=> P) ⊢ |={E1,E3}=> P
@@ -221,13 +223,13 @@ class BIFUpdateSbi (PROP : Type _) [BI PROP] [BIFUpdate PROP] [Sbi PROP] where
   fupd_keep_siPure {E} E' Pi (R : PROP) :
     (|={E,E'}=> <si_pure> Pi) ∧ (<si_pure> Pi ={E}=∗ R) ⊢ |={E}=> R
   fupd_siPure_later (E : CoPset) (Pi : SiProp) :
-    (▷ |={E}=> <si_pure> Pi) ⊢@{PROP} |={E}=> ▷ ◇ <si_pure> Pi
+    (▷ |={E}=> <si_pure> Pi) ⊢ |={E}=> ▷ ◇ <si_pure> Pi
   fupd_siPure_sForall_2 (E : CoPset) (Ψi : SiProp → Prop) :
-    (∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q) ⊢@{PROP} |={E}=> <si_pure> (sForall Ψi)
+    (∀ q, ⌜Ψi q⌝ → |={E}=> <si_pure> q) ⊢ |={E}=> <si_pure> (sForall Ψi)
 
 @[rocq_alias BiBUpdSbi]
 class BIBUpdateSbi (PROP : Type _) [BI PROP] [BIUpdate PROP] [Sbi PROP] where
-  bupd_siPure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢@{PROP} <si_pure> Pi)
+  bupd_siPure (Pi : SiProp) : iprop(|==> <si_pure> Pi ⊢ <si_pure> Pi)
 
 section BUpdLaws
 
@@ -412,7 +414,7 @@ theorem fupd_mask_intro_subseteq {E1 E2 : CoPset} {P : PROP} (h : E2 ⊆ E1) :
   _ ⊢ |={E1,E2}=> |={E2,E1}=> P         := mono <| frame_right.trans <| mono emp_sep.mp
 
 @[rocq_alias fupd_mask_subseteq]
-theorem fupd_mask_subseteq {E1 E2 : CoPset} (h : E2 ⊆ E1) : ⊢@{PROP} |={E1,E2}=> |={E2,E1}=> emp :=
+theorem fupd_mask_subseteq {E1 E2 : CoPset} (h : E2 ⊆ E1) : ⊢ |={E1,E2}=> |={E2,E1}=> emp :=
   fupd_mask_intro_subseteq h
 
 @[rocq_alias fupd_mask_frame_r']
@@ -555,8 +557,8 @@ theorem fupd_mask_frame_acc {E E' E1 E2 : CoPset} {P Q : PROP} :
 
 @[rocq_alias fupd_mask_subseteq_emptyset_difference]
 theorem fupd_mask_subseteq_emptyset_difference {E1 E2 : CoPset} (h : E2 ⊆ E1) :
-    ⊢@{PROP} |={E1,E2}=> |={∅,E1\E2}=> emp := by
-  have H : emp ⊢@{PROP} |={E1 \ E2 ∪ E2, ∅ ∪ E2}=> |={∅, E1 \ E2}=> emp :=
+    ⊢ |={E1,E2}=> |={∅,E1\E2}=> emp := by
+  have H : emp ⊢ |={E1 \ E2 ∪ E2, ∅ ∪ E2}=> |={∅, E1 \ E2}=> emp :=
     (fupd_mask_intro_subseteq empty_subset).trans
     (fupd_mask_frame_right (disjoint_symm disjoint_diff_right))
   rw [union_comm, subset_union_diff h] at H
@@ -911,10 +913,10 @@ theorem sForall_eq_forall {Φ : α → PROP} :
   follows from `BIFUpdateSbi.fupd_siPure_sForall_2`.
 -/
 theorem fupd_siPure_forall_2 {E : CoPset} {A : Sort _} {Φi : A → SiProp} :
-    (∀ x, |={E}=> <si_pure> Φi x) ⊢@{PROP} |={E}=> ∀ x, <si_pure> Φi x := calc
+    (∀ x, |={E}=> <si_pure> Φi x) ⊢ |={E}=> ∀ x, <si_pure> Φi x := calc
   _ ⊢ ∀ q, ⌜∃ x, q = Φi x⌝ → |={E}=> <si_pure> q :=
       forall_intro fun _ => imp_intro_swap <| pure_elim_left fun ⟨x, hx⟩ => hx ▸ forall_elim x
-  _ ⊢@{PROP} |={E}=> <si_pure> (sForall fun q => ∃ x, q = Φi x) :=
+  _ ⊢ |={E}=> <si_pure> (sForall fun q => ∃ x, q = Φi x) :=
       BIFUpdateSbi.fupd_siPure_sForall_2 E _
   _ ⊢ |={E}=> ∀ x, <si_pure> Φi x :=
       mono <| forall_intro fun x => siPure_mono (sForall_elim ⟨x, rfl⟩)

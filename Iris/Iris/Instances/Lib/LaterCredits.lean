@@ -23,6 +23,7 @@ namespace Iris
 
 open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
 open Iris OFE COFE BI Auth CommMonoidLike Iris.Std
+local bi (IProp GF)
 
 section LcGS
 open ORA
@@ -119,17 +120,17 @@ instance uPred_bi_lc : BILaterCredits (IProp GF) where
 theorem uPred_lc_unseal {n : Credit} : (£ n : IProp GF) = uPred_lc n := rfl
 
 @[rocq_alias lc_no_lc]
-theorem lc_no_lc [LcGS .hasNoLC GF] (n : Credit) : £ n ⊣⊢@{IProp GF} iprop(True) := .rfl
+theorem lc_no_lc [LcGS .hasNoLC GF] (n : Credit) : £ n ⊣⊢ iprop(True) := .rfl
 
 @[rocq_alias lc_supply_no_lc]
 theorem lc_supply_no_lc [LcGS .hasNoLC GF] (n : Credit) :
-    lc_supply n ⊣⊢@{IProp GF} iprop(⌜n = 0⌝) := .rfl
+    lc_supply n ⊣⊢ iprop(⌜n = 0⌝) := .rfl
 
 section LcSupplyRules
 variable [LC : LcGS .hasLC GF]
 
 @[rocq_alias lc_supply_bound]
-theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n ≤ m⌝ := by
+theorem lc_supply_bound {n m} : ⊢ lc_supply m -∗ £ n -∗ ⌜n ≤ m⌝ := by
   iintro Hsupp Hcred
   icases iOwn_op $$ [Hsupp Hcred] with H
   · rw [uPred_lc_unseal]; unfold uPred_lc lc_supply
@@ -142,7 +143,7 @@ theorem lc_supply_bound {n m} : ⊢@{IProp GF} lc_supply m -∗ £ n -∗ ⌜n �
   exact n.le_add_right k
 
 @[rocq_alias lc_decrease_supply]
-theorem lc_decrease_supply {n m} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -∗ |==> lc_supply m := by
+theorem lc_decrease_supply {n m} : ⊢ lc_supply (n + m) -∗ £ n -∗ |==> lc_supply m := by
   iintro H1 H2
   imod iOwn_update_op (E := LC.lc_elem)
     (auth_update (leftCancelAdd_local_update ((Nat.add_assoc n m 0).trans (Nat.add_comm n m))))
@@ -154,7 +155,7 @@ theorem lc_decrease_supply {n m} : ⊢@{IProp GF} lc_supply (n + m) -∗ £ n -�
   unfold lc_supply; iexact H
 
 @[rocq_alias lc_increase_supply]
-theorem lc_increase_supply n m : lc_supply m ⊢@{IProp GF} |==> (lc_supply (n + m) ∗ £ n) := by
+theorem lc_increase_supply n m : lc_supply m ⊢ |==> (lc_supply (n + m) ∗ £ n) := by
   rw [uPred_lc_unseal]; unfold uPred_lc lc_supply
   iintro H
   imod iOwn_update $$ H with Hown
@@ -424,7 +425,7 @@ instance {p} {P R Q : IProp GF} [hf : Frame p R P Q] : Frame p R (le_upd P) (le_
 end Internal
 
 @[rocq_alias le_upd.lc_alloc]
-theorem lc_alloc [H : LcGpreS GF] n : ⊢@{IProp GF} |==> ∃ _ : LcGS .hasLC GF, lc_supply n ∗ £ n := by
+theorem lc_alloc [H : LcGpreS GF] n : ⊢ |==> ∃ _ : LcGS .hasLC GF, lc_supply n ∗ £ n := by
   imod (iOwn_alloc (E := H.lc_elem) ((● n) • (◯ n)) (auth_both_valid.mpr ⟨fun _ => .rfl, ⟨⟩⟩))
     with ⟨%γLC, HOwn⟩
   icases iOwn_op $$ HOwn with ⟨HAuth, HFrag⟩
@@ -436,7 +437,7 @@ theorem lc_alloc [H : LcGpreS GF] n : ⊢@{IProp GF} |==> ∃ _ : LcGS .hasLC GF
 
 @[rocq_alias le_upd.lc_alloc_no_lc]
 theorem lc_alloc_no_lc [H : LcGpreS GF] n :
-    ⊢@{IProp GF} ∃ _ : LcGS .hasNoLC GF, lc_supply 0 ∗ £ n := by
+    ⊢ ∃ _ : LcGS .hasNoLC GF, lc_supply 0 ∗ £ n := by
   let LC : LcGS .hasNoLC GF := { lc_elem := H.lc_elem, lc_name := default }
   iexists LC
   simp only [lc_supply, uPred_lc_unseal, uPred_lc]

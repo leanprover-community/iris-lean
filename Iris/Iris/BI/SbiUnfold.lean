@@ -120,6 +120,7 @@ instance (priority := low) sbiUnfold_siProp (clo : SbiUnfoldClosure) (P : SiProp
 
 section
 variable [Sbi PROP] {clo : SbiUnfoldClosure} {P Q : PROP} {Pi Qi : Nat → Prop}
+local bi PROP
 
 /-! ## The top-level lemmas used by the tactic -/
 

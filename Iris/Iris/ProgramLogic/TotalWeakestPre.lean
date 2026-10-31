@@ -13,6 +13,8 @@ namespace Iris
 
 open ProgramLogic Language Language.Notation Iris.Std OFE BI
 
+local bi (IProp GF)
+
 @[expose] public section
 
 /-!

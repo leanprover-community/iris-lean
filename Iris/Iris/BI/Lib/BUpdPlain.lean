@@ -33,6 +33,7 @@ section BupdPlainDef
 open OFE
 
 variable [Sbi PROP]
+local bi PROP
 
 @[rocq_alias bupd_alt_ne]
 instance BUpdPlain_ne : NonExpansive (BUpdPlain (PROP := PROP)) where

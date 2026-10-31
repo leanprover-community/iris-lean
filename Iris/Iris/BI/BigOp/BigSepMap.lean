@@ -23,6 +23,7 @@ open Iris.Algebra BigOpL BigOpM BIBase Iris.Std BigSepL LawfulPartialMap Partial
 
 variable {PROP : Type _} [BI PROP]
 variable {K : Type _} {V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
+local bi PROP
 
 namespace BigSepM
 
@@ -178,7 +179,7 @@ instance bigSepM_absorbing_inst [BIAffine PROP] {Φ : K → V → PROP} {m : M V
   bigSepM_absorbing fun _ => inferInstance
 
 theorem bigSepM_emp [DecidableEq K] {m : M V} :
-    bigSepM (fun (_ : K) (_ : V) => (emp : PROP)) m ⊣⊢ emp :=
+    bigSepM (fun (_ : K) (_ : V) => emp) m ⊣⊢ emp :=
   BiEntails.of_eq <| bigOpM_const_unit_eq m
 
 @[rocq_alias big_sepM_sep]
@@ -301,7 +302,7 @@ theorem bigSepM_forall_elim {Φ : K → V → PROP} {m : M V}
     (∀ k v, ⌜get? m k = some v⌝ → Φ k v) ⊢ [∗map] k ↦ x ∈ m, Φ k x :=
   (bigOpM_closed
     (P := fun (Q : PROP) =>
-      ((∀ k, ∀ v, iprop(⌜get? m k = some v⌝ → Φ k v) : PROP) ⊢ Q) ∧ Persistent Q)
+      ((∀ k, ∀ v, iprop(⌜get? m k = some v⌝ → Φ k v)) ⊢ Q) ∧ Persistent Q)
     ⟨Affine.affine, inferInstance⟩
     (fun ⟨hx, _⟩ ⟨hy, _⟩ => ⟨and_self.2.trans <| (and_mono hx hy).trans
       persistent_and_sep_mp, inferInstance⟩)
@@ -332,14 +333,14 @@ theorem bigSepM_dup {P : PROP} [Affine P] {m : M V} :
 
 @[rocq_alias big_sepM_pure_1]
 theorem bigSepM_pure_intro {φ : K → V → Prop} {m : M V} :
-    ([∗map] k ↦ x ∈ m, (⌜φ k x⌝ : PROP)) ⊢ ⌜all φ m⌝ :=
+    ([∗map] k ↦ x ∈ m, ⌜φ k x⌝) ⊢ ⌜all φ m⌝ :=
   bigSepL_pure_intro.trans <| pure_mono fun h k v hget =>
     let ⟨idx, hidx⟩ := List.mem_iff_getElem.mp <| toList_get (M := M).mpr hget
     h idx ⟨k, v⟩ <| List.getElem?_eq_some_iff.mpr ⟨hidx.1, hidx.2⟩
 
 @[rocq_alias big_sepM_affinely_pure_2]
 theorem bigSepM_affinely_pure_elim {φ : K → V → Prop} {m : M V} :
-    (<affine> ⌜all φ m⌝) ⊢ [∗map] k ↦ x ∈ m, (<affine> ⌜φ k x⌝ : PROP) := by
+    (<affine> ⌜all φ m⌝) ⊢ [∗map] k ↦ x ∈ m, (<affine> ⌜φ k x⌝) := by
   refine bigOpM_closed (P := fun Q => (<affine> ⌜all φ m⌝) ⊢ Q)
     affinely_elim_emp (fun hx hy => ?_) (fun hget => affinely_mono <|
     pure_mono fun hall => hall _ _ hget)
@@ -349,7 +350,7 @@ theorem bigSepM_affinely_pure_elim {φ : K → V → Prop} {m : M V} :
 
 @[rocq_alias big_sepM_pure]
 theorem bigSepM_pure [BIAffine PROP] {φ : K → V → Prop} {m : M V} :
-    ([∗map] k ↦ x ∈ m, ⌜φ k x⌝ : PROP) ⊣⊢ ⌜all φ m⌝ :=
+    ([∗map] k ↦ x ∈ m, ⌜φ k x⌝) ⊣⊢ ⌜all φ m⌝ :=
   ⟨bigSepM_pure_intro, (affine_affinely _).2.trans <|
     bigSepM_affinely_pure_elim.trans <| bigSepM_mono fun _ => affinely_elim⟩
 
