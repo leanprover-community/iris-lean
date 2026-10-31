@@ -158,20 +158,15 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
       (|={E₂, E₁}=> Wp.wp (Val := Val) Stuckness.NotStuck E₁ e Φ))
     ⊢ Wp.wp (Val := Val) Stuckness.NotStuck E₁ e Φ := by
   iintro H
-  simp only [Wp.wp]
-  rw [congrArg (fun f => f E₁ e Φ) (Iris.wp.unfold Stuckness.NotStuck), wp.pre, Hnv]
+  rw [wp_unfold.to_eq, wp.pre, Hnv]
   simp only
   imod H with (⟨%K, %e', %Hctx, %Haux, %hato, Hwp⟩| >$)
   subst Haux
-  irevert Hwp
-  conv => rhs; lhs; rw (occs := [1]) [wp.unfold]
-  iintro Hwp
+  icases wp_unfold $$ Hwp with Hwp
   unfold wp.pre
   rcases He' : toVal e' with (_|v'); rotate_left
   · imod Hwp; imod Hwp
-    irevert Hwp
-    conv => rhs; lhs; rw (occs := [1]) [wp.unfold]
-    iintro Hwp
+    icases wp_unfold $$ Hwp with Hwp
     simp only [wp.pre, coe_of_toVal_eq_some He', Hnv]
     itrivial
   · dsimp only
@@ -187,9 +182,7 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
     iintro Hc
     imod Hc with ⟨Hst, Hwp, $⟩
     replace Hprim : PrimStep.Irreducible (e₂, σ₂) := hato.atomic Hprim
-    irevert Hwp
-    conv => rhs; lhs; rw (occs := [1]) [wp.unfold]
-    iintro Hwp
+    icases wp_unfold $$ Hwp with Hwp
     unfold wp.pre
     rcases He₂' : toVal e₂ with (_|v₂) <;> dsimp only
     · imod Hwp $$ %_ %_ %κs %.nil [Hst] with ⟨%Hredu, H⟩
