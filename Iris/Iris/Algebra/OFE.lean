@@ -7,7 +7,6 @@ module
 
 public import Iris.Std.Nat
 public import Iris.Std.Option
-public meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
@@ -1877,8 +1876,7 @@ theorem fixpoint_proper [COFE α] [Inhabited α] {f g : α → α} [Contractive 
 
 @[elab_as_elim, rocq_alias fixpoint_ind]
 theorem OFE.ContractiveHom.fixpoint_ind [COFE α] [Inhabited α] (f : α -c> α)
-    (P : α → Prop) (x : α) (Hbase : P x)
-    (Hind : ∀ x, P x → P (f x)) (Hlim : LimitPreserving P) :
+    (P : α → Prop) (x : α) (Hbase : P x) (Hind : ∀ x, P x → P (f x)) (Hlim : LimitPreserving P) :
     P f.fixpoint := by
   let chain : Chain α := by
     refine ⟨fun i => Nat.repeat f (i + 1) x, fun {n i} H => ?_⟩
@@ -1887,21 +1885,21 @@ theorem OFE.ContractiveHom.fixpoint_ind [COFE α] [Inhabited α] (f : α -c> α)
     | succ _ IH =>
       cases i <;> simp at H
       exact Contractive.succ _ <| IH H
-  have HProper : ∀ A B : α, A = B → P A → P B := by
-    intros A B h ha
-    rw [← h]
-    assumption
-  refine HProper _ _ (fixpoint_unique (f := f) (x := COFE.compl chain) ?_) ?_
-  · refine eq_dist_2 fun n => ?_
-    apply COFE.conv_compl.trans
-    refine .trans ?_ (f.ne.ne COFE.conv_compl).symm
-    induction n
-    · exact Contractive.zero f.f
-    · rename_i IH; apply Contractive.succ _ IH
-  · apply Hlim.compl; intro n
-    induction n with
-    | zero => exact Hind (Nat.repeat f.f 0 x) Hbase
-    | succ _ IH => apply Hind (Nat.repeat f.f _ x) IH
+  suffices H : P (COFE.compl chain) by
+    refine (congrArg P ?_).mp H
+    refine fixpoint_unique (f := f) (x := COFE.compl chain) ?_
+    refine eq_dist_2 fun n => ?_
+    calc
+      COFE.compl chain ≡{n}≡ chain n := COFE.conv_compl
+      _ ≡{n}≡ f (chain n) := by
+        induction n with
+        | zero => exact Contractive.zero f.f
+        | succ _ IH => exact Contractive.succ f.f IH
+      _ ≡{n}≡ f (COFE.compl chain) := (f.ne.ne COFE.conv_compl).symm
+  refine Hlim.compl _ (fun n => ?_)
+  induction n with
+  | zero => exact Hind (Nat.repeat f.f 0 x) Hbase
+  | succ _ IH => exact Hind (Nat.repeat f.f _ x) IH
 
 theorem repeat_dist [OFE α] (f g : α → α) [NonExpansive f] {n} (Hfg : ∀ z, f z ≡{n}≡ g z) :
     ∀ k z, Nat.repeat f k z ≡{n}≡ Nat.repeat g k z :=
