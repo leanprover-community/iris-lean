@@ -21,7 +21,7 @@ theorem fixpoint_plain [Sbi PROP] {A : Type _} (F : (A → PROP) → A → PROP)
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Plain (f x))
       (fun _ => iprop(emp)) inferInstance HΦ ?_
   refine LimitPreserving.forall _ (fun _ => ?_)
-  refine limitPreserving_plain (Φne := ⟨fun _ _ _ h => h _⟩)
+  exact limitPreserving_plain _
 
 @[rocq_alias fixpoint_persistent]
 theorem fixpoint_persistent [BI PROP] {A : Type _} (F : (A → PROP) → A → PROP) [Contractive F] :
@@ -31,7 +31,7 @@ theorem fixpoint_persistent [BI PROP] {A : Type _} (F : (A → PROP) → A → P
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Persistent (f x))
       (fun _ => iprop(emp)) inferInstance HΦ ?_
   refine LimitPreserving.forall _ (fun _ => ?_)
-  exact limitPreserving_persistent _ (Φne := ⟨fun _ _ _ h => h _⟩)
+  exact limitPreserving_persistent _
 
 @[rocq_alias fixpoint_absorbing]
 theorem fixpoint_absorbing [BI PROP] {A : Type _} (F : (A → PROP) → A → PROP) [Contractive F] :
@@ -41,7 +41,7 @@ theorem fixpoint_absorbing [BI PROP] {A : Type _} (F : (A → PROP) → A → PR
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Absorbing (f x))
       (fun _ => iprop(True)) inferInstance HΦ ?_
   refine LimitPreserving.forall _ (fun _ => ?_)
-  exact limitPreserving_absorbing _ (Φne := ⟨fun _ _ _ h => h _⟩)
+  exact limitPreserving_absorbing _
 
 @[rocq_alias fixpoint_affine]
 theorem fixpoint_affine [BI PROP] {A : Type _} (F : (A → PROP) → A → PROP) [Contractive F] :
@@ -50,7 +50,7 @@ theorem fixpoint_affine [BI PROP] {A : Type _} (F : (A → PROP) → A → PROP)
   refine ContractiveHom.fixpoint_ind ⟨F, inferInstance⟩ (fun f => ∀ x, Affine (f x))
       (fun _ => iprop(emp)) inferInstance HΦ ?_
   refine LimitPreserving.forall _ (fun _ => ?_)
-  exact limitPreserving_affine _ (Φne := ⟨fun _ _ _ h => h _⟩)
+  exact limitPreserving_affine _
 
 -- FIXME: typo in Iris-Rocq
 @[rocq_alias fixpoint_persistent_absoring]
@@ -66,8 +66,8 @@ theorem fixpoint_persistent_absorbing [BI PROP] {A : Type _}
       (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
   refine LimitPreserving.forall _ (fun _ => ?_)
   refine LimitPreserving.and ?_ ?_
-  · exact limitPreserving_persistent _ (Φne := ⟨fun _ _ _ h => h _⟩)
-  · exact limitPreserving_absorbing _ (Φne := ⟨fun _ _ _ h => h _⟩)
+  · exact limitPreserving_persistent _
+  · exact limitPreserving_absorbing _
 
 @[rocq_alias fixpoint_persistent_affine]
 theorem fixpoint_persistent_affine [BI PROP] {A : Type _}
@@ -82,8 +82,8 @@ theorem fixpoint_persistent_affine [BI PROP] {A : Type _}
       (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
   refine LimitPreserving.forall _ (fun _ => ?_)
   refine LimitPreserving.and ?_ ?_
-  · exact limitPreserving_persistent _ (Φne := ⟨fun _ _ _ h => h _⟩)
-  · exact limitPreserving_affine _ (Φne := ⟨fun _ _ _ h => h _⟩)
+  · exact limitPreserving_persistent _
+  · exact limitPreserving_affine _
 
 -- FIXME: typo in Iris-Rocq
 @[rocq_alias fixpoint_plain_absoring]
@@ -99,8 +99,8 @@ theorem fixpoint_plain_absorbing [Sbi PROP] {A : Type _}
       (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
   refine LimitPreserving.forall _ (fun _ => ?_)
   refine LimitPreserving.and ?_ ?_
-  · exact limitPreserving_plain _ (Φne := ⟨fun _ _ _ h => h _⟩)
-  · exact limitPreserving_absorbing _ (Φne := ⟨fun _ _ _ h => h _⟩)
+  · exact limitPreserving_plain _
+  · exact limitPreserving_absorbing _
 
 @[rocq_alias fixpoint_plain_affine]
 theorem fixpoint_plain_affine [Sbi PROP] {A : Type _}
@@ -115,8 +115,8 @@ theorem fixpoint_plain_affine [Sbi PROP] {A : Type _}
       (fun x H => HΦ _ (fun x => (H x).left) (fun x => (H x).right)) ?_
   refine LimitPreserving.forall _ (fun _ => ?_)
   refine LimitPreserving.and ?_ ?_
-  · exact limitPreserving_plain _ (Φne := ⟨fun _ _ _ h => h _⟩)
-  · exact limitPreserving_affine _ (Φne := ⟨fun _ _ _ h => h _⟩)
+  · exact limitPreserving_plain _
+  · exact limitPreserving_affine _
 
 end Laws
 

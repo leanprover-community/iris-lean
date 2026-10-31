@@ -631,9 +631,16 @@ instance [OFE α] [OFE β] : OFE (α -c> β) where
   eq_dist' {_ _} := ContractiveHom.ext_iff.trans eq_dist
   dist_lt := dist_lt
 
+/-- Evaluation at a fixed argument is non-expansive for the pointwise OFE.
+Instance priority is lowered for performance. -/
+@[instance 100]
+theorem apply_ne [OFEFun (β : α → _)] (x : α) :
+    NonExpansive (fun f : (x : α) → β x => f x) where
+  ne _ _ _ H := H x
+
 def applyHom [OFEFun (β : α → _)] (x : α) : ((x : α) → β x) -n> β x where
   f f := f x
-  ne.1 _ _ _ H := H x
+  ne := apply_ne x
 
 def applyNe [OFE α] [OFE β] (x : α) : (α -n> β) -n> β where
   f f := f x
