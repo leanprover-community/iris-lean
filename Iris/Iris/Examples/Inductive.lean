@@ -24,7 +24,7 @@ def NIL : Val := hl_val(none())
 def DEL (l : Loc) : Val := hl_val(some(#l))
 def CONS (v : Val) (l : Loc) : Val := hl_val(some((&v, #l)))
 
-variable [inst : HeapLangGS hlc GF]
+variable [inst : HeapLangGS hlc GF] -- FIXME: iinductive breaks when inst is anon
 
 iinductive isList : Loc → List Val → IProp GF where
   | nil (l : Loc) : l ↦ NIL -∗ isList l []
