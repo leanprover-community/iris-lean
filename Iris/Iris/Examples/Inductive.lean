@@ -26,30 +26,28 @@ def CONS (v : Val) (l : Loc) : Val := hl_val(some((&v, #l)))
 
 variable [inst : HeapLangGS hlc GF]
 
-iinductive isList
-    nonexp_by
-      intros Φ _
-      constructor
-      intros n x y h
-      cases OFE.Discrete.discrete h
-      exact .rfl
-    : Loc → List Val → IProp GF where
+iinductive isList : Loc → List Val → IProp GF where
   | nil (l : Loc) : l ↦ NIL -∗ isList l []
   | cons (l tl : Loc) (v : Val) (vs : List Val) :
       l ↦ CONS v tl -∗ isList tl vs -∗ isList l (v :: vs)
+nonexp_by
+  intros Φ _
+  constructor
+  intros n x y h
+  cases OFE.Discrete.discrete h
+  exact .rfl
 
-iinductive isDelList
-    nonexp_by
-      intros Φ _
-      constructor
-      intros n x y h
-      cases OFE.Discrete.discrete h
-      exact .rfl
-    : Loc → List Val → IProp GF where
+iinductive isDelList : Loc → List Val → IProp GF where
   | nil (l : Loc) : l ↦ NIL -∗ isDelList l []
   | cons (l tl : Loc) (v : Val) (vs : List Val) :
       l ↦ CONS v tl -∗ isDelList tl vs -∗ isDelList l (v :: vs)
   | del (l tl : Loc) (vs : List Val) :
       l ↦ DEL tl -∗ isDelList tl vs -∗ isDelList l vs
+nonexp_by
+  intros Φ _
+  constructor
+  intros n x y h
+  cases OFE.Discrete.discrete h
+  exact .rfl
 
 end Iris.Examples.Inductive

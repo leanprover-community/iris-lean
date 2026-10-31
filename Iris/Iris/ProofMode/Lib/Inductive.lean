@@ -162,16 +162,17 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
     else
       selector := selector.pop.push (← `(tactic| iright))
 
-/-- Inductive predicate definition via the least fixpoint. -/
+/-- Inductive predicate definition via the least fixpoint.
+The `monotone_by` and `nonexp_by` clauses follow the constructors. -/
 elab mods:declModifiers "iinductive " name:ident binders:fixpointBinder*
-    monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)?
-    " : " type:term " where " ctors:iinductiveConstructor* : command =>
+    " : " type:term " where " ctors:iinductiveConstructor*
+    monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
   elabIInductiveDef mods name binders type ctors monoPf nePf false
 
 /-- Like `iinductive`, but logs the generated Lean code. . -/
 elab mods:declModifiers "iinductive? " name:ident binders:fixpointBinder*
-    monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)?
-    " : " type:term " where " ctors:iinductiveConstructor* : command =>
+    " : " type:term " where " ctors:iinductiveConstructor*
+    monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
   elabIInductiveDef mods name binders type ctors monoPf nePf true
 
 end Iris

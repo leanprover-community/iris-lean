@@ -39,16 +39,30 @@ contractive_by
   unfold guarded.pre
   exact OFE.Contractive.distLater_dist h
 
-iinductive cycle nonexp_by
+iinductive cycle : Unit → IProp BundledGFunctors.default where
+  | left : cycle () -∗ cycle ()
+  | right : cycle () -∗ cycle ()
+monotone_by monotone
+nonexp_by
   intros Φ hΦ
   constructor
   intros n x y h
   cases x
   cases y
   exact .rfl
-  : Unit → IProp BundledGFunctors.default where
-  | left : cycle () -∗ cycle ()
-  | right : cycle () -∗ cycle ()
+
+#guard_msgs (drop info) in
+iinductive? tracedCycle : Unit → IProp BundledGFunctors.default where
+  | left : tracedCycle () -∗ tracedCycle ()
+  | right : tracedCycle () -∗ tracedCycle ()
+monotone_by monotone
+nonexp_by
+  intros Φ _
+  constructor
+  intros n x y h
+  cases x
+  cases y
+  exact .rfl
 
 end IrisTest.FixpointCore
 
@@ -152,64 +166,64 @@ nonexp_by intros; assumption
 -- 16. An empty predicate is rejected for having no recursive occurrence.
 /-- monotone fixpoint def: no recursive occurrence of 'empty' found in the body -/
 #guard_msgs (substring := true) in
-iinductive empty nonexp_by
+iinductive empty : Unit → IProp BundledGFunctors.default where
+nonexp_by
   intros Φ _
   exact ⟨fun {_ _ _} _ => .rfl⟩
-  : Unit → IProp BundledGFunctors.default where
 
 -- 17. One constructor reads the last element of an empty selector list.
 run_cmd (expectPanic "
-iinductive single nonexp_by
+iinductive single : Unit → IProp BundledGFunctors.default where
+  | step : single () -∗ single ()
+nonexp_by
   intros Φ _
   constructor
   intros n x y h
   cases x
   cases y
   exact .rfl
-  : Unit → IProp BundledGFunctors.default where
-  | step : single () -∗ single ()
 " "PANIC at List.getLast!" 0)
 
 -- 18. Proposition-valued constructor parameters are omitted from existential binders.
 /-- Unknown identifier `P` -/
 #guard_msgs (error, drop warning, substring := true) in
-iinductive resource nonexp_by
+iinductive resource : Unit → IProp BundledGFunctors.default where
+  | a (P : IProp BundledGFunctors.default) : P -∗ resource () -∗ resource ()
+  | b : resource () -∗ resource ()
+nonexp_by
   intros Φ _
   constructor
   intros n x y h
   cases x
   cases y
   exact .rfl
-  : Unit → IProp BundledGFunctors.default where
-  | a (P : IProp BundledGFunctors.default) : P -∗ resource () -∗ resource ()
-  | b : resource () -∗ resource ()
 
 -- 19. A parenthesized recursive premise is not counted when selecting the conclusion.
 /-- ileft: nested () is not a disjunction -/
 #guard_msgs (substring := true) in
-iinductive nested nonexp_by
+iinductive nested : Unit → IProp BundledGFunctors.default where
+  | a : (nested ()) -∗ nested ()
+  | b : nested () -∗ nested ()
+nonexp_by
   intros Φ _
   constructor
   intros n x y h
   cases x
   cases y
   exact .rfl
-  : Unit → IProp BundledGFunctors.default where
-  | a : (nested ()) -∗ nested ()
-  | b : nested () -∗ nested ()
 
 -- 20. An ordinary implication premise is not introduced before rewriting.
 /-- True → ⊢ purePremise () -∗ purePremise () -/
 #guard_msgs (substring := true) in
-iinductive purePremise nonexp_by
+iinductive purePremise : Unit → IProp BundledGFunctors.default where
+  | a : True → purePremise () -∗ purePremise ()
+  | b : purePremise () -∗ purePremise ()
+nonexp_by
   intros Φ _
   constructor
   intros n x y h
   cases x
   cases y
   exact .rfl
-  : Unit → IProp BundledGFunctors.default where
-  | a : True → purePremise () -∗ purePremise ()
-  | b : purePremise () -∗ purePremise ()
 
 end IrisTest.FixpointCore
