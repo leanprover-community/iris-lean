@@ -131,42 +131,11 @@ theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
   BI.equiv_iff.1 <| OFE.eq_dist.mpr <|
     fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist E e Φ
 
-@[rocq_alias wp_ne]
-instance wp_ne {s : Stuckness} {E} {e : Expr} :
-    OFE.NonExpansive (Wp.wp (PROP := IProp GF) s E e) where
-  ne {n Φ₁ Φ₂} HΦ := by
-    induction n using Nat.strongRecOn generalizing e E Φ₁ Φ₂ with | ind n IH =>
-    simp only [wp_unfold.to_eq]
-    dsimp only [wp.pre]
-    cases toVal e
-    case some v =>
-      exact BIFUpdate.ne.ne <| HΦ v
-    case none =>
-      refine BI.forall_ne fun σ₁ => ?_
-      refine BI.forall_ne fun ns => ?_
-      refine BI.forall_ne fun obs => ?_
-      refine BI.forall_ne fun obs' => ?_
-      refine BI.forall_ne fun nt => ?_
-      refine BI.wand_ne.ne .rfl ?_
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.forall_ne fun e₂  => ?_
-      refine BI.forall_ne fun σ₂ => ?_
-      refine BI.forall_ne fun eₜ => ?_
-      refine BI.wand_ne.ne .rfl ?_
-      refine BI.wand_ne.ne .rfl ?_
-      refine step_fupdN_contractive.distLater_dist fun m n_m => ?_
-      refine BIFUpdate.ne.ne ?_
-      refine BI.sep_ne.ne .rfl ?_
-      refine BI.sep_ne.ne ?_ .rfl
-      exact IH m n_m <| OFE.dist_lt HΦ n_m
-
-#rocq_ignore wp_proper "Derivable using NonExpansive.eqv"
-
 @[rocq_alias wp_contractive]
 theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     OFE.Contractive (Wp.wp (PROP := IProp GF) s E e) where
   distLater_dist {n Φ₁ Φ₂} HΦ := by
+    induction n using Nat.strongRecOn generalizing e E Φ₁ Φ₂ with | ind n IH =>
     simp only [wp_unfold.to_eq]
     simp only [wp.pre, h]
     refine BI.forall_ne fun σ₁ => ?_
@@ -186,8 +155,26 @@ theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     refine BIFUpdate.ne.ne ?_
     refine BI.sep_ne.ne .rfl ?_
     refine BI.sep_ne.ne ?_ .rfl
-    refine wp_ne.ne ?_
-    exact HΦ m n_m
+    cases h₂ : toVal e₂ with
+    | some v =>
+      simp only [wp_unfold.to_eq, wp.pre, h₂]
+      exact BIFUpdate.ne.ne (HΦ m n_m v)
+    | none =>
+      exact IH m n_m E e₂ h₂ fun k hk => HΦ k (Nat.lt_trans hk n_m)
+
+@[rocq_alias wp_ne]
+instance wp_ne {s : Stuckness} {E} {e : Expr} :
+    OFE.NonExpansive (Wp.wp (PROP := IProp GF) s E e) := by
+  cases h : toVal e with
+  | some v =>
+    refine ⟨fun {n Φ₁ Φ₂} HΦ => ?_⟩
+    simp only [wp_unfold.to_eq, wp.pre, h]
+    exact BIFUpdate.ne.ne (HΦ v)
+  | none =>
+    letI := wp_contractive (GF := GF) s E e h
+    infer_instance
+
+#rocq_ignore wp_proper "Derivable using NonExpansive.eqv"
 
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :
