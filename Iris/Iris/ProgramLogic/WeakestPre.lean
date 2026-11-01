@@ -11,6 +11,7 @@ public import Iris.BI
 public import Iris.BI.WeakestPre
 public import Iris.BI.DerivedLaws
 public import Iris.ProofMode
+public import Iris.ProofMode.Lib.Fixpoint
 public import Iris.ProgramLogic.Language
 public import Iris.Std.CoPset
 

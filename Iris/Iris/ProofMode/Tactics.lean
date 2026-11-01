@@ -17,7 +17,6 @@ public import Iris.ProofMode.Tactics.Exact
 public import Iris.ProofMode.Tactics.ExFalso
 public import Iris.ProofMode.Tactics.Exists
 public import Iris.ProofMode.Tactics.Frame
-public import Iris.ProofMode.Tactics.Guarded
 public import Iris.ProofMode.Tactics.Have
 public import Iris.ProofMode.Tactics.HaveCore
 public import Iris.ProofMode.Tactics.Induction
