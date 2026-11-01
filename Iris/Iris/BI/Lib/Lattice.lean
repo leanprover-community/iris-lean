@@ -5,23 +5,50 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.BI
-public import Iris.ProofMode
 public import Iris.BI.Lib.Monotone
-public import Lean.Meta.Order
 import all Init.Internal.Order.Basic
 
 /-! # Lattice-based Iris Fixpoints
 
-These lattices over Iris types let us define Iris fixpoints using `partial_fixpoint`.
--/
+Two orders on `PROP` let `partial_fixpoint` define Iris fixpoints: entailment gives least
+fixpoints, and reverse entailment gives greatest ones. Curried predicates are ordered pointwise,
+so a `BIMono` body is monotone, and its fixpoint satisfies Iris (co)induction. -/
 
 @[expose] public section
 
 namespace Iris
-open Iris.Std BI OFE Lean.Order BIPred
+open BI Lean.Order Curried
 
-variable [BI PROP]
+local bi PROP
+
+/-- The order on curried predicates is pointwise. -/
+class Curried.Pointwise (τ : Type _) (PROP : Type _) [BI PROP] [Curried τ PROP]
+    [CCPO PROP] [CCPO τ] : Prop where
+  app_le {Φ Ψ : τ} : Φ ⊑ Ψ ↔ ∀ a : Args τ PROP, app Φ a ⊑ app Ψ a
+  csup_le {c : τ → Prop} (hc : chain c) (a : Args τ PROP) {P : PROP} :
+    app (CCPO.csup hc) a ⊑ P ↔ ∀ Φ, c Φ → app Φ a ⊑ P
+
+namespace Curried.Pointwise
+variable {PROP : Type _} [BI PROP] [CCPO PROP]
+
+instance : Pointwise PROP PROP where
+  app_le := ⟨fun h _ => h, fun h => h ()⟩
+  csup_le hc _ := CCPO.csup_spec hc _
+
+instance {α : Type _} {β : α → Type _} [∀ a, Curried (β a) PROP] [∀ a, CCPO (β a)]
+    [∀ a, Pointwise (β a) PROP] : Pointwise ((a : α) → β a) PROP where
+  app_le := ⟨fun h a => app_le.mp (h a.1) a.2, fun h x => app_le.mpr fun r => h ⟨x, r⟩⟩
+  csup_le hc a := by
+    intro P
+    change app ((CCPO.csup hc) a.1) a.2 ⊑ P ↔ _
+    rw [← fun_csup_eq]
+    refine (csup_le (chain_apply hc a.1) a.2).trans ⟨fun h Φ hΦ => h _ ⟨Φ, hΦ, rfl⟩, ?_⟩
+    rintro h _ ⟨Φ, hΦ, rfl⟩
+    exact h Φ hΦ
+
+end Curried.Pointwise
+
+variable {PROP : Type _} [BI PROP] {τ : Type _} [Curried τ PROP]
 
 namespace MonotoneFixpoint
 
@@ -40,172 +67,31 @@ theorem sExists_is_sup (c : PROP → Prop) :
 scoped instance instCCPOMonoProp : CCPO PROP where
   has_csup {c} _ := ⟨_, sExists_is_sup c⟩
 
-/-- Equivalence between CCPO supremum with the Iris supremum (`exists`). -/
-theorem csup_eq_exists {c : PROP → Prop} (hc : chain c) : CCPO.csup hc = sExists c :=
-   is_sup_unique (CCPO.csup_spec hc) (sExists_is_sup c)
+variable [CCPO τ] [Pointwise τ PROP]
 
-/-- Wands out of a chain sup: the sup of a chain of curried predicates satisfies a wand when
-every member does. -/
-class CSupWand (τ : Type _) (PROP : outParam (Type _)) [BI PROP] [BIPred τ PROP] [CCPO τ] where
-  wandAll_csup {c : τ → Prop} (hc : chain c) {H : PROP} {Φ : τ} :
-    (∀ f, c f → H ⊢ wandAll f Φ) → H ⊢ wandAll (CCPO.csup hc) Φ
+theorem monotone_of_bimono {F : τ → τ} (h : BIMono (PROP := PROP) F) : monotone F :=
+  fun Φ Ψ hle => by
+  have hΦΨ : ⊢ wandAll Φ Ψ := wandAll_intro fun a => emp_sep.1.trans (Pointwise.app_le.mp hle a)
+  have hF : ⊢ wandAll (F Φ) (F Ψ) := by iapply (h _ _); iintro !>; iapply hΦΨ
+  exact Pointwise.app_le.mpr fun a => emp_sep.2.trans <| (sep_mono_left hF).trans (wandAll_elim a)
 
-scoped instance : CSupWand PROP PROP where
-  wandAll_csup {c} hc {H Φ} h := by
-    rw [csup_eq_exists]
-    exact wand_intro <| sep_symm.trans <| wand_elim <|
-      sExists_elim fun f hf => wand_intro <| sep_symm.trans <| wand_elim (h f hf)
-
-scoped instance {α : Type _} {β : α → Type _} [∀ a, BIPred (β a) PROP] [∀ a, CCPO (β a)]
-    [∀ a, CSupWand (β a) PROP] : CSupWand ((a : α) → β a) PROP where
-  wandAll_csup {c} hc {H Φ} h := by
-    rw [← fun_csup_eq]
-    refine forall_intro fun a => ?_
-    refine CSupWand.wandAll_csup (chain_apply hc a) fun g ⟨f, hf, hg⟩ => ?_
-    subst hg
-    exact (h f hf).trans (forall_elim a)
-
-/-- Iris induction for the least fixpoint of a monotone body `F`. -/
-theorem fix_iter {τ : Type _} [BIPred τ PROP] [CCPO τ] [CSupWand τ PROP]
-    (F : τ → τ) (hF : monotone F) [MonoFn F] (Φ : τ) :
-    ⊢ □ wandAll (F Φ) Φ -∗ wandAll (fix F hF) Φ := by
-  suffices h : iprop(□ wandAll (F Φ) Φ) ⊢ wandAll (fix F hF) Φ by
-    iintro #H; iapply h; iexact H
-  refine fix_induct hF (fun f => iprop(□ wandAll (F Φ) Φ) ⊢ wandAll f Φ)
-    (fun c hc h => CSupWand.wandAll_csup hc h) fun f ih => ?_
-  iintro #H
-  iapply wandAll_comp
-  isplitl
-  · iapply MonoFn.mono
-    iintro !>
-    iapply ih
-    iexact H
-  · iexact H
-
-section Monotone
-variable [PartialOrder α]
-
-@[partial_fixpoint_monotone]
-theorem monotone_sep (f g : α → PROP) (hf : monotone f) (hg : monotone g) :
-    monotone (fun x => iprop(f x ∗ g x)) :=
-  fun _ _ h => sep_mono (hf _ _ h) (hg _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_and (f g : α → PROP) (hf : monotone f) (hg : monotone g) :
-    monotone (fun x => iprop(f x ∧ g x)) :=
-  fun _ _ h => and_mono (hf _ _ h) (hg _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_or (f g : α → PROP) (hf : monotone f) (hg : monotone g) :
-    monotone (fun x => iprop(f x ∨ g x)) :=
-  fun _ _ h => or_mono (hf _ _ h) (hg _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_wand (P : PROP) (g : α → PROP) (hg : monotone g) :
-    monotone (fun x => iprop(P -∗ g x)) :=
-  fun _ _ h => wand_mono_right (hg _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_imp (P : PROP) (g : α → PROP) (hg : monotone g) :
-    monotone (fun x => iprop(P → g x)) :=
-  fun _ _ h => imp_mono_right (hg _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_exists {β : Sort _} (f : α → β → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(∃ b, f x b)) :=
-  fun _ _ h => exists_mono fun b => monotone_apply b f hf _ _ h
-
-@[partial_fixpoint_monotone]
-theorem monotone_forall {β : Sort _} (f : α → β → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(∀ b, f x b)) :=
-  fun _ _ h => forall_mono fun b => monotone_apply b f hf _ _ h
-
-@[partial_fixpoint_monotone]
-theorem monotone_later (f : α → PROP) (hf : monotone f) : monotone (fun x => iprop(▷ f x)) :=
-  fun _ _ h => later_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_laterN (n : Nat) (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(▷^[n] f x)) :=
-  fun _ _ h => laterN_mono n (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_except0 (f : α → PROP) (hf : monotone f) : monotone (fun x => iprop(◇ f x)) :=
-  fun _ _ h => except0_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_persistently (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(<pers> f x)) :=
-  fun _ _ h => persistently_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_affinely (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(<affine> f x)) :=
-  fun _ _ h => affinely_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_absorbingly (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(<absorb> f x)) :=
-  fun _ _ h => absorbingly_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_intuitionistically (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(□ f x)) :=
-  fun _ _ h => intuitionistically_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_bupd [BIUpdate PROP] (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(|==> f x)) :=
-  fun _ _ h => bupd_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_fupd [BIFUpdate PROP] (E1 E2 : CoPset) (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(|={E1,E2}=> f x)) :=
-  fun _ _ h => fupd_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_step_fupd [BIFUpdate PROP] (Eo Ei : CoPset) (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(|={Eo}[Ei]▷=> f x)) :=
-  fun _ _ h => step_fupd_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_step_fupdN [BIFUpdate PROP] (n : Nat) (Eo Ei : CoPset) (f : α → PROP)
-    (hf : monotone f) : monotone (fun x => iprop(|={Eo}[Ei]▷=>^[n] f x)) :=
-  fun _ _ h => step_fupdN_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_bigSepL {A : Type _} (l : List A) (f : α → Nat → A → PROP) (hf : monotone f) :
-    monotone (fun x => iprop([∗list] k ↦ a ∈ l, f x k a)) :=
-  fun _ _ h => BigSepL.bigSepL_mono_of_forall fun {k a} => hf _ _ h k a
-
-@[partial_fixpoint_monotone]
-theorem monotone_bigAndL {A : Type _} (l : List A) (f : α → Nat → A → PROP) (hf : monotone f) :
-    monotone (fun x => iprop([∧list] k ↦ a ∈ l, f x k a)) :=
-  fun _ _ h => BigAndL.bigAndL_mono fun k a _ => hf _ _ h k a
-
-@[partial_fixpoint_monotone]
-theorem monotone_bigOrL {A : Type _} (l : List A) (f : α → Nat → A → PROP) (hf : monotone f) :
-    monotone (fun x => iprop([∨list] k ↦ a ∈ l, f x k a)) :=
-  fun _ _ h => BigOrL.bigOrL_mono fun {k a} _ => hf _ _ h k a
-
-@[partial_fixpoint_monotone]
-theorem monotone_bigSepL2 {A B : Type _} (l1 : List A) (l2 : List B)
-    (f : α → Nat → A → B → PROP) (hf : monotone f) :
-    monotone (fun x => iprop([∗list] k ↦ a;b ∈ l1;l2, f x k a b)) :=
-  fun _ _ h => BigSepL2.bigSepL2_mono fun {k a b} _ _ => hf _ _ h k a b
-
-@[partial_fixpoint_monotone]
-theorem monotone_bigSepM {K V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K] (m : M V)
-    (f : α → K → V → PROP) (hf : monotone f) :
-    monotone (fun x => iprop([∗map] k ↦ v ∈ m, f x k v)) :=
-  fun _ _ h => BigSepM.bigSepM_mono_of_forall fun {k v} => hf _ _ h k v
-
-@[partial_fixpoint_monotone]
-theorem monotone_bigSepS {S A : Type _} [LawfulFiniteSet S A] (X : S) (f : α → A → PROP)
-    (hf : monotone f) : monotone (fun x => iprop([∗set] a ∈ X, f x a)) :=
-  fun _ _ h => BigSepS.bigSepS_mono_of_forall fun a => hf _ _ h a
-
-end Monotone
+/-- Iris induction for the least fixpoint of a `BIMono` body `F`. -/
+theorem fix_iter {F : τ → τ} (h : BIMono (PROP := PROP) F) (Φ : τ) :
+    ⊢ □ wandAll (F Φ) Φ -∗ wandAll (fix F (monotone_of_bimono h)) Φ := by
+  suffices hfix : iprop(□ wandAll (F Φ) Φ) ⊢ wandAll (fix F (monotone_of_bimono h)) Φ by
+    iintro #H; iapply hfix; iexact H
+  refine fix_induct _ (fun f => iprop(□ wandAll (F Φ) Φ) ⊢ wandAll f Φ) ?_ fun f ih => ?_
+  · intro c hc hall
+    refine wandAll_intro fun a => sep_symm.trans <| wand_elim ?_
+    exact (Pointwise.csup_le hc a).mpr fun f hf =>
+      wand_intro <| sep_symm.trans <| (sep_mono_left (hall f hf)).trans (wandAll_elim a)
+  · iintro #H
+    iapply wandAll_trans
+    isplitl
+    · iapply (h _ _)
+      iintro !>
+      iapply ih $$ H
+    · iexact H
 
 end MonotoneFixpoint
 
@@ -226,172 +112,31 @@ theorem sForall_is_sup (c : PROP → Prop) :
 scoped instance instCCPOAntiProp : CCPO PROP where
   has_csup {c} _ := ⟨_, sForall_is_sup c⟩
 
-/-- Equivalence between CCPO supremum with the Iris infimum (`forall`). -/
-theorem csup_eq_forall {c : PROP → Prop} (hc : chain c) : CCPO.csup hc = sForall c :=
-   is_sup_unique (CCPO.csup_spec hc) (sForall_is_sup c)
+variable [CCPO τ] [Pointwise τ PROP]
 
-/-- Wands into a chain sup: the sup of a chain of curried predicates (in the reverse order)
-satisfies a wand when every member does. -/
-class CSupWand (τ : Type _) (PROP : outParam (Type _)) [BI PROP] [BIPred τ PROP] [CCPO τ] where
-  wandAll_csup {c : τ → Prop} (hc : chain c) {H : PROP} {Φ : τ} :
-    (∀ f, c f → H ⊢ wandAll Φ f) → H ⊢ wandAll Φ (CCPO.csup hc)
+theorem monotone_of_bimono {F : τ → τ} (h : BIMono (PROP := PROP) F) : monotone F :=
+  fun Φ Ψ hle => by
+  have hΨΦ : ⊢ wandAll Ψ Φ := wandAll_intro fun a => emp_sep.1.trans (Pointwise.app_le.mp hle a)
+  have hF : ⊢ wandAll (F Ψ) (F Φ) := by iapply (h _ _); iintro !>; iapply hΨΦ
+  exact Pointwise.app_le.mpr fun a => emp_sep.2.trans <| (sep_mono_left hF).trans (wandAll_elim a)
 
-scoped instance : CSupWand PROP PROP where
-  wandAll_csup {c} hc {H Φ} h := by
-    rw [csup_eq_forall]
-    exact wand_intro <| sForall_intro fun f hf => wand_elim (h f hf)
-
-scoped instance {α : Type _} {β : α → Type _} [∀ a, BIPred (β a) PROP] [∀ a, CCPO (β a)]
-    [∀ a, CSupWand (β a) PROP] : CSupWand ((a : α) → β a) PROP where
-  wandAll_csup {c} hc {H Φ} h := by
-    rw [← fun_csup_eq]
-    refine forall_intro fun a => ?_
-    refine CSupWand.wandAll_csup (chain_apply hc a) fun g ⟨f, hf, hg⟩ => ?_
-    subst hg
-    exact (h f hf).trans (forall_elim a)
-
-/-- Iris coinduction for the greatest fixpoint of a monotone body `F`. -/
-theorem fix_coiter {τ : Type _} [BIPred τ PROP] [CCPO τ] [CSupWand τ PROP]
-    (F : τ → τ) (hF : monotone F) [MonoFn F] (Φ : τ) :
-    ⊢ □ wandAll Φ (F Φ) -∗ wandAll Φ (fix F hF) := by
-  suffices h : iprop(□ wandAll Φ (F Φ)) ⊢ wandAll Φ (fix F hF) by
-    iintro #H; iapply h; iexact H
-  refine fix_induct hF (fun f => iprop(□ wandAll Φ (F Φ)) ⊢ wandAll Φ f)
-    (fun c hc h => CSupWand.wandAll_csup hc h) fun f ih => ?_
-  iintro #H
-  iapply wandAll_comp
-  isplitl
-  · iexact H
-  · iintro !>
-    iapply MonoFn.mono
-    iintro !>
-    iapply ih
-    iexact H
-
-section Monotone
-variable [PartialOrder α]
-
-@[partial_fixpoint_monotone]
-theorem monotone_sep (f g : α → PROP) (hf : monotone f) (hg : monotone g) :
-    monotone (fun x => iprop(f x ∗ g x)) :=
-  fun _ _ h => sep_mono (hf _ _ h) (hg _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_and (f g : α → PROP) (hf : monotone f) (hg : monotone g) :
-    monotone (fun x => iprop(f x ∧ g x)) :=
-  fun _ _ h => and_mono (hf _ _ h) (hg _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_or (f g : α → PROP) (hf : monotone f) (hg : monotone g) :
-    monotone (fun x => iprop(f x ∨ g x)) :=
-  fun _ _ h => or_mono (hf _ _ h) (hg _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_wand (P : PROP) (g : α → PROP) (hg : monotone g) :
-    monotone (fun x => iprop(P -∗ g x)) :=
-  fun _ _ h => wand_mono_right (hg _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_imp (P : PROP) (g : α → PROP) (hg : monotone g) :
-    monotone (fun x => iprop(P → g x)) :=
-  fun _ _ h => imp_mono_right (hg _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_exists {β : Sort _} (f : α → β → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(∃ b, f x b)) :=
-  fun _ _ h => exists_mono fun b => monotone_apply b f hf _ _ h
-
-@[partial_fixpoint_monotone]
-theorem monotone_forall {β : Sort _} (f : α → β → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(∀ b, f x b)) :=
-  fun _ _ h => forall_mono fun b => monotone_apply b f hf _ _ h
-
-@[partial_fixpoint_monotone]
-theorem monotone_later (f : α → PROP) (hf : monotone f) : monotone (fun x => iprop(▷ f x)) :=
-  fun _ _ h => later_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_laterN (n : Nat) (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(▷^[n] f x)) :=
-  fun _ _ h => laterN_mono n (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_except0 (f : α → PROP) (hf : monotone f) : monotone (fun x => iprop(◇ f x)) :=
-  fun _ _ h => except0_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_persistently (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(<pers> f x)) :=
-  fun _ _ h => persistently_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_affinely (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(<affine> f x)) :=
-  fun _ _ h => affinely_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_absorbingly (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(<absorb> f x)) :=
-  fun _ _ h => absorbingly_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_intuitionistically (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(□ f x)) :=
-  fun _ _ h => intuitionistically_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_bupd [BIUpdate PROP] (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(|==> f x)) :=
-  fun _ _ h => bupd_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_fupd [BIFUpdate PROP] (E1 E2 : CoPset) (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(|={E1,E2}=> f x)) :=
-  fun _ _ h => fupd_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_step_fupd [BIFUpdate PROP] (Eo Ei : CoPset) (f : α → PROP) (hf : monotone f) :
-    monotone (fun x => iprop(|={Eo}[Ei]▷=> f x)) :=
-  fun _ _ h => step_fupd_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_step_fupdN [BIFUpdate PROP] (n : Nat) (Eo Ei : CoPset) (f : α → PROP)
-    (hf : monotone f) : monotone (fun x => iprop(|={Eo}[Ei]▷=>^[n] f x)) :=
-  fun _ _ h => step_fupdN_mono (hf _ _ h)
-
-@[partial_fixpoint_monotone]
-theorem monotone_bigSepL {A : Type _} (l : List A) (f : α → Nat → A → PROP) (hf : monotone f) :
-    monotone (fun x => iprop([∗list] k ↦ a ∈ l, f x k a)) :=
-  fun _ _ h => BigSepL.bigSepL_mono_of_forall fun {k a} => hf _ _ h k a
-
-@[partial_fixpoint_monotone]
-theorem monotone_bigAndL {A : Type _} (l : List A) (f : α → Nat → A → PROP) (hf : monotone f) :
-    monotone (fun x => iprop([∧list] k ↦ a ∈ l, f x k a)) :=
-  fun _ _ h => BigAndL.bigAndL_mono fun k a _ => hf _ _ h k a
-
-@[partial_fixpoint_monotone]
-theorem monotone_bigOrL {A : Type _} (l : List A) (f : α → Nat → A → PROP) (hf : monotone f) :
-    monotone (fun x => iprop([∨list] k ↦ a ∈ l, f x k a)) :=
-  fun _ _ h => BigOrL.bigOrL_mono fun {k a} _ => hf _ _ h k a
-
-@[partial_fixpoint_monotone]
-theorem monotone_bigSepL2 {A B : Type _} (l1 : List A) (l2 : List B)
-    (f : α → Nat → A → B → PROP) (hf : monotone f) :
-    monotone (fun x => iprop([∗list] k ↦ a;b ∈ l1;l2, f x k a b)) :=
-  fun _ _ h => BigSepL2.bigSepL2_mono fun {k a b} _ _ => hf _ _ h k a b
-
-@[partial_fixpoint_monotone]
-theorem monotone_bigSepM {K V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K] (m : M V)
-    (f : α → K → V → PROP) (hf : monotone f) :
-    monotone (fun x => iprop([∗map] k ↦ v ∈ m, f x k v)) :=
-  fun _ _ h => BigSepM.bigSepM_mono_of_forall fun {k v} => hf _ _ h k v
-
-@[partial_fixpoint_monotone]
-theorem monotone_bigSepS {S A : Type _} [LawfulFiniteSet S A] (X : S) (f : α → A → PROP)
-    (hf : monotone f) : monotone (fun x => iprop([∗set] a ∈ X, f x a)) :=
-  fun _ _ h => BigSepS.bigSepS_mono_of_forall fun a => hf _ _ h a
-
-end Monotone
+/-- Iris coinduction for the greatest fixpoint of a `BIMono` body `F`. -/
+theorem fix_coiter {F : τ → τ} (h : BIMono (PROP := PROP) F) (Φ : τ) :
+    ⊢ □ wandAll Φ (F Φ) -∗ wandAll Φ (fix F (monotone_of_bimono h)) := by
+  suffices hfix : iprop(□ wandAll Φ (F Φ)) ⊢ wandAll Φ (fix F (monotone_of_bimono h)) by
+    iintro #H; iapply hfix; iexact H
+  refine fix_induct _ (fun f => iprop(□ wandAll Φ (F Φ)) ⊢ wandAll Φ f) ?_ fun f ih => ?_
+  · intro c hc hall
+    exact wandAll_intro fun a => (Pointwise.csup_le hc a).mpr fun f hf =>
+      (sep_mono_left (hall f hf)).trans (wandAll_elim a)
+  · iintro #H
+    iapply wandAll_trans
+    isplitl
+    · iexact H
+    · iintro !>
+      iapply (h _ _)
+      iintro !>
+      iapply ih $$ H
 
 end CoMonotoneFixpoint
 

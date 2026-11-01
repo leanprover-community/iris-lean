@@ -13,8 +13,8 @@ public meta import Lean.Elab.PreDefinition.PartialFixpoint
 /-! # Iris fixpoint commands
 
 `ifix` and `icofix` define least and greatest Iris fixpoints with `partial_fixpoint`, using the
-orders in `Iris.BI.Lib.Lattice`, and derive their Iris (co)induction principles from
-`fix_iter`/`fix_coiter`.
+orders in `Iris.BI.Lib.Lattice`. The `monotone_by` proof of `BIMono` gives `partial_fixpoint` its
+monotonicity proof, and the Iris (co)induction principle from `fix_iter`/`fix_coiter`.
 
 `iguarded` defines guarded fixpoints with `partial_fixpoint` too, into the approximation domain
 `Iris.Approx`: the body's functional is lifted with `ApproxFun.lift`, which is monotone for any
@@ -58,9 +58,10 @@ structure FixpointData where
   /-- The curried type `∀ varying, PROP` that `fix` works over, and `PROP`. -/
   curriedType : Expr
   prop : Expr
-  /-- The functional and its monotonicity proof. -/
+  /-- The functional, its monotonicity proof, and its `BIMono` proof. -/
   F : Expr
   hF : Expr
+  mono : Expr
   /-- For a non-recursive body, a proof of `fix F hF = name` (they are not definitionally
   equal). For a recursive one, `none`: `name` unfolds to `fix F hF`. -/
   fixEq? : Option Expr := none
@@ -76,10 +77,9 @@ meta def fn (d : FixpointData) (vs : Array Expr) : Expr :=
 meta def pre (d : FixpointData) : Expr :=
   mkAppN (mkConst (d.declName ++ `pre) d.us) d.fixed
 
-/-- `MonoFn G`, for `G : curriedType → curriedType`. `PROP` is given explicitly: instance search
-would look for `BI ?PROP` before `BIPred` determines it. -/
-meta def mkMonoFn (d : FixpointData) (G : Expr) : MetaM Expr :=
-  mkAppOptM ``MonoFn #[d.prop, d.curriedType, d.curriedType, none, none, none, G]
+/-- `BIMono G`, for `G : curriedType → curriedType`. -/
+meta def mkBIMono (d : FixpointData) (G : Expr) : MetaM Expr :=
+  mkAppOptM ``BIMono #[d.prop, none, d.curriedType, none, G]
 
 /-- Rewrite `fix F hF` to `name` in the type of `proof`, for a non-recursive body. -/
 meta def rewriteFix (d : FixpointData) (proof : Expr) : MetaM Expr := do
@@ -107,8 +107,9 @@ meta def withNonRecursiveData (least : Bool) (declName : Name) (k : FixpointData
       #[some resTy, some order, some resTy, some order, some body]
     -- `fix_eq` gives `fix F hF = F (fix F hF)`, whose right side is `body`, that is `name`.
     let fixEq ← mkAppOptM ``Lean.Order.fix_eq #[some resTy, some inst, some F, some hF]
+    let mono ← mkAppOptM ``BIMono.const #[resTy, none, resTy, none, body]
     k { least, declName, levels, perm := Array.ofFn fun (i : Fin fixed.size) => some i.val,
-        fixed, curriedType := resTy, prop := resTy, F, hF, fixEq? := some fixEq }
+        fixed, curriedType := resTy, prop := resTy, F, hF, mono, fixEq? := some fixEq }
 
 /-- Open the `partial_fixpoint` definition `declName` and run `k` on it. -/
 meta def withFixpointData (least : Bool) (declName : Name) (k : FixpointData → TermElabM α) :
@@ -124,7 +125,22 @@ meta def withFixpointData (least : Bool) (declName : Name) (k : FixpointData →
     let_expr Lean.Order.fix curriedType _ F hF := body
       | throwError "ifix: unexpected `partial_fixpoint` definition{indentExpr body}"
     let prop ← forallTelescope curriedType fun _ resTy => pure resTy
-    k { least, declName, levels, perm, fixed, curriedType, prop, F, hF }
+    k { least, declName, levels, perm, fixed, curriedType, prop, F, hF, mono := ← bimonoOf hF }
+where
+  /-- The `BIMono` proof `h` in the monotonicity proof `monotone_of_bimono h`, which
+  `partial_fixpoint` may have moved into an auxiliary theorem. -/
+  bimonoOf (hF : Expr) : MetaM Expr := do
+    let isBIMono (e : Expr) := e.isAppOf ``Iris.MonotoneFixpoint.monotone_of_bimono ||
+      e.isAppOf ``Iris.CoMonotoneFixpoint.monotone_of_bimono
+    let hF ← if isBIMono hF then pure hF else
+      let .const aux us := hF.getAppFn | unexpected hF
+      let info ← getConstInfo aux
+      let some value := info.value? (allowOpaque := true) | unexpected hF
+      pure <| (value.instantiateLevelParams info.levelParams us).beta hF.getAppArgs
+    unless isBIMono hF do unexpected hF
+    return hF.appArg!
+  unexpected {α} (hF : Expr) : MetaM α :=
+    throwError "ifix: unexpected monotonicity proof{indentExpr hF}"
 
 /-- `name.pre`: the curried functional built by `partial_fixpoint`. -/
 meta def emitPre (d : FixpointData) : TermElabM Unit := do
@@ -143,16 +159,10 @@ meta def emitUnfold (d : FixpointData) : TermElabM Unit := do
       (← mkForallFVars args (← mkEq (d.fn vs) (mkAppN (mkApp d.pre curriedFn) vs)))
       (← mkLambdaFVars args proof)
 
-/-- `name.pre_mono`: the user's proof that the body is monotone, as an instance on `name.pre`.
-The goal is stated on the body itself, so the proof can see it. -/
-meta def emitPreMono (d : FixpointData) (monoTac : TSyntax ``Lean.Parser.Tactic.tacticSeq) :
-    TermElabM Unit := do
-  let proof ← elabTermEnsuringType (← `(by $monoTac)) (← d.mkMonoFn d.F)
-  synthesizeSyntheticMVarsNoPostponing
-  let name := d.declName ++ `pre_mono
-  emitThm name d.levels (← mkForallFVars d.fixed (← d.mkMonoFn d.pre))
-    (← mkLambdaFVars d.fixed proof)
-  addInstance name .global 1000
+/-- `name.pre_mono`: the `monotone_by` proof that `name.pre` is `BIMono`. -/
+meta def emitPreMono (d : FixpointData) : TermElabM Unit := do
+  emitThm (d.declName ++ `pre_mono) d.levels (← mkForallFVars d.fixed (← d.mkBIMono d.pre))
+    (← mkLambdaFVars d.fixed d.mono)
 
 /-- `∀ vs, body` in the BI, one quantifier per variable. -/
 meta def mkBIForalls (vs : Array Expr) (body : Expr) : MetaM Expr :=
@@ -171,8 +181,9 @@ meta def emitInd (d : FixpointData) : TermElabM Unit := do
     return (← mkBIForalls vs (← wand pre Φ), ← mkBIForalls vs (← wand fn Φ))
   let stmt ← mkAppM ``BIBase.EmpValid
     #[← mkAppM ``BIBase.wand #[← mkAppM ``BIBase.intuitionistically #[hyp], concl]]
+  let preMono := mkAppN (mkConst (d.declName ++ `pre_mono) d.us) d.fixed
   let proof ← d.rewriteFix (← mkAppOptM lemma
-    #[d.prop, none, d.curriedType, none, none, none, d.pre, d.hF, none, Φ])
+    #[d.prop, none, d.curriedType, none, none, none, d.pre, preMono, Φ])
   emitThm (d.declName ++ suffix) d.levels (← mkForallFVars (d.fixed.push Φ) stmt)
     (← mkLambdaFVars (d.fixed.push Φ) proof)
 
@@ -184,7 +195,7 @@ meta def elabFixpoint (least : Bool) (name : Ident)
     | some clause =>
       let `(monotoneClause| monotone_by $tac) := clause | throwUnsupportedSyntax
       pure tac
-    | none => `(Lean.Parser.Tactic.tacticSeq| monotone)
+    | none => `(Lean.Parser.Tactic.tacticSeq| imono)
   let ns := if least then `Iris.MonotoneFixpoint else `Iris.CoMonotoneFixpoint
   -- Everything below runs with the matching order on `PROP` in scope.
   elabCommand (← `(command| section))
@@ -193,45 +204,26 @@ meta def elabFixpoint (least : Bool) (name : Ident)
     let binders ← if ← sectionProvidesBI ty then
         pure (#[← `(bracketedBinder| [BI $ty])] ++ binders)
       else pure binders
-    elabDefinition name binders ty body
+    let monotone := mkIdent (ns ++ `monotone_of_bimono)
+    let errors ← errorCount
+    elabCommand (← `(command| def $name:ident $binders* : $ty := $body
+      partial_fixpoint monotonicity $monotone (PROP := $ty) (by $monoTac)))
     dropNotRecursiveWarning
-    -- Resolve the actual name, which is mangled in a private scope. If `partial_fixpoint` failed,
-    -- it has already reported why.
-    let declName ← try liftCoreM <| realizeGlobalConstNoOverload name catch _ => return
+    -- If the definition failed, Lean has already reported why.
+    if (← errorCount) > errors then return
+    -- Resolve the actual name, which is mangled in a private scope.
+    let declName ← liftCoreM <| realizeGlobalConstNoOverload name
     liftTermElabM <| withFixpointData least declName fun d => do
       emitPre d
       emitUnfold d
-      emitPreMono d monoTac
+      emitPreMono d
       emitInd d
   finally
     elabCommand (← `(command| end))
 where
-  /-- Define `name` with `partial_fixpoint`. Its monotonicity check rejects partially applied
-  recursive calls such as `let next := name x; next y`, so on failure, retry with a proof that
-  first reduces the `let`s and then handles bare applications of the recursive function. If that
-  fails too, report the errors of the first attempt. -/
-  elabDefinition (name : Ident) (binders : Array (TSyntax ``Lean.Parser.Term.bracketedBinder))
-      (ty body : Term) : CommandElabM Unit := do
-    let env ← getEnv
-    let msgs := (← get).messages
-    let hasNewErrors : CommandElabM Bool := do
-      let new := (← get).messages.unreported.toArray.extract msgs.unreported.size
-      return new.any (·.severity == .error)
-    elabCommand (← `(command| def $name:ident $binders* : $ty := $body partial_fixpoint))
-    unless ← hasNewErrors do return
-    let failed := (← get).messages
-    setEnv env
-    modify fun s => { s with messages := msgs }
-    let tac ← `(Lean.Parser.Tactic.tacticSeq| (try dsimp only); open Lean.Order in
-      repeat' (first
-        | monotonicity
-        | apply Lean.Order.monotone_apply
-        | exact Lean.Order.monotone_id))
-    elabCommand (← `(command|
-      def $name:ident $binders* : $ty := $body partial_fixpoint monotonicity by $tac))
-    if ← hasNewErrors then
-      setEnv env
-      modify fun s => { s with messages := failed }
+  errorCount : CommandElabM Nat := do
+    let msgs := (← get).messages.unreported
+    return msgs.foldl (fun n m => if m.severity == .error then n + 1 else n) 0
   /-- `partial_fixpoint` warns about a non-recursive body, but the user never wrote it. -/
   dropNotRecursiveWarning : CommandElabM Unit := do
     let msgs := (← get).messages

@@ -1,7 +1,7 @@
 /-
 Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Oliver Soeser
+Authors: Oliver Soeser, Markus de Medeiros
 -/
 module
 
@@ -10,31 +10,51 @@ public meta import Iris.ProofMode
 
 namespace Iris
 
-open Lean Elab Tactic Meta
+open Lean Elab Tactic Meta BI
 
-/-- Whether `fn` is a BI connective, which typeclass search handles directly. -/
-meta def isPrimitiveConnective (fn : Name) : MetaM Bool := do
-  return (`Iris.BI.BIBase).isPrefixOf fn || (← getProjectionFnInfo? fn).any (·.fromClass)
-
-/-- Unfold the definition at the head of the body of `G` in a goal `MonoFn G` or `AntiFn G`. -/
-elab "monotone_unfold" : tactic => withMainContext do
-  let target ← instantiateMVars (← getMainTarget)
-  let some G := target.getAppArgs.back? | throwError "monotone: unexpected goal{indentExpr target}"
-  let some fn ← lambdaTelescope G fun _ body => pure body.getAppFn.constName?
-    | throwError "monotone: nothing to unfold"
-  if ← isPrimitiveConnective fn then throwError "monotone: {fn} is a BI connective"
-  evalTactic (← `(tactic| unfold $(mkIdent fn):ident))
-
-/-- Prove `MonoFn G`, the monotonicity a fixpoint body needs, by typeclass search. Arguments are
-introduced one at a time, `match`es on them are split, and definitions that the search cannot see
-through are unfolded. -/
-syntax "monotone" : tactic
+/-- Apply one `IMono` rule for a connective. Extend it with `macro_rules`. -/
+syntax "imono_rule" : tactic
 
 macro_rules
-  | `(tactic| monotone) => `(tactic| first
-      | infer_instance
-      | (refine MonoFn.of_forall fun _ => ?_; monotone)
-      | (split <;> monotone)
-      | (monotone_unfold; monotone))
+  | `(tactic| imono_rule) => `(tactic| first
+      | apply IMono.sep | apply IMono.and | apply IMono.or | apply IMono.wand
+      | apply IMono.pers_imp | apply IMono.forall | apply IMono.exists
+      | apply IMono.persistently | apply IMono.affinely | apply IMono.absorbingly
+      | apply IMono.intuitionistically | apply IMono.later | apply IMono.laterN
+      | apply IMono.except0 | apply IMono.bupd | apply IMono.fupd | apply IMono.step_fupdN
+      | apply IMono.bigSepL | apply IMono.bigAndL | apply IMono.bigOrL | apply IMono.bigSepL2
+      | apply IMono.bigSepM | apply IMono.bigSepS | apply IMono.bigSepMS)
+
+/-- Unfold the definition at the head of `P` in a goal `⊢ □ R -∗ P -∗ P'`. -/
+elab "imono_unfold" : tactic => withMainContext do
+  let target ← instantiateMVars (← getMainTarget)
+  let unexpected {α} : TacticM α := throwError "imono: unexpected goal{indentExpr target}"
+  let_expr BIBase.EmpValid _ _ goal := target | unexpected
+  let_expr BIBase.wand _ _ _ body := goal | unexpected
+  let_expr BIBase.wand _ _ P _ := body | unexpected
+  let some fn := P.getAppFn.constName? | throwError "imono: nothing to unfold in{indentExpr P}"
+  if (`Iris.BI.BIBase).isPrefixOf fn || (← getProjectionFnInfo? fn).any (·.fromClass) then
+    throwError "imono: no rule for {fn}"
+  evalTactic (← `(tactic| unfold $(mkIdent fn):ident))
+
+/-- One step of `imono`, on a goal `⊢ □ R -∗ P -∗ P'`. -/
+syntax "imono_step" : tactic
+
+macro_rules
+  | `(tactic| imono_step) => `(tactic| first
+      | exact IMono.refl
+      | (imono_rule <;> intros <;> imono_step)
+      | (simp only [Curried.wandAll_pi, Curried.wandAll_prop]; iintro #H HP; iapply H; iexact HP)
+      | (split <;> imono_step)
+      | (imono_unfold; imono_step))
+
+/-- Prove `BIMono F` for a fixpoint body `F`. The body is taken apart one connective at a time,
+down to the recursive calls; `match`es are split, and other definitions unfolded. -/
+macro "imono" : tactic => `(tactic| (
+  intro Φ Ψ
+  repeat (apply IMono.pi; intro)
+  apply IMono.prop
+  try dsimp only
+  imono_step))
 
 end Iris

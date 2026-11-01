@@ -4552,44 +4552,54 @@ example [BI PROP] {P : PROP} {m n : Nat} {T : Nat → Prop}
 end iinduction
 
 
-section monotone
+section imono
 
 variable [BI PROP] {α : Type}
 
-/-- Tests `monotone` on a body that typeclass search handles directly. -/
-example : MonoFn (fun (Φ : α → PROP) x => iprop(Φ x ∗ Φ x)) := by monotone
+/-- Tests `imono` on a body built from connectives. -/
+example : BIMono (PROP := PROP) (fun (Φ : α → PROP) x => iprop(Φ x ∗ Φ x)) := by imono
 
-/-- Tests `monotone` with several curried arguments. -/
-example : MonoFn (fun (Φ : α → α → PROP) x y => iprop(Φ y x ∗ ▷ ∃ z, Φ x z)) := by monotone
+/-- Tests `imono` with several curried arguments. -/
+example : BIMono (PROP := PROP) (fun (Φ : α → α → PROP) x y => iprop(Φ y x ∗ ▷ ∃ z, Φ x z)) := by
+  imono
 
 private def wrap0 (wp : α → PROP) (x : α) : PROP := iprop(wp x ∗ wp x)
 private def wrap1 (wp : α → PROP) : α → PROP := wrap0 wp
 private def wrap2 (wp : α → PROP) : α → PROP := wrap1 wp
 
-/-- Tests `monotone` unfolding. -/
-example : MonoFn (wrap2 (PROP := PROP) (α := α)) := by monotone
+/-- Tests `imono` unfolding. -/
+example : BIMono (PROP := PROP) (wrap2 (PROP := PROP) (α := α)) := by imono
 
 private def stepPre (wp : α → Option α → PROP) (x : α) (y : Option α) : PROP :=
   match y with
   | none => iprop(wp x none ∨ wp x none)
   | some _ => iprop(wp x none ∗ wp x none)
 
-/-- Tests `monotone` on a match on an argument. -/
-example : MonoFn (stepPre (PROP := PROP) (α := α)) := by monotone
+/-- Tests `imono` on a match on an argument. -/
+example : BIMono (PROP := PROP) (stepPre (PROP := PROP) (α := α)) := by imono
 
 private def choicePre (wp : α × (α ⊕ α) → PROP) (x : α × (α ⊕ α)) : PROP :=
   match x.2 with
   | .inl a => iprop(wp (x.1, .inr a) ∨ wp (x.1, .inr a))
   | .inr a => iprop(wp (x.1, .inl a) ∨ wp (x.1, .inl a))
 
-/-- Tests `monotone` on a match on a projection. -/
-example : MonoFn (choicePre (PROP := PROP) (α := α)) := by monotone
+/-- Tests `imono` on a match on a projection. -/
+example : BIMono (PROP := PROP) (choicePre (PROP := PROP) (α := α)) := by imono
 
-/-- Tests that `monotone` fails on a negative occurrence. -/
+/-- Tests `imono` on iterated laters and big operators. -/
+example (l : List α) : BIMono (PROP := PROP) (fun (Φ : α → PROP) x =>
+    iprop(▷^[2] Φ x ∗ ([∧list] y ∈ l, Φ y) ∗ [∨list] y ∈ l, Φ y)) := by
+  imono
+
+/-- Tests `imono` on a doubly negative occurrence. -/
+example : BIMono (PROP := PROP) (fun (Φ : α → PROP) x => iprop((Φ x -∗ False) -∗ False)) := by
+  imono
+
+/-- Tests that `imono` fails on a negative occurrence. -/
 example : True := by
   fail_if_success
-    have : MonoFn (fun (Φ : α → PROP) x => iprop(Φ x -∗ Φ x)) := by monotone
+    have : BIMono (PROP := PROP) (fun (Φ : α → PROP) x => iprop(Φ x -∗ Φ x)) := by imono
   trivial
 
-end monotone
+end imono
 end IrisTest

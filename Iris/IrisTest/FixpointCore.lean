@@ -32,10 +32,10 @@ example (x : α) : greatest (PROP := PROP) x = greatest.pre x (greatest x) := gr
 
 -- `.pre` preserves argument order.
 icofix swapped (x y : α) : PROP := swapped y x
-monotone_by monotone
+monotone_by imono
 
 ifix rotated (setting : Bool) (x y z : α) : PROP := rotated setting y z x
-monotone_by monotone
+monotone_by imono
 
 example (Φ : α → α → PROP) (x y : α) : swapped.pre Φ x y = Φ y x := rfl
 
@@ -59,13 +59,13 @@ contractive_by
 iinductive cycle : Unit → IProp BundledGFunctors.default where
   | left : cycle () -∗ cycle ()
   | right : cycle () -∗ cycle ()
-monotone_by monotone
+monotone_by imono
 
 #guard_msgs (drop info) in
 iinductive? tracedCycle : Unit → IProp BundledGFunctors.default where
   | left : tracedCycle () -∗ tracedCycle ()
   | right : tracedCycle () -∗ tracedCycle ()
-monotone_by monotone
+monotone_by imono
 
 end IrisTest.FixpointCore
 
@@ -74,8 +74,8 @@ ifix rootShadow (x : Unit) : IProp BundledGFunctors.default := rootShadow x
 
 namespace IrisTest.FixpointCore
 
--- `monotone` needs no OFE instance on the arguments.
-example [BI PROP] : MonoFn (fun Φ : α × α → PROP => Φ) := by monotone
+-- `imono` needs no OFE instance on the arguments.
+example [BI PROP] : BIMono (PROP := PROP) (fun Φ : α × α → PROP => Φ) := by imono
 
 -- Parser failures and runtime panics are checked in a separate Lean process.
 private meta def expectLeanOutput (body expected : String) (exitCode : UInt32) :
@@ -162,7 +162,6 @@ private ifix hidden (x : Unit) : IProp BundledGFunctors.default := hidden x
 
 -- An empty predicate does not require a recursive occurrence.
 iinductive empty : Unit → IProp BundledGFunctors.default where
-monotone_by monotone
 
 example (x : Unit) : empty x = iprop(False) := by
   simpa only [empty.pre] using empty.unfold x

@@ -15,7 +15,7 @@ section
 variable [BI PROP]
 
 ifix zero : PROP := zero
-monotone_by monotone
+monotone_by imono
 
 -- `.pre` takes the fixed parameters, then the recursive function, then the varying parameters.
 example (p : PROP) : zero.pre p = p := rfl
@@ -33,7 +33,6 @@ example (n : Nat) [OFE (Fin n)] (i : Fin n) :
 
 -- No recursive occurrence is required either.
 icofix constant (p : PROP) : PROP := p
-monotone_by monotone
 
 example (p Φ : PROP) : constant.pre p Φ = p := rfl
 end
@@ -43,7 +42,7 @@ variable [BI PROP] [OFE α]
 
 -- An unchanged explicit argument is fixed: the remaining domain is Unit.
 icofix unchanged (x : α) : PROP := unchanged x
-monotone_by monotone
+monotone_by imono
 
 example (x : α) (Φ : PROP) : unchanged.pre x Φ = Φ := rfl
 
@@ -65,13 +64,13 @@ example (Φ : α → PROP) (x : α) : qualified.pre Φ x = Φ x := rfl
 ifix passedPair (p : α × α) : PROP :=
   let next := passedPair
   next p
-monotone_by monotone
+monotone_by imono
 
 example (Φ : α × α → PROP) (p : α × α) : passedPair.pre Φ p = Φ p := rfl
 
 -- A later call can disqualify arguments that the first call passes unchanged.
 ifix both (x y : α) : PROP := iprop(both x y ∗ both y x)
-monotone_by monotone
+monotone_by imono
 
 example (Φ : α → α → PROP) (x y : α) :
     both.pre Φ x y = iprop(Φ x y ∗ Φ y x) := rfl
@@ -79,7 +78,7 @@ example (Φ : α → α → PROP) (x y : α) :
 
 -- Implicit arguments are elaborated before their values are compared.
 ifix implicitSwap {x y : α} : PROP := implicitSwap (x := y) (y := x)
-monotone_by monotone
+monotone_by imono
 
 example (x y : α) :
     implicitSwap (PROP := PROP) (x := x) (y := y) = implicitSwap (x := y) (y := x) := by
@@ -89,7 +88,7 @@ example (x y : α) :
 icofix partialSwap (x : α) (setting : Bool) (y : α) : PROP :=
   let next := partialSwap y setting
   next x
-monotone_by monotone
+monotone_by imono
 
 example (setting : Bool) (Φ : α → α → PROP) (x y : α) :
     partialSwap.pre setting Φ x y = Φ y x := rfl
@@ -108,7 +107,7 @@ variable [BI PROP] (sameName : PROP)
 /-- invalid declaration name `sameName` -/
 #guard_msgs (error, substring := true) in
 ifix sameName : PROP := sameName
-monotone_by monotone
+monotone_by imono
 end
 
 section
@@ -135,7 +134,7 @@ end
 
 -- Auto-bound type parameters are inferred from the signature without a surrounding section.
 ifix inferredSwap [BI PROP] [OFE α] (x y : α) : PROP := inferredSwap y x
-monotone_by monotone
+monotone_by imono
 
 example [BI PROP] [OFE α] (Φ : α → α → PROP) (x y : α) :
     inferredSwap.pre Φ x y = Φ y x := rfl
