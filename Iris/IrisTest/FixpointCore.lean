@@ -31,6 +31,36 @@ nonexp_by intros; assumption
 
 example (x : α) : least (PROP := PROP) x = least.pre least x := least.unfold x
 example (x : α) : greatest (PROP := PROP) x = greatest.pre greatest x := greatest.unfold x
+
+-- The adapters preserve argument order and the left-associated tuple layout.
+icofix swapped (x y : α) : PROP := swapped y x
+monotone_by monotone <;> infer_instance
+nonexp_by
+  intros Φ _
+  constructor
+  intros n a b h
+  exact NonExpansive.ne (f := Φ) ⟨h.2, h.1⟩
+
+ifix rotated (setting : Bool) (x y z : α) : PROP := rotated y z x
+monotone_by monotone <;> infer_instance
+nonexp_by
+  intros Φ _
+  constructor
+  intros n a b h
+  exact NonExpansive.ne (f := Φ) ⟨⟨h.1.2, h.2⟩, h.1.1⟩
+
+example (Φ : α × α → PROP) (x y : α) :
+    swapped.pre' Φ (x, y) = Φ (y, x) := rfl
+
+example (setting : Bool) (Φ : (α × α) × α → PROP) (x y z : α) :
+    rotated.pre' setting Φ ((x, y), z) = Φ ((y, z), x) := rfl
+
+example (x y : α) :
+    swapped (PROP := PROP) x y = swapped.pre swapped x y := swapped.unfold x y
+
+example (setting : Bool) (x y z : α) :
+    rotated (PROP := PROP) setting x y z = rotated.pre setting (rotated setting) x y z :=
+  rotated.unfold setting x y z
 end
 
 iguarded guarded : IProp BundledGFunctors.default := iprop(▷ guarded)

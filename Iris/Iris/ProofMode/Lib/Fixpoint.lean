@@ -45,24 +45,32 @@ meta partial def fixpointPeelLeading (e : Expr) : Array Name × Expr :=
   | _ => (#[], e)
 
 /-- Builds a `(i : t)` explicit binder group. -/
-meta def fixpointMkExplicitBinder (i : Ident) (t : Term)
-    : CommandElabM (TSyntax ``Lean.Parser.Term.bracketedBinder) :=
+meta def fixpointMkExplicitBinder (i : Ident) (t : Term) :
+    CommandElabM (TSyntax ``Lean.Parser.Term.bracketedBinder) :=
   `(bracketedBinder| ($i : $t))
 
-meta def elabFixpointDef (fixpoint : Name) (unfolding : Name) (mods : TSyntax ``Lean.Parser.Command.declModifiers)
-    (name : Ident) (binders : Array (TSyntax `fixpointBinder))
-    (ty : Term) (body : Term) (monoBy : Option (TSyntax `fixpointMonotoneClause))
-    (neBy : Option (TSyntax `fixpointNonexpClause)) (logCmds : Bool)
-    : CommandElabM Unit := do
-  let mut names : Array Ident := #[]
-  let mut types : Array Term := #[]
+/-- Builds projections for a left-associated tuple of positive arity.
+For arity three, returns `packed.1.1`, `packed.1.2`, and `packed.2`. -/
+meta def fixpointUnpackArgs (packed : Term) (arity : Nat) : CommandElabM (Array Term) := do
+  let mut remaining := packed
+  let mut projectedArgs : List Term := []
+  for _ in [:arity - 1] do
+    projectedArgs := (← `(($remaining).2)) :: projectedArgs
+    remaining ← `(($remaining).1)
+  return (remaining :: projectedArgs).toArray
+
+meta def elabFixpointDef (fixpoint : Name) (unfolding : Name)
+    (mods : TSyntax ``Lean.Parser.Command.declModifiers) (name : Ident)
+    (binders : Array (TSyntax `fixpointBinder)) (ty : Term) (body : Term)
+    (monoBy : Option (TSyntax `fixpointMonotoneClause))
+    (neBy : Option (TSyntax `fixpointNonexpClause)) (logCmds : Bool) : CommandElabM Unit := do
+  let mut params : Array (Ident × Term) := #[]
   let mut instBinders : Array (TSyntax ``Lean.Parser.Term.bracketedBinder) := #[]
   for b in binders do
     match b with
     | `(fixpointBinder| ($ids* : $t)) =>
       for id in ids do
-        names := names.push id
-        types := types.push t
+        params := params.push (id, t)
     | `(fixpointBinder| [$t]) =>
       instBinders := instBinders.push (← `(bracketedBinder| [$t]))
     | _ => throwUnsupportedSyntax
@@ -71,30 +79,26 @@ meta def elabFixpointDef (fixpoint : Name) (unfolding : Name) (mods : TSyntax ``
   let some arity := fixpointSelfArity name.getId body
     | throwErrorAt name "monotone fixpoint def: no recursive occurrence of '{name.getId}' found in the body"
 
-  if arity > names.size then
+  if arity > params.size then
     throwErrorAt name
-      "monotone fixpoint def: recursive call arity {arity} exceeds the parameter count {names.size}"
+      "monotone fixpoint def: recursive call arity {arity} exceeds the parameter count {params.size}"
 
   -- Split the arguments - prefixes are the arguments that stay fixed
   -- (e.g. for `twp`, the prefixes would be just `s : Stuckness`)
-  let splitPoint := names.size - arity
-  let prefixNames := names.extract 0 splitPoint
-  let prefixTypes := types.extract 0 splitPoint
-  let suffixNames := names.extract splitPoint names.size
-  let suffixTypes := types.extract splitPoint names.size
+  let splitPoint := params.size - arity
+  let prefixParams := params.extract 0 splitPoint
+  let suffixParams := params.extract splitPoint params.size
 
-  let prefixBinders ← (prefixNames.zip prefixTypes).mapM fun (i, t) => fixpointMkExplicitBinder i t
-  let suffixBinders ← (suffixNames.zip suffixTypes).mapM fun (i, t) => fixpointMkExplicitBinder i t
-  let selfType ← suffixTypes.foldrM (fun t acc => `($t → $acc)) ty
+  let prefixBinders ← prefixParams.mapM fun (i, t) => fixpointMkExplicitBinder i t
+  let suffixBinders ← suffixParams.mapM fun (i, t) => fixpointMkExplicitBinder i t
+  let selfType ← suffixParams.foldrM (fun (_, t) acc => `($t → $acc)) ty
   let selfBinder ← fixpointMkExplicitBinder name selfType
 
   -- Build tuples of arguments for uncurried application
-  let mut argPair : Term := suffixNames[0]!
-  for i in suffixNames[1:] do
+  let mut argPair : Term := suffixParams[0]!.1
+  let mut domTy : Term := suffixParams[0]!.2
+  for (i, t) in suffixParams[1:] do
     argPair ← `(($argPair, $i))
-
-  let mut domTy : Term := suffixTypes[0]!
-  for t in suffixTypes[1:] do
     domTy ← `($domTy × $t)
 
   -- pre-definition: the original body but with self-reference as an argument
@@ -111,20 +115,20 @@ meta def elabFixpointDef (fixpoint : Name) (unfolding : Name) (mods : TSyntax ``
   -- Find the names of leading implicit arguments and (explicit) prefix arguments
   let (leadingNames, _) := fixpointPeelLeading preInfo.type
   let leadingArgs : Array Term := leadingNames.map fun n => mkIdent n
-  let prefixArgs : Array Term := prefixNames.map id
+  let prefixArgs : Array Term := prefixParams.map fun (i, _) => i
 
   -- pre'-definition: the pre-definition, uncurried into a single argument
   let selfParamBinder ← fixpointMkExplicitBinder name (← `($domTy → $ty))
 
-  let mut curriedSelf : Term := name
-  for _ in [:suffixNames.size - 1] do
-    curriedSelf ← `(Function.curry $curriedSelf)
+  let selfAdapter ← suffixParams.foldrM
+    (fun (i, t) acc => `(fun ($i : $t) => $acc)) (← `($name $argPair))
+
+  let packedArg ← mkFreshIdent name
+  let unpackedArgs ← fixpointUnpackArgs packedArg suffixParams.size
 
   let preNameFull := mkIdentFrom name preFullName
-  let preApp ← `(@$preNameFull:ident $leadingArgs* $prefixArgs* $curriedSelf)
-  let mut pre'Body : Term := preApp
-  for _ in [:suffixNames.size - 1] do
-    pre'Body ← `(Function.uncurry $pre'Body)
+  let pre'Body ← `(fun ($packedArg : $domTy) =>
+    @$preNameFull:ident $leadingArgs* $prefixArgs* $selfAdapter $unpackedArgs*)
 
   let pre'Name := mkIdentFrom name (name.getId ++ `pre')
   let declPre' ← `(command|
@@ -163,7 +167,7 @@ meta def elabFixpointDef (fixpoint : Name) (unfolding : Name) (mods : TSyntax ``
 
   -- unfolding lemma
   let unfoldName := mkIdentFrom name (name.getId ++ `unfold)
-  let suffixArgs : Array Term := suffixNames.map id
+  let suffixArgs : Array Term := suffixParams.map fun (i, _) => i
   let declUnfold ← `(command|
     theorem $unfoldName:ident $defBinders* :
         $defName $prefixArgs* $suffixArgs* =
