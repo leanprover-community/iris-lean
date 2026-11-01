@@ -10,10 +10,11 @@ public meta import Iris.ProofMode.Lib.Fixpoint
 namespace Iris
 
 open Lean Elab Command Meta Term
+open Iris.Fixpoint
 
 /-- Syntax category for `iinductive` constructors. -/
 declare_syntax_cat iinductiveConstructor
-syntax "| " declModifiers ident fixpointBinder* " : " term : iinductiveConstructor
+syntax "| " declModifiers ident bracketedBinder* " : " term : iinductiveConstructor
 
 meta partial def iinductivePeelArrows (t : Term) : Array Term × Term :=
   match t with
@@ -57,27 +58,27 @@ meta def combine (default : Term) (f : Term → Term → CommandElabM Term) (ts 
   else ts.foldlM f ts[0]! (start := 1)
 
 meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) (name : Ident)
-    (binders : Array (TSyntax `fixpointBinder)) (type : Term) (ctors : Array (TSyntax `iinductiveConstructor))
-    (monoBy : Option (TSyntax `fixpointMonotoneClause)) (neBy : Option (TSyntax `fixpointNonexpClause)) (logCmds : Bool)
+    (binders : Array (TSyntax ``Lean.Parser.Term.bracketedBinder)) (type : Term) (ctors : Array (TSyntax `iinductiveConstructor))
+    (monoBy : Option (TSyntax `monotoneClause)) (neBy : Option (TSyntax `nonexpClause)) (logCmds : Bool)
     : CommandElabM Unit := do
   let (args, iProp) := iinductivePeelArrows type
 
   let argIds ← args.mapM fun a => mkFreshIdent a
-  let argBinders ← (argIds.zip args).mapM fun (i, t) => `(fixpointBinder| ($i : $t))
+  let argBinders ← (argIds.zip args).mapM fun (i, t) => `(bracketedBinder| ($i : $t))
 
   let mut disjuncts : Array Term := #[]
   for ctor in ctors do
     let `(iinductiveConstructor| | $_:declModifiers $cName:ident
-        $cBinders:fixpointBinder* : $cTy:term) := ctor
+        $cBinders:bracketedBinder* : $cTy:term) := ctor
       | throwUnsupportedSyntax
 
     let mut existBinders : Array (Ident × Term) := #[]
     for b in cBinders do
       match b with
-      | `(fixpointBinder| ($ids* : $t)) =>
+      | `(bracketedBinder| ($ids* : $t)) =>
         if t != iProp then
           for id in ids do
-            existBinders := existBinders.push (id, t)
+            existBinders := existBinders.push (⟨id.raw⟩, t)
       | _ => throwUnsupportedSyntax
 
     let (pureAssumptions, resourceAssumptions, codomain) := iinductivePeelInterleaved cTy
@@ -103,10 +104,11 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
   let defBody ← `(iprop($disjunction))
   let defBinders := binders ++ argBinders
 
-  let declDef ← if logCmds then `(command|
-    $mods:declModifiers ifix? $name:ident $defBinders* : $iProp := $defBody $[$monoBy]? $[$neBy]?)
-  else `(command|
-    $mods:declModifiers ifix $name:ident $defBinders* : $iProp := $defBody $[$monoBy]? $[$neBy]?)
+  let `(declModifiers|) := mods
+    | throwErrorAt mods "iinductive: declaration modifiers are not supported by the fixpoint elaborator"
+  let some neBy := neBy | throwErrorAt name "provide a nonexp_by proof"
+  let declDef ← `(command|
+    ifix $name:ident $defBinders* : $iProp := $defBody $[$monoBy]? $neBy)
   if logCmds then logInfo declDef
   elabCommand declDef
 
@@ -116,15 +118,15 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
 
   for ctor in ctors do
     let `(iinductiveConstructor| | $cMods:declModifiers $cName:ident
-        $cBinders:fixpointBinder* : $cTy:term) := ctor | continue
+        $cBinders:bracketedBinder* : $cTy:term) := ctor | continue
 
     let mut names : Array Ident := #[]
     let mut types : Array Term := #[]
     for b in cBinders do
       match b with
-      | `(fixpointBinder| ($ids* : $t)) =>
+      | `(bracketedBinder| ($ids* : $t)) =>
         for id in ids do
-          names := names.push id
+          names := names.push ⟨id.raw⟩
           types := types.push t
       | _ => continue
 
@@ -137,7 +139,7 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
     tacs := tacs.push (← `(tactic| rw (occs := [$(Syntax.mkNumLit (toString occs))]) [$uLem:ident]))
 
     let preDef := mkIdentFrom name (name.getId ++ `pre)
-    tacs := tacs.push (← `(tactic| unfold $preDef))
+    tacs := tacs.push (← `(tactic| simp only [$name:ident, $preDef:ident]))
 
     tacs := tacs ++ selector
 
@@ -164,15 +166,15 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
 
 /-- Inductive predicate definition via the least fixpoint.
 The `monotone_by` and `nonexp_by` clauses follow the constructors. -/
-elab mods:declModifiers "iinductive " name:ident binders:fixpointBinder*
+elab mods:declModifiers "iinductive " name:ident binders:bracketedBinder*
     " : " type:term " where " ctors:iinductiveConstructor*
-    monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
+    monoPf:(monotoneClause)? nePf:(nonexpClause)? : command =>
   elabIInductiveDef mods name binders type ctors monoPf nePf false
 
 /-- Like `iinductive`, but logs the generated Lean code. . -/
-elab mods:declModifiers "iinductive? " name:ident binders:fixpointBinder*
+elab mods:declModifiers "iinductive? " name:ident binders:bracketedBinder*
     " : " type:term " where " ctors:iinductiveConstructor*
-    monoPf:(fixpointMonotoneClause)? nePf:(fixpointNonexpClause)? : command =>
+    monoPf:(monotoneClause)? nePf:(nonexpClause)? : command =>
   elabIInductiveDef mods name binders type ctors monoPf nePf true
 
 end Iris
