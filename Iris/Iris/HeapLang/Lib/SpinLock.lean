@@ -57,7 +57,7 @@ def lockInv (γ : GName) (l : Loc) (R : IProp GF) : IProp GF := iprop%
   ∃ b : Bool, (l ↦ some hl_val(#b)) ∗ (if b then True else locked γ ∗ R)
 
 @[rocq_alias heap_lang.spin_lock.is_lock]
-def isLock (γ : GName) (lk : Val) (R : IProp GF) : IProp GF := iprop%
+noncomputable def isLock (γ : GName) (lk : Val) (R : IProp GF) : IProp GF := iprop%
   ∃ l : Loc, ⌜lk = Val.lit (.loc l)⌝ ∧ inv spinlockN (lockInv γ l R)
 
 instance instIsLockPersistent (γ : GName) (lk : Val) (R : IProp GF) : Persistent (isLock γ lk R) := by
@@ -188,7 +188,7 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
 end Specs
 
 @[implicit_reducible, rocq_alias heap_lang.spin_lock]
-def instLock [HeapLangGS hlc GF] : Lock GF where
+noncomputable def instLock [HeapLangGS hlc GF] : Lock GF where
   newlock := newlock
   acquire := acquire
   release := release

@@ -5,6 +5,7 @@ Authors: Oliver Soeser, Markus de Medeiros
 -/
 module
 
+public import Iris.Algebra.Approx
 public import Iris.BI.Lib.Lattice
 public import Iris.ProofMode.Lib.Monotone
 public meta import Lean.Elab.PreDefinition.PartialFixpoint
@@ -15,94 +16,18 @@ public meta import Lean.Elab.PreDefinition.PartialFixpoint
 orders in `Iris.BI.Lib.Lattice`, and derive their Iris (co)induction principles from
 `fix_iter`/`fix_coiter`.
 
-`iguarded` is still a stub: the fixpoint and its unfolding theorem are `sorry`, and the proof
-clause is ignored. -/
+`iguarded` defines guarded fixpoints with `partial_fixpoint` too, into the approximation domain
+`Iris.Approx`: the body's functional is lifted with `ApproxFun.lift`, which is monotone for any
+body, and contractiveness makes the fixpoint exact. -/
 
 namespace Iris.Fixpoint
 open Lean Elab Command Meta Term BI
-
-/-- Placeholder for the fixpoint of `f`. -/
-public def stubFixpoint {α : Sort _} (_f : α → α) : α := sorry
 
 declare_syntax_cat monotoneClause
 syntax "monotone_by " Lean.Parser.Tactic.tacticSeq : monotoneClause
 
 declare_syntax_cat contractiveClause
 syntax "contractive_by " Lean.Parser.Tactic.tacticSeq : contractiveClause
-
-/-- Arity of the first application of `name` in `stx`. -/
-meta partial def recursiveArity (name : Name) (stx : Syntax) : Option Nat :=
-  match stx with
-  | `($f:ident $args*) =>
-    if f.getId == name then some args.size
-    else (stx.getArgs.filterMap (recursiveArity name))[0]?
-  | _ =>
-    if stx.isIdent && stx.getId == name then some 0
-    else (stx.getArgs.filterMap (recursiveArity name))[0]?
-
-/-- Split `binders` into a prefix and a suffix made of the last `arity` explicit parameters. -/
-meta def splitBinders (binders : Array (TSyntax ``Lean.Parser.Term.bracketedBinder)) (arity : Nat) :
-    CommandElabM (Array (TSyntax ``Lean.Parser.Term.bracketedBinder) ×
-      Array (TSyntax ``Lean.Parser.Term.bracketedBinder)) := do
-  let mut pre := binders
-  let mut suffix := #[]
-  let mut needed := arity
-  while needed > 0 do
-    let some b := pre.back? | throwError "fixpoint stub: recursive arity {arity} exceeds the parameters"
-    pre := pre.pop
-    let `(bracketedBinder| ($ids* : $t)) := b
-      | throwErrorAt b "fixpoint stub: recursive parameters must be trailing explicit binders"
-    if ids.size ≤ needed then
-      suffix := #[b] ++ suffix
-      needed := needed - ids.size
-    else
-      let keep := ids.extract 0 (ids.size - needed)
-      let take := ids.extract (ids.size - needed) ids.size
-      pre := pre.push (← `(bracketedBinder| ($keep* : $t)))
-      suffix := #[← `(bracketedBinder| ($take* : $t))] ++ suffix
-      needed := 0
-  return (pre, suffix)
-
-/-- Names of the explicit parameters bound by `binders`. -/
-meta def explicitArgs (binders : Array (TSyntax ``Lean.Parser.Term.bracketedBinder)) : Array Term :=
-  binders.foldl (init := #[]) fun acc b =>
-    match b with
-    | `(bracketedBinder| ($ids* : $_)) => acc ++ ids.map fun i => ⟨i.raw⟩
-    | _ => acc
-
-/-- Names of the leading implicit (not instance) binders of `type`. -/
-meta partial def leadingImplicitNames (type : Expr) : Array Name :=
-  match type with
-  | .forallE n _ body bi =>
-    if bi == .default then #[]
-    else (if bi == .instImplicit then #[] else #[n]) ++ leadingImplicitNames body
-  | _ => #[]
-
-/-- Emit `name.pre`, a placeholder definition of `name`, and a `sorry` unfolding theorem. -/
-meta def elabStub (mods : TSyntax ``Lean.Parser.Command.declModifiers) (name : Ident)
-    (binders : Array (TSyntax ``Lean.Parser.Term.bracketedBinder)) (ty body : Term)
-    (contractive : Bool) : CommandElabM Unit := do
-  let arity := (recursiveArity name.getId body).getD 0
-  let (pre, suffix) ← splitBinders binders arity
-  let selfType ← if suffix.isEmpty then pure ty else `(∀ $suffix*, $ty)
-  let preArgs := explicitArgs pre
-  let preName := mkIdentFrom name (name.getId ++ `pre)
-  let unfoldName := mkIdentFrom name (name.getId ++ `unfold)
-  elabCommand (← `(command| def $preName:ident $pre* ($name : $selfType) $suffix* : $ty := $body))
-  -- Pin the implicit parameters of `name.pre` that its explicit arguments do not determine.
-  let preType := (← getConstInfo ((← getCurrNamespace) ++ preName.getId)).type
-  let implicitArgs : Array Term ← (leadingImplicitNames preType).mapM fun n => do
-    return ⟨(← `(Lean.Parser.Term.namedArgument| ($(mkIdent n) := $(mkIdent n)))).raw⟩
-  let preApp ← `($preName:ident $preArgs* $implicitArgs*)
-  elabCommand (← `(command|
-    $mods:declModifiers def $name:ident $pre* : $selfType := stubFixpoint $preApp))
-  elabCommand (← `(command|
-    theorem $unfoldName:ident $pre* : $name $preArgs* $implicitArgs* = $preApp ($name $preArgs*) :=
-      sorry))
-  if contractive then
-    let contractiveName := mkIdentFrom name (name.getId ++ `pre ++ `contractive)
-    elabCommand (← `(command|
-      instance $contractiveName:ident $pre* : OFE.Contractive $preApp := sorry))
 
 /-! ## `ifix` and `icofix` -/
 
@@ -333,9 +258,73 @@ elab "icofix " name:ident binders:bracketedBinder* " : " ty:term " := " body:ter
     mono:(monotoneClause)? : command =>
   elabFixpoint false name binders ty body mono
 
-/-- Guarded Iris fixpoint (stub). -/
+/-! ## `iguarded` -/
+
+/-- The arguments that `binders` bind, as they would be passed back: explicit ones positionally,
+implicit ones by name. Instance arguments are left to instance search. -/
+meta def binderArgs (binders : Array (TSyntax ``Lean.Parser.Term.bracketedBinder)) :
+    MacroM (Array Term) :=
+  binders.foldlM (init := #[]) fun acc b => do
+    let ids := b.raw[1].getArgs.filter (·.isIdent) |>.map (⟨·⟩ : Syntax → Ident)
+    match b.raw.getKind with
+    | ``Lean.Parser.Term.explicitBinder => return acc ++ ids.map (⟨·.raw⟩)
+    | ``Lean.Parser.Term.implicitBinder | ``Lean.Parser.Term.strictImplicitBinder =>
+      ids.foldlM (init := acc) fun acc id => do
+        return acc.push ⟨(← `(Lean.Parser.Term.namedArgument| ($id := $id))).raw⟩
+    | _ => return acc
+
+/-- Elaborate `iguarded`. For `iguarded name binders : ty := body`, it emits
+* `name.pre : (∀ binders, ty) → (∀ binders, ty) := fun name binders => body`,
+* `name.pre.contractive`, from the `contractive_by` proof,
+* `name.approx : ∀ binders, Approx ty`, the fixpoint of the lifted functional, by
+  `partial_fixpoint`. It takes no parameters of its own, so its functional is exactly `lift pre`,
+  whatever the fixed-parameter analysis decides,
+* `name binders : ty`, its exact value, and `name.unfold`.
+
+Everything is generated as syntax: the body is elaborated, and the fixpoint defined, by Lean. -/
+meta def elabGuarded (mods : TSyntax ``Lean.Parser.Command.declModifiers) (name : Ident)
+    (binders : Array (TSyntax ``Lean.Parser.Term.bracketedBinder)) (ty body : Term)
+    (contractive : Option (TSyntax `contractiveClause)) : CommandElabM Unit := do
+  let some clause := contractive | throwErrorAt name "iguarded: provide a contractive_by proof"
+  let `(contractiveClause| contractive_by $tac) := clause | throwUnsupportedSyntax
+  let vis ← if (← elabModifiers mods).isPrivate then `(declModifiers| private)
+    else `(declModifiers|)
+  let suffixed (s : Name) := mkIdentFrom name (name.getId ++ s)
+  let (pre, approx) := (suffixed `pre, suffixed `approx)
+  let (contractiveName, unfold) := (suffixed (`pre ++ `contractive), suffixed `unfold)
+  let args ← liftMacroM <| binderArgs binders
+  let funBinders : TSyntaxArray ``Lean.Parser.Term.funBinder := binders.map (⟨·.raw⟩)
+  let lam (e : Term) : CommandElabM Term :=
+    if binders.isEmpty then pure e else `(fun $funBinders* => $e)
+  let app (f : Ident) : CommandElabM Term := if args.isEmpty then pure f else `($f $args*)
+  let (sig, sigA) ← if binders.isEmpty then pure (ty, ← `(Iris.Approx $ty))
+    else pure (← `(∀ $binders*, $ty), ← `(∀ $binders*, Iris.Approx $ty))
+  elabCommand (← `(command| noncomputable section))
+  try
+    elabCommand (← `(command|
+      $vis:declModifiers def $pre : $sig → $sig := fun ($name : $sig) => $(← lam body)))
+    elabCommand (← `(command|
+      instance $contractiveName:ident : Iris.OFE.Contractive ($pre : $sig → $sig) where
+        distLater_dist := by $tac))
+    elabCommand (← `(command|
+      $vis:declModifiers def $approx : $sigA := Iris.ApproxFun.lift (τ := $sig) $pre $approx
+      partial_fixpoint monotonicity Iris.ApproxFun.lift_mono _))
+    elabCommand (← `(command|
+      $mods:declModifiers def $name $binders* : $ty :=
+        Iris.ApproxFun.get ($(← app approx) : Iris.Approx $ty)))
+    -- `lift_fix_get` on the unfolding equation of `name.approx`, applied to the arguments.
+    let approxEq := mkIdentFrom name (name.getId ++ `approx ++ `eq_1)
+    elabCommand (← `(command|
+      theorem $unfold $binders* :
+          $(← app name) = $pre $(← lam (← `(($(← app name) : $ty)))) $args* :=
+        congrArg (fun f => f $args*) (Iris.ApproxFun.lift_fix_get $pre (Eq.symm $approxEq))))
+  finally
+    elabCommand (← `(command| end))
+
+/-- Guarded Iris fixpoint, defined with `partial_fixpoint` over approximations. The body must be
+contractive in the recursive function. -/
 elab mods:declModifiers "iguarded " name:ident binders:bracketedBinder* " : " ty:term
-    " := " body:term (contractiveClause)? : command =>
-  elabStub mods name binders ty body true
+    " := " body:term contractive:(contractiveClause)? : command =>
+  elabGuarded mods name binders ty body contractive
 
 end Iris.Fixpoint

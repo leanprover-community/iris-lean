@@ -50,7 +50,7 @@ def spawnInv (γ : GName) (l : Loc) (Ψ : Val → IProp GF) : IProp GF := iprop%
      ∃ w : Val, ⌜lv = hl_val(some(&w))⌝ ∗ (Ψ w ∨ token γ))
 
 @[rocq_alias heap_lang.join_handle]
-def joinHandle (l : Loc) (Ψ : Val → IProp GF) : IProp GF := iprop%
+noncomputable def joinHandle (l : Loc) (Ψ : Val → IProp GF) : IProp GF := iprop%
   ∃ γ : GName, token γ ∗ inv N (spawnInv γ l Ψ)
 
 @[rocq_alias heap_lang.spawn_inv_ne]

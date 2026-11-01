@@ -50,7 +50,7 @@ def own (γ : GName) (p : Qp) : IProp GF := iOwn (E := W.inv) γ (none, some (DF
 def excl (γ : GName) : IProp GF := iOwn (E := W.inv) γ (some (Excl.excl ()), none)
 
 @[rocq_alias cinv]
-def cinv (N : Namespace) (γ : GName) (P : IProp GF) : IProp GF :=
+noncomputable def cinv (N : Namespace) (γ : GName) (P : IProp GF) : IProp GF :=
   inv N iprop(P ∗ excl γ ∨ own γ (1 : Qp))
 
 /-! ## Instances -/

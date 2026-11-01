@@ -179,9 +179,9 @@ iguarded le_upd (P : IProp GF) : IProp GF :=
   iprop(∀ n, lc_supply n ==∗
     ▷^[n.succ] False ∨
     (lc_supply n ∗ P) ∨
-    (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd))
+    (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd P))
 contractive_by
-  intros n x y H
+  intros n x y H P
   simp only [le_upd.pre]
   refine forall_ne (fun i => ?_)
   refine wand_ne.ne .rfl ?_
@@ -191,10 +191,7 @@ contractive_by
   refine exists_ne (fun m => ?_)
   refine sep_ne.ne .rfl ?_
   refine sep_ne.ne .rfl ?_
-  refine Contractive.distLater_dist ?_
-  cases n
-  · exact distLater_zero
-  · exact distLater_succ.mpr (distLater_succ.mp H)
+  exact Contractive.distLater_dist fun m hm => H m hm P
 
 #rocq_ignore le_upd.le_upd_def "`le_upd` is defined directly without `seal`/`unseal`."
 #rocq_ignore le_upd.le_upd_aux "`le_upd` is defined directly without `seal`/`unseal`."

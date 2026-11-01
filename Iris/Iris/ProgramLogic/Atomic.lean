@@ -32,7 +32,7 @@ For the non-atomic postcondition, we use an `Option`, combined with a `-∗?`. T
 introducing spurious `emp -∗` into proofs that do not need a non-atomic postcondition (which is
 most of them). -/
 @[rocq_alias atomic_wp]
-def atomic_wp (e : Expr) (E : CoPset) (α : TA.Arg → IProp GF)
+noncomputable def atomic_wp (e : Expr) (E : CoPset) (α : TA.Arg → IProp GF)
     (β : TA.Arg → TB.Arg → IProp GF) (POST : TA.Arg → TB.Arg → TP.Arg → Option (IProp GF))
     (f : TA.Arg → TB.Arg → TP.Arg → Val) : IProp GF :=
   iprop(∀ Φ, atomic_update (⊤ \ E) ∅ α β

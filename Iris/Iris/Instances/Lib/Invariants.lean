@@ -31,7 +31,7 @@ variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 #rocq_ignore inv_unseal "`inv` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias inv]
-def inv (N : Namespace) (P : IProp GF) : IProp GF :=
+noncomputable def inv (N : Namespace) (P : IProp GF) : IProp GF :=
   iprop(□ ∀ E, ⌜↑N ⊆ E⌝ → |={E, E \ ↑N}=> ▷ P ∗ (▷ P ={E \ ↑N, E}=∗ True))
 
 @[rocq_alias own_inv]
