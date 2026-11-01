@@ -59,7 +59,7 @@ meta def combine (default : Term) (f : Term → Term → CommandElabM Term) (ts 
 
 meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) (name : Ident)
     (binders : Array (TSyntax ``Lean.Parser.Term.bracketedBinder)) (type : Term) (ctors : Array (TSyntax `iinductiveConstructor))
-    (monoBy : Option (TSyntax `monotoneClause)) (neBy : Option (TSyntax `nonexpClause)) (logCmds : Bool)
+    (monoBy : Option (TSyntax `monotoneClause)) (logCmds : Bool)
     : CommandElabM Unit := do
   let (args, iProp) := iinductivePeelArrows type
 
@@ -106,9 +106,8 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
 
   let `(declModifiers|) := mods
     | throwErrorAt mods "iinductive: declaration modifiers are not supported by the fixpoint elaborator"
-  let some neBy := neBy | throwErrorAt name "provide a nonexp_by proof"
   let declDef ← `(command|
-    ifix $name:ident $defBinders* : $iProp := $defBody $[$monoBy]? $neBy)
+    ifix $name:ident $defBinders* : $iProp := $defBody $[$monoBy]?)
   if logCmds then logInfo declDef
   elabCommand declDef
 
@@ -165,16 +164,16 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
       selector := selector.pop.push (← `(tactic| iright))
 
 /-- Inductive predicate definition via the least fixpoint.
-The `monotone_by` and `nonexp_by` clauses follow the constructors. -/
+An optional `monotone_by` clause follows the constructors. -/
 elab mods:declModifiers "iinductive " name:ident binders:bracketedBinder*
     " : " type:term " where " ctors:iinductiveConstructor*
-    monoPf:(monotoneClause)? nePf:(nonexpClause)? : command =>
-  elabIInductiveDef mods name binders type ctors monoPf nePf false
+    monoPf:(monotoneClause)? : command =>
+  elabIInductiveDef mods name binders type ctors monoPf false
 
 /-- Like `iinductive`, but logs the generated Lean code. . -/
 elab mods:declModifiers "iinductive? " name:ident binders:bracketedBinder*
     " : " type:term " where " ctors:iinductiveConstructor*
-    monoPf:(monotoneClause)? nePf:(nonexpClause)? : command =>
-  elabIInductiveDef mods name binders type ctors monoPf nePf true
+    monoPf:(monotoneClause)? : command =>
+  elabIInductiveDef mods name binders type ctors monoPf true
 
 end Iris

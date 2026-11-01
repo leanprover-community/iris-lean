@@ -4553,44 +4553,43 @@ end iinduction
 
 
 section monotone
-open OFE
 
-variable [BI PROP] [OFE α]
+variable [BI PROP] {α : Type}
 
-/-- Tests `monotone` closing a goal already in the right form. -/
-example : MonoInstances.MonotonePred (PROP := PROP) (A := α) (fun Φ x => iprop(Φ x ∗ Φ x)) where
-  monotone := by monotone
+/-- Tests `monotone` on a body that typeclass search handles directly. -/
+example : MonoFn (fun (Φ : α → PROP) x => iprop(Φ x ∗ Φ x)) := by monotone
+
+/-- Tests `monotone` with several curried arguments. -/
+example : MonoFn (fun (Φ : α → α → PROP) x y => iprop(Φ y x ∗ ▷ ∃ z, Φ x z)) := by monotone
 
 private def wrap0 (wp : α → PROP) (x : α) : PROP := iprop(wp x ∗ wp x)
 private def wrap1 (wp : α → PROP) : α → PROP := wrap0 wp
 private def wrap2 (wp : α → PROP) : α → PROP := wrap1 wp
 
 /-- Tests `monotone` unfolding. -/
-example : MonoInstances.MonotonePred (PROP := PROP) (A := α) wrap2 where
-  monotone := by monotone
+example : MonoFn (wrap2 (PROP := PROP) (α := α)) := by monotone
 
-private def stepPre (wp : α × Option α → PROP) (x : α × Option α) : PROP :=
-  match x.2 with
-  | none => iprop(wp (x.1, none) ∨ wp (x.1, none))
-  | some _ => iprop(wp (x.1, none) ∗ wp (x.1, none))
+private def stepPre (wp : α → Option α → PROP) (x : α) (y : Option α) : PROP :=
+  match y with
+  | none => iprop(wp x none ∨ wp x none)
+  | some _ => iprop(wp x none ∗ wp x none)
 
-/-- Tests `monotone` on matches on projections. -/
-example : MonoInstances.MonotonePred (PROP := PROP) (A := α × Option α) stepPre where
-  monotone := by monotone
-
-/-- Tests `monotone` directly on a bare entailment goal of right shape. -/
-example (Φ Ψ : α × Option α → PROP) :
-    ⊢ (□ ∀ x, Φ x -∗ Ψ x) -∗ ∀ x, stepPre Φ x -∗ stepPre Ψ x := by
-  monotone
+/-- Tests `monotone` on a match on an argument. -/
+example : MonoFn (stepPre (PROP := PROP) (α := α)) := by monotone
 
 private def choicePre (wp : α × (α ⊕ α) → PROP) (x : α × (α ⊕ α)) : PROP :=
   match x.2 with
   | .inl a => iprop(wp (x.1, .inr a) ∨ wp (x.1, .inr a))
   | .inr a => iprop(wp (x.1, .inl a) ∨ wp (x.1, .inl a))
 
-/-- Tests `monotone` on a non-`Option` type match. -/
-example : MonoInstances.MonotonePred (PROP := PROP) (A := α × (α ⊕ α)) choicePre where
-  monotone := by monotone
+/-- Tests `monotone` on a match on a projection. -/
+example : MonoFn (choicePre (PROP := PROP) (α := α)) := by monotone
+
+/-- Tests that `monotone` fails on a negative occurrence. -/
+example : True := by
+  fail_if_success
+    have : MonoFn (fun (Φ : α → PROP) x => iprop(Φ x -∗ Φ x)) := by monotone
+  trivial
 
 end monotone
 end IrisTest

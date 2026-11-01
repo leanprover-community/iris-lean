@@ -7,7 +7,7 @@ module
 
 public import Iris.BI
 public import Iris.ProofMode
-public import Iris.BI.Lib.Fixpoint
+public import Iris.BI.Lib.Monotone
 public import Lean.Meta.Order
 import all Init.Internal.Order.Basic
 
@@ -19,29 +19,9 @@ These lattices over Iris types let us define Iris fixpoints using `partial_fixpo
 @[expose] public section
 
 namespace Iris
-open Iris.Std BI OFE Lean.Order
+open Iris.Std BI OFE Lean.Order BIPred
 
 variable [BI PROP]
-
-/-- `fix` is below every prefixed point. -/
-theorem fix_le_of_prefixed {α : Sort _} [CCPO α] {f : α → α} (hf : monotone f) {y : α}
-    (hy : f y ⊑ y) : fix f hf ⊑ y :=
-  fix_induct hf _ (fun _ hc h => csup_le hc h) fun _ hx => PartialOrder.rel_trans (hf _ _ hx) hy
-
-/-- `fix` commutes with order isomorphisms. -/
-theorem fix_iso {α β : Sort _} [CCPO α] [CCPO β]
-    (e : α → β) (e' : β → α) (he : monotone e) (h₁ : ∀ x, e' (e x) = x) (h₂ : ∀ y, e (e' y) = y)
-    {f : α → α} (hf : monotone f) {g : β → β} (hg : monotone g)
-    (hfg : ∀ x, e (f x) = g (e x)) :
-    e (fix f hf) = fix g hg := by
-  apply PartialOrder.rel_antisymm
-  · have hfix : f (e' (fix g hg)) = e' (fix g hg) := by
-      rw [← h₁ (f _), hfg, h₂, ← fix_eq hg]
-    have h := he _ _ (fix_le_of_prefixed hf (PartialOrder.rel_of_eq hfix))
-    rw [h₂] at h
-    exact h
-  · apply fix_le_of_prefixed hg
-    rw [← hfg, ← fix_eq hf]
 
 namespace MonotoneFixpoint
 
@@ -64,60 +44,43 @@ scoped instance instCCPOMonoProp : CCPO PROP where
 theorem csup_eq_exists {c : PROP → Prop} (hc : chain c) : CCPO.csup hc = sExists c :=
    is_sup_unique (CCPO.csup_spec hc) (sExists_is_sup c)
 
-theorem admissible_nonExpansive [OFE A] : admissible (fun f : A → PROP => NonExpansive f) := by
-  intro c hc hfix
-  rw [← fun_csup_eq c hc]
-  refine ⟨fun n x₁ x₂ hx => ?_⟩
-  simp only [fun_csup, csup_eq_exists]
-  refine sExists_ne ⟨?_, ?_⟩
-  · rintro _ ⟨f, hf, rfl⟩
-    exact ⟨f x₂, ⟨f, hf, rfl⟩, (hfix f hf).ne hx⟩
-  · rintro _ ⟨f, hf, rfl⟩
-    exact ⟨f x₁, ⟨f, hf, rfl⟩, (hfix f hf).ne hx⟩
+/-- Wands out of a chain sup: the sup of a chain of curried predicates satisfies a wand when
+every member does. -/
+class CSupWand (τ : Type _) (PROP : outParam (Type _)) [BI PROP] [BIPred τ PROP] [CCPO τ] where
+  wandAll_csup {c : τ → Prop} (hc : chain c) {H : PROP} {Φ : τ} :
+    (∀ f, c f → H ⊢ wandAll f Φ) → H ⊢ wandAll (CCPO.csup hc) Φ
 
-/-- The least fixpoint is nonexpansive when the body preserves nonexpansiveness. -/
-theorem fix_nonExpansive [OFE A] (F : (A → PROP) → (A → PROP)) (hm : monotone F)
-    (hF : ∀ f, NonExpansive f → NonExpansive (F f)) : NonExpansive (fix F hm) :=
-  fix_induct hm _ admissible_nonExpansive hF
+scoped instance : CSupWand PROP PROP where
+  wandAll_csup {c} hc {H Φ} h := by
+    rw [csup_eq_exists]
+    exact wand_intro <| sep_symm.trans <| wand_elim <|
+      sExists_elim fun f hf => wand_intro <| sep_symm.trans <| wand_elim (h f hf)
 
-/-- The least fixpoint coincides with the BI least fixpoint. -/
-theorem fix_eq_bi_least_fixpoint [OFE A] (F : (A → PROP) → (A → PROP)) (hm : monotone F)
-    [BIMonoPred F] : fix F hm = bi_least_fixpoint F := by
-  apply PartialOrder.rel_antisymm
-  · apply fix_le_of_prefixed hm
-    exact PartialOrder.rel_of_eq (funext fun _ => (least_fixpoint_unfold F).symm)
-  · intro x
-    have : NonExpansive (fix F hm) := fix_nonExpansive F hm fun _ _ => mono_pred_ne
-    have h := least_fixpoint_iter F (Φ := fix F hm)
-    rw [← fix_eq hm] at h
-    change bi_least_fixpoint F x ⊢ fix F hm x
-    iintro H
-    iapply h $$ [] H
-    iintro !> %y Hy
-    iexact Hy
+scoped instance {α : Type _} {β : α → Type _} [∀ a, BIPred (β a) PROP] [∀ a, CCPO (β a)]
+    [∀ a, CSupWand (β a) PROP] : CSupWand ((a : α) → β a) PROP where
+  wandAll_csup {c} hc {H Φ} h := by
+    rw [← fun_csup_eq]
+    refine forall_intro fun a => ?_
+    refine CSupWand.wandAll_csup (chain_apply hc a) fun g ⟨f, hf, hg⟩ => ?_
+    subst hg
+    exact (h f hf).trans (forall_elim a)
 
-/-- Transport `fix_eq_bi_least_fixpoint` along an order isomorphism `e`, e.g. uncurrying. -/
-theorem fix_eq_bi_least_fixpoint_of_iso [OFE A] {α : Sort _} [CCPO α]
-    (e : α → A → PROP) (e' : (A → PROP) → α) (he : monotone e) (he' : monotone e')
-    (h₁ : ∀ x, e' (e x) = x) (h₂ : ∀ y, e (e' y) = y) (F : α → α) (hF : monotone F)
-    (G : (A → PROP) → (A → PROP)) [BIMonoPred G] (hFG : ∀ x, e (F x) = G (e x)) :
-    e (fix F hF) = bi_least_fixpoint G := by
-  have hG : monotone G := by
-    intro a b h
-    have := he _ _ (hF _ _ (he' _ _ h))
-    rwa [hFG, hFG, h₂, h₂] at this
-  rw [fix_iso e e' he h₁ h₂ hF hG hFG]
-  exact fix_eq_bi_least_fixpoint G hG
-
-/-- Fixpoint iteration, transported along an order isomorphism `e`. -/
-theorem fix_iter_of_iso [OFE A] {α : Sort _} [CCPO α]
-    (e : α → A → PROP) (e' : (A → PROP) → α) (he : monotone e) (he' : monotone e')
-    (h₁ : ∀ x, e' (e x) = x) (h₂ : ∀ y, e (e' y) = y) (F : α → α) (hF : monotone F)
-    (G : (A → PROP) → (A → PROP)) [BIMonoPred G] (hFG : ∀ x, e (F x) = G (e x))
-    (Φ : α) (hΦ : NonExpansive (e Φ)) :
-    ⊢ □ (∀ p, e (F Φ) p -∗ e Φ p) -∗ ∀ p, e (fix F hF) p -∗ e Φ p := by
-  rw [fix_eq_bi_least_fixpoint_of_iso e e' he he' h₁ h₂ F hF G hFG, hFG]
-  exact least_fixpoint_iter G (I := hΦ)
+/-- Iris induction for the least fixpoint of a monotone body `F`. -/
+theorem fix_iter {τ : Type _} [BIPred τ PROP] [CCPO τ] [CSupWand τ PROP]
+    (F : τ → τ) (hF : monotone F) [MonoFn F] (Φ : τ) :
+    ⊢ □ wandAll (F Φ) Φ -∗ wandAll (fix F hF) Φ := by
+  suffices h : iprop(□ wandAll (F Φ) Φ) ⊢ wandAll (fix F hF) Φ by
+    iintro #H; iapply h; iexact H
+  refine fix_induct hF (fun f => iprop(□ wandAll (F Φ) Φ) ⊢ wandAll f Φ)
+    (fun c hc h => CSupWand.wandAll_csup hc h) fun f ih => ?_
+  iintro #H
+  iapply wandAll_comp
+  isplitl
+  · iapply MonoFn.mono
+    iintro !>
+    iapply ih
+    iexact H
+  · iexact H
 
 section Monotone
 variable [PartialOrder α]
@@ -267,63 +230,43 @@ scoped instance instCCPOAntiProp : CCPO PROP where
 theorem csup_eq_forall {c : PROP → Prop} (hc : chain c) : CCPO.csup hc = sForall c :=
    is_sup_unique (CCPO.csup_spec hc) (sForall_is_sup c)
 
-theorem admissible_nonExpansive [OFE A] : admissible (fun f : A → PROP => NonExpansive f) := by
-  intro c hc hfix
-  rw [← fun_csup_eq c hc]
-  refine ⟨fun n x₁ x₂ hx => ?_⟩
-  simp only [fun_csup, csup_eq_forall]
-  refine sForall_ne ⟨?_, ?_⟩
-  · rintro _ ⟨f, hf, rfl⟩
-    exact ⟨f x₂, ⟨f, hf, rfl⟩, (hfix f hf).ne hx⟩
-  · rintro _ ⟨f, hf, rfl⟩
-    exact ⟨f x₁, ⟨f, hf, rfl⟩, (hfix f hf).ne hx⟩
+/-- Wands into a chain sup: the sup of a chain of curried predicates (in the reverse order)
+satisfies a wand when every member does. -/
+class CSupWand (τ : Type _) (PROP : outParam (Type _)) [BI PROP] [BIPred τ PROP] [CCPO τ] where
+  wandAll_csup {c : τ → Prop} (hc : chain c) {H : PROP} {Φ : τ} :
+    (∀ f, c f → H ⊢ wandAll Φ f) → H ⊢ wandAll Φ (CCPO.csup hc)
 
+scoped instance : CSupWand PROP PROP where
+  wandAll_csup {c} hc {H Φ} h := by
+    rw [csup_eq_forall]
+    exact wand_intro <| sForall_intro fun f hf => wand_elim (h f hf)
 
-/-- The greatest fixpoint is nonexpansive when the body preserves nonexpansiveness. -/
-theorem fix_nonExpansive [OFE A] (F : (A → PROP) → (A → PROP)) (hm : monotone F)
-    (hF : ∀ f, NonExpansive f → NonExpansive (F f)) : NonExpansive (fix F hm) :=
-  fix_induct hm _ admissible_nonExpansive hF
+scoped instance {α : Type _} {β : α → Type _} [∀ a, BIPred (β a) PROP] [∀ a, CCPO (β a)]
+    [∀ a, CSupWand (β a) PROP] : CSupWand ((a : α) → β a) PROP where
+  wandAll_csup {c} hc {H Φ} h := by
+    rw [← fun_csup_eq]
+    refine forall_intro fun a => ?_
+    refine CSupWand.wandAll_csup (chain_apply hc a) fun g ⟨f, hf, hg⟩ => ?_
+    subst hg
+    exact (h f hf).trans (forall_elim a)
 
-/-- The greatest fixpoint coincides with the BI greatest fixpoint. -/
-theorem fix_eq_bi_greatest_fixpoint [OFE A] (F : (A → PROP) → (A → PROP)) (hm : monotone F)
-    [BIMonoPred F] : fix F hm = bi_greatest_fixpoint F := by
-  apply PartialOrder.rel_antisymm
-  · -- `bi_greatest_fixpoint F` is a fixpoint, so `fix` is above it.
-    apply fix_le_of_prefixed hm
-    exact PartialOrder.rel_of_eq (funext fun _ => (greatest_fixpoint_unfold F).symm)
-  · -- Use `fix F hm` as the coinduction hypothesis.
-    intro x
-    have : NonExpansive (fix F hm) := fix_nonExpansive F hm fun _ _ => mono_pred_ne
-    have h := greatest_fixpoint_coiter F (fix F hm)
-    rw [← fix_eq hm] at h
-    change fix F hm x ⊢ bi_greatest_fixpoint F x
-    iintro H
-    iapply h $$ [] H
-    iintro !> %y Hy
-    iexact Hy
-
-/-- Transport `fix_eq_bi_greatest_fixpoint` along an order isomorphism `e`, e.g. uncurrying. -/
-theorem fix_eq_bi_greatest_fixpoint_of_iso [OFE A] {α : Sort _} [CCPO α]
-    (e : α → A → PROP) (e' : (A → PROP) → α) (he : monotone e) (he' : monotone e')
-    (h₁ : ∀ x, e' (e x) = x) (h₂ : ∀ y, e (e' y) = y) (F : α → α) (hF : monotone F)
-    (G : (A → PROP) → (A → PROP)) [BIMonoPred G] (hFG : ∀ x, e (F x) = G (e x)) :
-    e (fix F hF) = bi_greatest_fixpoint G := by
-  have hG : monotone G := by
-    intro a b h
-    have := he _ _ (hF _ _ (he' _ _ h))
-    rwa [hFG, hFG, h₂, h₂] at this
-  rw [fix_iso e e' he h₁ h₂ hF hG hFG]
-  exact fix_eq_bi_greatest_fixpoint G hG
-
-/-- Fixpoint coiteration, transported along an order isomorphism `e`. -/
-theorem fix_coiter_of_iso [OFE A] {α : Sort _} [CCPO α]
-    (e : α → A → PROP) (e' : (A → PROP) → α) (he : monotone e) (he' : monotone e')
-    (h₁ : ∀ x, e' (e x) = x) (h₂ : ∀ y, e (e' y) = y) (F : α → α) (hF : monotone F)
-    (G : (A → PROP) → (A → PROP)) [BIMonoPred G] (hFG : ∀ x, e (F x) = G (e x))
-    (Φ : α) (hΦ : NonExpansive (e Φ)) :
-    ⊢ □ (∀ p, e Φ p -∗ e (F Φ) p) -∗ ∀ p, e Φ p -∗ e (fix F hF) p := by
-  rw [fix_eq_bi_greatest_fixpoint_of_iso e e' he he' h₁ h₂ F hF G hFG, hFG]
-  exact greatest_fixpoint_coiter G (e Φ) (I := hΦ)
+/-- Iris coinduction for the greatest fixpoint of a monotone body `F`. -/
+theorem fix_coiter {τ : Type _} [BIPred τ PROP] [CCPO τ] [CSupWand τ PROP]
+    (F : τ → τ) (hF : monotone F) [MonoFn F] (Φ : τ) :
+    ⊢ □ wandAll Φ (F Φ) -∗ wandAll Φ (fix F hF) := by
+  suffices h : iprop(□ wandAll Φ (F Φ)) ⊢ wandAll Φ (fix F hF) by
+    iintro #H; iapply h; iexact H
+  refine fix_induct hF (fun f => iprop(□ wandAll Φ (F Φ)) ⊢ wandAll Φ f)
+    (fun c hc h => CSupWand.wandAll_csup hc h) fun f ih => ?_
+  iintro #H
+  iapply wandAll_comp
+  isplitl
+  · iexact H
+  · iintro !>
+    iapply MonoFn.mono
+    iintro !>
+    iapply ih
+    iexact H
 
 section Monotone
 variable [PartialOrder α]

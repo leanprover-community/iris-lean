@@ -7,441 +7,391 @@ module
 
 public import Iris.ProofMode
 
+/-! # Monotone predicate transformers
+
+A *curried predicate* is a `PROP`, or a (dependent) function into curried predicates. `wandAll Φ Ψ`
+is the pointwise wand `∀ x⃗, Φ x⃗ -∗ Ψ x⃗`.
+
+`MonoFn G` says that `G` is monotone in the internal sense, `□ wandAll Φ Ψ ⊢ wandAll (G Φ) (G Ψ)`,
+which is what Iris (co)induction needs. The instances below prove it for bodies built from the
+usual connectives, for any number of curried arguments, by typeclass search. -/
+
 @[expose] public section
 
-open Iris BI OFE Iris.Std
+open Iris BI Iris.Std
+
+namespace Iris
+
+/-- Curried BI predicates: `PROP`, and (dependent) functions into curried predicates. -/
+class BIPred (τ : Type _) (PROP : outParam (Type _)) [BI PROP] where
+  /-- The pointwise wand `∀ x⃗, f x⃗ -∗ g x⃗`. -/
+  wandAll : τ → τ → PROP
+  wandAll_refl {f : τ} : ⊢ wandAll f f
+  /-- Composition, with a persistent second wand. -/
+  wandAll_comp {f g h : τ} : wandAll f g ∗ □ wandAll g h ⊢ wandAll f h
+
+open BIPred
+
+section BIPred
+variable [BI PROP]
+
+instance : BIPred PROP PROP where
+  wandAll P Q := iprop(P -∗ Q)
+  wandAll_refl := by intro _; iintro H; iexact H
+  wandAll_comp := by
+    intro _ _ _
+    iintro ⟨H1, #H2⟩ HP
+    iapply H2
+    iapply H1 $$ HP
+
+instance {α : Type _} {β : α → Type _} [∀ a, BIPred (β a) PROP] :
+    BIPred ((a : α) → β a) PROP where
+  wandAll f g := iprop(∀ a, wandAll (f a) (g a))
+  wandAll_refl := by
+    intro _
+    iintro %a
+    iapply wandAll_refl
+  wandAll_comp := by
+    intro _ _ _
+    iintro ⟨H1, #H2⟩ %a
+    iapply wandAll_comp
+    isplitl [H1]
+    · iapply H1
+    · iintro !>
+      iapply H2
+
+end BIPred
+
+/-- `G` is monotone: `□ wandAll Φ Ψ ⊢ wandAll (G Φ) (G Ψ)`. -/
+class MonoFn [BI PROP] [BIPred σ PROP] [BIPred τ PROP] (G : σ → τ) : Prop where
+  mono {Φ Ψ : σ} : ⊢ □ wandAll Φ Ψ -∗ wandAll (G Φ) (G Ψ)
+
+/-- `G` is antitone: `□ wandAll Φ Ψ ⊢ wandAll (G Ψ) (G Φ)`. -/
+class AntiFn [BI PROP] [BIPred σ PROP] [BIPred τ PROP] (G : σ → τ) : Prop where
+  anti {Φ Ψ : σ} : ⊢ □ wandAll Φ Ψ -∗ wandAll (G Ψ) (G Φ)
+
+namespace MonoFn
+variable [BI PROP] [BIPred σ PROP]
+
+/-- `mono` for a `PROP`-valued `G`, with the wand visible to the proof mode. -/
+theorem prop {G : σ → PROP} [MonoFn G] {Φ Ψ : σ} : ⊢ □ wandAll Φ Ψ -∗ G Φ -∗ G Ψ :=
+  MonoFn.mono (G := G)
+
+theorem of_prop {G : σ → PROP} (h : ∀ Φ Ψ, ⊢ □ wandAll Φ Ψ -∗ G Φ -∗ G Ψ) : MonoFn G := ⟨h _ _⟩
+
+/-- A function-valued `G` is monotone if it is monotone at each argument. -/
+theorem of_forall {α : Type _} {β : α → Type _} [∀ a, BIPred (β a) PROP] {G : σ → (a : α) → β a}
+    (h : ∀ a, MonoFn (fun Φ => G Φ a)) : MonoFn G where
+  mono {Φ Ψ} := by
+    change ⊢ □ wandAll Φ Ψ -∗ ∀ a, wandAll (G Φ a) (G Ψ a)
+    iintro #H %a
+    iapply (h a).mono $$ H
+
+end MonoFn
+
+namespace AntiFn
+variable [BI PROP] [BIPred σ PROP]
+
+theorem prop {G : σ → PROP} [AntiFn G] {Φ Ψ : σ} : ⊢ □ wandAll Φ Ψ -∗ G Ψ -∗ G Φ :=
+  AntiFn.anti (G := G)
+
+theorem of_prop {G : σ → PROP} (h : ∀ Φ Ψ, ⊢ □ wandAll Φ Ψ -∗ G Ψ -∗ G Φ) : AntiFn G := ⟨h _ _⟩
+
+theorem of_forall {α : Type _} {β : α → Type _} [∀ a, BIPred (β a) PROP] {G : σ → (a : α) → β a}
+    (h : ∀ a, AntiFn (fun Φ => G Φ a)) : AntiFn G where
+  anti {Φ Ψ} := by
+    change ⊢ □ wandAll Φ Ψ -∗ ∀ a, wandAll (G Ψ a) (G Φ a)
+    iintro #H %a
+    iapply (h a).anti $$ H
+
+end AntiFn
 
 namespace MonoInstances
-
-class MonotonePred [BI PROP] [OFE A] (F : (A → PROP) → (A → PROP)) : Prop where
-  monotone {Φ Ψ : A → PROP} : ⊢ (□ ∀ x, Φ x -∗ Ψ x) -∗ ∀ x, F Φ x -∗ F Ψ x
-
-class AntitonePred [BI PROP] [OFE A] (F : (A → PROP) → (A → PROP)) : Prop where
-  antitone {Φ Ψ : A → PROP} : ⊢ (□ ∀ x, Φ x -∗ Ψ x) -∗ ∀ x, F Ψ x -∗ F Φ x
-
-section const
-
-instance monotone_constant [BI PROP] [OFE A] : MonotonePred (fun _ : A → PROP => Ω) where
-  monotone {Φ Ψ} := by iintro _ %_ $
-
-instance monotone_constant' [BI PROP] [OFE A] (y : A) :
-    MonotonePred (fun Φ : A → PROP => fun _ : A => Φ y) where
-  monotone {Φ Ψ} := by
-    iintro #H %_
-    iapply H
-
-instance antitone_constant [BI PROP] [OFE A] : AntitonePred (fun _ : A → PROP => Ω) where
-  antitone {Φ Ψ} := by iintro _ %_ $
-
-end const
-
-section id
-
-instance monotone_id [BI PROP] [OFE A] : MonotonePred (fun Φ : A → PROP => Φ) where
-  monotone {Φ Ψ} := by
-    iintro #H %x
-    iapply H
-
-instance monotone_id' [BI PROP] [OFE A] (F : A → A) : MonotonePred (fun Φ : A → PROP => fun x : A => Φ (F x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x
-    iapply H
-
-end id
-
-section comp
-
-instance monotone_comp [BI PROP] [OFE A] (F G : (A → PROP) → A → PROP)
-    [hf : MonotonePred F] [hg : MonotonePred G] : MonotonePred (fun Φ => F (G Φ)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x HF
-    ihave #HG := hg.monotone $$ H
-    iapply hf.monotone $$ HG HF
-
-end comp
-
-section and
-
-instance monotone_and [BI PROP] [OFE A] (F G : (A → PROP) → A → PROP)
-      [hf : MonotonePred F] [hg : MonotonePred G] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => iprop(F Φ x ∧ G Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x HFG
-    isplit
-    · iapply hf.monotone $$ H HFG
-    · iapply hg.monotone $$ H HFG
-
-instance antitone_and [BI PROP] [OFE A] (F G : (A → PROP) → A → PROP)
-      [hf : AntitonePred F] [hg : AntitonePred G] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => iprop(F Φ x ∧ G Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x HFG
-    isplit
-    · iapply hf.antitone $$ H HFG
-    · iapply hg.antitone $$ H HFG
-
-end and
-
-section or
-
-instance monotone_or [BI PROP] [OFE A] (F G : (A → PROP) → A → PROP)
-      [hf : MonotonePred F] [hg : MonotonePred G] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => iprop(F Φ x ∨ G Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x (HF | HG)
-    · ileft; iapply hf.monotone $$ H HF
-    · iright; iapply hg.monotone $$ H HG
-
-instance antitone_or [BI PROP] [OFE A] (F G : (A → PROP) → A → PROP)
-      [hf : AntitonePred F] [hg : AntitonePred G] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => iprop(F Φ x ∨ G Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x (HF | HG)
-    · ileft; iapply hf.antitone $$ H HF
-    · iright; iapply hg.antitone $$ H HG
-
-end or
-
-section sep
-
-instance monotone_sep [BI PROP] [OFE A] (F G : (A → PROP) → A → PROP)
-      [hf : MonotonePred F] [hg : MonotonePred G] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => iprop(F Φ x ∗ G Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x ⟨HF, HG⟩
-    isplitl [HF]
-    · iapply hf.monotone $$ H HF
-    · iapply hg.monotone $$ H HG
-
-instance antitone_sep [BI PROP] [OFE A] (F G : (A → PROP) → A → PROP)
-      [hf : AntitonePred F] [hg : AntitonePred G] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => iprop(F Φ x ∗ G Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x ⟨HF, HG⟩
-    isplitl [HF]
-    · iapply hf.antitone $$ H HF
-    · iapply hg.antitone $$ H HG
-
-end sep
-
-section wand
-
-instance monotone_wand [BI PROP] [OFE A] (F G : (A → PROP) → A → PROP)
-      [hf : AntitonePred F] [hg : MonotonePred G] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => iprop(F Φ x -∗ G Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x HFG HF
-    ihave HF' := hf.antitone $$ H HF
-    iapply hg.monotone $$ H (HFG $$ HF')
-
-instance antitone_wand [BI PROP] [OFE A] (F G : (A → PROP) → A → PROP)
-      [hf : MonotonePred F] [hg : AntitonePred G] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => iprop(F Φ x -∗ G Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x HFG HF
-    ihave HF' := hf.monotone $$ H HF
-    iapply hg.antitone $$ H (HFG $$ HF')
-
-end wand
-
-section pers_imp
-
-instance monotone_pers_imp [BI PROP] [OFE A] (F G : (A → PROP) → A → PROP)
-      [hf : AntitonePred F] [hg : MonotonePred G] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => iprop(<pers> F Φ x → G Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x HFG #HF
-    ihave #HF' := hf.antitone $$ H HF
-    iapply hg.monotone $$ H (HFG $$ HF')
-
-instance antitone_pers_imp [BI PROP] [OFE A] (F G : (A → PROP) → A → PROP)
-      [hf : MonotonePred F] [hg : AntitonePred G] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => iprop(<pers> F Φ x → G Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x HFG #HF
-    ihave #HF' := hf.monotone $$ H HF
-    iapply hg.antitone $$ H (HFG $$ HF')
-
-end pers_imp
-
-section «forall»
-
-instance monotone_forall [BI PROP] [OFE A] (F : B → (A → PROP) → A → PROP)
-      [hf : ∀ y, MonotonePred (F y)] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => BI.forall (fun y : B => F y Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x HF %y
-    iapply (hf y).monotone $$ H HF
-
-instance antitone_forall [BI PROP] [OFE A] (F : B → (A → PROP) → A → PROP)
-      [hf : ∀ y, AntitonePred (F y)] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => BI.forall (fun y : B => F y Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x HF %y
-    iapply (hf y).antitone $$ H HF
-
-end «forall»
-
-section «exists»
-
-instance monotone_exists [BI PROP] [OFE A] (F : B → (A → PROP) → A → PROP)
-      [hf : ∀ y, MonotonePred (F y)] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => BI.exists (fun y : B => F y Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x ⟨%y, HF⟩
-    iexists y
-    iapply (hf y).monotone $$ H HF
-
-instance antitone_exists [BI PROP] [OFE A] (F : B → (A → PROP) → A → PROP)
-      [hf : ∀ y, AntitonePred (F y)] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => BI.exists (fun y : B => F y Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x ⟨%y, HF⟩
-    iexists y
-    iapply (hf y).antitone $$ H HF
-
-end «exists»
-
-section persistently
-
-instance monotone_persistently [BI PROP] [OFE A] (F : (A → PROP) → A → PROP)
-    [hf : MonotonePred F] : MonotonePred (fun Φ : A → PROP => fun x : A => iprop(<pers> F Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x #HF !>
-    iapply hf.monotone $$ H HF
-
-instance antitone_persistently [BI PROP] [OFE A] (F : (A → PROP) → A → PROP)
-    [hf : AntitonePred F] : AntitonePred (fun Φ : A → PROP => fun x : A => iprop(<pers> F Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x #HF !>
-    iapply hf.antitone $$ H HF
-
-end persistently
-
-section affinely
-
-instance monotone_affinely [BI PROP] [OFE A] (F : (A → PROP) → A → PROP)
-    [hf : MonotonePred F] : MonotonePred (fun Φ : A → PROP => fun x : A => iprop(<affine> F Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x HF !>
-    iapply hf.monotone $$ H HF
-
-instance antitone_affinely [BI PROP] [OFE A] (F : (A → PROP) → A → PROP)
-    [hf : AntitonePred F] : AntitonePred (fun Φ : A → PROP => fun x : A => iprop(<affine> F Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x HF !>
-    iapply hf.antitone $$ H HF
-
-end affinely
-
-section absorbingly
-
-instance monotone_absorbingly [BI PROP] [OFE A] (F : (A → PROP) → A → PROP)
-    [hf : MonotonePred F] : MonotonePred (fun Φ : A → PROP => fun x : A => iprop(<absorb> F Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x >HF !>
-    iapply hf.monotone $$ H HF
-
-instance antitone_absorbingly [BI PROP] [OFE A] (F : (A → PROP) → A → PROP)
-    [hf : AntitonePred F] : AntitonePred (fun Φ : A → PROP => fun x : A => iprop(<absorb> F Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x >HF !>
-    iapply hf.antitone $$ H HF
-
-end absorbingly
-
-section intuitionistically
-
-instance monotone_intuitionistically [BI PROP] [OFE A] (F : (A → PROP) → A → PROP)
-    [hf : MonotonePred F] : MonotonePred (fun Φ : A → PROP => fun x : A => iprop(□ F Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x #HF !>
-    iapply hf.monotone $$ H HF
-
-instance antitone_intuitionistically [BI PROP] [OFE A] (F : (A → PROP) → A → PROP)
-    [hf : AntitonePred F] : AntitonePred (fun Φ : A → PROP => fun x : A => iprop(□ F Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x #HF !>
-    iapply hf.antitone $$ H HF
-
-end intuitionistically
-
-section later
-
-instance monotone_later [BI PROP] [OFE A] (F : (A → PROP) → A → PROP)
-    [hf : MonotonePred F] : MonotonePred (fun Φ : A → PROP => fun x : A => iprop(▷ F Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x HF !>
-    iapply hf.monotone $$ H HF
-
-instance antitone_later [BI PROP] [OFE A] (F : (A → PROP) → A → PROP)
-    [hf : AntitonePred F] : AntitonePred (fun Φ : A → PROP => fun x : A => iprop(▷ F Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x HF !>
-    iapply hf.antitone $$ H HF
-
-end later
-
-section except0
-
-instance monotone_except0 [BI PROP] [OFE A] (F : (A → PROP) → A → PROP)
-    [hf : MonotonePred F] : MonotonePred (fun Φ : A → PROP => fun x : A => iprop(◇ F Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x >HF !>
-    iapply hf.monotone $$ H HF
-
-instance antitone_except0 [BI PROP] [OFE A] (F : (A → PROP) → A → PROP)
-    [hf : AntitonePred F] : AntitonePred (fun Φ : A → PROP => fun x : A => iprop(◇ F Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x >HF !>
-    iapply hf.antitone $$ H HF
-
-end except0
-
-section fupd
-
-instance monotone_fupd [BI PROP] [BIFUpdate PROP] [OFE A] (F : (A → PROP) → A → PROP)
-      (E1 E2 : A → CoPset) [hf : MonotonePred F] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => fupd (E1 x) (E2 x) (F Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x >HF !>
-    iapply hf.monotone $$ H HF
-
-instance antitone_fupd [BI PROP] [BIFUpdate PROP] [OFE A] (F : (A → PROP) → A → PROP)
-      (E1 E2 : A → CoPset) [hf : AntitonePred F] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => fupd (E1 x) (E2 x) (F Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x >HF !>
-    iapply hf.antitone $$ H HF
-
-end fupd
-
-section bupd
-
-instance monotone_bupd [BI PROP] [BIUpdate PROP] [OFE A] (F : (A → PROP) → A → PROP)
-      [hf : MonotonePred F] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => iprop(|==> F Φ x)) where
-  monotone {Φ Ψ} := by
-    iintro #H %x >HF !>
-    iapply hf.monotone $$ H HF
-
-instance antitone_bupd [BI PROP] [BIUpdate PROP] [OFE A] (F : (A → PROP) → A → PROP)
-      [hf : AntitonePred F] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => iprop(|==> F Φ x)) where
-  antitone {Φ Ψ} := by
-    iintro #H %x >HF !>
-    iapply hf.antitone $$ H HF
-
-end bupd
-
-section bigSepL
-
-instance monotone_bigSepL [BI PROP] [OFE A] (l : List B)
-      (F : Nat → B → (A → PROP) → A → PROP) [hf : ∀ n y, MonotonePred (F n y)] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => bigSepL (fun n y => F n y Φ x) l) where
-  monotone {Φ Ψ} := by
-    iintro #H %x HF
-    iapply BigSepL.bigSepL_impl $$ HF
-    iintro !> %k %y _ HG
-    iapply (hf k y).monotone $$ H HG
-
-instance antitone_bigSepL [BI PROP] [OFE A] (l : List B)
-      (F : Nat → B → (A → PROP) → A → PROP) [hf : ∀ n y, AntitonePred (F n y)] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => bigSepL (fun n y => F n y Φ x) l) where
-  antitone {Φ Ψ} := by
-    iintro #H %x HF
-    iapply BigSepL.bigSepL_impl $$ HF
-    iintro !> %k %y _ HG
-    iapply (hf k y).antitone $$ H HG
-
-end bigSepL
-
-section bigSepL2
-
-instance monotone_bigSepL2 [BI PROP] [OFE A] (l1 : List B) (l2 : List C)
-      (F : Nat → B → C → (A → PROP) → A → PROP) [hf : ∀ n y z, MonotonePred (F n y z)] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => bigSepL2 (fun n y z => F n y z Φ x) l1 l2) where
-  monotone {Φ Ψ} := by
-    iintro #H %x HF
-    iapply BigSepL2.bigSepL2_impl $$ HF
-    iintro !> %k %y %z _ _ HG
-    iapply (hf k y z).monotone $$ H HG
-
-instance antitone_bigSepL2 [BI PROP] [OFE A] (l1 : List B) (l2 : List C)
-      (F : Nat → B → C → (A → PROP) → A → PROP) [hf : ∀ n y z, AntitonePred (F n y z)] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => bigSepL2 (fun n y z => F n y z Φ x) l1 l2) where
-  antitone {Φ Ψ} := by
-    iintro #H %x HF
-    iapply BigSepL2.bigSepL2_impl $$ HF
-    iintro !> %k %y %z _ _ HG
-    iapply (hf k y z).antitone $$ H HG
-
-end bigSepL2
-
-section bigSepM
-
-instance monotone_bigSepM [BI PROP] [OFE A] [LawfulFiniteMap M K]
-      (m : M V) (F : K → V → (A → PROP) → A → PROP) [hf : ∀ k v, MonotonePred (F k v)] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => bigSepM (fun k v => F k v Φ x) m) where
-  monotone {Φ Ψ} := by
-    iintro #H %x HF
-    iapply BigSepM.bigSepM_impl $$ HF
-    iintro !> %k %v _ HG
-    iapply (hf k v).monotone $$ H HG
-
-instance antitone_bigSepM [BI PROP] [OFE A] [LawfulFiniteMap M K]
-      (m : M V) (F : K → V → (A → PROP) → A → PROP) [hf : ∀ k v, AntitonePred (F k v)] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => bigSepM (fun k v => F k v Φ x) m) where
-  antitone {Φ Ψ} := by
-    iintro #H %x HF
-    iapply BigSepM.bigSepM_impl $$ HF
-    iintro !> %k %v _ HG
-    iapply (hf k v).antitone $$ H HG
-
-end bigSepM
-
-section bigSepS
-
-instance monotone_bigSepS [BI PROP] [OFE A] [LawfulFiniteSet S B] (X : S)
-      (F : B → (A → PROP) → A → PROP) [hf : ∀ y, MonotonePred (F y)] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => bigSepS (fun y => F y Φ x) X) where
-  monotone {Φ Ψ} := by
-    iintro #H %x HF
-    iapply BigSepS.bigSepS_impl $$ HF
-    iintro !> %y _ HG
-    iapply (hf y).monotone $$ H HG
-
-instance antitone_bigSepS [BI PROP] [OFE A] [LawfulFiniteSet S B] (X : S)
-      (F : B → (A → PROP) → A → PROP) [hf : ∀ y, AntitonePred (F y)] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => bigSepS (fun y => F y Φ x) X) where
-  antitone {Φ Ψ} := by
-    iintro #H %x HF
-    iapply BigSepS.bigSepS_impl $$ HF
-    iintro !> %y _ HG
-    iapply (hf y).antitone $$ H HG
-
-end bigSepS
-
-section bigSepMS
-
-instance monotone_bigSepMS [BI PROP] [OFE A] [LawfulFiniteMultiSet MS B] (X : MS)
-      (F : B → (A → PROP) → A → PROP) [hf : ∀ y, MonotonePred (F y)] :
-    MonotonePred (fun Φ : A → PROP => fun x : A => bigSepMS (fun y => F y Φ x) X) where
-  monotone {Φ Ψ} := by
-    iintro #H %x HF
-    iapply BigSepMS.bigSepMS_impl $$ HF
-    iintro !> %y _ HG
-    iapply (hf y).monotone $$ H HG
-
-instance antitone_bigSepMS [BI PROP] [OFE A] [LawfulFiniteMultiSet MS B] (X : MS)
-      (F : B → (A → PROP) → A → PROP) [hf : ∀ y, AntitonePred (F y)] :
-    AntitonePred (fun Φ : A → PROP => fun x : A => bigSepMS (fun y => F y Φ x) X) where
-  antitone {Φ Ψ} := by
-    iintro #H %x HF
-    iapply BigSepMS.bigSepMS_impl $$ HF
-    iintro !> %y _ HG
-    iapply (hf y).antitone $$ H HG
-
-end bigSepMS
+variable [BI PROP] [BIPred σ PROP]
+
+/-! ## Structure: identity, constants, functions and applications -/
+
+instance mono_id : MonoFn (fun Φ : σ => Φ) where
+  mono := by intro _ _; iintro #H; iexact H
+
+instance mono_const [BIPred τ PROP] (c : τ) : MonoFn (fun _ : σ => c) where
+  mono := by intro _ _; iintro _; iapply wandAll_refl
+
+instance anti_const [BIPred τ PROP] (c : τ) : AntiFn (fun _ : σ => c) where
+  anti := by intro _ _; iintro _; iapply wandAll_refl
+
+instance mono_forall {α : Type _} {β : α → Type _} [∀ a, BIPred (β a) PROP]
+    (G : σ → (a : α) → β a) [h : ∀ a, MonoFn (fun Φ => G Φ a)] : MonoFn G :=
+  MonoFn.of_forall h
+
+instance anti_forall {α : Type _} {β : α → Type _} [∀ a, BIPred (β a) PROP]
+    (G : σ → (a : α) → β a) [h : ∀ a, AntiFn (fun Φ => G Φ a)] : AntiFn G :=
+  AntiFn.of_forall h
+
+instance (priority := low) mono_app {α : Type _} {β : α → Type _} [∀ a, BIPred (β a) PROP]
+    (G : σ → (a : α) → β a) (a : α) [h : MonoFn G] : MonoFn (fun Φ => G Φ a) where
+  mono {Φ Ψ} := by
+    have h' : ⊢ □ wandAll Φ Ψ -∗ ∀ a, wandAll (G Φ a) (G Ψ a) := h.mono
+    iintro #H
+    ihave H' := h' $$ H
+    iapply H'
+
+instance (priority := low) anti_app {α : Type _} {β : α → Type _} [∀ a, BIPred (β a) PROP]
+    (G : σ → (a : α) → β a) (a : α) [h : AntiFn G] : AntiFn (fun Φ => G Φ a) where
+  anti {Φ Ψ} := by
+    have h' : ⊢ □ wandAll Φ Ψ -∗ ∀ a, wandAll (G Ψ a) (G Φ a) := h.anti
+    iintro #H
+    ihave H' := h' $$ H
+    iapply H'
+
+/-! ## Connectives -/
+
+instance mono_and (F G : σ → PROP) [MonoFn F] [MonoFn G] :
+    MonoFn (fun Φ => iprop(F Φ ∧ G Φ)) := .of_prop fun _ _ => by
+  iintro #H HFG
+  isplit
+  · iapply MonoFn.prop (G := F) $$ H; icases HFG with ⟨HF, -⟩; iexact HF
+  · iapply MonoFn.prop (G := G) $$ H; icases HFG with ⟨-, HG⟩; iexact HG
+
+instance anti_and (F G : σ → PROP) [AntiFn F] [AntiFn G] :
+    AntiFn (fun Φ => iprop(F Φ ∧ G Φ)) := .of_prop fun _ _ => by
+  iintro #H HFG
+  isplit
+  · iapply AntiFn.prop (G := F) $$ H; icases HFG with ⟨HF, -⟩; iexact HF
+  · iapply AntiFn.prop (G := G) $$ H; icases HFG with ⟨-, HG⟩; iexact HG
+
+instance mono_or (F G : σ → PROP) [MonoFn F] [MonoFn G] :
+    MonoFn (fun Φ => iprop(F Φ ∨ G Φ)) := .of_prop fun _ _ => by
+  iintro #H (HF | HG)
+  · ileft; iapply MonoFn.prop (G := F) $$ H HF
+  · iright; iapply MonoFn.prop (G := G) $$ H HG
+
+instance anti_or (F G : σ → PROP) [AntiFn F] [AntiFn G] :
+    AntiFn (fun Φ => iprop(F Φ ∨ G Φ)) := .of_prop fun _ _ => by
+  iintro #H (HF | HG)
+  · ileft; iapply AntiFn.prop (G := F) $$ H HF
+  · iright; iapply AntiFn.prop (G := G) $$ H HG
+
+instance mono_sep (F G : σ → PROP) [MonoFn F] [MonoFn G] :
+    MonoFn (fun Φ => iprop(F Φ ∗ G Φ)) := .of_prop fun _ _ => by
+  iintro #H ⟨HF, HG⟩
+  isplitl [HF]
+  · iapply MonoFn.prop (G := F) $$ H HF
+  · iapply MonoFn.prop (G := G) $$ H HG
+
+instance anti_sep (F G : σ → PROP) [AntiFn F] [AntiFn G] :
+    AntiFn (fun Φ => iprop(F Φ ∗ G Φ)) := .of_prop fun _ _ => by
+  iintro #H ⟨HF, HG⟩
+  isplitl [HF]
+  · iapply AntiFn.prop (G := F) $$ H HF
+  · iapply AntiFn.prop (G := G) $$ H HG
+
+instance mono_wand (F G : σ → PROP) [AntiFn F] [MonoFn G] :
+    MonoFn (fun Φ => iprop(F Φ -∗ G Φ)) := .of_prop fun _ _ => by
+  iintro #H HFG HF
+  ihave HF' := AntiFn.prop (G := F) $$ H HF
+  iapply MonoFn.prop (G := G) $$ H (HFG $$ HF')
+
+instance anti_wand (F G : σ → PROP) [MonoFn F] [AntiFn G] :
+    AntiFn (fun Φ => iprop(F Φ -∗ G Φ)) := .of_prop fun _ _ => by
+  iintro #H HFG HF
+  ihave HF' := MonoFn.prop (G := F) $$ H HF
+  iapply AntiFn.prop (G := G) $$ H (HFG $$ HF')
+
+instance mono_pers_imp (F G : σ → PROP) [AntiFn F] [MonoFn G] :
+    MonoFn (fun Φ => iprop(<pers> F Φ → G Φ)) := .of_prop fun _ _ => by
+  iintro #H HFG #HF
+  ihave #HF' := AntiFn.prop (G := F) $$ H HF
+  iapply MonoFn.prop (G := G) $$ H (HFG $$ HF')
+
+instance anti_pers_imp (F G : σ → PROP) [MonoFn F] [AntiFn G] :
+    AntiFn (fun Φ => iprop(<pers> F Φ → G Φ)) := .of_prop fun _ _ => by
+  iintro #H HFG #HF
+  ihave #HF' := MonoFn.prop (G := F) $$ H HF
+  iapply AntiFn.prop (G := G) $$ H (HFG $$ HF')
+
+instance mono_bi_forall {B : Sort _} (F : B → σ → PROP) [∀ y, MonoFn (F y)] :
+    MonoFn (fun Φ => BI.forall (fun y => F y Φ)) := .of_prop fun _ _ => by
+  iintro #H HF %y
+  iapply MonoFn.prop (G := F y) $$ H HF
+
+instance anti_bi_forall {B : Sort _} (F : B → σ → PROP) [∀ y, AntiFn (F y)] :
+    AntiFn (fun Φ => BI.forall (fun y => F y Φ)) := .of_prop fun _ _ => by
+  iintro #H HF %y
+  iapply AntiFn.prop (G := F y) $$ H HF
+
+instance mono_bi_exists {B : Sort _} (F : B → σ → PROP) [∀ y, MonoFn (F y)] :
+    MonoFn (fun Φ => BI.exists (fun y => F y Φ)) := .of_prop fun _ _ => by
+  iintro #H ⟨%y, HF⟩
+  iexists y
+  iapply MonoFn.prop (G := F y) $$ H HF
+
+instance anti_bi_exists {B : Sort _} (F : B → σ → PROP) [∀ y, AntiFn (F y)] :
+    AntiFn (fun Φ => BI.exists (fun y => F y Φ)) := .of_prop fun _ _ => by
+  iintro #H ⟨%y, HF⟩
+  iexists y
+  iapply AntiFn.prop (G := F y) $$ H HF
+
+/-! ## Modalities -/
+
+instance mono_persistently (F : σ → PROP) [MonoFn F] :
+    MonoFn (fun Φ => iprop(<pers> F Φ)) := .of_prop fun _ _ => by
+  iintro #H #HF !>
+  iapply MonoFn.prop (G := F) $$ H HF
+
+instance anti_persistently (F : σ → PROP) [AntiFn F] :
+    AntiFn (fun Φ => iprop(<pers> F Φ)) := .of_prop fun _ _ => by
+  iintro #H #HF !>
+  iapply AntiFn.prop (G := F) $$ H HF
+
+instance mono_affinely (F : σ → PROP) [MonoFn F] :
+    MonoFn (fun Φ => iprop(<affine> F Φ)) := .of_prop fun _ _ => by
+  iintro #H HF !>
+  iapply MonoFn.prop (G := F) $$ H HF
+
+instance anti_affinely (F : σ → PROP) [AntiFn F] :
+    AntiFn (fun Φ => iprop(<affine> F Φ)) := .of_prop fun _ _ => by
+  iintro #H HF !>
+  iapply AntiFn.prop (G := F) $$ H HF
+
+instance mono_absorbingly (F : σ → PROP) [MonoFn F] :
+    MonoFn (fun Φ => iprop(<absorb> F Φ)) := .of_prop fun _ _ => by
+  iintro #H >HF !>
+  iapply MonoFn.prop (G := F) $$ H HF
+
+instance anti_absorbingly (F : σ → PROP) [AntiFn F] :
+    AntiFn (fun Φ => iprop(<absorb> F Φ)) := .of_prop fun _ _ => by
+  iintro #H >HF !>
+  iapply AntiFn.prop (G := F) $$ H HF
+
+instance mono_intuitionistically (F : σ → PROP) [MonoFn F] :
+    MonoFn (fun Φ => iprop(□ F Φ)) := .of_prop fun _ _ => by
+  iintro #H #HF !>
+  iapply MonoFn.prop (G := F) $$ H HF
+
+instance anti_intuitionistically (F : σ → PROP) [AntiFn F] :
+    AntiFn (fun Φ => iprop(□ F Φ)) := .of_prop fun _ _ => by
+  iintro #H #HF !>
+  iapply AntiFn.prop (G := F) $$ H HF
+
+instance mono_later (F : σ → PROP) [MonoFn F] :
+    MonoFn (fun Φ => iprop(▷ F Φ)) := .of_prop fun _ _ => by
+  iintro #H HF !>
+  iapply MonoFn.prop (G := F) $$ H HF
+
+instance anti_later (F : σ → PROP) [AntiFn F] :
+    AntiFn (fun Φ => iprop(▷ F Φ)) := .of_prop fun _ _ => by
+  iintro #H HF !>
+  iapply AntiFn.prop (G := F) $$ H HF
+
+instance mono_except0 (F : σ → PROP) [MonoFn F] :
+    MonoFn (fun Φ => iprop(◇ F Φ)) := .of_prop fun _ _ => by
+  iintro #H >HF !>
+  iapply MonoFn.prop (G := F) $$ H HF
+
+instance anti_except0 (F : σ → PROP) [AntiFn F] :
+    AntiFn (fun Φ => iprop(◇ F Φ)) := .of_prop fun _ _ => by
+  iintro #H >HF !>
+  iapply AntiFn.prop (G := F) $$ H HF
+
+instance mono_fupd [BIFUpdate PROP] (E1 E2 : CoPset) (F : σ → PROP) [MonoFn F] :
+    MonoFn (fun Φ => fupd E1 E2 (F Φ)) := .of_prop fun _ _ => by
+  iintro #H >HF !>
+  iapply MonoFn.prop (G := F) $$ H HF
+
+instance anti_fupd [BIFUpdate PROP] (E1 E2 : CoPset) (F : σ → PROP) [AntiFn F] :
+    AntiFn (fun Φ => fupd E1 E2 (F Φ)) := .of_prop fun _ _ => by
+  iintro #H >HF !>
+  iapply AntiFn.prop (G := F) $$ H HF
+
+instance mono_bupd [BIUpdate PROP] (F : σ → PROP) [MonoFn F] :
+    MonoFn (fun Φ => iprop(|==> F Φ)) := .of_prop fun _ _ => by
+  iintro #H >HF !>
+  iapply MonoFn.prop (G := F) $$ H HF
+
+instance anti_bupd [BIUpdate PROP] (F : σ → PROP) [AntiFn F] :
+    AntiFn (fun Φ => iprop(|==> F Φ)) := .of_prop fun _ _ => by
+  iintro #H >HF !>
+  iapply AntiFn.prop (G := F) $$ H HF
+
+/-! ## Big operators -/
+
+instance mono_bigSepL (l : List B) (F : Nat → B → σ → PROP) [∀ n y, MonoFn (F n y)] :
+    MonoFn (fun Φ => bigSepL (fun n y => F n y Φ) l) := .of_prop fun _ _ => by
+  iintro #H HF
+  iapply BigSepL.bigSepL_impl $$ HF
+  iintro !> %k %y _ HG
+  iapply MonoFn.prop (G := F k y) $$ H HG
+
+instance anti_bigSepL (l : List B) (F : Nat → B → σ → PROP) [∀ n y, AntiFn (F n y)] :
+    AntiFn (fun Φ => bigSepL (fun n y => F n y Φ) l) := .of_prop fun _ _ => by
+  iintro #H HF
+  iapply BigSepL.bigSepL_impl $$ HF
+  iintro !> %k %y _ HG
+  iapply AntiFn.prop (G := F k y) $$ H HG
+
+instance mono_bigSepL2 (l1 : List B) (l2 : List C) (F : Nat → B → C → σ → PROP)
+    [∀ n y z, MonoFn (F n y z)] :
+    MonoFn (fun Φ => bigSepL2 (fun n y z => F n y z Φ) l1 l2) := .of_prop fun _ _ => by
+  iintro #H HF
+  iapply BigSepL2.bigSepL2_impl $$ HF
+  iintro !> %k %y %z _ _ HG
+  iapply MonoFn.prop (G := F k y z) $$ H HG
+
+instance anti_bigSepL2 (l1 : List B) (l2 : List C) (F : Nat → B → C → σ → PROP)
+    [∀ n y z, AntiFn (F n y z)] :
+    AntiFn (fun Φ => bigSepL2 (fun n y z => F n y z Φ) l1 l2) := .of_prop fun _ _ => by
+  iintro #H HF
+  iapply BigSepL2.bigSepL2_impl $$ HF
+  iintro !> %k %y %z _ _ HG
+  iapply AntiFn.prop (G := F k y z) $$ H HG
+
+instance mono_bigSepM [LawfulFiniteMap M K] (m : M V) (F : K → V → σ → PROP)
+    [∀ k v, MonoFn (F k v)] : MonoFn (fun Φ => bigSepM (fun k v => F k v Φ) m) :=
+  .of_prop fun _ _ => by
+  iintro #H HF
+  iapply BigSepM.bigSepM_impl $$ HF
+  iintro !> %k %v _ HG
+  iapply MonoFn.prop (G := F k v) $$ H HG
+
+instance anti_bigSepM [LawfulFiniteMap M K] (m : M V) (F : K → V → σ → PROP)
+    [∀ k v, AntiFn (F k v)] : AntiFn (fun Φ => bigSepM (fun k v => F k v Φ) m) :=
+  .of_prop fun _ _ => by
+  iintro #H HF
+  iapply BigSepM.bigSepM_impl $$ HF
+  iintro !> %k %v _ HG
+  iapply AntiFn.prop (G := F k v) $$ H HG
+
+instance mono_bigSepS [LawfulFiniteSet S B] (X : S) (F : B → σ → PROP) [∀ y, MonoFn (F y)] :
+    MonoFn (fun Φ => bigSepS (fun y => F y Φ) X) := .of_prop fun _ _ => by
+  iintro #H HF
+  iapply BigSepS.bigSepS_impl $$ HF
+  iintro !> %y _ HG
+  iapply MonoFn.prop (G := F y) $$ H HG
+
+instance anti_bigSepS [LawfulFiniteSet S B] (X : S) (F : B → σ → PROP) [∀ y, AntiFn (F y)] :
+    AntiFn (fun Φ => bigSepS (fun y => F y Φ) X) := .of_prop fun _ _ => by
+  iintro #H HF
+  iapply BigSepS.bigSepS_impl $$ HF
+  iintro !> %y _ HG
+  iapply AntiFn.prop (G := F y) $$ H HG
+
+instance mono_bigSepMS [LawfulFiniteMultiSet MS B] (X : MS) (F : B → σ → PROP)
+    [∀ y, MonoFn (F y)] : MonoFn (fun Φ => bigSepMS (fun y => F y Φ) X) :=
+  .of_prop fun _ _ => by
+  iintro #H HF
+  iapply BigSepMS.bigSepMS_impl $$ HF
+  iintro !> %y _ HG
+  iapply MonoFn.prop (G := F y) $$ H HG
+
+instance anti_bigSepMS [LawfulFiniteMultiSet MS B] (X : MS) (F : B → σ → PROP)
+    [∀ y, AntiFn (F y)] : AntiFn (fun Φ => bigSepMS (fun y => F y Φ) X) :=
+  .of_prop fun _ _ => by
+  iintro #H HF
+  iapply BigSepMS.bigSepMS_impl $$ HF
+  iintro !> %y _ HG
+  iapply AntiFn.prop (G := F y) $$ H HG
 
 end MonoInstances
+
+end Iris

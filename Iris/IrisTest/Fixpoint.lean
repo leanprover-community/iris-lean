@@ -16,38 +16,26 @@ variable [BI PROP]
 
 ifix zero : PROP := zero
 monotone_by monotone
-nonexp_by
-  intros Φ _
-  constructor
-  intros n a _ _
-  exact OFE.Dist.rfl
 
--- `.pre` is curried; only `.pre'` uses the Unit adapter for zero varying arguments.
+-- `.pre` takes the fixed parameters, then the recursive function, then the varying parameters.
 example (p : PROP) : zero.pre p = p := rfl
-example (Φ : Unit → PROP) : zero.pre' Φ () = Φ () := rfl
-example : zero (PROP := PROP) = zero.pre' (fun _ => zero) () := zero.unfold
+example : zero (PROP := PROP) = zero.pre zero := zero.unfold
 
 -- The reopened recursive variable keeps dependencies on fixed parameters intact.
 ifix indexed (n : Nat) [OFE (Fin n)] (i : Fin n) : PROP :=
   let next := indexed n
   next i
-nonexp_by intros; assumption
 
 example (n : Nat) [OFE (Fin n)] (Φ : Fin n → PROP) (i : Fin n) :
-    indexed.pre' n Φ i = Φ i := rfl
+    indexed.pre n Φ i = Φ i := rfl
 example (n : Nat) [OFE (Fin n)] (i : Fin n) :
-    indexed (PROP := PROP) n i = indexed.pre' n (indexed n) i := indexed.unfold n i
+    indexed (PROP := PROP) n i = indexed.pre n (indexed n) i := indexed.unfold n i
 
 -- No recursive occurrence is required either.
 icofix constant (p : PROP) : PROP := p
-monotone_by monotone; infer_instance
-nonexp_by
-  intros Φ _
-  constructor
-  intros n a _ _
-  exact OFE.Dist.rfl
+monotone_by monotone
 
-example (p : PROP) (Φ : Unit → PROP) : constant.pre' p Φ () = p := rfl
+example (p Φ : PROP) : constant.pre p Φ = p := rfl
 end
 
 section
@@ -56,85 +44,58 @@ variable [BI PROP] [OFE α]
 -- An unchanged explicit argument is fixed: the remaining domain is Unit.
 icofix unchanged (x : α) : PROP := unchanged x
 monotone_by monotone
-nonexp_by
-  intros Φ _
-  constructor
-  intros n a _ _
-  exact OFE.Dist.rfl
 
-example (x : α) (Φ : Unit → PROP) : unchanged.pre' x Φ () = Φ () := rfl
+example (x : α) (Φ : PROP) : unchanged.pre x Φ = Φ := rfl
 
 -- A bare recursive reference keeps its missing argument varying.
 ifix passed (x : α) : PROP :=
   let next := passed
   next x
-nonexp_by intros; assumption
 
-example (Φ : α → PROP) (x : α) : passed.pre' Φ x = Φ x := rfl
+example (Φ : α → PROP) (x : α) : passed.pre Φ x = Φ x := rfl
 
 -- Qualified recursive references use the same local declaration as unqualified references.
 ifix qualified (x : α) : PROP :=
   let next := IrisTest.Fixpoint.qualified
   next x
-nonexp_by intros; assumption
 
-example (Φ : α → PROP) (x : α) : qualified.pre' Φ x = Φ x := rfl
+example (Φ : α → PROP) (x : α) : qualified.pre Φ x = Φ x := rfl
 
 -- One product-valued argument must remain a single argument when unpacked.
 ifix passedPair (p : α × α) : PROP :=
   let next := passedPair
   next p
-monotone_by monotone; infer_instance
-nonexp_by intros; assumption
+monotone_by monotone
 
-example (Φ : α × α → PROP) (p : α × α) : passedPair.pre' Φ p = Φ p := rfl
+example (Φ : α × α → PROP) (p : α × α) : passedPair.pre Φ p = Φ p := rfl
 
 -- A later call can disqualify arguments that the first call passes unchanged.
 ifix both (x y : α) : PROP := iprop(both x y ∗ both y x)
 monotone_by monotone
-nonexp_by
-  intros Φ _
-  constructor
-  intros n a b h
-  exact sep_ne.ne (NonExpansive.ne (f := Φ) h) (NonExpansive.ne (f := Φ) ⟨h.2, h.1⟩)
 
 example (Φ : α → α → PROP) (x y : α) :
     both.pre Φ x y = iprop(Φ x y ∗ Φ y x) := rfl
 
-example (Φ : α × α → PROP) (x y : α) :
-    both.pre' Φ (x, y) = iprop(Φ (x, y) ∗ Φ (y, x)) := rfl
 
 -- Implicit arguments are elaborated before their values are compared.
 ifix implicitSwap {x y : α} : PROP := implicitSwap (x := y) (y := x)
 monotone_by monotone
-nonexp_by
-  intros Φ _
-  constructor
-  intros n a b h
-  exact NonExpansive.ne (f := Φ) ⟨h.2, h.1⟩
 
-example (Φ : α × α → PROP) (x y : α) : implicitSwap.pre' Φ (x, y) = Φ (y, x) := rfl
 example (x y : α) :
-    implicitSwap (PROP := PROP) (x := x) (y := y) =
-      implicitSwap.pre' (fun p => implicitSwap (x := p.1) (y := p.2)) (x, y) :=
-  implicitSwap.unfold
+    implicitSwap (PROP := PROP) (x := x) (y := y) = implicitSwap (x := y) (y := x) := by
+  rw [implicitSwap.unfold]; rfl
 
 -- The recursive function is passed partially applied; the fixed parameter is not a prefix.
 icofix partialSwap (x : α) (setting : Bool) (y : α) : PROP :=
   let next := partialSwap y setting
   next x
-monotone_by monotone; infer_instance
-nonexp_by
-  intros Φ _
-  constructor
-  intros n a b h
-  exact NonExpansive.ne (f := Φ) ⟨h.2, h.1⟩
+monotone_by monotone
 
-example (setting : Bool) (Φ : α × α → PROP) (x y : α) :
-    partialSwap.pre' setting Φ (x, y) = Φ (y, x) := rfl
+example (setting : Bool) (Φ : α → α → PROP) (x y : α) :
+    partialSwap.pre setting Φ x y = Φ y x := rfl
 example (setting : Bool) (x y : α) :
     partialSwap (PROP := PROP) x setting y =
-      partialSwap.pre' setting (fun p => partialSwap p.1 setting p.2) (x, y) :=
+      partialSwap.pre setting (fun x y => partialSwap x setting y) x y :=
   partialSwap.unfold x setting y
 end
 
@@ -143,16 +104,11 @@ variable [BI PROP] (sameName : PROP)
 
 -- ERROR: Lean rejects a definition named like a section variable.
 -- Intended: the recursive reference is identified by its variable, and
--- `IrisTest.Fixpoint.sameName.pre' sameName Φ () = Φ ()` holds by `rfl`.
+-- `IrisTest.Fixpoint.sameName.pre sameName Φ = Φ` holds by `rfl`.
 /-- invalid declaration name `sameName` -/
 #guard_msgs (error, substring := true) in
 ifix sameName : PROP := sameName
 monotone_by monotone
-nonexp_by
-  intros Φ _
-  constructor
-  intros n a _ _
-  exact OFE.Dist.rfl
 end
 
 section
@@ -163,10 +119,9 @@ variable (PROP : Type u) [BI PROP] (α : Type v) [OFE α]
 ifix sectionRec (x : α) : PROP :=
   let next := sectionRec
   next x
-nonexp_by intros; assumption
 
-example (Φ : α → PROP) (x : α) : sectionRec.pre' PROP α Φ x = Φ x := rfl
-example (x : α) : sectionRec PROP α x = sectionRec.pre' PROP α (sectionRec PROP α) x :=
+example (Φ : α → PROP) (x : α) : sectionRec.pre PROP α Φ x = Φ x := rfl
+example (x : α) : sectionRec PROP α x = sectionRec.pre PROP α (sectionRec PROP α) x :=
   sectionRec.unfold PROP α x
 
 -- This universe appears in the body, but not the declared result or argument types.
@@ -174,41 +129,25 @@ ifix lifted (x : α) : PROP :=
   let next := lifted
   let y : ULift.{w} α := ⟨x⟩
   next y.down
-nonexp_by intros; assumption
 
-example (Φ : α → PROP) (x : α) : lifted.pre' PROP α Φ x = Φ x := rfl
+example (Φ : α → PROP) (x : α) : lifted.pre PROP α Φ x = Φ x := rfl
 end
 
 -- Auto-bound type parameters are inferred from the signature without a surrounding section.
 ifix inferredSwap [BI PROP] [OFE α] (x y : α) : PROP := inferredSwap y x
 monotone_by monotone
-nonexp_by
-  intros Φ _
-  constructor
-  intros n a b h
-  exact NonExpansive.ne (f := Φ) ⟨h.2, h.1⟩
 
-example [BI PROP] [OFE α] (Φ : α × α → PROP) (x y : α) :
-    inferredSwap.pre' Φ (x, y) = Φ (y, x) := rfl
+example [BI PROP] [OFE α] (Φ : α → α → PROP) (x y : α) :
+    inferredSwap.pre Φ x y = Φ y x := rfl
 
 /-! Using the generated (co)induction principles. -/
 section
 variable [BI PROP]
-local instance : OFE Nat := .ofDiscrete Nat
-local instance : OFE Bool := .ofDiscrete Bool
 
 ifix even (n : Nat) : PROP := iprop(⌜n = 0⌝ ∨ ∃ m, ⌜n = m + 2⌝ ∗ even m)
-nonexp_by
-  intros Φ _
-  constructor
-  intros k a b h
-  obtain rfl : a = b := h
-  exact .rfl
 
--- One varying parameter: the side condition is stated on `Φ` itself.
+-- Induction with one varying parameter.
 theorem even_mod (n : Nat) : even (PROP := PROP) n ⊢ ⌜n % 2 = 0⌝ := by
-  have : NonExpansive (fun p : Nat => iprop(⌜p % 2 = 0⌝ : PROP)) :=
-    ⟨fun _ a b h => by obtain rfl : a = b := h; exact .rfl⟩
   iintro H
   iapply (even.ind (fun n => iprop(⌜n % 2 = 0⌝))) $$ [] %n H
   iintro !> %p Hp
@@ -218,13 +157,8 @@ theorem even_mod (n : Nat) : even (PROP := PROP) n ⊢ ⌜n % 2 = 0⌝ := by
   · ipureintro; omega
 
 icofix stream (P : PROP) : PROP := iprop(P ∗ ▷ stream P)
-nonexp_by
-  intros Φ _
-  constructor
-  intros k a b h
-  exact .rfl
 
--- No varying parameters: no quantifier and no side condition.
+-- Coinduction with no varying parameters: no quantifier.
 theorem stream_of_box (P : PROP) : □ P ⊢ stream iprop(□ P) := by
   iintro #HP
   iapply (stream.coind iprop(□ P) iprop(□ P)) $$ [] HP
@@ -235,14 +169,8 @@ theorem stream_of_box (P : PROP) : □ P ⊢ stream iprop(□ P) := by
   · inext; iexact H
 
 ifix parity (b : Bool) (n : Nat) : PROP := iprop(⌜n = 0⌝ ∨ ∃ m, ⌜n = m + 1⌝ ∗ parity (!b) m)
-nonexp_by
-  intros Φ _
-  constructor
-  intros k a b h
-  obtain rfl : a = b := Prod.ext h.1 h.2
-  exact .rfl
 
--- Two varying parameters are quantified separately, and `parity.ne` lets a fixpoint be `Φ`.
+-- Two varying parameters are quantified separately, and a fixpoint can be `Φ`.
 example : ⊢ (□ ∀ b n, parity.pre (fun b n => parity (PROP := PROP) b n) b n -∗ parity b n) -∗
     ∀ b n, parity b n -∗ parity b n :=
   parity.ind _
@@ -257,8 +185,7 @@ run_cmd do
 run_cmd do
   for decl in #[`zero, `indexed, `constant, `unchanged, `passed, `qualified, `passedPair, `both,
       `implicitSwap, `partialSwap, `sectionRec, `lifted, `inferredSwap, `even, `stream, `parity] do
-    for suffix in #[Lean.Name.anonymous, `pre, `pre', `pre_mono, `unfold, `eq_bi_fixpoint, `ne, `ind,
-        `coind] do
+    for suffix in #[Lean.Name.anonymous, `pre, `pre_mono, `unfold, `ind, `coind] do
       let name := `IrisTest.Fixpoint ++ decl ++ suffix
       unless (← Lean.getEnv).contains name do continue
       for axiomName in (← Lean.collectAxioms name) do
