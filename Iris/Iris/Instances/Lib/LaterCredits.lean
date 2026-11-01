@@ -179,7 +179,7 @@ iguarded le_upd (P : IProp GF) : IProp GF :=
   iprop(∀ n, lc_supply n ==∗
     ▷^[n.succ] False ∨
     (lc_supply n ∗ P) ∨
-    (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd))
+    (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd P))
 contractive_by
   intros n x y H
   simp only [le_upd.pre]

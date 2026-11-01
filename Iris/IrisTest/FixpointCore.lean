@@ -101,9 +101,8 @@ ifix zero : IProp BundledGFunctors.default := zero
 
 example : zero = zero.pre zero := zero.unfold
 
--- ERROR: `iguarded` infers arity zero for a recursive call with a type-annotated head.
-/-- annotated has type -/
-#guard_msgs (error, drop warning, whitespace := lax, substring := true) in
+-- A recursive call may have a type-annotated head. The annotation makes the reference bare, so
+-- `x` is varying.
 iguarded annotated (x : Unit) : IProp BundledGFunctors.default :=
   iprop(▷ (annotated : Unit → IProp BundledGFunctors.default) x)
 contractive_by
@@ -111,23 +110,42 @@ contractive_by
   unfold annotated.pre
   exact Contractive.distLater_dist (fun m hm => h m hm x)
 
--- Recursive calls may use named arguments. (Passes under the `iguarded` stub; recheck with the
--- real implementation.)
+example (x : Unit) : annotated x = iprop(▷ annotated x) := annotated.unfold x
+
+-- Recursive calls may use named arguments.
 iguarded named (x : Unit) : IProp BundledGFunctors.default :=
   iprop(▷ named (x := x))
 contractive_by
-  intros n Φ Ψ h x
+  intros n Φ Ψ h
   unfold named.pre
-  exact Contractive.distLater_dist (fun m hm => h m hm x)
+  exact Contractive.distLater_dist h
 
--- Recursive parameter types may depend on each other. (Passes under the `iguarded` stub; recheck
--- with the real implementation.)
+-- Parameter types may depend on each other.
 iguarded dependent (n : Nat) (i : Fin n) : IProp BundledGFunctors.default :=
   iprop(▷ dependent n i)
 contractive_by
-  intros n Φ Ψ h i j
+  intros n Φ Ψ h
   unfold dependent.pre
-  exact Contractive.distLater_dist (fun m hm => h m hm i j)
+  exact Contractive.distLater_dist h
+
+-- A varying parameter: `self` takes `b`, and the recursive call negates it.
+iguarded flip (b : Bool) : IProp BundledGFunctors.default :=
+  iprop(▷ flip (!b) -∗ False)
+contractive_by
+  intros n Φ Ψ h b
+  unfold flip.pre
+  exact wand_ne.ne (Contractive.distLater_dist (fun m hm => h m hm (!b))) .rfl
+
+example (b : Bool) : flip b = iprop(▷ flip (!b) -∗ False) := flip.unfold b
+
+-- Guarded fixpoints use no `sorry` and no extra axioms.
+run_cmd do
+  for decl in #[`annotated, `named, `dependent, `flip] do
+    for suffix in #[Lean.Name.anonymous, `pre, `pre ++ `contractive, `unfold] do
+      let name := `IrisTest.FixpointCore ++ decl ++ suffix
+      for axiomName in (← Lean.collectAxioms name) do
+        unless #[`propext, `Classical.choice, `Quot.sound].contains axiomName do
+          throwError "unexpected axiom {axiomName} in {name}"
 
 -- Explicit instance binders are retained by the pre-definition.
 ifix explicitInstance [BI PROP] (x : Unit) : PROP :=
