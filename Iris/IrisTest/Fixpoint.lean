@@ -22,8 +22,10 @@ nonexp_by
   intros n a _ _
   exact OFE.Dist.rfl
 
-example (Φ : Unit → PROP) : zero.pre Φ () = Φ () := rfl
-example : zero (PROP := PROP) = zero.pre (fun _ => zero) () := zero.unfold
+-- `.pre` is curried; only `.pre'` uses the Unit adapter for zero varying arguments.
+example (p : PROP) : zero.pre p = p := rfl
+example (Φ : Unit → PROP) : zero.pre' Φ () = Φ () := rfl
+example : zero (PROP := PROP) = zero.pre' (fun _ => zero) () := zero.unfold
 
 -- The reopened recursive variable keeps dependencies on fixed parameters intact.
 ifix indexed (n : Nat) [OFE (Fin n)] (i : Fin n) : PROP :=
@@ -32,9 +34,9 @@ ifix indexed (n : Nat) [OFE (Fin n)] (i : Fin n) : PROP :=
 nonexp_by intros; assumption
 
 example (n : Nat) [OFE (Fin n)] (Φ : Fin n → PROP) (i : Fin n) :
-    indexed.pre n Φ i = Φ i := rfl
+    indexed.pre' n Φ i = Φ i := rfl
 example (n : Nat) [OFE (Fin n)] (i : Fin n) :
-    indexed (PROP := PROP) n i = indexed.pre n (indexed n) i := indexed.unfold n i
+    indexed (PROP := PROP) n i = indexed.pre' n (indexed n) i := indexed.unfold n i
 
 -- No recursive occurrence is required either.
 icofix constant (p : PROP) : PROP := p
@@ -45,7 +47,7 @@ nonexp_by
   intros n a _ _
   exact OFE.Dist.rfl
 
-example (p : PROP) (Φ : Unit → PROP) : constant.pre p Φ () = p := rfl
+example (p : PROP) (Φ : Unit → PROP) : constant.pre' p Φ () = p := rfl
 end
 
 section
@@ -60,7 +62,7 @@ nonexp_by
   intros n a _ _
   exact OFE.Dist.rfl
 
-example (x : α) (Φ : Unit → PROP) : unchanged.pre x Φ () = Φ () := rfl
+example (x : α) (Φ : Unit → PROP) : unchanged.pre' x Φ () = Φ () := rfl
 
 -- A bare recursive reference keeps its missing argument varying.
 ifix passed (x : α) : PROP :=
@@ -68,7 +70,7 @@ ifix passed (x : α) : PROP :=
   next x
 nonexp_by intros; assumption
 
-example (Φ : α → PROP) (x : α) : passed.pre Φ x = Φ x := rfl
+example (Φ : α → PROP) (x : α) : passed.pre' Φ x = Φ x := rfl
 
 -- Qualified recursive references use the same local declaration as unqualified references.
 ifix qualified (x : α) : PROP :=
@@ -76,7 +78,7 @@ ifix qualified (x : α) : PROP :=
   next x
 nonexp_by intros; assumption
 
-example (Φ : α → PROP) (x : α) : qualified.pre Φ x = Φ x := rfl
+example (Φ : α → PROP) (x : α) : qualified.pre' Φ x = Φ x := rfl
 
 -- One product-valued argument must remain a single argument when unpacked.
 ifix passedPair (p : α × α) : PROP :=
@@ -85,7 +87,7 @@ ifix passedPair (p : α × α) : PROP :=
 monotone_by monotone; infer_instance
 nonexp_by intros; assumption
 
-example (Φ : α × α → PROP) (p : α × α) : passedPair.pre Φ p = Φ p := rfl
+example (Φ : α × α → PROP) (p : α × α) : passedPair.pre' Φ p = Φ p := rfl
 
 -- A later call can disqualify arguments that the first call passes unchanged.
 ifix both (x y : α) : PROP := iprop(both x y ∗ both y x)
@@ -96,8 +98,11 @@ nonexp_by
   intros n a b h
   exact sep_ne.ne (NonExpansive.ne (f := Φ) h) (NonExpansive.ne (f := Φ) ⟨h.2, h.1⟩)
 
+example (Φ : α → α → PROP) (x y : α) :
+    both.pre Φ x y = iprop(Φ x y ∗ Φ y x) := rfl
+
 example (Φ : α × α → PROP) (x y : α) :
-    both.pre Φ (x, y) = iprop(Φ (x, y) ∗ Φ (y, x)) := rfl
+    both.pre' Φ (x, y) = iprop(Φ (x, y) ∗ Φ (y, x)) := rfl
 
 -- Implicit arguments are elaborated before their values are compared.
 ifix implicitSwap {x y : α} : PROP := implicitSwap (x := y) (y := x)
@@ -108,10 +113,10 @@ nonexp_by
   intros n a b h
   exact NonExpansive.ne (f := Φ) ⟨h.2, h.1⟩
 
-example (Φ : α × α → PROP) (x y : α) : implicitSwap.pre Φ (x, y) = Φ (y, x) := rfl
+example (Φ : α × α → PROP) (x y : α) : implicitSwap.pre' Φ (x, y) = Φ (y, x) := rfl
 example (x y : α) :
     implicitSwap (PROP := PROP) (x := x) (y := y) =
-      implicitSwap.pre (fun p => implicitSwap (x := p.1) (y := p.2)) (x, y) :=
+      implicitSwap.pre' (fun p => implicitSwap (x := p.1) (y := p.2)) (x, y) :=
   implicitSwap.unfold
 
 -- The recursive function is passed partially applied; the fixed parameter is not a prefix.
@@ -126,10 +131,10 @@ nonexp_by
   exact NonExpansive.ne (f := Φ) ⟨h.2, h.1⟩
 
 example (setting : Bool) (Φ : α × α → PROP) (x y : α) :
-    partialSwap.pre setting Φ (x, y) = Φ (y, x) := rfl
+    partialSwap.pre' setting Φ (x, y) = Φ (y, x) := rfl
 example (setting : Bool) (x y : α) :
     partialSwap (PROP := PROP) x setting y =
-      partialSwap.pre setting (fun p => partialSwap p.1 setting p.2) (x, y) :=
+      partialSwap.pre' setting (fun p => partialSwap p.1 setting p.2) (x, y) :=
   partialSwap.unfold x setting y
 end
 
@@ -145,7 +150,7 @@ nonexp_by
   intros n a _ _
   exact OFE.Dist.rfl
 
-example (Φ : Unit → PROP) : IrisTest.Fixpoint.sameName.pre sameName Φ () = Φ () := rfl
+example (Φ : Unit → PROP) : IrisTest.Fixpoint.sameName.pre' sameName Φ () = Φ () := rfl
 end
 
 section
@@ -158,8 +163,8 @@ ifix sectionRec (x : α) : PROP :=
   next x
 nonexp_by intros; assumption
 
-example (Φ : α → PROP) (x : α) : sectionRec.pre PROP α Φ x = Φ x := rfl
-example (x : α) : sectionRec PROP α x = sectionRec.pre PROP α (sectionRec PROP α) x :=
+example (Φ : α → PROP) (x : α) : sectionRec.pre' PROP α Φ x = Φ x := rfl
+example (x : α) : sectionRec PROP α x = sectionRec.pre' PROP α (sectionRec PROP α) x :=
   sectionRec.unfold PROP α x
 
 -- This universe appears in the body, but not the declared result or argument types.
@@ -169,7 +174,7 @@ ifix lifted (x : α) : PROP :=
   next y.down
 nonexp_by intros; assumption
 
-example (Φ : α → PROP) (x : α) : lifted.pre PROP α Φ x = Φ x := rfl
+example (Φ : α → PROP) (x : α) : lifted.pre' PROP α Φ x = Φ x := rfl
 end
 
 -- Auto-bound type parameters are inferred from the signature without a surrounding section.
@@ -182,7 +187,7 @@ nonexp_by
   exact NonExpansive.ne (f := Φ) ⟨h.2, h.1⟩
 
 example [BI PROP] [OFE α] (Φ : α × α → PROP) (x y : α) :
-    inferredSwap.pre Φ (x, y) = Φ (y, x) := rfl
+    inferredSwap.pre' Φ (x, y) = Φ (y, x) := rfl
 
 run_cmd do
   let info ← Lean.getConstInfo `IrisTest.Fixpoint.lifted.pre
@@ -193,7 +198,7 @@ run_cmd do
 run_cmd do
   for decl in #[`zero, `indexed, `constant, `unchanged, `passed, `qualified, `passedPair, `both,
       `implicitSwap, `partialSwap, `sameName, `sectionRec, `lifted, `inferredSwap] do
-    for suffix in #[Lean.Name.anonymous, `pre, `pre_mono, `unfold] do
+    for suffix in #[Lean.Name.anonymous, `pre, `pre', `pre_mono, `unfold] do
       let name := `IrisTest.Fixpoint ++ decl ++ suffix
       for axiomName in (← Lean.collectAxioms name) do
         unless #[`propext, `Classical.choice, `Quot.sound].contains axiomName do

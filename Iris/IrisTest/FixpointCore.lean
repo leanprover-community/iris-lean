@@ -29,20 +29,20 @@ nonexp_by intros; assumption
 icofix greatest (x : α) : PROP := greatest x
 nonexp_by intros; assumption
 
-example (x : α) : least (PROP := PROP) x = least.pre least x := least.unfold x
-example (x : α) : greatest (PROP := PROP) x = greatest.pre greatest x := greatest.unfold x
+example (x : α) : least (PROP := PROP) x = least.pre x (least x) := least.unfold x
+example (x : α) : greatest (PROP := PROP) x = greatest.pre x (greatest x) := greatest.unfold x
 
 -- The adapters preserve argument order and the left-associated tuple layout.
 icofix swapped (x y : α) : PROP := swapped y x
-monotone_by monotone <;> infer_instance
+monotone_by monotone
 nonexp_by
   intros Φ _
   constructor
   intros n a b h
   exact NonExpansive.ne (f := Φ) ⟨h.2, h.1⟩
 
-ifix rotated (setting : Bool) (x y z : α) : PROP := rotated y z x
-monotone_by monotone <;> infer_instance
+ifix rotated (setting : Bool) (x y z : α) : PROP := rotated setting y z x
+monotone_by monotone
 nonexp_by
   intros Φ _
   constructor
@@ -74,7 +74,7 @@ iinductive cycle : Unit → IProp BundledGFunctors.default where
   | right : cycle () -∗ cycle ()
 monotone_by monotone
 nonexp_by
-  intros Φ hΦ
+  intros Φ _
   constructor
   intros n x y h
   cases x
@@ -96,23 +96,21 @@ nonexp_by
 
 end IrisTest.FixpointCore
 
--- 01. The recursive binder shadows the pre-definition at the root namespace.
-/-- Invalid field `pre` -/
-#guard_msgs (error, drop warning, whitespace := lax, substring := true) in
+-- Root-namespace definitions no longer shadow their generated pre-definitions.
 ifix rootShadow (x : Unit) : IProp BundledGFunctors.default := rootShadow x
 nonexp_by intros; assumption
 
 namespace IrisTest.FixpointCore
 
--- 08. The product OFE instance is left as a goal.
+-- ERROR: `monotone` leaves the product OFE instance as an unsolved goal.
 /-- ⊢ OFE (α × α) -/
 #guard_msgs (whitespace := lax, substring := true) in
 example [BI PROP] [OFE α] :
     MonoInstances.MonotonePred (fun Φ : α × α → PROP => Φ) where
   monotone := by monotone
 
--- Runtime panics bypass the message log, including #guard_panic.
-private meta def expectPanic (body expected : String) (exitCode : UInt32) :
+-- Parser failures and runtime panics are checked in a separate Lean process.
+private meta def expectLeanOutput (body expected : String) (exitCode : UInt32) :
     Lean.Elab.Command.CommandElabM Unit := do
   let prelude := "module
 public import Iris.Instances.IProp
@@ -130,13 +128,13 @@ namespace IrisTest.AdversarialFixpointPanic
     throwError "expected exit {exitCode} and {expected}; got exit {output.exitCode}\n\
       {output.stdout}{output.stderr}"
 
--- 09. Zero recursive arguments index empty argument and type arrays.
-run_cmd (expectPanic "
+-- Zero recursive arguments use Unit instead of indexing an empty argument array.
 ifix zero : IProp BundledGFunctors.default := zero
 nonexp_by intros; assumption
-" "Error: index out of bounds" 1)
 
--- 10. An annotated application head is counted at arity zero.
+example : zero = zero.pre zero := zero.unfold
+
+-- ERROR: `iguarded` infers arity zero for a recursive call with a type-annotated head.
 /-- annotated has type -/
 #guard_msgs (error, drop warning, whitespace := lax, substring := true) in
 iguarded annotated (x : Unit) : IProp BundledGFunctors.default :=
@@ -146,7 +144,7 @@ contractive_by
   unfold annotated.pre
   exact Contractive.distLater_dist (fun m hm => h m hm x)
 
--- 11. The recursive function type discards parameter names.
+-- ERROR: `iguarded` drops recursive parameter names and rejects named arguments.
 /-- Invalid argument name `x` -/
 #guard_msgs (error, drop warning, substring := true) in
 iguarded named (x : Unit) : IProp BundledGFunctors.default :=
@@ -156,7 +154,7 @@ contractive_by
   unfold named.pre
   exact Contractive.distLater_dist (fun m hm => h m hm x)
 
--- 12. Dependent recursive parameters become independent arrows.
+-- ERROR: `iguarded` loses dependencies between recursive parameter types.
 /-- Application type mismatch: The argument i -/
 #guard_msgs (error, drop warning, whitespace := lax, substring := true) in
 iguarded dependent (n : Nat) (i : Fin n) : IProp BundledGFunctors.default :=
@@ -166,9 +164,7 @@ contractive_by
   unfold dependent.pre
   exact Contractive.distLater_dist (fun m hm => h m hm i j)
 
--- 13. Instance binders are omitted from the pre-definition.
-/-- failed to synthesize instance of type class BIBase PROP -/
-#guard_msgs (error, drop warning, whitespace := lax, substring := true) in
+-- Explicit instance binders are retained by the pre-definition.
 ifix explicitInstance [BI PROP] (x : Unit) : PROP :=
   iprop(explicitInstance x ∗ explicitInstance x)
 nonexp_by
@@ -177,32 +173,32 @@ nonexp_by
   intros n x y h
   exact sep_ne.ne (NonExpansive.ne h) (NonExpansive.ne h)
 
--- 14. Explicit section parameters are omitted from generated applications.
+-- Explicit section parameters are retained in generated applications.
 section
 variable (PROP : Type) [bi : BI PROP]
 
-/-- pre sectionParameter -/
-#guard_msgs (error, drop warning, whitespace := lax, substring := true) in
 ifix sectionParameter (x : Unit) : PROP := sectionParameter x
 nonexp_by intros; assumption
 end
 
--- 15. The unfolding theorem cannot resolve a private definition.
-/-- Unknown identifier `hidden` -/
-#guard_msgs (error, drop warning, substring := true) in
+-- ERROR: `ifix` rejects declaration modifiers such as `private`.
+run_cmd (expectLeanOutput "
 private ifix hidden (x : Unit) : IProp BundledGFunctors.default := hidden x
 nonexp_by intros; assumption
+" "unexpected token 'ifix'" 1)
 
--- 16. An empty predicate is rejected for having no recursive occurrence.
-/-- monotone fixpoint def: no recursive occurrence of 'empty' found in the body -/
-#guard_msgs (substring := true) in
+-- An empty predicate no longer requires a recursive occurrence.
 iinductive empty : Unit → IProp BundledGFunctors.default where
+monotone_by monotone; infer_instance
 nonexp_by
   intros Φ _
   exact ⟨fun {_ _ _} _ => .rfl⟩
 
--- 17. One constructor reads the last element of an empty selector list.
-run_cmd (expectPanic "
+example (x : Unit) : empty x = iprop(False) := by
+  simpa only [empty.pre] using empty.unfold x
+
+-- ERROR: `iinductive` panics when updating the empty selector list for a single constructor.
+run_cmd (expectLeanOutput "
 iinductive single : Unit → IProp BundledGFunctors.default where
   | step : single () -∗ single ()
 nonexp_by
@@ -214,7 +210,7 @@ nonexp_by
   exact .rfl
 " "PANIC at List.getLast!" 0)
 
--- 18. Proposition-valued constructor parameters are omitted from existential binders.
+-- ERROR: `iinductive` omits Iris proposition parameters from existential binders.
 /-- Unknown identifier `P` -/
 #guard_msgs (error, drop warning, substring := true) in
 iinductive resource : Unit → IProp BundledGFunctors.default where
@@ -228,8 +224,8 @@ nonexp_by
   cases y
   exact .rfl
 
--- 19. A parenthesized recursive premise is not counted when selecting the conclusion.
-/-- ileft: nested () is not a disjunction -/
+-- ERROR: `iinductive` misses parenthesized recursive premises and unfolds the wrong occurrence.
+/-- ileft: bi_least_fixpoint (pre' ()) () is not a disjunction -/
 #guard_msgs (substring := true) in
 iinductive nested : Unit → IProp BundledGFunctors.default where
   | a : (nested ()) -∗ nested ()
@@ -242,7 +238,7 @@ nonexp_by
   cases y
   exact .rfl
 
--- 20. An ordinary implication premise is not introduced before rewriting.
+-- ERROR: `iinductive` does not introduce ordinary implication premises before unfolding.
 /-- True → ⊢ purePremise () -∗ purePremise () -/
 #guard_msgs (substring := true) in
 iinductive purePremise : Unit → IProp BundledGFunctors.default where

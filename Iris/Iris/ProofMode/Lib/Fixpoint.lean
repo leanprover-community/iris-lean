@@ -249,11 +249,11 @@ meta def packArguments (functional : Expr) (params : Parameters) : MetaM Expr :=
       let value := mkAppN (mkApp functional curriedSelf) unpacked
       mkLambdaFVars #[self, args] value.headBeta
 
-/-- Save the packed functional as `.pre`, making it available to the user's proof clauses. -/
+/-- Save the curried functional as `.pre`, or its packed adapter as `.pre'`. -/
 meta def emitFunctional (name : Name) (levels : List Name) (params : Parameters)
-    (packed : Expr) : TermElabM Expr := do
-  emitDef (name ++ `pre) levels (← mkLambdaFVars params.fixed packed)
-  return mkAppN (mkConst (name ++ `pre) (levels.map mkLevelParam)) params.fixed
+    (functional : Expr) (suffix : Name := `pre) : TermElabM Expr := do
+  emitDef (name ++ suffix) levels (← mkLambdaFVars params.fixed functional)
+  return mkAppN (mkConst (name ++ suffix) (levels.map mkLevelParam)) params.fixed
 
 structure ProofClauses where
   monotone : TSyntax ``Lean.Parser.Tactic.tacticSeq
@@ -284,12 +284,14 @@ meta def proveRequirements (pre : Expr) (clauses : ProofClauses) : TermElabM Exp
 
 /-- Prove the unfolding equation using the chosen Iris fixpoint theorem. -/
 meta def emitUnfolding (name unfolding : Name) (levels : List Name) (params : Parameters)
-    (pre fixedPoint : Expr) : TermElabM Unit := do
+    (pre packed : Expr) : TermElabM Unit := do
   let tuple ← PackedExpr.pack params.varying
   let lhs := mkAppN (mkConst name (levels.map mkLevelParam)) params.originalOrder
-  let eqType ← mkEq lhs (mkApp2 pre fixedPoint tuple.expr)
+  let recursiveFunction ← mkLambdaFVars params.varying lhs
+  let rhs := mkAppN (mkApp pre recursiveFunction) params.varying
+  let eqType ← mkEq lhs rhs
   let mono := mkAppN (mkConst (name ++ `pre_mono) (levels.map mkLevelParam)) params.fixed
-  let proof := mkApp2 (← mkAppM unfolding #[pre]) tuple.expr mono
+  let proof := mkApp2 (← mkAppM unfolding #[packed]) tuple.expr mono
   unless ← isDefEq (← inferType proof) eqType do
     throwError "ifix: unexpected unfolding theorem type"
   addDecl <| .thmDecl {
@@ -300,14 +302,14 @@ meta def emitUnfolding (name unfolding : Name) (levels : List Name) (params : Pa
 
 /-- Register the proved instance, the requested fixpoint, and its unfolding theorem. -/
 meta def emitDefinitions (fixpoint unfolding name : Name) (levels : List Name)
-    (params : Parameters) (pre proofs : Expr) : TermElabM Unit := do
+    (params : Parameters) (pre packed proofs : Expr) : TermElabM Unit := do
   emitDef (name ++ `pre_mono) levels (← mkLambdaFVars params.fixed proofs)
   registerInstance (name ++ `pre_mono) .global 1000
-  let fixedPoint ← mkAppM fixpoint #[pre]
+  let fixedPoint ← mkAppM fixpoint #[packed]
   let tuple ← PackedExpr.pack params.varying
   let call := mkApp fixedPoint tuple.expr
   emitDef name levels (← mkLambdaFVars params.originalOrder call)
-  emitUnfolding name unfolding levels params pre fixedPoint
+  emitUnfolding name unfolding levels params pre packed
 
 meta def elaborate (fixpoint unfolding : Name) (name : Ident)
     (binders : Array (TSyntax ``Lean.Parser.Term.bracketedBinder)) (ty body : Term)
@@ -318,10 +320,11 @@ meta def elaborate (fixpoint unfolding : Name) (name : Ident)
   let finalName := (← getCurrNamespace) ++ name.getId
   liftTermElabM <| withParameters checked fixedParams fun params => do
     let functional ← abstractRecursion checked fixedParams params
-    let packed ← packArguments functional params
-    let pre ← emitFunctional finalName checked.levelParams params packed
-    let proofs ← proveRequirements pre clauses
-    emitDefinitions fixpoint unfolding finalName checked.levelParams params pre proofs
+    let pre ← emitFunctional finalName checked.levelParams params functional
+    let packed ← packArguments pre params
+    let pre' ← emitFunctional finalName checked.levelParams params packed `pre'
+    let proofs ← proveRequirements pre' clauses
+    emitDefinitions fixpoint unfolding finalName checked.levelParams params pre pre' proofs
 
 /-- Least Iris fixpoint using elaborated fixed-parameter analysis. -/
 elab "ifix " name:ident binders:bracketedBinder*

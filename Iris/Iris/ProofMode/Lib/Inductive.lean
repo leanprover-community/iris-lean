@@ -139,14 +139,14 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
     tacs := tacs.push (← `(tactic| rw (occs := [$(Syntax.mkNumLit (toString occs))]) [$uLem:ident]))
 
     let preDef := mkIdentFrom name (name.getId ++ `pre)
-    tacs := tacs.push (← `(tactic| simp only [$name:ident, $preDef:ident]))
+    tacs := tacs.push (← `(tactic| try simp only [$name:ident, $preDef:ident]))
 
     tacs := tacs ++ selector
 
     for name in names do
       tacs := tacs.push (← `(tactic| iexists $name))
 
-    tacs := tacs.push (← `(tactic| simp))
+    tacs := tacs.push (← `(tactic| try simp))
 
     tacs := tacs.push (← `(tactic| iframe))
 
