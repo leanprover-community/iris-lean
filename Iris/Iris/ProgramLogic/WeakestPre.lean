@@ -85,7 +85,7 @@ iguarded wp (s : Stuckness) (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) : 
     ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ -∗
       £ (ι.numLatersPerStep ns + 1) ={∅}▷=∗^[ι.numLatersPerStep ns + 1] |={∅,E}=>
       stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
-      wp s E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp s ⊤ e' ι.forkPost)
+      wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
 contractive_by
   intros n wp₁ wp₂ Hwp E e₁ Φ
   unfold wp.pre
@@ -130,7 +130,7 @@ section Wp
 @[rocq_alias wp_unfold]
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp (PROP := IProp GF) s) E e Φ :=
-  BIBase.BiEntails.of_eq (wp.unfold s E e Φ)
+  BIBase.BiEntails.of_eq (congrArg (fun f => f E e Φ) (wp.unfold s))
 
 @[rocq_alias wp_contractive]
 theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
