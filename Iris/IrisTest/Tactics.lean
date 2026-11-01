@@ -3117,8 +3117,7 @@ example (P Q : PROP) :
   iintro #HPQ HQ !>
   inext
   irewrite [HPQ] at HQ
-  · exact ⟨fun _ _ _ h => affinely_ne.ne h⟩
-  · iexact HQ
+  iexact HQ
 
 /- Tests `irewrite` under affine and later backwards. -/
 example (P Q : PROP) :
@@ -3126,8 +3125,7 @@ example (P Q : PROP) :
   iintro #HPQ HQ !>
   inext
   irewrite [←HPQ] at HQ
-  · exact ⟨fun _ _ _ h => affinely_ne.ne h⟩
-  · iexact HQ
+  iexact HQ
 
 /- Tests `irewrite` with no matching target. -/
 /--

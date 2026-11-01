@@ -145,7 +145,7 @@ protected theorem Tower.downN (X : Tower F) : ∀ i, downN F i (X (k+i)) = X k
 instance (k : Nat) : NonExpansive (fun X : Tower F => X.val k) := ⟨fun _ _ _ => (· _)⟩
 
 @[rocq_alias solver.project]
-def Tower.proj (k) : Tower F -n> A F k := ⟨(· k), ⟨fun _ _ _ => (· _)⟩⟩
+def Tower.proj (k) : Tower F -n> A F k := ⟨(· k), inferInstance⟩
 
 @[rocq_alias solver.coerce]
 def eqToHom (e : i = k) : A F i -n> A F k := e ▸ .id
