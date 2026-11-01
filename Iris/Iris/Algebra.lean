@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Iris.Algebra.Agree
+public import Iris.Algebra.Approx
 public import Iris.Algebra.Auth
 public import Iris.Algebra.BigOp
 public import Iris.Algebra.Chain
