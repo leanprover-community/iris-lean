@@ -7,7 +7,9 @@ module
 
 public import Iris.BI
 public import Iris.ProofMode
+public import Iris.BI.Lib.Fixpoint
 public import Lean.Meta.Order
+import all Init.Internal.Order.Basic
 
 /-! # Lattice-based Iris Fixpoints
 
@@ -19,23 +21,106 @@ These lattices over Iris types let us define Iris fixpoints using `partial_fixpo
 namespace Iris
 open Iris.Std BI OFE Lean.Order
 
+variable [BI PROP]
+
+/-- `fix` is below every prefixed point. -/
+theorem fix_le_of_prefixed {α : Sort _} [CCPO α] {f : α → α} (hf : monotone f) {y : α}
+    (hy : f y ⊑ y) : fix f hf ⊑ y :=
+  fix_induct hf _ (fun _ hc h => csup_le hc h) fun _ hx => PartialOrder.rel_trans (hf _ _ hx) hy
+
+/-- `fix` commutes with order isomorphisms. -/
+theorem fix_iso {α β : Sort _} [CCPO α] [CCPO β]
+    (e : α → β) (e' : β → α) (he : monotone e) (h₁ : ∀ x, e' (e x) = x) (h₂ : ∀ y, e (e' y) = y)
+    {f : α → α} (hf : monotone f) {g : β → β} (hg : monotone g)
+    (hfg : ∀ x, e (f x) = g (e x)) :
+    e (fix f hf) = fix g hg := by
+  apply PartialOrder.rel_antisymm
+  · have hfix : f (e' (fix g hg)) = e' (fix g hg) := by
+      rw [← h₁ (f _), hfg, h₂, ← fix_eq hg]
+    have h := he _ _ (fix_le_of_prefixed hf (PartialOrder.rel_of_eq hfix))
+    rw [h₂] at h
+    exact h
+  · apply fix_le_of_prefixed hg
+    rw [← hfg, ← fix_eq hf]
+
 namespace MonotoneFixpoint
 
-scoped instance instPartialOrderMonoProp [BI PROP] : PartialOrder PROP where
+scoped instance instPartialOrderMonoProp : PartialOrder PROP where
   rel Φ Ψ := Φ ⊢ Ψ
   rel_refl := .rfl
   rel_trans := .trans
   rel_antisymm := (equiv_iff.mpr ⟨·, ·⟩)
 
-scoped instance instCCPOMonoProp [BI PROP] : CCPO PROP where
-  has_csup {c} hc := by
-    exists (sExists c)
+theorem sExists_is_sup (c : PROP → Prop) :
+      is_sup c (sExists c) := by
     refine fun x => ⟨fun h y hy => ?_, fun h => ?_⟩
     · exact (sExists_intro hy).trans h
     · exact sExists_elim h
 
+scoped instance instCCPOMonoProp : CCPO PROP where
+  has_csup {c} _ := ⟨_, sExists_is_sup c⟩
+
+/-- Equivalence between CCPO supremum with the Iris supremum (`exists`). -/
+theorem csup_eq_exists {c : PROP → Prop} (hc : chain c) : CCPO.csup hc = sExists c :=
+   is_sup_unique (CCPO.csup_spec hc) (sExists_is_sup c)
+
+theorem admissible_nonExpansive [OFE A] : admissible (fun f : A → PROP => NonExpansive f) := by
+  intro c hc hfix
+  rw [← fun_csup_eq c hc]
+  refine ⟨fun n x₁ x₂ hx => ?_⟩
+  simp only [fun_csup, csup_eq_exists]
+  refine sExists_ne ⟨?_, ?_⟩
+  · rintro _ ⟨f, hf, rfl⟩
+    exact ⟨f x₂, ⟨f, hf, rfl⟩, (hfix f hf).ne hx⟩
+  · rintro _ ⟨f, hf, rfl⟩
+    exact ⟨f x₁, ⟨f, hf, rfl⟩, (hfix f hf).ne hx⟩
+
+/-- The least fixpoint is nonexpansive when the body preserves nonexpansiveness. -/
+theorem fix_nonExpansive [OFE A] (F : (A → PROP) → (A → PROP)) (hm : monotone F)
+    (hF : ∀ f, NonExpansive f → NonExpansive (F f)) : NonExpansive (fix F hm) :=
+  fix_induct hm _ admissible_nonExpansive hF
+
+/-- The least fixpoint coincides with the BI least fixpoint. -/
+theorem fix_eq_bi_least_fixpoint [OFE A] (F : (A → PROP) → (A → PROP)) (hm : monotone F)
+    [BIMonoPred F] : fix F hm = bi_least_fixpoint F := by
+  apply PartialOrder.rel_antisymm
+  · apply fix_le_of_prefixed hm
+    exact PartialOrder.rel_of_eq (funext fun _ => (least_fixpoint_unfold F).symm)
+  · intro x
+    have : NonExpansive (fix F hm) := fix_nonExpansive F hm fun _ _ => mono_pred_ne
+    have h := least_fixpoint_iter F (Φ := fix F hm)
+    rw [← fix_eq hm] at h
+    change bi_least_fixpoint F x ⊢ fix F hm x
+    iintro H
+    iapply h $$ [] H
+    iintro !> %y Hy
+    iexact Hy
+
+/-- Transport `fix_eq_bi_least_fixpoint` along an order isomorphism `e`, e.g. uncurrying. -/
+theorem fix_eq_bi_least_fixpoint_of_iso [OFE A] {α : Sort _} [CCPO α]
+    (e : α → A → PROP) (e' : (A → PROP) → α) (he : monotone e) (he' : monotone e')
+    (h₁ : ∀ x, e' (e x) = x) (h₂ : ∀ y, e (e' y) = y) (F : α → α) (hF : monotone F)
+    (G : (A → PROP) → (A → PROP)) [BIMonoPred G] (hFG : ∀ x, e (F x) = G (e x)) :
+    e (fix F hF) = bi_least_fixpoint G := by
+  have hG : monotone G := by
+    intro a b h
+    have := he _ _ (hF _ _ (he' _ _ h))
+    rwa [hFG, hFG, h₂, h₂] at this
+  rw [fix_iso e e' he h₁ h₂ hF hG hFG]
+  exact fix_eq_bi_least_fixpoint G hG
+
+/-- Fixpoint iteration, transported along an order isomorphism `e`. -/
+theorem fix_iter_of_iso [OFE A] {α : Sort _} [CCPO α]
+    (e : α → A → PROP) (e' : (A → PROP) → α) (he : monotone e) (he' : monotone e')
+    (h₁ : ∀ x, e' (e x) = x) (h₂ : ∀ y, e (e' y) = y) (F : α → α) (hF : monotone F)
+    (G : (A → PROP) → (A → PROP)) [BIMonoPred G] (hFG : ∀ x, e (F x) = G (e x))
+    (Φ : α) (hΦ : NonExpansive (e Φ)) :
+    ⊢ □ (∀ p, e (F Φ) p -∗ e Φ p) -∗ ∀ p, e (fix F hF) p -∗ e Φ p := by
+  rw [fix_eq_bi_least_fixpoint_of_iso e e' he he' h₁ h₂ F hF G hFG, hFG]
+  exact least_fixpoint_iter G (I := hΦ)
+
 section Monotone
-variable [BI PROP] [PartialOrder α]
+variable [PartialOrder α]
 
 @[partial_fixpoint_monotone]
 theorem monotone_sep (f g : α → PROP) (hf : monotone f) (hg : monotone g) :
@@ -163,21 +248,85 @@ end MonotoneFixpoint
 
 namespace CoMonotoneFixpoint
 
-scoped instance instPartialOrderAntiProp [BI PROP] : PartialOrder PROP where
+scoped instance instPartialOrderAntiProp : PartialOrder PROP where
   rel Φ Ψ := Ψ ⊢ Φ
   rel_refl := .rfl
   rel_trans h1 h2 := h2.trans h1
   rel_antisymm h1 h2 := equiv_iff.mpr ⟨h2, h1⟩
 
-scoped instance instCCPOAntiProp [BI PROP] : CCPO PROP where
-  has_csup {c} hc := by
-    exists (sForall c)
+theorem sForall_is_sup (c : PROP → Prop) :
+      is_sup c (sForall c) := by
     refine fun x => ⟨fun h y hy => ?_, fun h => ?_⟩
     · exact h.trans (sForall_elim hy)
     · exact sForall_intro h
 
+scoped instance instCCPOAntiProp : CCPO PROP where
+  has_csup {c} _ := ⟨_, sForall_is_sup c⟩
+
+/-- Equivalence between CCPO supremum with the Iris infimum (`forall`). -/
+theorem csup_eq_forall {c : PROP → Prop} (hc : chain c) : CCPO.csup hc = sForall c :=
+   is_sup_unique (CCPO.csup_spec hc) (sForall_is_sup c)
+
+theorem admissible_nonExpansive [OFE A] : admissible (fun f : A → PROP => NonExpansive f) := by
+  intro c hc hfix
+  rw [← fun_csup_eq c hc]
+  refine ⟨fun n x₁ x₂ hx => ?_⟩
+  simp only [fun_csup, csup_eq_forall]
+  refine sForall_ne ⟨?_, ?_⟩
+  · rintro _ ⟨f, hf, rfl⟩
+    exact ⟨f x₂, ⟨f, hf, rfl⟩, (hfix f hf).ne hx⟩
+  · rintro _ ⟨f, hf, rfl⟩
+    exact ⟨f x₁, ⟨f, hf, rfl⟩, (hfix f hf).ne hx⟩
+
+
+/-- The greatest fixpoint is nonexpansive when the body preserves nonexpansiveness. -/
+theorem fix_nonExpansive [OFE A] (F : (A → PROP) → (A → PROP)) (hm : monotone F)
+    (hF : ∀ f, NonExpansive f → NonExpansive (F f)) : NonExpansive (fix F hm) :=
+  fix_induct hm _ admissible_nonExpansive hF
+
+/-- The greatest fixpoint coincides with the BI greatest fixpoint. -/
+theorem fix_eq_bi_greatest_fixpoint [OFE A] (F : (A → PROP) → (A → PROP)) (hm : monotone F)
+    [BIMonoPred F] : fix F hm = bi_greatest_fixpoint F := by
+  apply PartialOrder.rel_antisymm
+  · -- `bi_greatest_fixpoint F` is a fixpoint, so `fix` is above it.
+    apply fix_le_of_prefixed hm
+    exact PartialOrder.rel_of_eq (funext fun _ => (greatest_fixpoint_unfold F).symm)
+  · -- Use `fix F hm` as the coinduction hypothesis.
+    intro x
+    have : NonExpansive (fix F hm) := fix_nonExpansive F hm fun _ _ => mono_pred_ne
+    have h := greatest_fixpoint_coiter F (fix F hm)
+    rw [← fix_eq hm] at h
+    change fix F hm x ⊢ bi_greatest_fixpoint F x
+    iintro H
+    iapply h $$ [] H
+    iintro !> %y Hy
+    iexact Hy
+
+/-- Transport `fix_eq_bi_greatest_fixpoint` along an order isomorphism `e`, e.g. uncurrying. -/
+theorem fix_eq_bi_greatest_fixpoint_of_iso [OFE A] {α : Sort _} [CCPO α]
+    (e : α → A → PROP) (e' : (A → PROP) → α) (he : monotone e) (he' : monotone e')
+    (h₁ : ∀ x, e' (e x) = x) (h₂ : ∀ y, e (e' y) = y) (F : α → α) (hF : monotone F)
+    (G : (A → PROP) → (A → PROP)) [BIMonoPred G] (hFG : ∀ x, e (F x) = G (e x)) :
+    e (fix F hF) = bi_greatest_fixpoint G := by
+  have hG : monotone G := by
+    intro a b h
+    have := he _ _ (hF _ _ (he' _ _ h))
+    rwa [hFG, hFG, h₂, h₂] at this
+  rw [fix_iso e e' he h₁ h₂ hF hG hFG]
+  exact fix_eq_bi_greatest_fixpoint G hG
+
+/-- Fixpoint coiteration, transported along an order isomorphism `e`. -/
+theorem fix_coiter_of_iso [OFE A] {α : Sort _} [CCPO α]
+    (e : α → A → PROP) (e' : (A → PROP) → α) (he : monotone e) (he' : monotone e')
+    (h₁ : ∀ x, e' (e x) = x) (h₂ : ∀ y, e (e' y) = y) (F : α → α) (hF : monotone F)
+    (G : (A → PROP) → (A → PROP)) [BIMonoPred G] (hFG : ∀ x, e (F x) = G (e x))
+    (Φ : α) (hΦ : NonExpansive (e Φ)) :
+    ⊢ □ (∀ p, e Φ p -∗ e (F Φ) p) -∗ ∀ p, e Φ p -∗ e (fix F hF) p := by
+  rw [fix_eq_bi_greatest_fixpoint_of_iso e e' he he' h₁ h₂ F hF G hFG, hFG]
+  exact greatest_fixpoint_coiter G (e Φ) (I := hΦ)
+
 section Monotone
-variable [BI PROP] [PartialOrder α]
+variable [PartialOrder α]
 
 @[partial_fixpoint_monotone]
 theorem monotone_sep (f g : α → PROP) (hf : monotone f) (hg : monotone g) :

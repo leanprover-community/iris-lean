@@ -5,7 +5,7 @@ Authors: Oliver Soeser
 -/
 module
 
-public meta import Iris.ProofMode.Lib.Fixpoint
+public import Iris.ProofMode.Lib.Fixpoint
 
 namespace Iris
 
@@ -139,7 +139,7 @@ meta def elabIInductiveDef (mods : TSyntax ``Lean.Parser.Command.declModifiers) 
     tacs := tacs.push (← `(tactic| rw (occs := [$(Syntax.mkNumLit (toString occs))]) [$uLem:ident]))
 
     let preDef := mkIdentFrom name (name.getId ++ `pre)
-    tacs := tacs.push (← `(tactic| try simp only [$name:ident, $preDef:ident]))
+    tacs := tacs.push (← `(tactic| try simp only [$preDef:ident]))
 
     tacs := tacs ++ selector
 
