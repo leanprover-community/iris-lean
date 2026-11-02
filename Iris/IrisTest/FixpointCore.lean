@@ -6,6 +6,7 @@ module
 
 public import Iris.Instances.IProp
 public import Iris.BI.Lib.Fixpoint
+public import Iris.BI.Lib.FixpointBanach
 public import Iris.ProofMode.Lib
 
 @[expose] public section
@@ -83,6 +84,7 @@ private meta def expectLeanOutput (body expected : String) (exitCode : UInt32) :
   let prelude := "module
 public import Iris.Instances.IProp
 public import Iris.BI.Lib.Fixpoint
+public import Iris.BI.Lib.FixpointBanach
 public import Iris.ProofMode.Lib
 @[expose] public section
 open Iris BI OFE
@@ -135,6 +137,12 @@ contractive_by
 
 example (b : Bool) : flip b = iprop(▷ flip (!b) -∗ False) := flip.unfold b
 
+-- A guarded fixpoint is the Banach fixpoint, so the `FixpointBanach` lemmas apply.
+example (b : Bool) : flip b = fixpoint flip.pre b := flip.eq_fixpoint b
+example (x : Unit) : Persistent (annotated x) := by
+  rw [annotated.eq_fixpoint]
+  exact fixpoint_persistent _ (fun _ _ _ => by unfold annotated.pre; infer_instance) x
+
 -- Guarded fixpoints use no `sorry` and no extra axioms.
 run_cmd do
   for decl in #[`annotated, `named, `dependent, `flip] do
@@ -155,10 +163,11 @@ variable (PROP : Type) [bi : BI PROP]
 ifix sectionParameter (x : Unit) : PROP := sectionParameter x
 end
 
--- ERROR: `ifix` rejects declaration modifiers such as `private`.
-run_cmd (expectLeanOutput "
+-- `ifix` accepts declaration modifiers such as `private` and docstrings.
+/-- A private fixpoint. -/
 private ifix hidden (x : Unit) : IProp BundledGFunctors.default := hidden x
-" "unexpected token 'ifix'" 1)
+
+example (x : Unit) : hidden x = hidden.pre x (hidden x) := hidden.unfold x
 
 -- An empty predicate does not require a recursive occurrence.
 iinductive empty : Unit → IProp BundledGFunctors.default where

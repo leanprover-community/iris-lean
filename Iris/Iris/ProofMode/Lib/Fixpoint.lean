@@ -32,10 +32,10 @@ syntax "contractive_by " Lean.Parser.Tactic.tacticSeq : contractiveClause
 
 /-! ## `ifix` and `icofix` -/
 
-/-- Add a definition, using its inferred type. -/
+/-- Add a definition, using its inferred type. Its body is exposed: it is the user's body. -/
 meta def emitDef (name : Name) (levels : List Name) (value : Expr) : TermElabM Unit := do
   let value ← instantiateMVars value
-  addAndCompile <| .defnDecl {
+  withExporting <| addAndCompile <| .defnDecl {
     name, levelParams := levels, type := ← inferType value, value
     hints := .regular 0, safety := .safe }
   saveEqnAffectingOptions name
@@ -107,6 +107,8 @@ meta def withFixpointData (least : Bool) (declName : Name) (k : FixpointData →
 /-- `name.pre`: the curried functional built by `partial_fixpoint`. -/
 meta def emitPre (d : FixpointData) : TermElabM Unit := do
   emitDef (d.declName ++ `pre) d.levels (← mkLambdaFVars d.fixed d.F)
+  -- Reducible, so that a body written as `myPre name` matches `name.pre`.
+  setReducibleAttribute (d.declName ++ `pre)
 
 /-- `name.unfold`: one step of `fix_eq`, stated with `name` and `name.pre`. -/
 meta def emitUnfold (d : FixpointData) : TermElabM Unit := do
@@ -120,6 +122,10 @@ meta def emitUnfold (d : FixpointData) : TermElabM Unit := do
     emitThm (d.declName ++ `unfold) d.levels
       (← mkForallFVars args (← mkEq (d.fn vs) (mkAppN (mkApp d.pre curriedFn) vs)))
       (← mkLambdaFVars args proof)
+
+/-- `fun x y => Φ x y` is `Φ`, by definition: reduce it everywhere, for readable statements. -/
+meta def etaAll (e : Expr) : MetaM Expr :=
+  Core.transform e (post := fun e => return .done e.eta)
 
 /-! ### Tuples of arguments
 
@@ -154,17 +160,23 @@ meta partial def mkProjs : Expr → Expr → MetaM (Array Expr)
 /-- Name the binders that `spellOut` introduces (`x`, `x'`) after the varying parameters: each run
 of them, such as `∀ x x'`, is renamed `names` in order. -/
 meta partial def renameArgs (names : List Name) (e : Expr) : Expr :=
-  go names e
+  go all e
 where
+  /-- The names in order; a second tuple, right after the first, is primed. -/
+  all : List Name := names ++ names.map (·.appendAfter "'")
   go (rest : List Name) : Expr → Expr
-    | .forallE n t b bi => let (n, rest') := pick n rest; .forallE n (go names t) (go rest' b) bi
-    | .lam n t b bi => let (n, rest') := pick n rest; .lam n (go names t) (go rest' b) bi
-    | .app f a => .app (go names f) (go rest a)
+    | .forallE n t b bi => let (n, rest') := pick n rest; .forallE n (go all t) (go rest' b) bi
+    | .lam n t b bi => let (n, rest') := pick n rest; .lam n (go all t) (go rest' b) bi
+    | .app f a => .app (go all f) (go rest a)
     | .mdata d e => .mdata d (go rest e)
     | e => e
+  /-- `x`, `x'` and `p`, possibly renamed by `simp` to avoid shadowing, as in `x_1`. -/
+  introduced (n : Name) : Bool :=
+    let s := n.eraseMacroScopes.toString
+    ["x", "x'", "p"].any fun b => s == b || s.startsWith (b ++ "_")
   pick (n : Name) : List Name → Name × List Name
-    | m :: rest => if n == `x || n == `x' || n == `p then (m, rest) else (n, names)
-    | [] => (n, names)
+    | m :: rest => if introduced n then (m, rest) else (n, all)
+    | [] => (n, all)
 
 structure Tupling where
   /-- The curried type `∀ xs, PROP`, `PROP`, and the tuple type `A`. -/
@@ -226,6 +238,19 @@ meta def monotone (T : Tupling) (least : Bool) (F hG : Expr) : MetaM Expr := do
   mkAppOptM ``monotone_conj #[T.curried, ← mkArrow T.A T.prop, none, none, F, G, T.uncurry,
     T.curry, ← T.monoUncurry, ← T.monoCurry, ← mkAppM ns #[hG], hcomm]
 
+/-- `conj` as a map from curried functionals to functionals on predicates on tuples, its inverse,
+and `∀ G, conj (unconj G) = G`, by `rfl`. -/
+meta def conjIso (T : Tupling) : MetaM (Expr × Expr × Expr) := do
+  let predTy ← mkArrow T.A T.prop
+  let conjMap ← withLocalDeclD `G (← mkArrow T.curried T.curried) fun G => do
+    mkLambdaFVars #[G] (← T.conj G)
+  let unconjMap ← withLocalDeclD `G (← mkArrow predTy predTy) fun G =>
+    withLocalDeclD `f T.curried fun f => do
+      mkLambdaFVars #[G, f] (T.curry.beta #[mkApp G (T.uncurry.beta #[f])])
+  let h ← pointwiseRfl (← mkArrow predTy predTy)
+    (fun G => pure (conjMap.beta #[unconjMap.beta #[G]])) pure
+  return (conjMap, unconjMap, h)
+
 /-- Rewrite quantifiers over tuples, and over predicates on them, into curried ones. Returns the new
 statement, and the equation from the old one. -/
 meta def spellOut (T : Tupling) (type : Expr) : MetaM (Expr × Option Expr) := do
@@ -237,41 +262,56 @@ meta def spellOut (T : Tupling) (type : Expr) : MetaM (Expr × Option Expr) := d
     thms ← thms.add (.other `forall_iso) #[] (← mkAppM ``forall_iso #[T.uncurry, T.curry, h])
     thms ← thms.add (.other `bi_forall_iso) #[]
       (← mkAppOptM ``bi_forall_iso #[T.prop, none, none, none, T.uncurry, T.curry, h])
+    let (conjMap, unconjMap, h) ← T.conjIso
+    thms ← thms.add (.other `forall_conj_iso) #[] (← mkAppM ``forall_iso #[conjMap, unconjMap, h])
   let ctx ← Simp.mkContext (simpTheorems := #[thms]) (congrTheorems := ← getSimpCongrTheorems)
   let (r, _) ← simp type ctx
-  -- `fun x y => Φ x y` is `Φ`, by definition.
-  let type ← Core.transform r.expr (post := fun e => return .done e.eta)
-  return (type, r.proof?)
+  return (← etaAll r.expr, r.proof?)
 
-/-- Restore the binder names that `spellOut` replaced: predicates on tuples are named as before,
-and the components of a tuple after the parameters. -/
+/-- Restore the binder names that `spellOut` replaced: predicates on tuples, and functionals on
+them, are named as before, and the components of a tuple after the parameters. -/
 meta def rename (T : Tupling) (before after : Expr) : MetaM Expr := do
-  let preds := collect (← mkArrow T.A T.prop) before #[]
-  return renameArgs T.curried.getForallBinderNames (renamePreds T.curried preds.toList after).1
+  let predTy ← mkArrow T.A T.prop
+  let names := collect [predTy, ← mkArrow predTy predTy] before #[]
+  let tys := [T.curried, ← mkArrow T.curried T.curried]
+  return renameArgs T.curried.getForallBinderNames (go tys names.toList after).1
 where
-  collect (ty : Expr) : Expr → Array Name → Array Name
-    | .forallE n d b _, acc => collect ty b (collect ty d (if d == ty then acc.push n else acc))
-    | .lam n d b _, acc => collect ty b (collect ty d (if d == ty then acc.push n else acc))
-    | .app f a, acc => collect ty a (collect ty f acc)
-    | .mdata _ e, acc => collect ty e acc
+  collect (tys : List Expr) : Expr → Array Name → Array Name
+    | .forallE n d b _, acc | .lam n d b _, acc =>
+      collect tys b (collect tys d (if tys.contains d then acc.push n else acc))
+    | .app f a, acc => collect tys a (collect tys f acc)
+    | .mdata _ e, acc => collect tys e acc
     | _, acc => acc
-  renamePreds (ty : Expr) : List Name → Expr → Expr × List Name
+  go (tys : List Expr) : List Name → Expr → Expr × List Name
     | ns, .forallE n d b bi =>
-      let (n, ns) := if d == ty then (ns.headD n, ns.drop 1) else (n, ns)
-      let (d, ns) := renamePreds ty ns d
-      let (b, ns) := renamePreds ty ns b
+      let (n, ns) := if tys.contains d then (ns.headD n, ns.drop 1) else (n, ns)
+      let (d, ns) := go tys ns d
+      let (b, ns) := go tys ns b
       (.forallE n d b bi, ns)
     | ns, .lam n d b bi =>
-      let (n, ns) := if d == ty then (ns.headD n, ns.drop 1) else (n, ns)
-      let (d, ns) := renamePreds ty ns d
-      let (b, ns) := renamePreds ty ns b
+      let (n, ns) := if tys.contains d then (ns.headD n, ns.drop 1) else (n, ns)
+      let (d, ns) := go tys ns d
+      let (b, ns) := go tys ns b
       (.lam n d b bi, ns)
     | ns, .app f a =>
-      let (f, ns) := renamePreds ty ns f
-      let (a, ns) := renamePreds ty ns a
+      let (f, ns) := go tys ns f
+      let (a, ns) := go tys ns a
       (.app f a, ns)
-    | ns, .mdata m e => let (e, ns) := renamePreds ty ns e; (.mdata m e, ns)
+    | ns, .mdata m e => let (e, ns) := go tys ns e; (.mdata m e, ns)
     | ns, e => (e, ns)
+
+/-- The step-indexed equality of tuples, component by component: `fun n p q => p.1 ≡{n}≡ q.1 ∧ …`.
+Fails without arguments, with dependent ones, or without an OFE on each. -/
+meta def distRel (T : Tupling) : MetaM Expr := do
+  if T.arity == 0 then throwError "no arguments"
+  forallTelescope T.curried fun xs _ => do
+    for x in xs do
+      if (← inferType x).hasAnyFVar (xs.contains <| .fvar ·) then throwError "dependent arguments"
+  withLocalDeclD `n (mkConst ``Nat) fun n => withLocalDeclD `p T.A fun p =>
+  withLocalDeclD `q T.A fun q => do
+    let dists ← (← mkProjs T.curried p).zip (← mkProjs T.curried q) |>.mapM fun (a, b) =>
+      mkAppM ``OFE.Dist #[n, a, b]
+    mkLambdaFVars #[n, p, q] (← dists.pop.foldrM (mkAppM ``And #[·, ·]) dists.back!)
 
 end Tupling
 
@@ -327,7 +367,7 @@ meta def fixpointLemmas (least : Bool) : List (Name × Name) :=
   if least then
     [(`unfold_mp, ``MonotoneFixpoint.fix_unfold_mp), (`unfold_mpr, ``MonotoneFixpoint.fix_unfold_mpr),
      (`iter, ``MonotoneFixpoint.fix_iter), (`ind, ``MonotoneFixpoint.fix_ind),
-     (`ind_wf, ``MonotoneFixpoint.fix_ind_wf),
+     (`ind_wf, ``MonotoneFixpoint.fix_ind_wf), (`strong_mono, ``MonotoneFixpoint.fix_strong_mono),
      (`affine, ``MonotoneFixpoint.fix_affine), (`absorbing, ``MonotoneFixpoint.fix_absorbing),
      (`persistent_affine, ``MonotoneFixpoint.fix_persistent_affine),
      (`persistent_absorbing, ``MonotoneFixpoint.fix_persistent_absorbing)]
@@ -335,23 +375,17 @@ meta def fixpointLemmas (least : Bool) : List (Name × Name) :=
     [(`unfold_mp, ``CoMonotoneFixpoint.fix_unfold_mp),
      (`unfold_mpr, ``CoMonotoneFixpoint.fix_unfold_mpr),
      (`coiter, ``CoMonotoneFixpoint.fix_coiter), (`coind, ``CoMonotoneFixpoint.fix_coind),
-     (`paco, ``CoMonotoneFixpoint.fix_paco),
+     (`paco, ``CoMonotoneFixpoint.fix_paco), (`strong_mono, ``CoMonotoneFixpoint.fix_strong_mono),
      (`absorbing, ``CoMonotoneFixpoint.fix_absorbing)]
 
-/-- `name.suffix`: the lemma `lemma` about `lfp (conj name.pre) hG` (or `gfp`), stated with `name`
-and spelled out over the varying parameters. -/
-meta def emitLemma (d : FixpointData) (T : Tupling) (hG : Expr) (suffix lemma : Name) :
-    TermElabM Unit := do
+/-- The library's fixpoint `lfp (conj name.pre) hG` (or `gfp`), and its equation with
+`uncurry name`: `fix_iso` across currying, and for a non-recursive `name`, one step of `fix_eq`. -/
+meta def fixpointEq (d : FixpointData) (T : Tupling) (hG : Expr) : TermElabM (Expr × Expr) := do
   let G ← T.conj d.pre
-  let args : Array (Option Expr) := #[d.prop, none, T.A, G, hG]
   let (fixName, monoName) := if d.least
     then (``MonotoneFixpoint.lfp, ``MonotoneFixpoint.monotone_of_bimono)
     else (``CoMonotoneFixpoint.gfp, ``CoMonotoneFixpoint.monotone_of_bimono)
-  let fixpoint ← mkAppOptM fixName args
-  let general ← mkAppOptM lemma args
-  -- `lfp (conj name.pre) _ = uncurry name`: `fix_iso` across currying, and for a non-recursive
-  -- `name`, one step of `fix_eq`.
-  let fn := T.uncurry.beta #[← d.curriedFn]
+  let fixpoint ← mkAppOptM fixName #[d.prop, none, T.A, G, hG]
   let hF ← T.monotone d.least d.pre hG
   let iso ← mkAppOptM ``fix_iso #[T.curried, ← mkArrow T.A T.prop, none, none, d.pre, G, hF,
     ← mkAppM monoName #[hG], T.uncurry, T.curry, ← T.monoUncurry, ← T.uncurryCurry,
@@ -362,21 +396,52 @@ meta def emitLemma (d : FixpointData) (T : Tupling) (hG : Expr) (suffix lemma : 
   let eq ← match d.hF? with
     | some _ => pure eq
     | none => mkEqTrans eq (← mkCongrArg T.uncurry (← mkAppM ``Lean.Order.fix_eq #[hF]))
-  let eq ← mkExpectedTypeHint eq (← mkEq fixpoint fn)
+  let fn := T.uncurry.beta #[← d.curriedFn]
+  return (fixpoint, ← mkExpectedTypeHint eq (← mkEq fixpoint fn))
+
+/-- `name.eq_lfp` (or `eq_gfp`): `name`, as a predicate on tuples of its varying parameters, is the
+library's fixpoint of `name.pre`. -/
+meta def emitEqFix (d : FixpointData) (T : Tupling) (hG : Expr) : TermElabM Unit := do
+  let eq ← mkEqSymm (← fixpointEq d T hG).2
+  emitThm (d.declName ++ if d.least then `eq_lfp else `eq_gfp) d.levels
+    (← mkForallFVars d.fixed (← etaAll (← inferType eq))) (← mkLambdaFVars d.fixed eq)
+
+/-- Make every binder whose type is a class, possibly under `∀`, instance-implicit, so that a lemma
+such as `name.persistent_absorbing` works as an instance. -/
+meta def instBinders (env : Environment) : Expr → Expr
+  | .forallE n d b bi =>
+    let d := instBinders env d
+    let isClass := d.getForallBody.getAppFn.constName?.any (isClass env)
+    .forallE n d (instBinders env b) (if isClass then .instImplicit else bi)
+  | e => e
+
+/-- The restated lemmas that are instances. -/
+meta def instanceLemmas : List Name := [`affine, `absorbing, `persistent_affine, `persistent_absorbing]
+
+/-- `name.suffix`: the lemma `lemma` about `lfp (conj name.pre) hG` (or `gfp`), stated with `name`
+and spelled out over the varying parameters. `extra` are its arguments after `hG`. -/
+meta def emitLemma (d : FixpointData) (T : Tupling) (hG : Expr) (suffix lemma : Name)
+    (extra : Array Expr := #[]) : TermElabM Unit := do
+  let (fixpoint, eq) ← fixpointEq d T hG
+  let args : Array (Option Expr) := #[d.prop, none, T.A, ← T.conj d.pre, hG]
+  let general ← mkAppOptM lemma (args ++ extra.map some)
   let before ← instantiateMVars (← inferType general)
   let body ← kabstract before fixpoint
   let proof ← mkEqNDRec (.lam `f (← mkArrow T.A T.prop) body .default) general eq
-  let (type, eq?) ← T.spellOut (body.instantiate1 fn)
+  let (type, eq?) ← T.spellOut (body.instantiate1 (T.uncurry.beta #[← d.curriedFn]))
   let proof ← match eq? with
     | some eq => mkEqMP eq proof
     | none => pure proof
-  let type ← T.rename before type
-  emitThm (d.declName ++ suffix) d.levels (← mkForallFVars d.fixed type)
-    (← mkLambdaFVars d.fixed proof)
+  let type ← mkForallFVars d.fixed (← T.rename before type)
+  let isInstance := instanceLemmas.contains suffix
+  let env ← getEnv
+  let type := if isInstance then instBinders env type else type
+  emitThm (d.declName ++ suffix) d.levels type (← mkLambdaFVars d.fixed proof)
+  if isInstance then addInstance (d.declName ++ suffix) .global (eval_prio default)
 
 /-- Elaborate `ifix` (`least := true`) or `icofix`. -/
-meta def elabFixpoint (least : Bool) (name : Ident)
-    (binders : Array (TSyntax ``Lean.Parser.Term.bracketedBinder)) (ty body : Term)
+meta def elabFixpoint (least : Bool) (mods : TSyntax ``Lean.Parser.Command.declModifiers)
+    (name : Ident) (binders : Array (TSyntax ``Lean.Parser.Term.bracketedBinder)) (ty body : Term)
     (mono : Option (TSyntax `monotoneClause)) : CommandElabM Unit := do
   let monoTac ← match mono with
     | some clause =>
@@ -394,19 +459,29 @@ meta def elabFixpoint (least : Bool) (name : Ident)
     let errors ← errorCount
     let monotone ← if least then `(tactic| ifix_monotone $monoTac)
       else `(tactic| icofix_monotone $monoTac)
-    elabCommand (← `(command| def $name:ident $binders* : $ty := $body
+    -- `partial_fixpoint` would apply attributes to its auxiliary definitions too; add them after.
+    let attrs := mods.raw[1].getOptional?
+    let mods : TSyntax ``Lean.Parser.Command.declModifiers := ⟨mods.raw.setArg 1 mkNullNode⟩
+    elabCommand (← `(command| $mods:declModifiers def $name:ident $binders* : $ty := $body
       partial_fixpoint monotonicity by $monotone:tactic))
     dropNotRecursiveWarning
     -- If the definition failed, Lean has already reported why.
     if (← errorCount) > errors then return
     -- Resolve the actual name, which is mangled in a private scope.
     let declName ← liftCoreM <| realizeGlobalConstNoOverload name
+    if let some attrs := attrs then
+      liftTermElabM do Term.applyAttributes declName (← elabAttrs attrs[1].getSepArgs)
     liftTermElabM <| withFixpointData least declName fun d => do
       emitPre d
       emitUnfold d
       let T ← Tupling.ofCurried d.curriedType
       let hG ← emitPreMono d T monoTac
+      emitEqFix d T hG
       for (suffix, lemma) in fixpointLemmas least do emitLemma d T hG suffix lemma
+      -- `name.ne`, when the arguments have OFEs.
+      if let some R ← observing? T.distRel then
+        emitLemma d T hG `ne (if least then ``MonotoneFixpoint.fix_ne_rel
+          else ``CoMonotoneFixpoint.fix_ne_rel) #[R]
   finally
     elabCommand (← `(command| end))
 where
@@ -420,24 +495,28 @@ where
     for m in msgs.unreported do
       unless (← m.data.toString).startsWith "unused `partial_fixpoint`" do kept := kept.push m
     modify fun s => { s with messages := { msgs with unreported := kept } }
-  /-- Whether the `BI` instance for `ty` comes from a section variable. The definition then gets
-  its own `[BI ty]` binder: a section instance its body does not mention would be dropped, and
-  the order on `ty` needs it. -/
+  /-- Whether the `BI` instance for `ty` comes from a section variable that nothing else depends
+  on. The definition then gets its own `[BI ty]` binder: a section instance its body does not
+  mention would be dropped, and the order on `ty` needs it. -/
   sectionProvidesBI (ty : Term) : CommandElabM Bool :=
     runTermElabM fun _ => do
       let some tyE ← observing? (withoutErrToSorry (elabType ty)) | return false
       let some inst ← synthInstance? (← mkAppM ``BI #[tyE]) | return false
-      return inst.isFVar
+      let .fvar instId := inst | return false
+      -- Another section instance built on it, such as `BIFUpdate`, keeps it in scope; a second
+      -- `BI` would not match that instance.
+      return !(← (← getLCtx).anyM fun decl => do
+        return decl.fvarId != instId && (← instantiateMVars decl.type).containsFVar instId)
 
 /-- Least Iris fixpoint, defined with `partial_fixpoint`. -/
-elab "ifix " name:ident binders:bracketedBinder* " : " ty:term " := " body:term
+elab mods:declModifiers "ifix " name:ident binders:bracketedBinder* " : " ty:term " := " body:term
     mono:(monotoneClause)? : command =>
-  elabFixpoint true name binders ty body mono
+  elabFixpoint true mods name binders ty body mono
 
 /-- Greatest Iris fixpoint, defined with `partial_fixpoint`. -/
-elab "icofix " name:ident binders:bracketedBinder* " : " ty:term " := " body:term
+elab mods:declModifiers "icofix " name:ident binders:bracketedBinder* " : " ty:term " := " body:term
     mono:(monotoneClause)? : command =>
-  elabFixpoint false name binders ty body mono
+  elabFixpoint false mods name binders ty body mono
 
 /-! ## `iguarded` -/
 
@@ -471,7 +550,9 @@ meta def addAttribute (mods : TSyntax ``Lean.Parser.Command.declModifiers)
 * `name.approx : Approx (∀ binders, ty) := lift name.pre name.approx`, by `partial_fixpoint`,
 * `name.impl`, a `partial def` running the recursion (an `opaque` constant without binders),
   which compiled code uses for `name`,
-* `name binders : ty`, the point of `name.approx`, and `name.unfold`, by `lift_fix_get`.
+* `name binders : ty`, the point of `name.approx`, and `name.unfold`, by `lift_fix_get`,
+* `name.eq_fixpoint : name binders = fixpoint name.pre binders`, for any default point, by
+  uniqueness of guarded fixpoints.
 
 Everything is generated as syntax: the body is elaborated, and the fixpoint defined, by Lean. -/
 meta def elabGuarded (mods : TSyntax ``Lean.Parser.Command.declModifiers) (name : Ident)
@@ -516,6 +597,11 @@ meta def elabGuarded (mods : TSyntax ``Lean.Parser.Command.declModifiers) (name 
     theorem $unfold $binders* :
         $(← app name) = $pre $(← lam (← `(($(← app name) : $ty)))) $args* :=
       congrArg (fun f => f $args*) (Iris.Approx.lift_fix_get $pre (Eq.symm $approxEq))))
+  -- By uniqueness, `name` is also the Banach fixpoint, so the `OFE.fixpoint` lemmas apply.
+  elabCommand (← `(command|
+    theorem $(suffixed `eq_fixpoint) {inst : Inhabited ($sig)} $binders* :
+        $(← app name) = @Iris.fixpoint _ _ inst ($pre : $sig → $sig) _ $args* :=
+      congrArg (fun f => f $args*) (Iris.Approx.get_eq_fixpoint $pre (Eq.symm $approxEq))))
 
 /-- Guarded Iris fixpoint, defined with `partial_fixpoint` over approximations. The body must be
 contractive in the recursive function. -/

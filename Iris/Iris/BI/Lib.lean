@@ -18,6 +18,7 @@ public import Iris.BI.Lib.Lattice
 public import Iris.BI.Lib.MonoList
 public import Iris.BI.Lib.MonoNat
 public import Iris.BI.Lib.Monotone
+public import Iris.BI.Lib.MonotoneAttr
 public import Iris.BI.Lib.MonoZ
 public import Iris.BI.Lib.ProphMap
 public import Iris.BI.Lib.Relations

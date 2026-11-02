@@ -215,6 +215,12 @@ theorem lift_fix_get (G : α → α) [Contractive G] {S : Approx α} (hS : lift 
   rw [hS] at hG
   exact OFE.eq_dist'.mpr fun n => hprec n _ _ (get_mem S) hG
 
+omit [Inhabited α] in
+/-- A fixpoint of `lift G` is the Banach fixpoint of `G`, whatever the default point. -/
+theorem get_eq_fixpoint {i j : Inhabited α} (G : α → α) [Contractive G] {S : Approx α}
+    (hS : @lift α _ i G S = S) : get S = @fixpoint α _ j G _ :=
+  @fixpoint_unique α _ j G.toContractiveHom _ (@lift_fix_get α _ i G _ S hS)
+
 end Approx
 
 end Iris

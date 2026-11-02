@@ -1,62 +1,65 @@
 /-
 Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Oliver Soeser, Markus de Medeiros
+Authors: Markus de Medeiros
 -/
 module
 
 public meta import Iris.BI.Lib.Monotone
 public meta import Iris.ProofMode
+public meta import Lean.Meta.Sym
+public meta import Lean.LabelAttribute
 
 namespace Iris
 
 open Lean Elab Tactic Meta BI
 
-/-- Apply one `IMono` rule for a connective. Extend it with `macro_rules`. -/
-syntax "imono_rule" : tactic
+open Sym in
+/-- Take `P` apart by the rules, matched syntactically, as far as they go. Returns the goals left
+over. -/
+meta partial def decompose (rules : List BackwardRule) (goal : MVarId) : SymM (List MVarId) := do
+  for rule in rules do
+    if let .goals goals ← rule.apply goal then
+      return (← goals.mapM fun goal => do
+        -- Premises such as `∀ b, IMonoPred R (P b) (P' b)` bind the connective's variables.
+        let .goal _ goal ← intros goal | decompose rules goal
+        decompose rules goal).flatten
+  return [goal]
 
-macro_rules
-  | `(tactic| imono_rule) => `(tactic| first
-      | apply IMono.sep | apply IMono.and | apply IMono.or | apply IMono.wand
-      | apply IMono.pers_imp | apply IMono.forall | apply IMono.exists
-      | apply IMono.persistently | apply IMono.affinely | apply IMono.absorbingly
-      | apply IMono.intuitionistically | apply IMono.later | apply IMono.laterN
-      | apply IMono.except0 | apply IMono.bupd | apply IMono.fupd | apply IMono.step_fupdN
-      | apply IMono.bigSepL | apply IMono.bigAndL | apply IMono.bigOrL | apply IMono.bigSepL2
-      | apply IMono.bigSepM | apply IMono.bigSepS | apply IMono.bigSepMS)
-
-/-- Unfold the definition at the head of `P` in a goal `⊢ □ R -∗ P -∗ P'`. -/
-elab "imono_unfold" : tactic => withMainContext do
-  let target ← instantiateMVars (← getMainTarget)
-  let unexpected {α} : TacticM α := throwError "imono: unexpected goal{indentExpr target}"
-  let_expr BIBase.EmpValid _ _ goal := target | unexpected
-  let_expr BIBase.wand _ _ _ body := goal | unexpected
-  let_expr BIBase.wand _ _ P _ := body | unexpected
-  let some fn := P.getAppFn.constName? | throwError "imono: nothing to unfold in{indentExpr P}"
-  if (`Iris.BI.BIBase).isPrefixOf fn || (← getProjectionFnInfo? fn).any (·.fromClass) then
-    throwError "imono: no rule for {fn}"
-  evalTactic (← `(tactic| unfold $(mkIdent fn):ident))
-
-/-- One step of `imono`, on a goal `⊢ □ R -∗ P -∗ P'`. -/
-syntax "imono_step" : tactic
-
-macro_rules
-  | `(tactic| imono_step) => `(tactic| first
-      | exact IMono.refl
-      | (imono_rule <;> intros <;> imono_step)
-      | (iintro #H HP; iapply H; iexact HP)
-      | (split <;> imono_step)
-      | (imono_unfold; imono_step))
+/-- Prove a goal `IMonoPred R P P'`, where `R` is `□ ∀ x, Φ x -∗ Ψ x` and `P'` is `P` with the
+recursive function `Φ` replaced by `Ψ`. `decompose` takes `P` apart by `IMonoPred.refl` and the
+`@[imono]` rules; what is left of `P` is a recursive call `Φ a`, proved by the assumption `R`, or
+else a `match` to split or a definition to unfold. -/
+meta partial def imonoGoal (rules : List Sym.BackwardRule) (goal : MVarId) : TacticM Unit := do
+  -- The rules match syntactically, and Sym needs `let`-free terms: unfold reducible definitions
+  -- such as `name.pre`, and reduce `(fun Φ x => …) Φ x` and `let next := Φ; next x`, first.
+  let target ← Core.betaReduce (← Sym.unfoldReducible (← instantiateMVars (← goal.getType)))
+  let target ← Core.transform target (pre := fun
+    | .letE _ _ v b _ => return .visit (b.instantiate1 v)
+    | e => return .continue e)
+  let goal ← goal.replaceTargetDefEq (← Core.betaReduce target)
+  let goals ← Sym.SymM.run do decompose rules (← Sym.preprocessMVar goal)
+  for goal in goals do
+    setGoals [goal]
+    let_expr IMonoPred _ _ _ P _ := ← instantiateMVars (← goal.getType)
+      | throwError "imono: unexpected goal{goal}"
+    let .const fn _ := P.cleanupAnnotations.getAppFn
+      | evalTactic (← `(tactic| (unfold IMonoPred; iintro #H HP; iapply H; iexact HP)))
+    if (← getProjectionFnInfo? fn).isSome then throwError "imono: no rule for {fn}"
+    let step ← if ← isMatcher fn then `(tactic| split) else `(tactic| unfold $(mkIdent fn):ident)
+    evalTactic step
+    for goal in ← getGoals do imonoGoal rules goal
+  setGoals []
 
 /-- Prove that a fixpoint body `F` is monotone, stated as `BIMono F` or with its arguments spelled
-out: `∀ Φ Ψ, ⊢ □ (∀ x y, Φ x y -∗ Ψ x y) -∗ ∀ x y, F Φ x y -∗ F Ψ x y`. The body is taken apart one
-connective at a time, down to the recursive calls; `match`es are split, and other definitions
-unfolded. -/
-macro "imono" : tactic => `(tactic| (
-  try unfold BIMono
-  intro Φ Ψ
-  repeat (apply IMono.arg; intro)
-  try dsimp only
-  imono_step))
+out: `∀ Φ Ψ, ⊢ □ (∀ x y, Φ x y -∗ Ψ x y) -∗ ∀ x y, F Φ x y -∗ F Ψ x y`. -/
+elab "imono" : tactic => do
+  evalTactic (← `(tactic| (
+    try unfold BIMono
+    intro Φ Ψ
+    repeat (apply IMonoPred.arg; intro)
+    change IMonoPred _ _ _)))
+  let rules ← (``IMonoPred.refl :: (← labelled `imono).toList).mapM (Sym.mkBackwardRuleFromDecl ·)
+  imonoGoal rules (← getMainGoal)
 
 end Iris

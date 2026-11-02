@@ -6,6 +6,7 @@ Authors: Markus de Medeiros
 module
 
 public import Iris.BI.Lib.Monotone
+public import Iris.Std.Order
 import all Init.Internal.Order.Basic
 
 /-! # Lattice-based Iris Fixpoints
@@ -21,53 +22,6 @@ the fixpoint across currying, or any other order isomorphism. -/
 
 namespace Iris
 open BI Lean.Order OFE
-
-/-! ## Order theory -/
-
-section Order
-variable {α β : Sort _}
-
-theorem monotone_conj [PartialOrder α] [PartialOrder β] {F : α → α} {G : β → β}
-    (e : α → β) (e' : β → α) (he : monotone e) (he' : monotone e') (hG : monotone G)
-    (h : ∀ a, F a = e' (G (e a))) : monotone F :=
-  fun a b hab => by rw [h, h]; exact he' _ _ (hG _ _ (he _ _ hab))
-
-/-- A fixpoint moves across an order isomorphism. -/
-theorem fix_iso [CCPO α] [CCPO β] {F : α → α} {G : β → β} (hF : monotone F) (hG : monotone G)
-    (e : α → β) (e' : β → α) (he : monotone e)
-    (h1 : ∀ b, e (e' b) = b) (h2 : ∀ a, e' (e a) = a) (hcomm : ∀ a, e (F a) = G (e a)) :
-    e (fix F hF) = fix G hG := by
-  have hF' : fix F hF ⊑ e' (fix G hG) := by
-    refine fix_induct hF (· ⊑ e' (fix G hG)) (fun c hc h => csup_le hc h) fun a ha => ?_
-    refine PartialOrder.rel_trans (hF _ _ ha) (PartialOrder.rel_of_eq ?_)
-    rw [← h2 (F _), hcomm, h1, ← fix_eq hG]
-  have hG' : fix G hG ⊑ e (fix F hF) := by
-    refine fix_induct hG (· ⊑ e (fix F hF)) (fun c hc h => csup_le hc h) fun b hb => ?_
-    refine PartialOrder.rel_trans (hG _ _ hb) (PartialOrder.rel_of_eq ?_)
-    rw [← hcomm, ← fix_eq hF]
-  have := he _ _ hF'
-  rw [h1] at this
-  exact PartialOrder.rel_antisymm this hG'
-
-/-- The sup of a chain of functions is below `P` at `x` when every function is. -/
-theorem csup_apply_le [CCPO β] {c : (α → β) → Prop} (hc : chain c) (x : α) {P : β}
-    (h : ∀ f, c f → f x ⊑ P) : CCPO.csup hc x ⊑ P := by
-  rw [← fun_csup_eq]
-  exact csup_le (chain_apply hc x) fun _ ⟨f, hf, e⟩ => e ▸ h f hf
-
-/-! The quantifier rewrites that turn statements about predicates on tuples into curried ones. -/
-
-theorem forall_iso (e : α → β) (e' : β → α) (h : ∀ b, e (e' b) = b) {P : β → Prop} :
-    (∀ b, P b) ↔ ∀ a, P (e a) :=
-  ⟨fun hP _ => hP _, fun hP b => h b ▸ hP (e' b)⟩
-
-theorem forall_psigma {β : α → Sort _} {P : PSigma β → Prop} :
-    (∀ p, P p) ↔ ∀ x x', P ⟨x, x'⟩ :=
-  ⟨fun h _ _ => h _, fun h p => h p.1 p.2⟩
-
-theorem forall_punit {P : PUnit → Prop} : (∀ p, P p) ↔ P ⟨⟩ := ⟨fun h => h _, fun h _ => h⟩
-
-end Order
 
 local bi PROP
 
@@ -94,22 +48,13 @@ theorem bimono_def {F : (A → PROP) → A → PROP} :
 
 end Tuples
 
-/-! The sup of a chain of predicates is, at each point, the sup of their values there. When the
-predicates are non-expansive, so is that sup. -/
+/-! When the predicates in a chain are non-expansive, so is their sup. -/
 
-omit [BI PROP] in
-theorem csup_apply_eq [CCPO PROP] {c : (A → PROP) → Prop} (hc : chain c) {x : A}
-    {sup : (PROP → Prop) → PROP} (hsup : ∀ c, is_sup c (sup c)) :
-    CCPO.csup hc x = sup fun P => ∃ f, c f ∧ f x = P := by
-  rw [← fun_csup_eq]
-  exact is_sup_unique (CCPO.csup_spec (chain_apply hc x)) (hsup _)
-
-theorem sup_ne [OFE A] {c : (A → PROP) → Prop}
-    (hall : ∀ f, c f → ∀ ⦃n x y⦄, x ≡{n}≡ y → f x ≡{n}≡ f y) {n : Nat} {x y : A}
-    (hxy : x ≡{n}≡ y) :
+theorem sup_ne {R : Nat → A → A → Prop} {c : (A → PROP) → Prop}
+    (hall : ∀ f, c f → ∀ n x y, R n x y → f x ≡{n}≡ f y) {n : Nat} {x y : A} (hxy : R n x y) :
     liftRel (· ≡{n}≡ ·) (fun P => ∃ f, c f ∧ f x = P) (fun P => ∃ f, c f ∧ f y = P) :=
-  ⟨fun _ ⟨f, hf, e⟩ => ⟨f y, ⟨f, hf, rfl⟩, e ▸ hall f hf hxy⟩,
-   fun _ ⟨f, hf, e⟩ => ⟨f x, ⟨f, hf, rfl⟩, e ▸ hall f hf hxy⟩⟩
+  ⟨fun _ ⟨f, hf, e⟩ => ⟨f y, ⟨f, hf, rfl⟩, e ▸ hall f hf _ _ _ hxy⟩,
+   fun _ ⟨f, hf, e⟩ => ⟨f x, ⟨f, hf, rfl⟩, e ▸ hall f hf _ _ _ hxy⟩⟩
 
 namespace MonotoneFixpoint
 
@@ -130,18 +75,20 @@ scoped instance instCCPOMonoProp : CCPO PROP where
 
 theorem monotone_of_bimono {F : (A → PROP) → A → PROP} (h : BIMono F) : monotone F :=
   fun Φ Ψ hle x => by
-  have hw : ⊢ ∀ x, Φ x -∗ Ψ x := forall_intro fun x => wand_intro (emp_sep.1.trans (hle x))
   change F Φ x ⊢ F Ψ x
   iintro H
   iapply (h Φ Ψ) $$ [] %x H
-  iintro !>
-  iapply hw
+  iintro !> %x H
+  have hw : ⊢ Φ x -∗ Ψ x := wand_intro (emp_sep.1.trans (hle x))
+  iapply hw $$ [$]
 
 /-- The least fixpoint of a `BIMono` body. -/
 noncomputable abbrev lfp (F : (A → PROP) → A → PROP) (h : BIMono F) : A → PROP :=
   fix F (monotone_of_bimono h)
 
 variable {F : (A → PROP) → A → PROP} (h : BIMono F)
+
+theorem fix_unfold : lfp F h = F (lfp F h) := fix_eq _
 
 theorem fix_unfold_mp (x : A) : lfp F h x ⊢ F (lfp F h) x :=
   .of_eq (congrFun (fix_eq _) x)
@@ -195,25 +142,27 @@ theorem fix_ind_wf (Φ W : A → PROP) (hW : ∀ x, iprop(Φ x ∧ F W x) ⊢ W 
     · iexact Hy
   · iapply fix_unfold_mp h x $$ Hx
 
-theorem fix_strong_mono {G : (A → PROP) → A → PROP} (hG : BIMono G) :
-    ⊢ □ (∀ Φ x, F Φ x -∗ G Φ x) -∗ ∀ x, lfp F h x -∗ lfp G hG x := by
+/-- Monotonicity in the body: the least fixpoint is below every prefixpoint `g` of a larger body
+`G`, such as its least fixpoint. -/
+theorem fix_strong_mono (G : (A → PROP) → A → PROP) (g : A → PROP) (hg : ∀ x, G g x ⊢ g x) :
+    ⊢ □ (∀ Φ x, F Φ x -∗ G Φ x) -∗ ∀ x, lfp F h x -∗ g x := by
   iintro #H
   iapply fix_iter h
   iintro !> %x Hx
-  iapply fix_unfold_mpr hG x
-  iapply H $$ %(lfp G hG) %x Hx
+  iapply hg
+  iapply H $$ %g %x Hx
 
-theorem fix_affine (hF : ∀ x, Affine (F (fun _ => iprop(emp)) x)) (x : A) :
-    Affine (lfp F h x) := by
+/-- The least fixpoint is affine when the body is, at `fun _ => emp`. -/
+instance fix_affine [∀ x, Affine (F (fun _ => iprop(emp)) x)] (x : A) : Affine (lfp F h x) := by
   constructor
   revert x
   iapply (fix_iter h fun _ => iprop(emp))
   iintro !> %y Hy
-  iapply (hF y).affine $$ Hy
+  iapply Affine.affine $$ Hy
 
-theorem fix_absorbing (hF : ∀ Φ : A → PROP, (∀ x, Absorbing (Φ x)) → ∀ x, Absorbing (F Φ x))
-    (x : A) : Absorbing (lfp F h x) := by
-  have : ∀ y, Absorbing (F (fun y => iprop(True -∗ lfp F h y)) y) := hF _ fun _ => inferInstance
+/-- The least fixpoint is absorbing when the body is, at `fun y => True -∗ lfp F h y`. -/
+instance fix_absorbing [∀ x, Absorbing (F (fun y => iprop(True -∗ lfp F h y)) x)] (x : A) :
+    Absorbing (lfp F h x) := by
   constructor
   iapply wand_elim_swap
   revert x
@@ -228,12 +177,10 @@ theorem fix_absorbing (hF : ∀ Φ : A → PROP, (∀ x, Absorbing (Φ x)) → �
   · iclear HT
     iexact HF
 
-theorem fix_persistent_affine
-    (hA : ∀ Φ : A → PROP, (∀ x, Affine (Φ x)) → ∀ x, Affine (F Φ x))
-    (hP : ∀ Φ : A → PROP, (∀ x, Persistent (Φ x)) → ∀ x, Persistent (F Φ x))
-    (x : A) : Persistent (lfp F h x) := by
-  have : ∀ y, Affine (F (fun y => iprop(□ lfp F h y)) y) := hA _ fun _ => inferInstance
-  have : ∀ y, Persistent (F (fun y => iprop(□ lfp F h y)) y) := hP _ fun _ => inferInstance
+/-- The least fixpoint is persistent when the body is affine and persistent, at
+`fun y => □ lfp F h y`. -/
+instance fix_persistent_affine [∀ x, Affine (F (fun y => iprop(□ lfp F h y)) x)]
+    [∀ x, Persistent (F (fun y => iprop(□ lfp F h y)) x)] (x : A) : Persistent (lfp F h x) := by
   constructor
   refine .trans ?_ persistently_of_intuitionistically
   revert x
@@ -244,12 +191,11 @@ theorem fix_persistent_affine
   iintro !> %z #Hz
   iexact Hz
 
-theorem fix_persistent_absorbing
-    (hA : ∀ Φ : A → PROP, (∀ x, Absorbing (Φ x)) → ∀ x, Absorbing (F Φ x))
-    (hP : ∀ Φ : A → PROP, (∀ x, Persistent (Φ x)) → ∀ x, Persistent (F Φ x))
-    (x : A) : Persistent (lfp F h x) := by
-  have : ∀ y, Absorbing (lfp F h y) := fix_absorbing h hA
-  have : ∀ y, Persistent (F (fun y => iprop(<pers> lfp F h y)) y) := hP _ fun _ => inferInstance
+/-- The least fixpoint is persistent when it is absorbing, and the body is persistent at
+`fun y => <pers> lfp F h y`. -/
+instance fix_persistent_absorbing [∀ x, Absorbing (lfp F h x)]
+    [∀ x, Persistent (F (fun y => iprop(<pers> lfp F h y)) x)] (x : A) :
+    Persistent (lfp F h x) := by
   constructor
   revert x
   iapply (fix_iter h fun y => iprop(<pers> lfp F h y))
@@ -259,14 +205,42 @@ theorem fix_persistent_absorbing
   iintro !> %z #Hz
   iexact Hz
 
-/-- The least fixpoint is non-expansive when `F` preserves non-expansiveness. -/
-theorem fix_ne [OFE A] (hF : ∀ Φ : A → PROP, NonExpansive Φ → NonExpansive (F Φ)) :
-    NonExpansive (lfp F h) := by
-  refine ⟨fix_induct _ (fun g => ∀ ⦃n x y⦄, x ≡{n}≡ y → g x ≡{n}≡ g y) ?_
-    fun g hg => (hF g ⟨hg⟩).ne⟩
+/-- The least fixpoint respects any family of relations `R n` on the arguments that `F`
+respects, such as the step-indexed equality of an OFE. -/
+theorem fix_ne_rel (R : Nat → A → A → Prop)
+    (hF : ∀ Φ : A → PROP, (∀ n x y, R n x y → Φ x ≡{n}≡ Φ y) →
+      ∀ n x y, R n x y → F Φ x ≡{n}≡ F Φ y) :
+    ∀ n x y, R n x y → lfp F h x ≡{n}≡ lfp F h y := by
+  refine fix_induct _ (fun g => ∀ n x y, R n x y → g x ≡{n}≡ g y) ?_ fun g hg => hF g hg
   intro c hc hall n x y hxy
   rw [csup_apply_eq hc sExists_is_sup, csup_apply_eq hc sExists_is_sup]
   exact sExists_ne (sup_ne hall hxy)
+
+/-- The least fixpoint is non-expansive when `F` preserves non-expansiveness. -/
+theorem fix_ne [OFE A] (hF : ∀ Φ : A → PROP, NonExpansive Φ → NonExpansive (F Φ)) :
+    NonExpansive (lfp F h) :=
+  ⟨fun _ _ _ => fix_ne_rel h (fun n x y => x ≡{n}≡ y) (fun Φ hΦ _ _ _ h => (hF Φ ⟨fun _ _ _ => hΦ _ _ _⟩).ne h) _ _ _⟩
+
+/-- The least fixpoint is non-expansive in its body, for a body `F₂` that preserves step-indexed
+equality. -/
+theorem fix_ne_outer {F₁ F₂ : (A → PROP) → A → PROP} (h₁ : BIMono F₁) (h₂ : BIMono F₂) {n : Nat}
+    (hF₂ : ∀ Φ Ψ : A → PROP, (∀ x, Φ x ≡{n}≡ Ψ x) → ∀ x, F₂ Φ x ≡{n}≡ F₂ Ψ x)
+    (hF : ∀ Φ x, F₁ Φ x ≡{n}≡ F₂ Φ x) (x : A) : lfp F₁ h₁ x ≡{n}≡ lfp F₂ h₂ x := by
+  have hFG : monotone fun p : (A → PROP) ×' (A → PROP) => (⟨F₁ p.1, F₂ p.2⟩ : _ ×' _) :=
+    fun _ _ hpq => show _ ∧ _ from ⟨monotone_of_bimono h₁ _ _ (show _ ∧ _ from hpq).1,
+      monotone_of_bimono h₂ _ _ (show _ ∧ _ from hpq).2⟩
+  -- Both fixpoints at once, as the fixpoint of the pair.
+  suffices ∀ x, (fix _ hFG).1 x ≡{n}≡ (fix _ hFG).2 x by
+    rw [fix_pprod (monotone_of_bimono h₁) (monotone_of_bimono h₂) hFG] at this
+    exact this x
+  refine fix_induct hFG (fun q => ∀ x, q.1 x ≡{n}≡ q.2 x) ?_
+    fun q hq x => (hF q.1 x).trans (hF₂ _ _ hq x)
+  intro c hc hall x
+  rw [← prod_csup_eq]
+  change CCPO.csup (PProd.chain.chain_fst hc) x ≡{n}≡ CCPO.csup (PProd.chain.chain_snd hc) x
+  rw [csup_apply_eq _ sExists_is_sup, csup_apply_eq _ sExists_is_sup]
+  exact sExists_ne ⟨fun _ ⟨f, ⟨g, hfg⟩, e⟩ => ⟨g x, ⟨g, ⟨f, hfg⟩, rfl⟩, e ▸ hall _ hfg x⟩,
+    fun _ ⟨g, ⟨f, hfg⟩, e⟩ => ⟨f x, ⟨f, ⟨g, hfg⟩, rfl⟩, e ▸ hall _ hfg x⟩⟩
 
 end MonotoneFixpoint
 
@@ -301,6 +275,8 @@ noncomputable abbrev gfp (F : (A → PROP) → A → PROP) (h : BIMono F) : A �
   fix F (monotone_of_bimono h)
 
 variable {F : (A → PROP) → A → PROP} (h : BIMono F)
+
+theorem fix_unfold : gfp F h = F (gfp F h) := fix_eq _
 
 theorem fix_unfold_mp (x : A) : gfp F h x ⊢ F (gfp F h) x :=
   .of_eq (congrFun (fix_eq _) x)
@@ -355,17 +331,19 @@ theorem fix_paco (Φ W : A → PROP) (hW : ∀ x, W x ⊢ iprop(Φ x ∨ F W x))
     · iexact H
   · iapply HM $$ %x HΦ
 
-theorem fix_strong_mono {G : (A → PROP) → A → PROP} (hG : BIMono G) :
-    ⊢ □ (∀ Φ x, F Φ x -∗ G Φ x) -∗ ∀ x, gfp F h x -∗ gfp G hG x := by
+/-- Monotonicity in the body: every postfixpoint `g` of a smaller body `G`, such as its greatest
+fixpoint, is below the greatest fixpoint. -/
+theorem fix_strong_mono (G : (A → PROP) → A → PROP) (g : A → PROP) (hg : ∀ x, g x ⊢ G g x) :
+    ⊢ □ (∀ Φ x, G Φ x -∗ F Φ x) -∗ ∀ x, g x -∗ gfp F h x := by
   iintro #H
-  iapply fix_coiter hG
+  iapply fix_coiter h
   iintro !> %x Hx
   iapply H
-  iapply fix_unfold_mp h x $$ Hx
+  iapply hg $$ Hx
 
-theorem fix_absorbing (hF : ∀ Φ : A → PROP, (∀ x, Absorbing (Φ x)) → ∀ x, Absorbing (F Φ x))
-    (x : A) : Absorbing (gfp F h x) := by
-  have : ∀ y, Absorbing (F (fun y => iprop(<absorb> gfp F h y)) y) := hF _ fun _ => inferInstance
+/-- The greatest fixpoint is absorbing when the body is, at `fun y => <absorb> gfp F h y`. -/
+instance fix_absorbing [∀ x, Absorbing (F (fun y => iprop(<absorb> gfp F h y)) x)] (x : A) :
+    Absorbing (gfp F h x) := by
   constructor
   revert x
   iapply (fix_coiter h fun y => iprop(<absorb> gfp F h y))
@@ -376,14 +354,42 @@ theorem fix_absorbing (hF : ∀ Φ : A → PROP, (∀ x, Absorbing (Φ x)) → �
     iexact Hz
   · iapply fix_unfold_mp h y $$ HG
 
-/-- The greatest fixpoint is non-expansive when `F` preserves non-expansiveness. -/
-theorem fix_ne [OFE A] (hF : ∀ Φ : A → PROP, NonExpansive Φ → NonExpansive (F Φ)) :
-    NonExpansive (gfp F h) := by
-  refine ⟨fix_induct _ (fun g => ∀ ⦃n x y⦄, x ≡{n}≡ y → g x ≡{n}≡ g y) ?_
-    fun g hg => (hF g ⟨hg⟩).ne⟩
+/-- The greatest fixpoint respects any family of relations `R n` on the arguments that `F`
+respects, such as the step-indexed equality of an OFE. -/
+theorem fix_ne_rel (R : Nat → A → A → Prop)
+    (hF : ∀ Φ : A → PROP, (∀ n x y, R n x y → Φ x ≡{n}≡ Φ y) →
+      ∀ n x y, R n x y → F Φ x ≡{n}≡ F Φ y) :
+    ∀ n x y, R n x y → gfp F h x ≡{n}≡ gfp F h y := by
+  refine fix_induct _ (fun g => ∀ n x y, R n x y → g x ≡{n}≡ g y) ?_ fun g hg => hF g hg
   intro c hc hall n x y hxy
   rw [csup_apply_eq hc sForall_is_sup, csup_apply_eq hc sForall_is_sup]
   exact sForall_ne (sup_ne hall hxy)
+
+/-- The greatest fixpoint is non-expansive when `F` preserves non-expansiveness. -/
+theorem fix_ne [OFE A] (hF : ∀ Φ : A → PROP, NonExpansive Φ → NonExpansive (F Φ)) :
+    NonExpansive (gfp F h) :=
+  ⟨fun _ _ _ => fix_ne_rel h (fun n x y => x ≡{n}≡ y) (fun Φ hΦ _ _ _ h => (hF Φ ⟨fun _ _ _ => hΦ _ _ _⟩).ne h) _ _ _⟩
+
+/-- The greatest fixpoint is non-expansive in its body, for a body `F₂` that preserves step-indexed
+equality. -/
+theorem fix_ne_outer {F₁ F₂ : (A → PROP) → A → PROP} (h₁ : BIMono F₁) (h₂ : BIMono F₂) {n : Nat}
+    (hF₂ : ∀ Φ Ψ : A → PROP, (∀ x, Φ x ≡{n}≡ Ψ x) → ∀ x, F₂ Φ x ≡{n}≡ F₂ Ψ x)
+    (hF : ∀ Φ x, F₁ Φ x ≡{n}≡ F₂ Φ x) (x : A) : gfp F₁ h₁ x ≡{n}≡ gfp F₂ h₂ x := by
+  have hFG : monotone fun p : (A → PROP) ×' (A → PROP) => (⟨F₁ p.1, F₂ p.2⟩ : _ ×' _) :=
+    fun _ _ hpq => show _ ∧ _ from ⟨monotone_of_bimono h₁ _ _ (show _ ∧ _ from hpq).1,
+      monotone_of_bimono h₂ _ _ (show _ ∧ _ from hpq).2⟩
+  -- Both fixpoints at once, as the fixpoint of the pair.
+  suffices ∀ x, (fix _ hFG).1 x ≡{n}≡ (fix _ hFG).2 x by
+    rw [fix_pprod (monotone_of_bimono h₁) (monotone_of_bimono h₂) hFG] at this
+    exact this x
+  refine fix_induct hFG (fun q => ∀ x, q.1 x ≡{n}≡ q.2 x) ?_
+    fun q hq x => (hF q.1 x).trans (hF₂ _ _ hq x)
+  intro c hc hall x
+  rw [← prod_csup_eq]
+  change CCPO.csup (PProd.chain.chain_fst hc) x ≡{n}≡ CCPO.csup (PProd.chain.chain_snd hc) x
+  rw [csup_apply_eq _ sForall_is_sup, csup_apply_eq _ sForall_is_sup]
+  exact sForall_ne ⟨fun _ ⟨f, ⟨g, hfg⟩, e⟩ => ⟨g x, ⟨g, ⟨f, hfg⟩, rfl⟩, e ▸ hall _ hfg x⟩,
+    fun _ ⟨g, ⟨f, hfg⟩, e⟩ => ⟨f x, ⟨f, ⟨g, hfg⟩, rfl⟩, e ▸ hall _ hfg x⟩⟩
 
 end CoMonotoneFixpoint
 

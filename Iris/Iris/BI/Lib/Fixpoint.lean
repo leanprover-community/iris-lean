@@ -6,6 +6,7 @@ Authors: Lars König, Markus de Medeiros
 module
 
 public import Iris.BI
+public import Iris.BI.Lib.Lattice
 public import Iris.ProofMode
 
 @[expose] public section
@@ -364,5 +365,47 @@ theorem greatest_fixpoint_coind [_HF : NonExpansive F] :
 end Coind
 
 end GreatestFixpoint
+
+/-! ## Comparison with `ifix` and `icofix`
+
+`Iris.BI.Lib.Lattice` defines the least and greatest fixpoints of a body that is monotone on all
+predicates, not just non-expansive ones. When a body is monotone in both senses, the fixpoints
+agree: each is a (pre/post)fixpoint of the body, and the one from the lattice is non-expansive. -/
+
+section Comparison
+
+variable [BI PROP] [OFE A] {F : (A → PROP) → (A → PROP)} [BIMonoPred F]
+
+open MonotoneFixpoint in
+theorem lfp_eq_bi_least_fixpoint (h : BIMono F) : lfp F h = bi_least_fixpoint F := by
+  have : NonExpansive (lfp F h) := fix_ne h fun _ _ => by infer_instance
+  funext x
+  refine BIBase.BiEntails.to_eq ⟨?_, ?_⟩
+  · revert x
+    iapply (fix_iter h (bi_least_fixpoint F))
+    iintro !> %y Hy
+    iapply least_fixpoint_unfold_mpr F $$ Hy
+  · iintro H
+    iapply H $$ %(Hom.mk (lfp F h) this)
+    iintro !> %y Hy
+    iapply fix_unfold_mpr h y $$ Hy
+
+open CoMonotoneFixpoint in
+theorem gfp_eq_bi_greatest_fixpoint (h : BIMono F) : gfp F h = bi_greatest_fixpoint F := by
+  have : NonExpansive (gfp F h) := fix_ne h fun _ _ => by infer_instance
+  funext x
+  refine BIBase.BiEntails.to_eq ⟨?_, ?_⟩
+  · iintro H
+    iexists Hom.mk (gfp F h) this
+    isplitr
+    · iintro !> %y Hy
+      iapply fix_unfold_mp h y $$ Hy
+    · iexact H
+  · revert x
+    iapply (fix_coiter h (bi_greatest_fixpoint F))
+    iintro !> %y Hy
+    iapply greatest_fixpoint_unfold_mp F $$ Hy
+
+end Comparison
 
 end Iris

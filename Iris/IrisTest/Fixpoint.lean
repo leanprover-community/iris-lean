@@ -82,7 +82,7 @@ monotone_by imono
 
 example (x y : α) :
     implicitSwap (PROP := PROP) (x := x) (y := y) = implicitSwap (x := y) (y := x) := by
-  rw [implicitSwap.unfold]; rfl
+  rw [implicitSwap.unfold]
 
 -- The recursive function is passed partially applied; the fixed parameter is not a prefix.
 icofix partialSwap (x : α) (setting : Bool) (y : α) : PROP :=
@@ -168,10 +168,8 @@ example (n : Nat) : even (PROP := PROP) n ⊢ ⌜n % 2 = 0⌝ := by
     icases H with ⟨%hm, -⟩
     ipureintro; omega
 
--- Persistence follows from closure conditions on the body.
-example (n : Nat) : Persistent (even (PROP := PROP) n) :=
-  even.persistent_absorbing (fun _ _ _ => by unfold even.pre; infer_instance)
-    (fun _ _ _ => by unfold even.pre; infer_instance) n
+-- Persistence follows from closure conditions on the body, found by instance search.
+example (n : Nat) : Persistent (even (PROP := PROP) n) := inferInstance
 
 icofix stream (P : PROP) : PROP := iprop(P ∗ ▷ stream P)
 
@@ -203,6 +201,62 @@ example : ⊢ (□ ∀ b n, parity.pre (fun b n => parity (PROP := PROP) b n) b 
   parity.iter _
 end
 
+/-! The rest of the generated lemmas. -/
+section
+variable [BI PROP]
+
+ifix nat (n : Nat) : PROP := iprop(⌜n = 0⌝ ∨ ∃ m, ⌜n = m + 1⌝ ∗ nat m)
+ifix nat' (n : Nat) : PROP := iprop(⌜n = 0⌝ ∨ ∃ m, ⌜n = m + 1⌝ ∗ nat' m)
+
+example (n : Nat) : nat (PROP := PROP) n ⊢ nat.pre nat n := nat.unfold_mp n
+example (n : Nat) : nat.pre nat n ⊢ nat (PROP := PROP) n := nat.unfold_mpr n
+
+-- Well-founded induction, with `nat` itself as the prefixpoint.
+example (Φ : Nat → PROP) : ⊢ (□ ∀ n, nat.pre nat n -∗ Φ n) -∗ ∀ n, nat n -∗ Φ n :=
+  nat.ind_wf Φ nat fun n => and_elim_r.trans (nat.unfold_mpr n)
+
+-- Monotonicity in the body compares two fixpoints.
+example (n : Nat) : nat (PROP := PROP) n ⊢ nat' n := by
+  iintro H
+  iapply (nat.strong_mono nat'.pre nat' nat'.unfold_mpr) $$ [] %n H
+  iintro !> %Φ %m HΦ
+  iexact HΦ
+
+example (n : Nat) : Absorbing (nat (PROP := PROP) n) := inferInstance
+
+example [BIAffine PROP] (n : Nat) : Affine (nat (PROP := PROP) n) := inferInstance
+
+example (n : Nat) : Persistent (nat (PROP := PROP) n) := inferInstance
+
+-- `eq_lfp` relates `nat` to the library's least fixpoint.
+open MonotoneFixpoint in
+example : ∃ h, nat (PROP := PROP) = lfp nat.pre h := ⟨_, nat.eq_lfp⟩
+
+-- Parameterized coinduction, with `stream` itself as the postfixpoint.
+example (P Φ : PROP) : ⊢ □ (Φ -∗ stream.pre P (stream P)) -∗ Φ -∗ stream P :=
+  stream.paco P Φ (stream P) ((stream.unfold_mp P).trans or_intro_r)
+
+-- Varying parameters whose types depend on each other are packed into a dependent tuple.
+ifix vec (n : Nat) (v : Fin n → Nat) : PROP :=
+  iprop(⌜∀ i, v i = 0⌝ ∨ ∃ m, ∃ w : Fin m → Nat, ⌜n = m + 1⌝ ∗ vec m w)
+
+example (Φ : (n : Nat) → (Fin n → Nat) → PROP) :
+    ⊢ (□ ∀ n v, vec.pre Φ n v -∗ Φ n v) -∗ ∀ n v, vec n v -∗ Φ n v :=
+  vec.iter Φ
+end
+
+-- `ne` is generated when the varying parameters have OFEs.
+section
+variable [BI PROP]
+
+ifix swapNe [OFE α] (x y : α) : PROP := iprop(▷ swapNe y x)
+
+example [OFE α] (n : Nat) (x y x' y' : α) (h : x ≡{n}≡ x' ∧ y ≡{n}≡ y') :
+    swapNe (PROP := PROP) x y ≡{n}≡ swapNe x' y' := by
+  refine swapNe.ne (fun Φ hΦ n x y x' y' h => ?_) n x y x' y' h
+  exact later_ne.ne (hΦ n y x y' x' ⟨h.2, h.1⟩)
+end
+
 run_cmd do
   let info ← Lean.getConstInfo `IrisTest.Fixpoint.lifted.pre
   unless info.levelParams.contains `w do
@@ -211,9 +265,11 @@ run_cmd do
 -- The environment used to elaborate recursion must not contribute axioms or sorry proofs.
 run_cmd do
   for decl in #[`zero, `indexed, `constant, `unchanged, `passed, `qualified, `passedPair, `both,
-      `implicitSwap, `partialSwap, `sectionRec, `lifted, `inferredSwap, `even, `stream, `parity] do
-    for suffix in #[Lean.Name.anonymous, `pre, `pre_mono, `unfold, `iter, `ind, `ind_wf,
-        `coiter, `coind, `paco, `strong_mono, `persistent_absorbing] do
+      `implicitSwap, `partialSwap, `sectionRec, `lifted, `inferredSwap, `even, `stream, `parity,
+      `nat, `nat', `vec, `swapNe] do
+    for suffix in #[Lean.Name.anonymous, `pre, `pre_mono, `unfold, `unfold_mp, `unfold_mpr,
+        `eq_lfp, `eq_gfp, `iter, `ind, `ind_wf, `coiter, `coind, `paco, `strong_mono, `affine,
+        `absorbing, `persistent_affine, `persistent_absorbing, `ne] do
       let name := `IrisTest.Fixpoint ++ decl ++ suffix
       unless (← Lean.getEnv).contains name do continue
       for axiomName in (← Lean.collectAxioms name) do

@@ -4591,15 +4591,24 @@ example (l : List α) : BIMono (PROP := PROP) (fun (Φ : α → PROP) x =>
     iprop(▷^[2] Φ x ∗ ([∧list] y ∈ l, Φ y) ∗ [∨list] y ∈ l, Φ y)) := by
   imono
 
+private def tuplePre (wp : Nat × Bool → PROP) : Nat × Bool → PROP
+  | (n, b) => iprop(wp (n, !b) ∗ wp (n + 1, b))
+
+/-- Tests `imono` on a body that matches on a tuple argument. -/
+example : BIMono (PROP := PROP) tuplePre := by imono
+
+/-- Tests `imono` on telescopic quantifiers. -/
+example {TT : Iris.Std.Tele} : BIMono (PROP := PROP) (fun (Φ : TT.Arg → PROP) _ =>
+    iprop(BI.texist (fun y => Φ y) ∗ BI.tforall (fun z => Φ z))) := by
+  imono
+
 /-- Tests `imono` on a doubly negative occurrence. -/
 example : BIMono (PROP := PROP) (fun (Φ : α → PROP) x => iprop((Φ x -∗ False) -∗ False)) := by
   imono
 
-/-- Tests that `imono` fails on a negative occurrence. -/
-example : True := by
-  fail_if_success
-    have : BIMono (PROP := PROP) (fun (Φ : α → PROP) x => iprop(Φ x -∗ Φ x)) := by imono
-  trivial
+-- Tests that `imono` fails on a negative occurrence.
+#guard_msgs (drop error) in
+example : BIMono (PROP := PROP) (fun (Φ : α → PROP) x => iprop(Φ x -∗ Φ x)) := by imono
 
 end imono
 end IrisTest
