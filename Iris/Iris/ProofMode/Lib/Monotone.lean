@@ -45,7 +45,9 @@ meta partial def imonoGoal (rules : List Sym.BackwardRule) (goal : MVarId) : Tac
     let_expr IMonoPred _ _ _ P _ := ← instantiateMVars (← goal.getType)
       | throwError "imono: unexpected goal{goal}"
     let .const fn _ := P.cleanupAnnotations.getAppFn
-      | evalTactic (← `(tactic| ((repeat (apply IMonoPred.spec)); exact IMonoPred.call)))
+      | evalTactic (← `(tactic| first
+          | ((repeat (apply IMonoPred.spec)); exact IMonoPred.call)
+          | fail "imono: not monotone, or not covered by an @[imono] rule"))
     if (← getProjectionFnInfo? fn).isSome then throwError "imono: no rule for {fn}"
     let step ← if ← isMatcher fn then `(tactic| split) else `(tactic| unfold $(mkIdent fn):ident)
     evalTactic step

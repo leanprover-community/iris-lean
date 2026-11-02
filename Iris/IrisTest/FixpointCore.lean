@@ -137,6 +137,14 @@ contractive_by
 
 example (b : Bool) : flip b = iprop(▷ flip (!b) -∗ False) := flip.unfold b
 
+-- Guarded fixpoints need a COFE with a default point.
+/--
+error: iguarded: the type of `notCOFE` must be a COFE with a default point, but there is no `IsCOFE` instance
+-/
+#guard_msgs in
+iguarded notCOFE (n : Nat) : Nat := notCOFE n
+contractive_by sorry
+
 -- A guarded fixpoint is the Banach fixpoint, so the `FixpointBanach` lemmas apply.
 example (b : Bool) : flip b = fixpoint flip.pre b := flip.eq_fixpoint b
 example (x : Unit) : Persistent (annotated x) := by
