@@ -11,12 +11,9 @@ import all Init.Internal.Order.Basic
 
 /-! # Lattice-based Iris Fixpoints
 
-Two orders on `PROP` let `partial_fixpoint` define Iris fixpoints: entailment gives least
-fixpoints, and reverse entailment gives greatest ones. Predicates `A → PROP` are ordered pointwise,
-so a `BIMono` body is monotone, and its fixpoint satisfies Iris (co)induction.
-
-`partial_fixpoint` defines a function of several arguments on its curried type. `fix_iso` moves
-the fixpoint across currying, or any other order isomorphism. -/
+Entailment (`MonotoneFixpoint`) and reverse entailment (`CoMonotoneFixpoint`) make `PROP` a CCPO,
+so `partial_fixpoint` defines least and greatest fixpoints of `BIMono` bodies, which satisfy Iris
+(co)induction. -/
 
 @[expose] public section
 
@@ -48,8 +45,7 @@ theorem bimono_def {F : (A → PROP) → A → PROP} :
 
 end Tuples
 
-/-! When the predicates in a chain are non-expansive, so is their sup. -/
-
+/-- A chain of predicates that respect `R` gives related sets of values at related points. -/
 theorem sup_ne {R : Nat → A → A → Prop} {c : (A → PROP) → Prop}
     (hall : ∀ f, c f → ∀ n x y, R n x y → f x ≡{n}≡ f y) {n : Nat} {x y : A} (hxy : R n x y) :
     liftRel (· ≡{n}≡ ·) (fun P => ∃ f, c f ∧ f x = P) (fun P => ∃ f, c f ∧ f y = P) :=
@@ -64,11 +60,8 @@ scoped instance instPartialOrderMonoProp : PartialOrder PROP where
   rel_trans := .trans
   rel_antisymm := (equiv_iff.mpr ⟨·, ·⟩)
 
-theorem sExists_is_sup (c : PROP → Prop) :
-      is_sup c (sExists c) := by
-    refine fun x => ⟨fun h y hy => ?_, fun h => ?_⟩
-    · exact (sExists_intro hy).trans h
-    · exact sExists_elim h
+theorem sExists_is_sup (c : PROP → Prop) : is_sup c (sExists c) :=
+  fun _ => ⟨fun h _ hy => (sExists_intro hy).trans h, sExists_elim⟩
 
 scoped instance instCCPOMonoProp : CCPO PROP where
   has_csup {c} _ := ⟨_, sExists_is_sup c⟩
@@ -100,7 +93,8 @@ theorem fix_unfold_mpr (x : A) : F (lfp F h) x ⊢ lfp F h x :=
 theorem fix_iter (Φ : A → PROP) : ⊢ □ (∀ x, F Φ x -∗ Φ x) -∗ ∀ x, lfp F h x -∗ Φ x := by
   suffices hfix : iprop(□ (∀ x, F Φ x -∗ Φ x)) ⊢ ∀ x, lfp F h x -∗ Φ x by
     iintro #H; iapply hfix; iexact H
-  refine fix_induct _ (fun (f : A → PROP) => iprop(□ (∀ x, F Φ x -∗ Φ x)) ⊢ ∀ x, f x -∗ Φ x) ?_ fun f ih => ?_
+  refine fix_induct _ (fun (f : A → PROP) => iprop(□ (∀ x, F Φ x -∗ Φ x)) ⊢ ∀ x, f x -∗ Φ x) ?_
+    fun f ih => ?_
   · intro c hc hall
     refine forall_intro fun x => wand_intro <| sep_symm.trans <| wand_elim ?_
     exact csup_apply_le hc x fun f hf => wand_intro <| sep_symm.trans <|
@@ -111,7 +105,7 @@ theorem fix_iter (Φ : A → PROP) : ⊢ □ (∀ x, F Φ x -∗ Φ x) -∗ ∀ 
     iintro !>
     iapply ih $$ H
 
-/-- Strong induction: the induction hypothesis also knows that the fixpoint holds. -/
+/-- Strong induction: the hypothesis also gets the fixpoint. -/
 theorem fix_ind (Φ : A → PROP) :
     ⊢ □ (∀ x, F (fun y => iprop(Φ y ∧ lfp F h y)) x -∗ Φ x) -∗ ∀ x, lfp F h x -∗ Φ x := by
   iintro #HM %x Hx
@@ -126,8 +120,7 @@ theorem fix_ind (Φ : A → PROP) :
     icases Hz with ⟨-, Hz⟩
     iexact Hz
 
-/-- Well-founded induction: the hypothesis sees a prefixpoint `W` of `fun Ψ x => Φ x ∧ F Ψ x`,
-such as its least fixpoint. -/
+/-- Well-founded induction, for a prefixpoint `W` of `fun Ψ x => Φ x ∧ F Ψ x`. -/
 theorem fix_ind_wf (Φ W : A → PROP) (hW : ∀ x, iprop(Φ x ∧ F W x) ⊢ W x) :
     ⊢ □ (∀ x, F W x -∗ Φ x) -∗ ∀ x, lfp F h x -∗ Φ x := by
   iintro #HM %x Hx
@@ -142,8 +135,7 @@ theorem fix_ind_wf (Φ W : A → PROP) (hW : ∀ x, iprop(Φ x ∧ F W x) ⊢ W 
     · iexact Hy
   · iapply fix_unfold_mp h x $$ Hx
 
-/-- Monotonicity in the body: the least fixpoint is below every prefixpoint `g` of a larger body
-`G`, such as its least fixpoint. -/
+/-- The least fixpoint is below every prefixpoint `g` of a larger body `G`. -/
 theorem fix_strong_mono (G : (A → PROP) → A → PROP) (g : A → PROP) (hg : ∀ x, G g x ⊢ g x) :
     ⊢ □ (∀ Φ x, F Φ x -∗ G Φ x) -∗ ∀ x, lfp F h x -∗ g x := by
   iintro #H
@@ -152,7 +144,7 @@ theorem fix_strong_mono (G : (A → PROP) → A → PROP) (g : A → PROP) (hg :
   iapply hg
   iapply H $$ %g %x Hx
 
-/-- The least fixpoint is affine when the body is, at `fun _ => emp`. -/
+/-- Affine if the body is, at `fun _ => emp`. -/
 instance fix_affine [∀ x, Affine (F (fun _ => iprop(emp)) x)] (x : A) : Affine (lfp F h x) := by
   constructor
   revert x
@@ -160,7 +152,7 @@ instance fix_affine [∀ x, Affine (F (fun _ => iprop(emp)) x)] (x : A) : Affine
   iintro !> %y Hy
   iapply Affine.affine $$ Hy
 
-/-- The least fixpoint is absorbing when the body is, at `fun y => True -∗ lfp F h y`. -/
+/-- Absorbing if the body is, at `fun y => True -∗ lfp F h y`. -/
 instance fix_absorbing [∀ x, Absorbing (F (fun y => iprop(True -∗ lfp F h y)) x)] (x : A) :
     Absorbing (lfp F h x) := by
   constructor
@@ -177,8 +169,7 @@ instance fix_absorbing [∀ x, Absorbing (F (fun y => iprop(True -∗ lfp F h y)
   · iclear HT
     iexact HF
 
-/-- The least fixpoint is persistent when the body is affine and persistent, at
-`fun y => □ lfp F h y`. -/
+/-- Persistent if the body is affine and persistent, at `fun y => □ lfp F h y`. -/
 instance fix_persistent_affine [∀ x, Affine (F (fun y => iprop(□ lfp F h y)) x)]
     [∀ x, Persistent (F (fun y => iprop(□ lfp F h y)) x)] (x : A) : Persistent (lfp F h x) := by
   constructor
@@ -191,8 +182,7 @@ instance fix_persistent_affine [∀ x, Affine (F (fun y => iprop(□ lfp F h y))
   iintro !> %z #Hz
   iexact Hz
 
-/-- The least fixpoint is persistent when it is absorbing, and the body is persistent at
-`fun y => <pers> lfp F h y`. -/
+/-- Persistent if absorbing and the body is persistent at `fun y => <pers> lfp F h y`. -/
 instance fix_persistent_absorbing [∀ x, Absorbing (lfp F h x)]
     [∀ x, Persistent (F (fun y => iprop(<pers> lfp F h y)) x)] (x : A) :
     Persistent (lfp F h x) := by
@@ -205,8 +195,7 @@ instance fix_persistent_absorbing [∀ x, Absorbing (lfp F h x)]
   iintro !> %z #Hz
   iexact Hz
 
-/-- The least fixpoint respects any family of relations `R n` on the arguments that `F`
-respects, such as the step-indexed equality of an OFE. -/
+/-- The least fixpoint respects any relations `R n` that `F` respects, such as `≡{n}≡`. -/
 theorem fix_ne_rel (R : Nat → A → A → Prop)
     (hF : ∀ Φ : A → PROP, (∀ n x y, R n x y → Φ x ≡{n}≡ Φ y) →
       ∀ n x y, R n x y → F Φ x ≡{n}≡ F Φ y) :
@@ -216,20 +205,20 @@ theorem fix_ne_rel (R : Nat → A → A → Prop)
   rw [csup_apply_eq hc sExists_is_sup, csup_apply_eq hc sExists_is_sup]
   exact sExists_ne (sup_ne hall hxy)
 
-/-- The least fixpoint is non-expansive when `F` preserves non-expansiveness. -/
+/-- Non-expansive if `F` preserves non-expansiveness. -/
 theorem fix_ne [OFE A] (hF : ∀ Φ : A → PROP, NonExpansive Φ → NonExpansive (F Φ)) :
     NonExpansive (lfp F h) :=
-  ⟨fun _ _ _ => fix_ne_rel h (fun n x y => x ≡{n}≡ y) (fun Φ hΦ _ _ _ h => (hF Φ ⟨fun _ _ _ => hΦ _ _ _⟩).ne h) _ _ _⟩
+  ⟨fun _ _ _ => fix_ne_rel h (fun n x y => x ≡{n}≡ y)
+    (fun Φ hΦ _ _ _ h => (hF Φ ⟨fun _ _ _ => hΦ _ _ _⟩).ne h) _ _ _⟩
 
-/-- The least fixpoint is non-expansive in its body, for a body `F₂` that preserves step-indexed
-equality. -/
+/-- Non-expansive in the body, if `F₂` preserves pointwise `≡{n}≡`. -/
 theorem fix_ne_outer {F₁ F₂ : (A → PROP) → A → PROP} (h₁ : BIMono F₁) (h₂ : BIMono F₂) {n : Nat}
     (hF₂ : ∀ Φ Ψ : A → PROP, (∀ x, Φ x ≡{n}≡ Ψ x) → ∀ x, F₂ Φ x ≡{n}≡ F₂ Ψ x)
     (hF : ∀ Φ x, F₁ Φ x ≡{n}≡ F₂ Φ x) (x : A) : lfp F₁ h₁ x ≡{n}≡ lfp F₂ h₂ x := by
   have hFG : monotone fun p : (A → PROP) ×' (A → PROP) => (⟨F₁ p.1, F₂ p.2⟩ : _ ×' _) :=
     fun _ _ hpq => show _ ∧ _ from ⟨monotone_of_bimono h₁ _ _ (show _ ∧ _ from hpq).1,
       monotone_of_bimono h₂ _ _ (show _ ∧ _ from hpq).2⟩
-  -- Both fixpoints at once, as the fixpoint of the pair.
+  -- Induct on the fixpoint of the pair.
   suffices ∀ x, (fix _ hFG).1 x ≡{n}≡ (fix _ hFG).2 x by
     rw [fix_pprod (monotone_of_bimono h₁) (monotone_of_bimono h₂) hFG] at this
     exact this x
@@ -252,11 +241,8 @@ scoped instance instPartialOrderAntiProp : PartialOrder PROP where
   rel_trans h1 h2 := h2.trans h1
   rel_antisymm h1 h2 := equiv_iff.mpr ⟨h2, h1⟩
 
-theorem sForall_is_sup (c : PROP → Prop) :
-      is_sup c (sForall c) := by
-    refine fun x => ⟨fun h y hy => ?_, fun h => ?_⟩
-    · exact h.trans (sForall_elim hy)
-    · exact sForall_intro h
+theorem sForall_is_sup (c : PROP → Prop) : is_sup c (sForall c) :=
+  fun _ => ⟨fun h _ hy => h.trans (sForall_elim hy), sForall_intro⟩
 
 scoped instance instCCPOAntiProp : CCPO PROP where
   has_csup {c} _ := ⟨_, sForall_is_sup c⟩
@@ -288,7 +274,8 @@ theorem fix_unfold_mpr (x : A) : F (gfp F h) x ⊢ gfp F h x :=
 theorem fix_coiter (Φ : A → PROP) : ⊢ □ (∀ x, Φ x -∗ F Φ x) -∗ ∀ x, Φ x -∗ gfp F h x := by
   suffices hfix : iprop(□ (∀ x, Φ x -∗ F Φ x)) ⊢ ∀ x, Φ x -∗ gfp F h x by
     iintro #H; iapply hfix; iexact H
-  refine fix_induct _ (fun (f : A → PROP) => iprop(□ (∀ x, Φ x -∗ F Φ x)) ⊢ ∀ x, Φ x -∗ f x) ?_ fun f ih => ?_
+  refine fix_induct _ (fun (f : A → PROP) => iprop(□ (∀ x, Φ x -∗ F Φ x)) ⊢ ∀ x, Φ x -∗ f x) ?_
+    fun f ih => ?_
   · intro c hc hall
     refine forall_intro fun x => wand_intro ?_
     exact csup_apply_le hc x fun f hf =>
@@ -299,7 +286,7 @@ theorem fix_coiter (Φ : A → PROP) : ⊢ □ (∀ x, Φ x -∗ F Φ x) -∗ �
       iapply ih $$ H
     · iapply H $$ %x HΦ
 
-/-- Strong coinduction: the coinduction hypothesis may also conclude the fixpoint itself. -/
+/-- Strong coinduction: the hypothesis may also conclude the fixpoint. -/
 theorem fix_coind (Φ : A → PROP) :
     ⊢ □ (∀ x, Φ x -∗ F (fun y => iprop(Φ y ∨ gfp F h y)) x) -∗ ∀ x, Φ x -∗ gfp F h x := by
   iintro #HM %x HΦ
@@ -314,8 +301,7 @@ theorem fix_coind (Φ : A → PROP) :
   · ileft
     iexact HΦ
 
-/-- Parameterized coinduction: the hypothesis may conclude a postfixpoint `W` of
-`fun Ψ x => Φ x ∨ F Ψ x`, such as its greatest fixpoint. -/
+/-- Parameterized coinduction, for a postfixpoint `W` of `fun Ψ x => Φ x ∨ F Ψ x`. -/
 theorem fix_paco (Φ W : A → PROP) (hW : ∀ x, W x ⊢ iprop(Φ x ∨ F W x)) :
     ⊢ □ (∀ x, Φ x -∗ F W x) -∗ ∀ x, Φ x -∗ gfp F h x := by
   iintro #HM %x HΦ
@@ -331,8 +317,7 @@ theorem fix_paco (Φ W : A → PROP) (hW : ∀ x, W x ⊢ iprop(Φ x ∨ F W x))
     · iexact H
   · iapply HM $$ %x HΦ
 
-/-- Monotonicity in the body: every postfixpoint `g` of a smaller body `G`, such as its greatest
-fixpoint, is below the greatest fixpoint. -/
+/-- Every postfixpoint `g` of a smaller body `G` is below the greatest fixpoint. -/
 theorem fix_strong_mono (G : (A → PROP) → A → PROP) (g : A → PROP) (hg : ∀ x, g x ⊢ G g x) :
     ⊢ □ (∀ Φ x, G Φ x -∗ F Φ x) -∗ ∀ x, g x -∗ gfp F h x := by
   iintro #H
@@ -341,7 +326,7 @@ theorem fix_strong_mono (G : (A → PROP) → A → PROP) (g : A → PROP) (hg :
   iapply H
   iapply hg $$ Hx
 
-/-- The greatest fixpoint is absorbing when the body is, at `fun y => <absorb> gfp F h y`. -/
+/-- Absorbing if the body is, at `fun y => <absorb> gfp F h y`. -/
 instance fix_absorbing [∀ x, Absorbing (F (fun y => iprop(<absorb> gfp F h y)) x)] (x : A) :
     Absorbing (gfp F h x) := by
   constructor
@@ -354,8 +339,7 @@ instance fix_absorbing [∀ x, Absorbing (F (fun y => iprop(<absorb> gfp F h y))
     iexact Hz
   · iapply fix_unfold_mp h y $$ HG
 
-/-- The greatest fixpoint respects any family of relations `R n` on the arguments that `F`
-respects, such as the step-indexed equality of an OFE. -/
+/-- The greatest fixpoint respects any relations `R n` that `F` respects, such as `≡{n}≡`. -/
 theorem fix_ne_rel (R : Nat → A → A → Prop)
     (hF : ∀ Φ : A → PROP, (∀ n x y, R n x y → Φ x ≡{n}≡ Φ y) →
       ∀ n x y, R n x y → F Φ x ≡{n}≡ F Φ y) :
@@ -365,20 +349,20 @@ theorem fix_ne_rel (R : Nat → A → A → Prop)
   rw [csup_apply_eq hc sForall_is_sup, csup_apply_eq hc sForall_is_sup]
   exact sForall_ne (sup_ne hall hxy)
 
-/-- The greatest fixpoint is non-expansive when `F` preserves non-expansiveness. -/
+/-- Non-expansive if `F` preserves non-expansiveness. -/
 theorem fix_ne [OFE A] (hF : ∀ Φ : A → PROP, NonExpansive Φ → NonExpansive (F Φ)) :
     NonExpansive (gfp F h) :=
-  ⟨fun _ _ _ => fix_ne_rel h (fun n x y => x ≡{n}≡ y) (fun Φ hΦ _ _ _ h => (hF Φ ⟨fun _ _ _ => hΦ _ _ _⟩).ne h) _ _ _⟩
+  ⟨fun _ _ _ => fix_ne_rel h (fun n x y => x ≡{n}≡ y)
+    (fun Φ hΦ _ _ _ h => (hF Φ ⟨fun _ _ _ => hΦ _ _ _⟩).ne h) _ _ _⟩
 
-/-- The greatest fixpoint is non-expansive in its body, for a body `F₂` that preserves step-indexed
-equality. -/
+/-- Non-expansive in the body, if `F₂` preserves pointwise `≡{n}≡`. -/
 theorem fix_ne_outer {F₁ F₂ : (A → PROP) → A → PROP} (h₁ : BIMono F₁) (h₂ : BIMono F₂) {n : Nat}
     (hF₂ : ∀ Φ Ψ : A → PROP, (∀ x, Φ x ≡{n}≡ Ψ x) → ∀ x, F₂ Φ x ≡{n}≡ F₂ Ψ x)
     (hF : ∀ Φ x, F₁ Φ x ≡{n}≡ F₂ Φ x) (x : A) : gfp F₁ h₁ x ≡{n}≡ gfp F₂ h₂ x := by
   have hFG : monotone fun p : (A → PROP) ×' (A → PROP) => (⟨F₁ p.1, F₂ p.2⟩ : _ ×' _) :=
     fun _ _ hpq => show _ ∧ _ from ⟨monotone_of_bimono h₁ _ _ (show _ ∧ _ from hpq).1,
       monotone_of_bimono h₂ _ _ (show _ ∧ _ from hpq).2⟩
-  -- Both fixpoints at once, as the fixpoint of the pair.
+  -- Induct on the fixpoint of the pair.
   suffices ∀ x, (fix _ hFG).1 x ≡{n}≡ (fix _ hFG).2 x by
     rw [fix_pprod (monotone_of_bimono h₁) (monotone_of_bimono h₂) hFG] at this
     exact this x

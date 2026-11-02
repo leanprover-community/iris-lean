@@ -9,29 +9,26 @@ public import Iris.BI.Lib.Lattice
 
 /-! # Tuples of arguments
 
-The library states fixpoints on predicates `A → PROP` of one argument. `partial_fixpoint` defines
-them on the curried type `∀ x y, PROP` of the varying parameters. A `Tupling` packs the varying
-parameters into one tuple `⟨x, y⟩ : A`, a nest of `PSigma`s, and translates between the two:
-lemmas are applied on tuples, then their statements are curried back. -/
+The library states fixpoints for predicates `A → PROP`; `partial_fixpoint` works on the curried
+`∀ x y, PROP`. A `Tupling` packs the parameters into a `PSigma` tuple `⟨x, y⟩ : A`: lemmas are
+applied on tuples, then their statements are curried back. -/
 
 public section
 
 namespace Iris.Fixpoint
 open Lean Elab Command Meta Term BI
 
-/-- Reduce `(fun x => e) a`, `⟨a, b⟩.1` and `fun x y => Φ x y` everywhere, for readable
-statements. -/
+/-- Reduce `(fun x => e) a`, `⟨a, b⟩.1` and `fun x y => Φ x y` everywhere. -/
 meta def betaEta (e : Expr) : MetaM Expr :=
   Core.transform e (post := fun e => do
-    -- A beta step may expose new redexes, such as `⟨a, b⟩.1`: visit the result again.
+    -- A beta step may expose new redexes: visit the result again.
     if e.isHeadBetaTarget then return .visit e.headBeta
     if (e.isAppOfArity ``PSigma.fst 3 || e.isAppOfArity ``PSigma.snd 3) &&
         e.appArg!.isAppOfArity ``PSigma.mk 4 then
       return .visit (e.appArg!.getArg! (if e.isAppOf ``PSigma.fst then 2 else 3))
     return .done e.eta)
 
-/-- The type of tuples of the parameters of `∀ xs, PROP`: `PUnit`, the single parameter's type, or
-a nest of `PSigma`s. -/
+/-- The tuples of the parameters of `∀ xs, PROP`: `PUnit`, the single type, or nested `PSigma`s. -/
 meta partial def tupleType : Expr → MetaM Expr
   | .forallE n d b bi => do
     unless b.isForall do return d
@@ -56,9 +53,8 @@ meta partial def mkProjs : Expr → Expr → MetaM (Array Expr)
     return #[x] ++ (← mkProjs (b.instantiate1 x) (← mkAppM ``PSigma.snd #[p]))
   | _, _ => return #[]
 
-/-- `(∀ p, P p) = ∀ xs, P ⟨xs⟩` for tuples `p` of the parameters of `∀ xs, PROP`, in `Prop` and in
-the BI: they split quantifiers over tuples, and only those, into quantifiers over the parameters,
-under the parameters' names. Proved by splitting both sides with `forall_psigma`. -/
+/-- `(∀ p, P p) = ∀ xs, P ⟨xs⟩`, in `Prop` and in the BI, keeping the parameters' names. Proved
+by normalizing both sides with `forall_psigma`. -/
 meta def splitForall (curried prop A : Expr) : MetaM (Array Expr) := do
   let generic ← [``forall_psigma, ``forall_punit, ``bi_forall_psigma, ``bi_forall_punit].foldlM
     (·.addConst ·) ({} : SimpTheorems)
@@ -86,8 +82,7 @@ meta def pointwiseRfl (dom : Expr) (f g : Expr → MetaM Expr) : MetaM Expr :=
     let fa ← f a
     mkLambdaFVars #[a] (← mkExpectedTypeHint (← mkEqRefl fa) (← mkEq fa (← g a)))
 
-/-- Cast `proof` along `eq? : a = b`, forwards or backwards; `none` means they are equal by
-definition. -/
+/-- Cast `proof` along `eq? : a = b`, either way; `none` means definitionally equal. -/
 meta def castAlong (eq? : Option Expr) (proof : Expr) (forward : Bool) : MetaM Expr :=
   match eq? with
   | none => pure proof
@@ -155,8 +150,7 @@ meta def uncurryCurry (T : Tupling) : MetaM Expr := do
   let predTy ← mkArrow T.A T.prop
   pointwiseRfl predTy (fun Φ => pure (T.uncurry.beta #[T.curry.beta #[Φ]])) pure
 
-/-- `F` is monotone, from `BIMono (conj F)`: `monotone_conj … (monotone_of_bimono hG) _`. The proof
-`bimonoOf?` reads `hG` back off this shape. -/
+/-- `monotone F`, from `hG : BIMono (conj F)`. `bimonoOf?` reads `hG` back off this shape. -/
 meta def monotone (T : Tupling) (least : Bool) (F hG : Expr) : MetaM Expr := do
   let ofBimono := if least then ``MonotoneFixpoint.monotone_of_bimono
     else ``CoMonotoneFixpoint.monotone_of_bimono
@@ -166,8 +160,7 @@ meta def monotone (T : Tupling) (least : Bool) (F hG : Expr) : MetaM Expr := do
   mkAppOptM ``monotone_conj #[T.curried, ← mkArrow T.A T.prop, none, none, F, G, T.uncurry,
     T.curry, ← T.monoUncurry, ← T.monoCurry, ← mkAppM ofBimono #[hG], hcomm]
 
-/-- `conj` as a map from curried functionals to functionals on predicates on tuples, its inverse,
-and `∀ G, conj (unconj G) = G`, by `rfl`. -/
+/-- `conj` as a map, its inverse `unconj`, and `∀ G, conj (unconj G) = G`, by `rfl`. -/
 meta def conjIso (T : Tupling) : MetaM (Expr × Expr × Expr) := do
   let predTy ← mkArrow T.A T.prop
   let conjMap ← withLocalDeclD `G (← mkArrow T.curried T.curried) fun G => do
@@ -179,9 +172,8 @@ meta def conjIso (T : Tupling) : MetaM (Expr × Expr × Expr) := do
     (fun G => pure (conjMap.beta #[unconjMap.beta #[G]])) pure
   return (conjMap, unconjMap, h)
 
-/-- The `Tupling` of the curried type `∀ xs, PROP`. Its rewrites split quantifiers over tuples
-(`splitForall`), and turn quantifiers over predicates and functionals on tuples into quantifiers
-over curried ones (`forall_iso` along `uncurry` and `conj`). -/
+/-- The `Tupling` of `∀ xs, PROP`. Its rewrites split quantifiers over tuples (`splitForall`) and
+curry those over predicates and functionals (`forall_iso` along `uncurry` and `conj`). -/
 meta def ofCurried (curried : Expr) : MetaM Tupling := do
   let (prop, arity) ← forallTelescope curried fun xs r => pure (r, xs.size)
   let A ← tupleType curried
@@ -190,7 +182,7 @@ meta def ofCurried (curried : Expr) : MetaM Tupling := do
   let curry ← withLocalDeclD `Φ (← mkArrow A prop) fun Φ => forallTelescope curried fun xs _ => do
     mkLambdaFVars (#[Φ] ++ xs) (mkApp Φ (← mkTuple curried xs.toList))
   let T : Tupling := { curried, prop, A, arity, uncurry, curry, thms := {} }
-  -- With one parameter, the tuple is the parameter: there is nothing to rewrite.
+  -- With one parameter, the tuple is the parameter.
   if arity == 1 then return T
   let mut thms : SimpTheorems := {}
   for h in ← splitForall curried prop A do thms ← thms.add (.other `split_forall) #[] h
@@ -202,18 +194,16 @@ meta def ofCurried (curried : Expr) : MetaM Tupling := do
   thms ← thms.add (.other `forall_conj_iso) #[] (← mkAppM ``forall_iso #[conjMap, unconjMap, h])
   return { T with thms }
 
-/-- `type`, a statement about tuples and predicates on them, curried by its structure: a quantifier
-over tuples becomes quantifiers over the parameters, under the parameters' names, and a quantifier
-over a predicate or functional on tuples becomes one over a curried one, under its own name. With
-one parameter, the library's quantifiers over it only take its name. -/
+/-- `type`, curried by its structure: a quantifier over tuples becomes quantifiers over the
+parameters, under their names, and one over a predicate or functional on tuples becomes one over a
+curried one, under its own name. -/
 meta partial def curryBinders (T : Tupling) (type : Expr) : MetaM Expr := do
   let predTy ← mkArrow T.A T.prop
   let funcTy ← mkArrow predTy predTy
   let (conjMap, _, _) ← T.conjIso
   let params := T.curried.getForallBinderNames
   let arg? := if T.arity == 1 then params.head? else none
-  -- A library binder named like a parameter, such as `Φ` or `ne`'s `n`, is primed: the parameters
-  -- keep their names, and so do their primed copies, which name the second tuple in `ne`.
+  -- Library binders named like a parameter (or its primed copy, used by `ne`) are primed.
   let taken := params ++ params.map (·.appendAfter "'")
   let yield (n : Name) : Name := Id.run do
     let mut n := n
@@ -221,29 +211,28 @@ meta partial def curryBinders (T : Tupling) (type : Expr) : MetaM Expr := do
       unless taken.contains n do break
       n := n.appendAfter "'"
     return n
-  -- The binder `n : d` of a quantifier, curried: its new binders, and its value in their terms.
+  -- Curry the binder `n : d`: its new binders, and its value in their terms.
   let binder {α} (n : Name) (bi : BinderInfo) (d : Expr) (k : Array Expr → Expr → MetaM α) :
       MetaM α := do
-    -- With one parameter, its type may be that of other binders too, such as `ne`'s step index:
-    -- only the library's binders of points, `x` and `y`, take its name.
+    -- With one parameter, only the library's point binders `x` and `y` take its name: its type
+    -- may be that of others too, such as `ne`'s step index.
     if let some arg := arg? then
       let point := (n == `x || n == `y) && (← isDefEq d T.A)
       return ← withLocalDecl (if point then arg else yield n) bi d fun x => k #[x] x
-    -- Up to definitional equality: the library's copy of a type need not be the same term.
+    -- Up to defeq: the library's copy of a type need not be the same term.
     if ← isDefEq d T.A then
-      -- The new binders are as explicit as the library's binder, whatever the definition's are,
-      -- apart from instances.
+      -- The new binders take the library binder's info, except instances.
       forallTelescope T.curried fun xs _ => do
         let infos ← xs.mapM fun x => do
-          return (x.fvarId!, if (← x.fvarId!.getBinderInfo).isInstImplicit then .instImplicit else bi)
+          let inst := (← x.fvarId!.getBinderInfo).isInstImplicit
+          return (x.fvarId!, if inst then .instImplicit else bi)
         withNewBinderInfos infos do k xs (← mkTuple T.curried xs.toList)
     else if ← isDefEq d predTy then
       withLocalDecl (yield n) bi T.curried fun x => k #[x] (T.uncurry.beta #[x])
     else if ← isDefEq d funcTy then
       withLocalDecl (yield n) bi (← mkArrow T.curried T.curried) fun x => k #[x] (conjMap.beta #[x])
     else withLocalDecl (yield n) bi d fun x => k #[x] x
-  -- The type of a bound variable is left alone, apart from the rules above. That of an implication,
-  -- `p → q`, is a statement like any other.
+  -- Binder types are left alone, except an implication's premise, which is a statement.
   let rec go (e : Expr) : MetaM Expr := do
     match e with
     | .forallE n d b bi =>
@@ -263,11 +252,8 @@ meta partial def curryBinders (T : Tupling) (type : Expr) : MetaM Expr := do
     | e => return e
   go type
 
-/-- Rewrite a statement about predicates on tuples into curried form: quantifiers over tuples,
-and over predicates and functionals on them, become curried ones, with names as `curryBinders`
-gives them. Returns the curried statement, and its equation with the original (`none` if they are
-equal by definition). The statement is built by `curryBinders`, and proved by `simp` with the
-rewrites of `T`, whose result must agree with it. -/
+/-- The curried statement from `curryBinders`, and its equation with `type` (`none` if defeq),
+proved by `simp` with the rewrites of `T`. -/
 meta def curryStatement (T : Tupling) (type : Expr) : MetaM (Expr × Option Expr) := do
   let type ← Core.betaReduce type
   let curried ← betaEta (← T.curryBinders type)
@@ -278,16 +264,15 @@ meta def curryStatement (T : Tupling) (type : Expr) : MetaM (Expr × Option Expr
     throwError "curryStatement: {indentExpr curried}\nis not{indentExpr r.expr}"
   return (curried, ← r.proof?.mapM fun eq => do mkExpectedTypeHint eq (← mkEq type curried))
 
-/-- The statement of `general`, with the fixpoint `fixpoint` replaced by `name` along
-`eq : fixpoint = uncurry name`, and curried. Returns the statement and its proof. -/
+/-- The statement of `general`, with `fixpoint` replaced by `name` along
+`eq : fixpoint = uncurry name`, curried, and its proof. -/
 meta def restate (T : Tupling) (general fixpoint eq name : Expr) : MetaM (Expr × Expr) := do
   let body ← kabstract (← instantiateMVars (← inferType general)) fixpoint
   let proof ← mkEqNDRec (.lam `f (← mkArrow T.A T.prop) body .default) general eq
   let (type, eq?) ← T.curryStatement (body.instantiate1 (T.uncurry.beta #[name]))
   return (type, ← castAlong eq? proof (forward := true))
 
-/-- The step-indexed equality of tuples, component by component: `fun n p q => p.1 ≡{n}≡ q.1 ∧ …`,
-when there are parameters, none depends on another, and each has an OFE. -/
+/-- `fun n p q => p.1 ≡{n}≡ q.1 ∧ …`, when there are parameters, none dependent, each an OFE. -/
 meta def distRel? (T : Tupling) : MetaM (Option Expr) := do
   if T.arity == 0 then return none
   let ok ← forallTelescope T.curried fun xs _ => xs.allM fun x => do

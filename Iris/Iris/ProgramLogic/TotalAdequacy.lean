@@ -7,7 +7,6 @@ module
 
 public import Iris.ProgramLogic.TotalWeakestPre
 public import Iris.ProgramLogic.Adequacy
-public import Iris.ProofMode.Lib.Fixpoint
 
 namespace Iris.ProgramLogic
 
@@ -77,27 +76,23 @@ theorem pre_mono (X Y : List Expr → IProp GF) :
 
 /-- Total weakest precondition for a thread pool. -/
 @[rocq_alias twptp]
-ifix get (t : List Expr) : IProp GF := pre get t
-
-/-- `get` is also the least fixpoint of `Iris.BI.Lib.Fixpoint`. -/
-theorem get_eq_bi_least_fixpoint (t : List Expr) : get (ι := ι) t = bi_least_fixpoint pre t :=
-  (congrFun get.eq_lfp t).trans (congrFun (lfp_eq_bi_least_fixpoint (F := pre) _) t)
+def get (t : List Expr) : IProp GF :=
+  bi_least_fixpoint pre t
 
 instance get_ne : NonExpansive (get (ι := ι)) := list_nonexpansive _
 
 @[rocq_alias twptp_unfold]
 theorem unfold (t : List Expr) :
     get (ι := ι) t ⊣⊢ pre get t :=
-  .of_eq (get.unfold t)
+  BI.equiv_iff.1 (least_fixpoint_unfold pre)
 
 @[rocq_alias twptp_ind]
 theorem induction (Ψ : List Expr → IProp GF) :
     ⊢ (□ ∀ t, pre (fun t => iprop(Ψ t ∧ get t)) t -∗ Ψ t) →
     ∀ t, get t -∗ Ψ t := by
-  iintro #IH
-  iapply get.ind
-  iintro !>
-  iexact IH
+  iintro #IH %t H
+  unfold get
+  iapply least_fixpoint_ind $$ [$] [$]
 
 
 @[rocq_alias twptp_Permutation]

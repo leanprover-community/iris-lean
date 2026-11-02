@@ -11,7 +11,6 @@ public import Iris.BI
 public import Iris.BI.WeakestPre
 public import Iris.BI.DerivedLaws
 public import Iris.ProofMode
-public import Iris.ProofMode.Lib.Fixpoint
 public import Iris.ProgramLogic.Language
 public import Iris.Std.CoPset
 
@@ -73,10 +72,9 @@ abbrev Stuckness.MaybeReducible : Stuckness → Expr × State → Prop
 | .NotStuck, (e₁, σ₁) => PrimStep.Reducible (e₁, σ₁)
 | _, _ => True
 
-#rocq_ignore wp_pre "Weakest preconditions are defined directly using `guarded`"
-#rocq_ignore wp_pre_contractive "Weakest preconditions are defined directly using `guarded`"
-
-iguarded wp (s : Stuckness) (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
+@[rocq_alias wp_pre]
+def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF) (E : CoPset)
+    (e₁ : Expr) (Φ : Val -> IProp GF) : IProp GF :=
   match toVal e₁ with
   | some v => iprop(|={E}=> Φ v)
   | none => iprop(∀ (σ₁ : State) (ns : Nat) (obs obs' : List Obs) (nt : Nat),
@@ -85,40 +83,43 @@ iguarded wp (s : Stuckness) (E : CoPset) (e₁ : Expr) (Φ : Val -> IProp GF) : 
     ∀ e₂ σ₂ eₜ, ⌜(e₁, σ₁) -<obs>-> (e₂, σ₂, eₜ)⌝ -∗
       £ (ι.numLatersPerStep ns + 1) ={∅}▷=∗^[ι.numLatersPerStep ns + 1] |={∅,E}=>
       stateInterp σ₂ (ns + 1) obs' (nt + eₜ.length) ∗
-      wp s E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp s ⊤ e' ι.forkPost)
-contractive_by
-  intros n wp₁ wp₂ Hwp s E e₁ Φ
-  unfold wp.pre
-  cases toVal e₁
-  case some _ =>
-    exact .rfl
-  case none =>
-    refine BI.forall_ne (fun σ₁ => ?_)
-    refine BI.forall_ne (fun ns => ?_)
-    refine BI.forall_ne (fun obs => ?_)
-    refine BI.forall_ne (fun obs' => ?_)
-    refine BI.forall_ne (fun nt => ?_)
-    refine BI.wand_ne.ne .rfl ?_
-    refine BIFUpdate.ne.ne ?_
-    refine BI.sep_ne.ne .rfl ?_
-    refine BI.forall_ne (fun e₂  => ?_)
-    refine BI.forall_ne (fun σ₂ => ?_)
-    refine BI.forall_ne (fun eₜ => ?_)
-    refine BI.wand_ne.ne .rfl ?_
-    refine BI.wand_ne.ne .rfl ?_
-    refine BIFUpdate.ne.ne ?_
-    refine OFE.Contractive.distLater_dist fun m m_n => ?_
-    refine BIFUpdate.ne.ne ?_
-    refine step_fupdN_ne.ne ?_
-    refine BIFUpdate.ne.ne ?_
-    refine BI.sep_ne.ne .rfl ?_
-    refine BI.sep_ne.ne ?_ ?_
-    · exact Hwp m m_n _ _ _ _
-    · exact BI.BigSepL.bigSepL_dist <| fun _ => Hwp m m_n _ _ _ _
+      wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
+
+@[rocq_alias wp_pre_contractive]
+instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
+  distLater_dist := by
+    intros n wp wp' Hwp E e₁ Φ
+    unfold pre
+    cases toVal e₁
+    case some _ =>
+      exact .rfl
+    case none =>
+      refine BI.forall_ne (fun σ₁ => ?_)
+      refine BI.forall_ne (fun ns => ?_)
+      refine BI.forall_ne (fun obs => ?_)
+      refine BI.forall_ne (fun obs' => ?_)
+      refine BI.forall_ne (fun nt => ?_)
+      refine BI.wand_ne.ne .rfl ?_
+      refine BIFUpdate.ne.ne ?_
+      refine BI.sep_ne.ne .rfl ?_
+      refine BI.forall_ne (fun e₂  => ?_)
+      refine BI.forall_ne (fun σ₂ => ?_)
+      refine BI.forall_ne (fun eₜ => ?_)
+      refine BI.wand_ne.ne .rfl ?_
+      refine BI.wand_ne.ne .rfl ?_
+      refine BIFUpdate.ne.ne ?_
+      refine OFE.Contractive.distLater_dist fun m m_n => ?_
+      refine BIFUpdate.ne.ne ?_
+      refine step_fupdN_ne.ne ?_
+      refine BIFUpdate.ne.ne ?_
+      refine BI.sep_ne.ne .rfl ?_
+      refine BI.sep_ne.ne ?_ ?_
+      · exact Hwp m m_n _ _ _
+      · exact BI.BigSepL.bigSepL_dist <| fun _ => Hwp m m_n _ _ _
 
 @[rocq_alias wp_def]
 instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
-  wp s := Iris.wp s
+  wp s := fixpoint (wp.pre s)
 
 #rocq_ignore wp_aux "We do not use Iris' custom seal/unseal visibility control"
 #rocq_ignore wp' "We do not use Iris' custom seal/unseal visibility control"
@@ -126,17 +127,48 @@ instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
 
 section Wp
 
-/-- Concise variant of `wp.unfold` for fully-applied terms. -/
 @[rocq_alias wp_unfold]
 theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
-    WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre (Wp.wp (PROP := IProp GF)) s E e Φ :=
-  BIBase.BiEntails.of_eq (wp.unfold s E e Φ)
+    WP e @ s ; E {{ Φ }} ⊣⊢ wp.pre s (Wp.wp s) E e Φ :=
+  BI.equiv_iff.1 <| OFE.eq_dist_2 <|
+    fun _n => (fixpoint_unfold (f := (wp.pre s).toContractiveHom)).dist E e Φ
+
+@[rocq_alias wp_ne]
+instance wp_ne {s : Stuckness} {E} {e : Expr} :
+    OFE.NonExpansive (Wp.wp (PROP := IProp GF) s E e) where
+  ne {n Φ₁ Φ₂} HΦ := by
+    induction n using Nat.strongRecOn generalizing e E Φ₁ Φ₂ with | ind n IH =>
+    simp only [wp_unfold.to_eq]
+    dsimp only [wp.pre]
+    cases toVal e
+    case some v =>
+      exact BIFUpdate.ne.ne <| HΦ v
+    case none =>
+      refine BI.forall_ne fun σ₁ => ?_
+      refine BI.forall_ne fun ns => ?_
+      refine BI.forall_ne fun obs => ?_
+      refine BI.forall_ne fun obs' => ?_
+      refine BI.forall_ne fun nt => ?_
+      refine BI.wand_ne.ne .rfl ?_
+      refine BIFUpdate.ne.ne ?_
+      refine BI.sep_ne.ne .rfl ?_
+      refine BI.forall_ne fun e₂  => ?_
+      refine BI.forall_ne fun σ₂ => ?_
+      refine BI.forall_ne fun eₜ => ?_
+      refine BI.wand_ne.ne .rfl ?_
+      refine BI.wand_ne.ne .rfl ?_
+      refine step_fupdN_contractive.distLater_dist fun m n_m => ?_
+      refine BIFUpdate.ne.ne ?_
+      refine BI.sep_ne.ne .rfl ?_
+      refine BI.sep_ne.ne ?_ .rfl
+      exact IH m n_m <| OFE.dist_lt HΦ n_m
+
+#rocq_ignore wp_proper "Derivable using NonExpansive.eqv"
 
 @[rocq_alias wp_contractive]
 theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     OFE.Contractive (Wp.wp (PROP := IProp GF) s E e) where
   distLater_dist {n Φ₁ Φ₂} HΦ := by
-    induction n using Nat.strongRecOn generalizing e E Φ₁ Φ₂ with | ind n IH =>
     simp only [wp_unfold.to_eq]
     simp only [wp.pre, h]
     refine BI.forall_ne fun σ₁ => ?_
@@ -156,26 +188,8 @@ theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
     refine BIFUpdate.ne.ne ?_
     refine BI.sep_ne.ne .rfl ?_
     refine BI.sep_ne.ne ?_ .rfl
-    cases h₂ : toVal e₂ with
-    | some v =>
-      simp only [wp_unfold.to_eq, wp.pre, h₂]
-      exact BIFUpdate.ne.ne (HΦ m n_m v)
-    | none =>
-      exact IH m n_m E e₂ h₂ fun k hk => HΦ k (Nat.lt_trans hk n_m)
-
-@[rocq_alias wp_ne]
-instance wp_ne {s : Stuckness} {E} {e : Expr} :
-    OFE.NonExpansive (Wp.wp (PROP := IProp GF) s E e) := by
-  cases h : toVal e with
-  | some v =>
-    refine ⟨fun {n Φ₁ Φ₂} HΦ => ?_⟩
-    simp only [wp_unfold.to_eq, wp.pre, h]
-    exact BIFUpdate.ne.ne (HΦ v)
-  | none =>
-    letI := wp_contractive (GF := GF) s E e h
-    infer_instance
-
-#rocq_ignore wp_proper "Derivable using NonExpansive.eqv"
+    refine wp_ne.ne ?_
+    exact HΦ m n_m
 
 @[rocq_alias wp_value_fupd']
 theorem wp_value_fupd' {s : Stuckness} {E} {Φ : Val → IProp GF} {v : Val} :

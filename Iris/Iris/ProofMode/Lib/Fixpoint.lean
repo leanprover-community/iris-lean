@@ -11,7 +11,4 @@ public import Iris.ProofMode.Lib.Fixpoint.Guarded
 /-! # Iris fixpoint commands
 
 * `ifix` and `icofix` (`Fixpoint.Lattice`): least and greatest fixpoints of monotone bodies.
-* `iguarded` (`Fixpoint.Guarded`): fixpoints of contractive bodies.
-
-`Fixpoint.Tupling` moves the library's lemmas, stated for one argument, to definitions of several,
-and `Fixpoint.Common` holds what both share. -/
+* `iguarded` (`Fixpoint.Guarded`): fixpoints of contractive bodies. -/

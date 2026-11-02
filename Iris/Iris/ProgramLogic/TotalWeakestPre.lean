@@ -8,7 +8,6 @@ module
 public import Iris.BI.Lib.Fixpoint
 public import Iris.ProgramLogic.WeakestPre
 public import Iris.ProofMode
-public import Iris.ProofMode.Lib.Fixpoint
 
 namespace Iris
 
@@ -115,17 +114,9 @@ instance pre'_mono (s : Stuckness) : BIMonoPred (pre' (ι := ι) s) where
       refine NonExpansive.ne ?_
       exact ⟨.rfl, .rfl, hΦ⟩
 
-/-- The total weakest precondition, on a tuple of its arguments. -/
-ifix getArgs (s : Stuckness) (x : Args Expr Val GF) : IProp GF := pre' s (getArgs s) x
-
 @[rocq_alias twp']
 def get (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
-  getArgs s (E, e, Φ)
-
-/-- `get` is also the least fixpoint of `Iris.BI.Lib.Fixpoint`. -/
-theorem get_eq_bi_least_fixpoint (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) :
-    get s E e Φ = bi_least_fixpoint (pre' s) (E, e, Φ) :=
-  congrFun ((getArgs.eq_lfp s).trans (lfp_eq_bi_least_fixpoint (F := pre' s) _)) _
+  bi_least_fixpoint (pre' s) (E, e, Φ)
 
 #rocq_ignore twp_aux "Not needed"
 #rocq_ignore twp_def "Not needed"
@@ -141,16 +132,16 @@ section Rules
 @[rocq_alias twp_unfold]
 theorem unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
     WP e @ s ; E [{ Φ }] ⊣⊢ pre s (TotalWp.totalWp s) E e Φ :=
-  .of_eq (Internal.getArgs.unfold s (E, e, Φ))
+  equiv_iff.mp (least_fixpoint_unfold (Internal.pre' s))
 
 @[rocq_alias twp_ind]
 theorem induction (s : Stuckness) (Ψ : CoPset → Expr → (Val → IProp GF) → IProp GF)
-    [NonExpansive (fun x : Internal.Args Expr Val GF => Ψ x.1 x.2.1 x.2.2)] :
+    [HΨ : NonExpansive (fun x : Internal.Args Expr Val GF => Ψ x.1 x.2.1 x.2.2)] :
     □ (∀ e E Φ, pre s (fun E e Φ => iprop(Ψ E e Φ ∧ WP e @ s ; E [{ Φ }])) E e Φ -∗ Ψ E e Φ) -∗
     ∀ e E Φ, WP e @ s ; E [{ Φ }] -∗ Ψ E e Φ := by
   iintro #IH %e %E %Φ
   isimp only [TotalWp.totalWp, Internal.get]
-  iapply Internal.getArgs.ind s (fun x => Ψ x.1 x.2.1 x.2.2) $$ []
+  iapply least_fixpoint_ind (F := Internal.pre' s) (Φ := fun x => Ψ x.1 x.2.1 x.2.2) $$ []
   iintro !> %⟨_, _, _⟩
   isimp only [TotalWp.totalWp,Internal.get] at IH
   iapply IH
@@ -158,10 +149,9 @@ theorem induction (s : Stuckness) (Ψ : CoPset → Expr → (Val → IProp GF) �
 @[rocq_alias twp_ne]
 instance ne {s : Stuckness} {E} {e : Expr} :
     NonExpansive (TotalWp.totalWp (PROP := IProp GF) s E e) where
-  ne {n Φ₁ Φ₂} HΦ :=
-    Internal.getArgs.ne s (fun Φ hΦ => by
-      have : NonExpansive Φ := ⟨fun _ _ _ => hΦ _ _ _⟩
-      exact (mono_pred_ne (F := Internal.pre' s) (Φ := Φ)).ne) n _ _ ⟨.rfl, .rfl, HΦ⟩
+  ne {n Φ₁ Φ₂} HΦ := by
+    refine NonExpansive.ne (f := bi_least_fixpoint (Internal.pre' s)) ?_
+    exact ⟨.rfl, .rfl, HΦ⟩
 
 #rocq_ignore twp_proper "OFE is Leibniz; use equality"
 

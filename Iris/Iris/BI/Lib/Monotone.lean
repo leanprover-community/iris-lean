@@ -11,10 +11,8 @@ public import Iris.ProofMode
 
 /-! # Monotone predicate transformers
 
-`BIMono F` says that the predicate transformer `F : (A → PROP) → (A → PROP)` preserves pointwise
-wands, inside the BI: `□ (∀ x, Φ x -∗ Ψ x) -∗ ∀ x, F Φ x -∗ F Ψ x`. Proving this involves solving
-an `IMonoPred` goal: the theorems in this file allow for a simple syntax-guided solution (see the
-tactic file `ProofMode/Lib/Monotone.lean`). -/
+`BIMono F` says that `F` preserves pointwise wands. The `IMonoPred` rules here are what the
+`imono` tactic (`ProofMode/Lib/Monotone.lean`) applies. -/
 
 @[expose] public section
 
@@ -31,7 +29,7 @@ def BIMono (F : (A → PROP) → A → PROP) : Prop :=
 
 /-! ## Rules for `imono` -/
 
-/-- The shape of a monotonicity goal, inside the logic. -/
+/-- A monotonicity goal. -/
 def IMonoPred (R P Q : PROP) : Prop := ⊢ □ R -∗ P -∗ Q
 
 namespace IMonoPred
@@ -122,22 +120,26 @@ theorem refl : IMonoPred R P P :=
   rw [(texist_exist P).to_eq, (texist_exist P').to_eq]
   exact «exists» h
 
-@[imono] theorem persistently (h : IMonoPred R P P') : IMonoPred R iprop(<pers> P) iprop(<pers> P') := by
+@[imono] theorem persistently (h : IMonoPred R P P') :
+    IMonoPred R iprop(<pers> P) iprop(<pers> P') := by
   unfold IMonoPred at *
   iintro #H #HP !>
   iapply h $$ H HP
 
-@[imono] theorem affinely (h : IMonoPred R P P') : IMonoPred R iprop(<affine> P) iprop(<affine> P') := by
+@[imono] theorem affinely (h : IMonoPred R P P') :
+    IMonoPred R iprop(<affine> P) iprop(<affine> P') := by
   unfold IMonoPred at *
   iintro #H HP !>
   iapply h $$ H HP
 
-@[imono] theorem absorbingly (h : IMonoPred R P P') : IMonoPred R iprop(<absorb> P) iprop(<absorb> P') := by
+@[imono] theorem absorbingly (h : IMonoPred R P P') :
+    IMonoPred R iprop(<absorb> P) iprop(<absorb> P') := by
   unfold IMonoPred at *
   iintro #H >HP !>
   iapply h $$ H HP
 
-@[imono] theorem intuitionistically (h : IMonoPred R P P') : IMonoPred R iprop(□ P) iprop(□ P') := by
+@[imono] theorem intuitionistically (h : IMonoPred R P P') :
+    IMonoPred R iprop(□ P) iprop(□ P') := by
   unfold IMonoPred at *
   iintro #H #HP !>
   iapply h $$ H HP
@@ -147,7 +149,8 @@ theorem refl : IMonoPred R P P :=
   iintro #H HP !>
   iapply h $$ H HP
 
-@[imono] theorem laterN {n : Nat} (h : IMonoPred R P P') : IMonoPred R iprop(▷^[n] P) iprop(▷^[n] P') := by
+@[imono] theorem laterN {n : Nat} (h : IMonoPred R P P') :
+    IMonoPred R iprop(▷^[n] P) iprop(▷^[n] P') := by
   unfold IMonoPred at *
   iintro #H HP !>
   iapply h $$ H HP
@@ -157,7 +160,8 @@ theorem refl : IMonoPred R P P :=
   iintro #H >HP !>
   iapply h $$ H HP
 
-@[imono] theorem bupd [BIUpdate PROP] (h : IMonoPred R P P') : IMonoPred R iprop(|==> P) iprop(|==> P') := by
+@[imono] theorem bupd [BIUpdate PROP] (h : IMonoPred R P P') :
+    IMonoPred R iprop(|==> P) iprop(|==> P') := by
   unfold IMonoPred at *
   iintro #H >HP !>
   iapply h $$ H HP

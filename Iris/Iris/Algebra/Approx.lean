@@ -9,15 +9,9 @@ public import Iris.Algebra.OFE
 
 /-! # Approximations
 
-The domain behind guarded fixpoints. An `Approx α` is a ball of `α`: everything that agrees with a
-point at a downward-closed set of step-indices. Ordered by inclusion (smaller balls are more
-precise), approximations form a `CCPO`, so `partial_fixpoint` can define them by recursion.
-
-`lift G` runs `G` on every point of an approximation. It is monotone for every `G`, and when `G` is
-contractive, its fixpoint is exact: `get` of it is the fixpoint of `G` (`lift_fix_get`).
-
-This is a variant of the domain of formal balls of Edalat and Heckmann, "A computational model for
-metric spaces" (TCS 193, 1998). -/
+The domain behind guarded fixpoints: balls of an OFE, ordered by reverse inclusion, form a `CCPO`.
+`lift G` is monotone for every `G`, and for contractive `G` its fixpoint is exact (`lift_fix_get`).
+A variant of the formal balls of Edalat and Heckmann (TCS 193, 1998). -/
 
 @[expose] public section
 
@@ -38,7 +32,7 @@ def IsApprox (S : α → Prop) : Prop := ∃ c P, S = ball c P
 
 end Approx
 
-/-- Approximations of an element: a ball, of finite precision or a singleton. -/
+/-- Approximations: balls, of finite precision or singletons. -/
 def Approx (α : Type _) [OFE α] := {S : α → Prop // Approx.IsApprox S}
 
 namespace Approx
@@ -61,7 +55,7 @@ theorem IsApprox.nonempty {S : α → Prop} (h : IsApprox S) : ∃ a, S a :=
 theorem prec_mono {S : α → Prop} {m n} (h : prec S n) (hmn : m ≤ n) : prec S m :=
   fun a b ha hb => (h a b ha hb).le hmn
 
-/-- Every approximation is the ball around any of its elements, at its own precision. -/
+/-- An approximation is the ball around any of its elements, at its own precision. -/
 theorem IsApprox.eq_ball {S : α → Prop} (h : IsApprox S) {a} (ha : S a) : S = ball a (prec S) := by
   obtain ⟨c, P, rfl⟩ := h
   have hP {m} (hm : P m) : prec (ball c P) m := fun _ _ hx hy => (hx m hm).symm.trans (hy m hm)
@@ -74,7 +68,7 @@ noncomputable def get (S : Approx α) : α := Classical.choose S.2.nonempty
 
 theorem get_mem (S : Approx α) : S.1 (get S) := Classical.choose_spec S.2.nonempty
 
-/-- Two points of a chain's elements agree at any level both elements are precise at. -/
+/-- Points of two elements of a chain agree at any level both are precise at. -/
 theorem chain_dist {c : Approx α → Prop} (hc : chain c) {S T : Approx α} (hS : c S) (hT : c T)
     {a b : α} (ha : S.1 a) (hb : T.1 b) {m} (hSm : prec S.1 m) (hTm : prec T.1 m) : a ≡{m}≡ b :=
   (hc S T hS hT).elim (fun h => hSm a b ha (h b hb)) (fun h => hTm a b (h a ha) hb)
@@ -82,11 +76,10 @@ theorem chain_dist {c : Approx α → Prop} (hc : chain c) {S T : Approx α} (hS
 /-- The intersection of a chain: its sup. -/
 def inter (c : Approx α → Prop) : α → Prop := fun y => ∀ S, c S → S.1 y
 
-/-- The levels at which some element of `c` is precise. -/
+/-- The levels some element of `c` is precise at. -/
 def precs (c : Approx α → Prop) (m : Nat) : Prop := ∃ S, c S ∧ prec S.1 m
 
-/-- If `x` is in every element of `c`, their intersection is the ball around `x` at the levels
-some element is precise at. -/
+/-- If `x` is in every element of `c`, their intersection is `ball x (precs c)`. -/
 theorem inter_eq_ball {c : Approx α → Prop} {x : α} (hx : ∀ S, c S → S.1 x) :
     inter c = ball x (precs c) := by
   funext y
@@ -94,31 +87,27 @@ theorem inter_eq_ball {c : Approx α → Prop} {x : α} (hx : ∀ S, c S → S.1
   rw [S.2.eq_ball (hx S hS)]
   exact fun m hm => hy m ⟨S, hS, hm⟩
 
-/-- A downward-closed set of levels other than all of them is the set of levels below some `K`. -/
+/-- A downward-closed set of levels that is not all of them is the set below some `K`. -/
 theorem exists_bound {P : Nat → Prop} (hP : ∀ {m n}, m ≤ n → P n → P m) {k} (hk : ¬ P k) :
     ∃ K, ∀ m, P m ↔ m < K := by
   induction k with
-  | zero =>
-    exact ⟨0, fun m =>
-      ⟨fun h => (hk (hP (Nat.zero_le m) h)).elim, fun h => (Nat.not_lt_zero m h).elim⟩⟩
+  | zero => exact ⟨0, fun m => by grind⟩
   | succ k ih =>
     by_cases h : P k
-    · exact ⟨k + 1, fun m => ⟨fun hm => Nat.lt_of_not_le fun hle => hk (hP hle hm),
-        fun hm => hP (Nat.le_of_lt_succ hm) h⟩⟩
+    · exact ⟨k + 1, fun m => by grind⟩
     · exact ih h
 
 variable [IsCOFE α] [Inhabited α]
 
 /-- Every chain has a point in all of its elements. -/
 theorem exists_common {c : Approx α → Prop} (hc : chain c) : ∃ x, ∀ S, c S → S.1 x := by
-  -- At each level `m` some element is precise at, pick such an element and its point `p m`.
+  -- At each level `m` some element is precise at, pick such an element and a point `p m` of it.
   let S {m} (h : precs c m) : Approx α := Classical.choose h
   have hS {m} (h : precs c m) : c (S h) ∧ prec (S h).1 m := Classical.choose_spec h
   let p {m} (h : precs c m) := get (S h)
-  -- These points agree at the lower level.
   have agree {m n} (hmn : m ≤ n) (hm : precs c m) (hn : precs c n) : p hn ≡{m}≡ p hm :=
     chain_dist hc (hS hn).1 (hS hm).1 (get_mem _) (get_mem _) (prec_mono (hS hn).2 hmn) (hS hm).2
-  -- A point that agrees with each `p m` at level `m` is in every element.
+  -- It suffices to agree with each `p m` at level `m`.
   suffices ∃ x, ∀ m (h : precs c m), p h ≡{m}≡ x by
     obtain ⟨x, hx⟩ := this
     refine ⟨x, fun T hT => ?_⟩
@@ -128,17 +117,15 @@ theorem exists_common {c : Approx α → Prop} (hc : chain c) : ∃ x, ∀ S, c 
     have h : precs c m := ⟨T, hT, hm⟩
     exact (chain_dist hc hT (hS h).1 ht (get_mem _) hm (hS h).2).trans (hx m h)
   by_cases hall : ∀ m, precs c m
-  · -- Precise at every level: the limit of the points.
+  · -- Precise at every level: take the limit.
     let ch : Chain α := ⟨fun n => p (hall n), fun hni => agree hni _ _⟩
     exact ⟨COFE.compl ch, fun m _ => (COFE.conv_compl (c := ch) (n := m)).symm⟩
-  · -- Precise below some level `K`: the point at the last level below it, if any.
+  · -- Precise below some `K`: take the point at level `K - 1`, if any.
     obtain ⟨k, hk⟩ := Classical.not_forall.mp hall
     obtain ⟨K, hK⟩ := exists_bound (fun hmn ⟨S, hS, hn⟩ => ⟨S, hS, prec_mono hn hmn⟩) hk
     match K with
-    | 0 => exact ⟨default, fun m h => ((Nat.not_lt_zero m) ((hK m).mp h)).elim⟩
-    | j + 1 =>
-      exact ⟨p ((hK j).mpr (Nat.lt_succ_self j)),
-        fun m h => (agree (Nat.le_of_lt_succ ((hK m).mp h)) h _).symm⟩
+    | 0 => exact ⟨default, fun m h => by grind⟩
+    | j + 1 => exact ⟨p ((hK j).2 (by omega)), fun m h => (agree (by grind) h _).symm⟩
 
 instance : CCPO (Approx α) where
   has_csup {c} hc :=
@@ -181,12 +168,11 @@ theorem hull_mono {T T' : α → Prop} (h : ∀ a, T' a → T a) (hne : ∃ a, T
 def lift (G : α → α) (S : Approx α) : Approx α := hull fun y => ∃ x, S.1 x ∧ y = G x
 
 omit [IsCOFE α] in
-/-- Lifting is monotone, for any `G`. -/
 theorem lift_mono (G : α → α) : monotone (lift G) :=
   fun _ S' h => hull_mono (fun _ ⟨x, hx, e⟩ => ⟨x, h x hx, e⟩) ⟨_, _, get_mem S', rfl⟩
 
 omit [IsCOFE α] in
-/-- For a contractive `G`, a fixpoint of `lift G` is a single point, and a fixpoint of `G`. -/
+/-- For a contractive `G`, a fixpoint of `lift G` is a point, and a fixpoint of `G`. -/
 theorem lift_fix_get (G : α → α) [Contractive G] {S : Approx α} (hS : lift G S = S) :
     get S = G (get S) := by
   -- Each application of `G` gains a level of precision.

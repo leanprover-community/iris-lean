@@ -366,11 +366,9 @@ end Coind
 
 end GreatestFixpoint
 
-/-! ## Comparison with `ifix` and `icofix`
+/-! ## Comparison with `Iris.BI.Lib.Lattice`
 
-`Iris.BI.Lib.Lattice` defines the least and greatest fixpoints of a body that is monotone on all
-predicates, not just non-expansive ones. When a body is monotone in both senses, the fixpoints
-agree: each is a (pre/post)fixpoint of the body, and the one from the lattice is non-expansive. -/
+For a body monotone in both senses, the lattice fixpoints agree with these. -/
 
 section Comparison
 

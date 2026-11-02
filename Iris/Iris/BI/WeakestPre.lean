@@ -60,7 +60,7 @@ declare_syntax_cat wpPostcond
 syntax "{" noWs "{ " wpPostcondInner " }" noWs "}" : wpPostcond
 syntax "[" noWs "{ " wpPostcondInner " }" noWs "]" : wpPostcond
 
-syntax (name := wpSyntax) "WP " wpExpr ppSpace wpPostcond : term
+syntax (name := wp) "WP " wpExpr ppSpace wpPostcond : term
 
 syntax texanPostcondInner := ((ppSpace (binderIdent <|> bracketedBinder))+ ", ")? " RET " term:min "; " term:min
 
@@ -119,7 +119,7 @@ private meta def transformTexanBinders
     | `(binderIdent|$i:ident) => `(ident|$i)
     | `(bracketedBinder|$x) => `(bracketedBinder|$x)
 
-@[macro wpSyntax]
+@[macro wp]
 meta def wpMacro : Lean.Macro := fun stx => do
   match stx with
   | `(WP%$tk $expr $postcond) =>

@@ -6,7 +6,6 @@ Authors: Markus de Medeiros, Alvin Tang
 module
 
 public import Iris.BI.Lib.Fixpoint
-public import Iris.ProofMode.Lib.Fixpoint
 public import Iris.BI.Updates
 public import Iris.BI.Telescopes
 public meta import Iris.ProofMode
@@ -97,6 +96,8 @@ theorem atomic_acc_mask_weaken {Eo1 Eo2 Ei : CoPset} {α : TA.Arg → PROP} {P :
 
 /-! `atomic_update` as a fixed-point of the equation `AU = atomic_acc α AU β Q`. -/
 
+-- FIXME: Update this to use the mono fixpoint machinery
+
 @[rocq_alias atomic_update_pre]
 def atomic_update_pre (Eo Ei : CoPset) (α : TA.Arg → PROP)
     (β Φ : TA.Arg → TB.Arg → PROP) : (Unit → PROP) → Unit → PROP :=
@@ -116,28 +117,9 @@ instance atomic_update_pre_mono {Eo Ei : CoPset} {α : TA.Arg → PROP}
   mono_pred_ne := ⟨fun _ _ _ _ => .rfl⟩
 
 @[rocq_alias atomic_update]
-icofix atomic_update (Eo Ei : CoPset) (α : TA.Arg → PROP) (β Φ : TA.Arg → TB.Arg → PROP) : PROP :=
-  atomic_acc Eo Ei α (atomic_update Eo Ei α β Φ) β Φ
-
-/-- `atomic_update` is also the greatest fixpoint of `Iris.BI.Lib.Fixpoint`. -/
-theorem atomic_update_eq_bi_greatest_fixpoint (Eo Ei : CoPset) (α : TA.Arg → PROP)
-    (β Φ : TA.Arg → TB.Arg → PROP) :
-    atomic_update Eo Ei α β Φ = bi_greatest_fixpoint (atomic_update_pre Eo Ei α β Φ) () := by
-  have h : BIMono (atomic_update_pre Eo Ei α β Φ) := by unfold atomic_update_pre; imono
-  rw [← gfp_eq_bi_greatest_fixpoint h]
-  refine BIBase.BiEntails.to_eq ⟨?_, ?_⟩
-  · iintro H
-    iapply (CoMonotoneFixpoint.fix_coiter h fun _ => atomic_update Eo Ei α β Φ) $$ [] %() H
-    iintro !> %_ H
-    unfold atomic_update_pre
-    iapply atomic_update.unfold_mp $$ H
-  · iintro H
-    iapply (atomic_update.coiter Eo Ei α β Φ (CoMonotoneFixpoint.gfp _ h ())) $$ [] H
-    iintro !> H
-    have hu : CoMonotoneFixpoint.gfp _ h () ⊢
-        atomic_update.pre Eo Ei α β Φ (CoMonotoneFixpoint.gfp _ h ()) :=
-      CoMonotoneFixpoint.fix_unfold_mp h ()
-    iapply hu $$ H
+def atomic_update (Eo Ei : CoPset) (α : TA.Arg → PROP)
+    (β Φ : TA.Arg → TB.Arg → PROP) : PROP :=
+  bi_greatest_fixpoint (atomic_update_pre Eo Ei α β Φ) ()
 
 #rocq_ignore atomic_update_def "Rocq sealing auxiliary; folded into `atomic_update` (no sealing in Lean)."
 #rocq_ignore atomic_update_aux "Rocq sealing auxiliary."
@@ -266,15 +248,15 @@ theorem atomic_update_ne {Eo Ei : CoPset} {n} {α1 α2 : TA.Arg → PROP}
     {β1 β2 Φ1 Φ2 : TA.Arg → TB.Arg → PROP} (hα : ∀ x, α1 x ≡{n}≡ α2 x)
     (hβ : ∀ x y, β1 x y ≡{n}≡ β2 x y) (hΦ : ∀ x y, Φ1 x y ≡{n}≡ Φ2 x y) :
     atomic_update Eo Ei α1 β1 Φ1 ≡{n}≡ atomic_update Eo Ei α2 β2 Φ2 := by
-  rw [atomic_update_eq_bi_greatest_fixpoint, atomic_update_eq_bi_greatest_fixpoint]
-  unfold bi_greatest_fixpoint atomic_update_pre
+  unfold atomic_update bi_greatest_fixpoint atomic_update_pre
   refine exists_ne fun Ψ => sep_ne.ne (intuitionistically_ne.ne (forall_ne fun _ => ?_)) .rfl
   exact wand_ne.ne .rfl (atomic_acc_ne hα .rfl hβ hΦ)
 
 @[rocq_alias aupd_unfold]
 theorem aupd_unfold {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP} :
-    atomic_update Eo Ei α β Φ ⊣⊢ atomic_acc Eo Ei α (atomic_update Eo Ei α β Φ) β Φ :=
-  .of_eq (atomic_update.unfold Eo Ei α β Φ)
+    atomic_update Eo Ei α β Φ ⊣⊢ atomic_acc Eo Ei α (atomic_update Eo Ei α β Φ) β Φ := by
+  unfold atomic_update
+  exact (greatest_fixpoint_unfold (atomic_update_pre Eo Ei α β Φ)).to_bi
 
 @[rocq_alias aupd_aacc]
 theorem aupd_aacc {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB.Arg → PROP} :
@@ -285,9 +267,12 @@ theorem aupd_aacc {Eo Ei : CoPset} {α : TA.Arg → PROP} {β Φ : TA.Arg → TB
 theorem atomic_update_mask_weaken {Eo1 Eo2 Ei : CoPset} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} (HE : Eo1 ⊆ Eo2) :
     atomic_update Eo1 Ei α β Φ ⊢ atomic_update Eo2 Ei α β Φ := by
+  change atomic_update Eo1 Ei α β Φ ⊢ bi_greatest_fixpoint (atomic_update_pre Eo2 Ei α β Φ) ()
   iintro HAU
-  iapply (atomic_update.coiter Eo2 Ei α β Φ (atomic_update Eo1 Ei α β Φ)) $$ [] HAU
-  iintro !> H
+  iapply greatest_fixpoint_coiter (atomic_update_pre Eo2 Ei α β Φ)
+    (fun _ => atomic_update Eo1 Ei α β Φ) $$ [] HAU
+  iintro !> %_ H
+  unfold atomic_update_pre
   iapply atomic_acc_mask_weaken HE
   iapply aupd_aacc $$ H
 
@@ -314,9 +299,11 @@ theorem aupd_intro {Eo Ei : CoPset} {P Q : PROP} {α : TA.Arg → PROP}
     {β Φ : TA.Arg → TB.Arg → PROP} [Absorbing P] [Persistent P]
     (HAU : P ∧ Q ⊢ atomic_acc Eo Ei α Q β Φ) :
     P ∧ Q ⊢ atomic_update Eo Ei α β Φ := by
+  change iprop(P ∧ Q) ⊢ bi_greatest_fixpoint (atomic_update_pre Eo Ei α β Φ) ()
   iintro ⟨#HP, HQ⟩
-  iapply (atomic_update.coiter Eo Ei α β Φ Q) $$ [] HQ
-  iintro !> HQ
+  iapply greatest_fixpoint_coiter (atomic_update_pre Eo Ei α β Φ) (fun _ => Q) $$ [] HQ
+  iintro !> %_ HQ
+  unfold atomic_update_pre
   iapply HAU $$ [$]
 
 @[rocq_alias aacc_intro]

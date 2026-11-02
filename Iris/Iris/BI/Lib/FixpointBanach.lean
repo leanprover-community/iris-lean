@@ -122,18 +122,18 @@ end Laws
 
 /-! ## Moving a fixpoint across an isomorphism
 
-`iguarded` uses these to restate the laws above for a fixpoint of several curried arguments. -/
+Used by `iguarded` to restate the laws above for curried fixpoints. -/
 
 section Conj
 
 variable {α β : Type _} [OFE α] [OFE β]
 
-/-- Conjugating a contractive map by non-expansive maps keeps it contractive. -/
+/-- Conjugating by non-expansive maps preserves contractiveness. -/
 theorem contractive_conj {F : α → α} [Contractive F] (e : α → β) (e' : β → α) [NonExpansive e]
     [NonExpansive e'] : Contractive fun b => e (F (e' b)) :=
   ⟨fun h => NonExpansive.ne (Contractive.distLater_dist fun m hm => NonExpansive.ne (h m hm))⟩
 
-/-- The fixpoint moves across an isomorphism, whatever the default points. -/
+/-- The fixpoint moves across an isomorphism, for any default points. -/
 theorem fixpoint_conj [IsCOFE α] [IsCOFE β] {iα : Inhabited α} {iβ : Inhabited β} {F : α → α}
     [Contractive F] (e : α → β) (e' : β → α) [NonExpansive e] [NonExpansive e']
     (h : ∀ a, e' (e a) = a) :

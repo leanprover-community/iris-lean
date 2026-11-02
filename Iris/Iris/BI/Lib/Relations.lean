@@ -6,7 +6,6 @@ Authors: Zongyuan Liu
 module
 
 public import Iris.BI.Lib.Fixpoint
-public import Iris.ProofMode.Lib.Fixpoint
 
 @[expose] public section
 
@@ -21,8 +20,8 @@ def biRtcPre [Sbi PROP] [OFE A] (R : A → A → PROP) (x₂ : A) (rec : A → P
 
 /-- The reflexive-transitive closure. -/
 @[rocq_alias bi_rtc]
-ifix biRtc [Sbi PROP] [OFE A] (R : A → A → PROP) (x₁ x₂ : A) : PROP :=
-  biRtcPre R x₂ (fun x => biRtc R x x₂) x₁
+def biRtc [Sbi PROP] [OFE A] (R : A → A → PROP) (x₁ x₂ : A) : PROP :=
+  bi_least_fixpoint (biRtcPre R x₂) x₁
 
 @[rocq_alias bi_tc_pre]
 def biTcPre [Sbi PROP] [OFE A] (R : A → A → PROP) (x₂ : A) (rec : A → PROP) (x₁ : A) : PROP :=
@@ -30,8 +29,8 @@ def biTcPre [Sbi PROP] [OFE A] (R : A → A → PROP) (x₂ : A) (rec : A → PR
 
 /-- The transitive closure. -/
 @[rocq_alias bi_tc]
-ifix biTc [Sbi PROP] [OFE A] (R : A → A → PROP) (x₁ x₂ : A) : PROP :=
-  biTcPre R x₂ (fun x => biTc R x x₂) x₁
+def biTc [Sbi PROP] [OFE A] (R : A → A → PROP) (x₁ x₂ : A) : PROP :=
+  bi_least_fixpoint (biTcPre R x₂) x₁
 
 /-- The assertion that two elements are related by exactly `n` steps. -/
 @[rocq_alias bi_nsteps]
@@ -56,17 +55,9 @@ local instance bi_rtc_pre_mono [Sbi PROP] [OFE A] (R : A → A → PROP) [NonExp
     (affinely_ne.ne <| (internalEq.ne_l x).ne h)
     (exists_ne fun _ : A => sep_ne.ne (NonExpansive₂.ne h .rfl) .rfl)⟩
 
-/-- `biRtc` is also the least fixpoint of `Iris.BI.Lib.Fixpoint`. -/
-theorem biRtc_eq_bi_least_fixpoint [Sbi PROP] [OFE A] (R : A → A → PROP) [NonExpansive₂ R]
-    (x₁ x₂ : A) : biRtc R x₁ x₂ = bi_least_fixpoint (biRtcPre R x₂) x₁ :=
-  (congrFun (biRtc.eq_lfp R x₂) x₁).trans
-    (congrFun (lfp_eq_bi_least_fixpoint (F := biRtcPre R x₂) _) x₁)
-
 @[rocq_alias bi_rtc_ne]
-instance bi_rtc_ne [Sbi PROP] [OFE A] (R : A → A → PROP) [NonExpansive₂ R] :
-    NonExpansive₂ (biRtc R) where
+instance bi_rtc_ne [Sbi PROP] [OFE A] (R : A → A → PROP) : NonExpansive₂ (biRtc R) where
   ne {_ _ _} hx {_ _} hy := by
-    rw [biRtc_eq_bi_least_fixpoint, biRtc_eq_bi_least_fixpoint]
     refine forall_ne fun Φ => wand_ne.ne
       (intuitionistically_ne.ne <| forall_ne (fun z => ?_)) (NonExpansive.ne hx)
     refine wand_ne.ne (or_ne.ne (affinely_ne.ne ?_) .rfl) .rfl
@@ -91,17 +82,10 @@ instance bi_tc_pre_mono [Sbi PROP] [OFE A] (R : A → A → PROP) [NonExpansive�
   mono_pred_ne := ⟨fun {_ _ _} h => or_ne.ne (NonExpansive₂.ne h .rfl)
     (exists_ne fun _ : A => sep_ne.ne (NonExpansive₂.ne h .rfl) .rfl)⟩
 
-/-- `biTc` is also the least fixpoint of `Iris.BI.Lib.Fixpoint`. -/
-theorem biTc_eq_bi_least_fixpoint [Sbi PROP] [OFE A] (R : A → A → PROP) [NonExpansive₂ R]
-    (x₁ x₂ : A) : biTc R x₁ x₂ = bi_least_fixpoint (biTcPre R x₂) x₁ :=
-  (congrFun (biTc.eq_lfp R x₂) x₁).trans
-    (congrFun (lfp_eq_bi_least_fixpoint (F := biTcPre R x₂) _) x₁)
-
 @[rocq_alias bi_tc_ne]
 instance bi_tc_ne [Sbi PROP] [OFE A] (R : A → A → PROP) [NonExpansive₂ R] :
     NonExpansive₂ (biTc R) where
   ne {_ _ _} hx {_ _} hy := by
-    rw [biTc_eq_bi_least_fixpoint, biTc_eq_bi_least_fixpoint]
     refine forall_ne fun _ => wand_ne.ne (intuitionistically_ne.ne ?_) (NonExpansive.ne hx)
     exact forall_ne fun _ => wand_ne.ne (or_ne.ne (NonExpansive₂.ne .rfl hy) .rfl) .rfl
 
@@ -127,13 +111,13 @@ local bi PROP
 theorem bi_rtc_ind_left (x₂ : A) (Φ : A → PROP) [NonExpansive Φ] :
     ⊢ □ (∀ x₁, <affine> (x₁ ≡ x₂) ∨ (∃ x', R x₁ x' ∗ Φ x') -∗ Φ x₁) -∗
       ∀ x₁, biRtc R x₁ x₂ -∗ Φ x₁ :=
-  biRtc.iter R x₂ Φ
+  least_fixpoint_iter (biRtcPre R x₂)
 
 @[rocq_alias bi_tc_ind_l]
 theorem bi_tc_ind_left (x₂ : A) (Φ : A → PROP) [NonExpansive Φ] :
     ⊢ □ (∀ x₁, R x₁ x₂ ∨ (∃ x', R x₁ x' ∗ Φ x') -∗ Φ x₁) -∗
       ∀ x₁, biTc R x₁ x₂ -∗ Φ x₁ :=
-  biTc.iter R x₂ Φ
+  least_fixpoint_iter (biTcPre R x₂)
 
 @[rocq_alias bi_nsteps_l]
 theorem bi_nsteps_left (n : Nat) (x y z : A) :
@@ -175,25 +159,21 @@ theorem bi_nsteps_add_inv (n m : Nat) (x z : A) :
 
 variable [NonExpansive₂ R]
 
-omit [NonExpansive₂ R] in
 @[rocq_alias bi_rtc_unfold]
 theorem bi_rtc_unfold (x₁ x₂ : A) :
     biRtc R x₁ x₂ = biRtcPre R x₂ (fun x₁ => biRtc R x₁ x₂) x₁ :=
-  biRtc.unfold R x₁ x₂
+  least_fixpoint_unfold (biRtcPre R x₂)
 
-omit [NonExpansive₂ R] in
 @[rocq_alias bi_rtc_strong_ind_l]
 theorem bi_rtc_strong_ind_left (x₂ : A) (Φ : A → PROP) [NonExpansive Φ] :
     ⊢ □ (∀ x₁, <affine> (x₁ ≡ x₂) ∨ (∃ x', R x₁ x' ∗ (Φ x' ∧ biRtc R x' x₂)) -∗ Φ x₁) -∗
       ∀ x₁, biRtc R x₁ x₂ -∗ Φ x₁ :=
-  biRtc.ind R x₂ Φ
+  least_fixpoint_ind (biRtcPre R x₂) Φ
 
-omit [NonExpansive₂ R] in
 @[rocq_alias bi_rtc_refl]
 theorem bi_rtc_refl (x : A) : ⊢ biRtc R x x :=
   (bi_rtc_unfold R x x).symm ▸ or_intro_left_trans (affinely_intro internalEq.refl)
 
-omit [NonExpansive₂ R] in
 @[rocq_alias bi_rtc_l]
 theorem bi_rtc_left (x₁ x₂ x₃ : A) :
     R x₁ x₂ -∗ biRtc R x₂ x₃ -∗ biRtc R x₁ x₃ := by
@@ -203,7 +183,6 @@ theorem bi_rtc_left (x₁ x₂ x₃ : A) :
   iexists x₂
   iframe
 
-omit [NonExpansive₂ R] in
 @[rocq_alias bi_rtc_once]
 theorem bi_rtc_once (x₁ x₂ : A) : R x₁ x₂ -∗ biRtc R x₁ x₂ := by
   iintro H
@@ -232,7 +211,6 @@ theorem bi_rtc_right (x y z : A) : biRtc R x y -∗ R y z -∗ biRtc R x z := by
   iapply bi_rtc_trans $$ Hrtc
   iapply bi_rtc_once $$ HR
 
-omit [NonExpansive₂ R] in
 @[rocq_alias bi_rtc_inv]
 theorem bi_rtc_inv (x z : A) :
     biRtc R x z -∗ <affine> (x ≡ z) ∨ ∃ y, R x y ∗ biRtc R y z :=
@@ -240,10 +218,10 @@ theorem bi_rtc_inv (x z : A) :
 
 @[rocq_alias bi_rtc_affine]
 instance bi_rtc_affine [∀ x y, Affine (R x y)] (x y : A) :
-    Affine (biRtc R x y) :=
-  have : ∀ x, Affine (biRtc.pre R y (fun _ => iprop(emp)) x) := fun _ => by
-    unfold biRtc.pre biRtcPre; infer_instance
-  inferInstance
+    Affine (biRtc R x y) := by
+  unfold biRtc
+  unfold biRtcPre
+  infer_instance
 
 @[rocq_alias bi_rtc_persistent]
 instance bi_rtc_persistent [∀ x y, Persistent (R x y)] (x y : A) :
@@ -258,21 +236,18 @@ instance bi_rtc_persistent [∀ x y, Persistent (R x y)] (x y : A) :
       iapply bi_rtc_refl
     · iapply bi_rtc_left $$ HR Hrtc
 
-omit [NonExpansive₂ R] in
 @[rocq_alias bi_tc_unfold]
 theorem bi_tc_unfold (x₁ x₂ : A) :
     biTc R x₁ x₂ = biTcPre R x₂ (fun x₁ => biTc R x₁ x₂) x₁ :=
-  biTc.unfold R x₁ x₂
+  least_fixpoint_unfold (biTcPre R x₂)
 
-omit [NonExpansive₂ R] in
 @[rocq_alias bi_tc_strong_ind_l]
-theorem bi_tc_strong_ind_left (x₂ : A) (Φ : A → PROP) (_ : NonExpansive Φ) :
+theorem bi_tc_strong_ind_left (x₂ : A) (Φ : A → PROP) (hΦ : NonExpansive Φ) :
     ⊢ □ (∀ x₁, R x₁ x₂ ∨
         (∃ x', R x₁ x' ∗ (Φ x' ∧ biTc R x' x₂)) -∗ Φ x₁) -∗
       ∀ x₁, biTc R x₁ x₂ -∗ Φ x₁ :=
-  biTc.ind R x₂ Φ
+  least_fixpoint_ind (biTcPre R x₂) Φ
 
-omit [NonExpansive₂ R] in
 @[rocq_alias bi_tc_l]
 theorem bi_tc_left (x₁ x₂ x₃ : A) :
     R x₁ x₂ -∗ biTc R x₂ x₃ -∗ biTc R x₁ x₃ := by
@@ -282,7 +257,6 @@ theorem bi_tc_left (x₁ x₂ x₃ : A) :
   iexists x₂
   iframe
 
-omit [NonExpansive₂ R] in
 @[rocq_alias bi_tc_once]
 theorem bi_tc_once (x₁ x₂ : A) : R x₁ x₂ -∗ biTc R x₁ x₂ := by
   iintro H
@@ -347,17 +321,16 @@ theorem bi_tc_rtc (x y : A) : biTc R x y -∗ biRtc R x y := by
 
 @[rocq_alias bi_tc_affine]
 instance bi_tc_affine [∀ x y, Affine (R x y)] (x y : A) :
-    Affine (biTc R x y) :=
-  have : ∀ x, Affine (biTc.pre R y (fun _ => iprop(emp)) x) := fun _ => by
-    unfold biTc.pre biTcPre; infer_instance
-  inferInstance
+    Affine (biTc R x y) := by
+  unfold biTc
+  unfold biTcPre
+  infer_instance
 
 @[rocq_alias bi_tc_absorbing]
 instance bi_tc_absorbing [∀ x y, Absorbing (R x y)] (x y : A) :
     Absorbing (biTc R x y) :=
-  have : ∀ x, Absorbing (biTc.pre R y (fun x => iprop(True -∗ biTc R x y)) x) := fun _ => by
-    unfold biTc.pre biTcPre; infer_instance
-  inferInstance
+    @least_fixpoint_absorbing PROP A _ _ (biTcPre R y) inferInstance
+      (fun _ _ _ => by unfold biTcPre; infer_instance) x
 
 @[rocq_alias bi_tc_persistent]
 instance bi_tc_persistent [∀ x y, Persistent (R x y)] (x y : A) :

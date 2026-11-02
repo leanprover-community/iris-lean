@@ -15,26 +15,22 @@ namespace Iris
 open Lean Elab Tactic Meta BI
 
 open Sym in
-/-- Recursively decompose `goal` according to a list of BackwardRules, introducing quantifiers at
-each step. Returns the list of goals that decompose no further. -/
+/-- Decompose `goal` by `rules`, introducing quantifiers; returns the goals no rule applies to. -/
 meta partial def decompose (rules : List BackwardRule) (goal : MVarId) : SymM (List MVarId) := do
   for rule in rules do
     if let .goals goals ← rule.apply goal then
       let goals' ← goals.mapM fun goal => do
-        -- Recursively introduce quantifiers and decompose
         let .goal _ goal ← intros goal | decompose rules goal
         decompose rules goal
       return goals'.flatten
   return [goal]
 
-/-- Tactic for solving the `IMonoPred` obligations introduced by fixpoints.
-Decomposes the goal according to the `@[imono]` rules, splits `match` and `if`, unfolds other
-definitions, and closes what is left with the hypothesis `R` of `IMonoPred R P P'`. A definition
-whose unfolding mentions it again, a recursive one, is unfolded once along a branch, not forever. -/
+/-- Solve an `IMonoPred R P P'` goal: decompose by the `@[imono]` rules, split `match` and `if`,
+unfold other definitions (a recursive one only once per branch), and close the rest with `R`. -/
 meta partial def imonoGoal (rules : List Sym.BackwardRule) (goal : MVarId)
     (unfolded : NameSet := {}) : TacticM Unit := do
-  -- The rules match syntactically, and Sym needs `let`-free terms: unfold reducible definitions
-  -- such as `name.pre`, and reduce `(fun Φ x => …) Φ x` and `let next := Φ; next x`, first.
+  -- The rules match syntactically and Sym needs `let`-free terms: unfold reducible definitions
+  -- (`name.pre`), beta-reduce, and inline `let`s first.
   let target ← Sym.unfoldReducible (← instantiateMVars (← goal.getType))
   let target ← Core.transform target (pre := fun
     | .letE _ _ v b _ => return .visit (b.instantiate1 v)
@@ -62,8 +58,8 @@ meta partial def imonoGoal (rules : List Sym.BackwardRule) (goal : MVarId)
         imonoGoal rules goal (if recursive then unfolded.insert fn else unfolded)
   setGoals []
 
-/-- Prove that a fixpoint body `F` is monotone, stated as `BIMono F` or with its arguments spelled
-out: `∀ Φ Ψ, ⊢ □ (∀ x y, Φ x y -∗ Ψ x y) -∗ ∀ x y, F Φ x y -∗ F Ψ x y`. -/
+/-- Prove `BIMono F`, or its unfolding `∀ Φ Ψ, ⊢ □ (∀ x, Φ x -∗ Ψ x) -∗ ∀ x, F Φ x -∗ F Ψ x`
+with any number of arguments `x`. -/
 elab "imono" : tactic => do
   try
     evalTactic (← `(tactic| (

@@ -7,9 +7,7 @@ module
 
 public import Iris.ProofMode.Lib.Monotone
 
-/-! # Shared parts of the fixpoint commands
-
-The `monotone_by` and `contractive_by` clauses, their default tactics, and `emitThm`. -/
+/-! # Shared parts of the fixpoint commands -/
 
 public section
 
@@ -47,16 +45,14 @@ end
 namespace Iris.Fixpoint
 open Lean Elab Command Meta
 
-/-- Proves the monotonicity of an `ifix` or `icofix` without a `monotone_by` clause. Extend it with
-`macro_rules`; rules are tried newest first. -/
+/-- Proves monotonicity for `ifix`/`icofix` without `monotone_by`. Extend with `macro_rules`. -/
 syntax (name := ifixMonotoneDefault) "ifix_monotone_default" : tactic
 macro_rules | `(tactic| ifix_monotone_default) => `(tactic| imono)
 
-/-- Proves the contractiveness of an `iguarded` without a `contractive_by` clause. It has no rules:
-extend it with `macro_rules`. -/
+/-- Proves contractiveness for `iguarded` without `contractive_by`. Extend with `macro_rules`. -/
 syntax (name := iguardedContractiveDefault) "iguarded_contractive_default" : tactic
 
-/-- `fixpoint_default tac "msg"` runs `tac`; if it fails, its error follows `msg`. -/
+/-- `fixpoint_default tac "msg"` runs `tac`, prefixing any error with `msg`. -/
 syntax (name := fixpointDefault) "fixpoint_default " tactic str : tactic
 
 @[tactic fixpointDefault] meta def evalFixpointDefault : Tactic.Tactic
@@ -66,9 +62,7 @@ syntax (name := fixpointDefault) "fixpoint_default " tactic str : tactic
     catch e => throwError "{msg.getString}\n\n{e.toMessageData}"
   | _ => throwUnsupportedSyntax
 
-/-- The proof for a missing clause `clause` of `cmd`: the extensible tactic `hook`, a keyword such
-as `ifix_monotone_default`, unless the option `opt` turns it off. Without it, or if it fails, a
-proof is required. -/
+/-- The proof for a missing `clause` of `cmd`: the extensible tactic `hook`, unless `opt` is off. -/
 meta def defaultTactic (cmd clause opt : Name) (hook : TSyntax `tactic) (what : String) :
     CommandElabM (TSyntax ``Lean.Parser.Tactic.tacticSeq) := do
   let keyword := hook.raw[0].getAtomVal
@@ -85,9 +79,8 @@ meta def defaultTactic (cmd clause opt : Name) (hook : TSyntax `tactic) (what : 
 
 /-! ## Adding declarations -/
 
-/-- The full name of `name`, just declared in the current namespace, built as Lean names
-declarations: not resolved, which could find another constant, nor found by its short name, which
-`protected` hides. A `private` name is mangled. -/
+/-- The full name of `name`, just declared in the current namespace. Built, not resolved: resolving
+could find another constant, and `protected` hides the short name. -/
 meta def resolveDeclared (name : Ident) : CommandElabM Name := do
   let id := name.getId
   let ns ← getCurrNamespace
@@ -98,10 +91,8 @@ meta def resolveDeclared (name : Ident) : CommandElabM Name := do
   if env.contains priv then return priv
   throwErrorAt name "unknown declaration `{full}`"
 
-/-- Prime each binder that shadows an enclosing binder of the same name that its body uses, so
-that statements print without names such as `x_1`. A library's binder (`Φ`, `n`) can shadow a
-parameter of the same name, and the second tuple of arguments in `name.ne` repeats the names of the
-first. -/
+/-- Prime binders that shadow a used enclosing binder, so statements print without `x_1`: library
+binders (`Φ`, `n`) can shadow parameters, and `name.ne` repeats its argument names. -/
 meta def primeShadowed (e : Expr) : Expr :=
   go #[] e
 where
@@ -115,8 +106,7 @@ where
   /-- Whether `b`, the body of a binder, uses an enclosing binder named `n`. -/
   usesName (scope : Array Name) (n : Name) (b : Expr) : Bool :=
     (List.range scope.size).any fun i => scope[scope.size - 1 - i]! == n && b.hasLooseBVar (i + 1)
-  /-- `n`, primed until `b` uses no enclosing binder of that name: after one prime per enclosing
-  binder at most, it is fresh. -/
+  /-- `n`, primed until `b` uses no enclosing binder of that name (at most `scope.size` times). -/
   fresh (scope : Array Name) (n : Name) (b : Expr) : Name := Id.run do
     let mut n := n
     for _ in [:scope.size] do

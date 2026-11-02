@@ -74,7 +74,6 @@ instance [OFE α] {n} : Trans (OFE.Dist n) (OFE.Dist n) (OFE.Dist n : α → α 
 class NonExpansive [OFE α] [OFE β] (f : α → β) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → f x₁ ≡{n}≡ f x₂
 
-
 instance id_ne [OFE α] : NonExpansive (@id α) := ⟨fun _ _ _ h => h⟩
 
 instance const_ne [OFE α] [OFE β] {x : α} : NonExpansive (Function.const β x) := ⟨fun _ _ _ _ => .rfl⟩
@@ -89,7 +88,6 @@ theorem NonExpansive.comp [OFE α] [OFE β] [OFE γ] {g : β → γ} {f : α →
 /-- A function `f : α → β → γ` is non-expansive if it preserves `n`-equivalence in each argument. -/
 class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → f x₁ y₁ ≡{n}≡ f x₂ y₂
-
 
 #rocq_ignore ne_proper_2 "OFE is Leibniz; use equality"
 
