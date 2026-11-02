@@ -49,8 +49,8 @@ meta partial def imonoGoal (rules : List Sym.BackwardRule) (goal : MVarId)
       | evalTactic (← `(tactic| first
           | ((repeat (apply IMonoPred.spec)); exact IMonoPred.call)
           | fail "imono: not monotone, or not covered by an @[imono] rule"))
-    if (← getProjectionFnInfo? fn).isSome || unfolded.contains fn then
-      throwError "imono: no rule for {fn}"
+    if (← getProjectionFnInfo? fn).isSome then throwError "imono: no rule for {fn}"
+    if unfolded.contains fn then throwError "imono: no rule for {fn}, after unfolding it once"
     if (← isMatcher fn) || fn == ``ite || fn == ``dite then
       evalTactic (← `(tactic| split))
       for goal in ← getGoals do imonoGoal rules goal unfolded

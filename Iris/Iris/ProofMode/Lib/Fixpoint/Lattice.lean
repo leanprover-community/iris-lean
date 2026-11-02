@@ -295,8 +295,8 @@ meta def emitAll (d : FixpointData) (monoTac : TSyntax ``Lean.Parser.Tactic.tact
   let R ← Restating.of d T (← emitPreMono d T monoTac)
   R.emitEq
   for (suffix, lemma) in fixpointLemmas d.least do R.emit suffix lemma
-  -- `name.ne`, when the arguments have OFEs that `name` takes: a section instance that it does not
-  -- use is not one.
+  -- `name.ne`, when `name` takes OFE instances for its arguments: an unused section instance is
+  -- dropped from `name`, so it does not count.
   if let some rel ← T.distRel? then
     R.emit `ne (if d.least then ``MonotoneFixpoint.fix_ne_rel else ``CoMonotoneFixpoint.fix_ne_rel)
       #[rel]

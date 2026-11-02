@@ -67,7 +67,8 @@ meta def elabTheorem (cmd : TSyntax `command) : CommandElabM Unit := do
   -- so that their messages are all in `messages`, and dropped.
   let unused ← (← getScope).varDecls.filterM fun b => do
     unless b.raw.isOfKind ``Lean.Parser.Term.instBinder do return false
-    -- A probe that succeeds keeps its messages and declaration: drop both.
+    -- A probe that succeeds keeps its messages and declaration: drop both, the messages here and
+    -- the declaration by `withoutModifyingEnv`.
     let msgs := (← get).messages
     let sync (sc : Scope) := { sc with opts := Elab.async.set sc.opts false }
     let ok ← withoutModifyingEnv <| withScope sync do tryElabCommand (← omitting #[b.raw])
