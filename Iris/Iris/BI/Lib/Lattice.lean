@@ -20,7 +20,7 @@ the fixpoint across currying, or any other order isomorphism. -/
 @[expose] public section
 
 namespace Iris
-open BI Lean.Order
+open BI Lean.Order OFE
 
 /-! ## Order theory -/
 
@@ -93,6 +93,23 @@ theorem bimono_def {F : (A → PROP) → A → PROP} :
     BIMono F ↔ ∀ Φ Ψ, ⊢ □ (∀ x, Φ x -∗ Ψ x) -∗ ∀ x, F Φ x -∗ F Ψ x := .rfl
 
 end Tuples
+
+/-! The sup of a chain of predicates is, at each point, the sup of their values there. When the
+predicates are non-expansive, so is that sup. -/
+
+omit [BI PROP] in
+theorem csup_apply_eq [CCPO PROP] {c : (A → PROP) → Prop} (hc : chain c) {x : A}
+    {sup : (PROP → Prop) → PROP} (hsup : ∀ c, is_sup c (sup c)) :
+    CCPO.csup hc x = sup fun P => ∃ f, c f ∧ f x = P := by
+  rw [← fun_csup_eq]
+  exact is_sup_unique (CCPO.csup_spec (chain_apply hc x)) (hsup _)
+
+theorem sup_ne [OFE A] {c : (A → PROP) → Prop}
+    (hall : ∀ f, c f → ∀ ⦃n x y⦄, x ≡{n}≡ y → f x ≡{n}≡ f y) {n : Nat} {x y : A}
+    (hxy : x ≡{n}≡ y) :
+    liftRel (· ≡{n}≡ ·) (fun P => ∃ f, c f ∧ f x = P) (fun P => ∃ f, c f ∧ f y = P) :=
+  ⟨fun _ ⟨f, hf, e⟩ => ⟨f y, ⟨f, hf, rfl⟩, e ▸ hall f hf hxy⟩,
+   fun _ ⟨f, hf, e⟩ => ⟨f x, ⟨f, hf, rfl⟩, e ▸ hall f hf hxy⟩⟩
 
 namespace MonotoneFixpoint
 
@@ -242,6 +259,15 @@ theorem fix_persistent_absorbing
   iintro !> %z #Hz
   iexact Hz
 
+/-- The least fixpoint is non-expansive when `F` preserves non-expansiveness. -/
+theorem fix_ne [OFE A] (hF : ∀ Φ : A → PROP, NonExpansive Φ → NonExpansive (F Φ)) :
+    NonExpansive (lfp F h) := by
+  refine ⟨fix_induct _ (fun g => ∀ ⦃n x y⦄, x ≡{n}≡ y → g x ≡{n}≡ g y) ?_
+    fun g hg => (hF g ⟨hg⟩).ne⟩
+  intro c hc hall n x y hxy
+  rw [csup_apply_eq hc sExists_is_sup, csup_apply_eq hc sExists_is_sup]
+  exact sExists_ne (sup_ne hall hxy)
+
 end MonotoneFixpoint
 
 namespace CoMonotoneFixpoint
@@ -349,6 +375,15 @@ theorem fix_absorbing (hF : ∀ Φ : A → PROP, (∀ x, Absorbing (Φ x)) → �
     iapply absorbingly_intro
     iexact Hz
   · iapply fix_unfold_mp h y $$ HG
+
+/-- The greatest fixpoint is non-expansive when `F` preserves non-expansiveness. -/
+theorem fix_ne [OFE A] (hF : ∀ Φ : A → PROP, NonExpansive Φ → NonExpansive (F Φ)) :
+    NonExpansive (gfp F h) := by
+  refine ⟨fix_induct _ (fun g => ∀ ⦃n x y⦄, x ≡{n}≡ y → g x ≡{n}≡ g y) ?_
+    fun g hg => (hF g ⟨hg⟩).ne⟩
+  intro c hc hall n x y hxy
+  rw [csup_apply_eq hc sForall_is_sup, csup_apply_eq hc sForall_is_sup]
+  exact sForall_ne (sup_ne hall hxy)
 
 end CoMonotoneFixpoint
 
