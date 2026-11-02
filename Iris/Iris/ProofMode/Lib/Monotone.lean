@@ -15,21 +15,21 @@ namespace Iris
 open Lean Elab Tactic Meta BI
 
 open Sym in
-/-- Take `P` apart by the rules, matched syntactically, as far as they go. Returns the goals left
-over. -/
+/-- Recursively decompose `P` according to a list of BackwardRules, introducing quantifiers at each
+step. Returns the list of goals that decompose no further. -/
 meta partial def decompose (rules : List BackwardRule) (goal : MVarId) : SymM (List MVarId) := do
   for rule in rules do
     if let .goals goals ← rule.apply goal then
-      return (← goals.mapM fun goal => do
-        -- Premises such as `∀ b, IMonoPred R (P b) (P' b)` bind the connective's variables.
+      let goals' ← goals.mapM fun goal => do
+        -- Recursively introduce quantifiers and decompose
         let .goal _ goal ← intros goal | decompose rules goal
-        decompose rules goal).flatten
+        decompose rules goal
+      return goals'.flatten
   return [goal]
 
-/-- Prove a goal `IMonoPred R P P'`, where `R` is `□ ∀ x, Φ x -∗ Ψ x` and `P'` is `P` with the
-recursive function `Φ` replaced by `Ψ`. `decompose` takes `P` apart by `IMonoPred.refl` and the
-`@[imono]` rules; what is left of `P` is a recursive call `Φ a`, proved by the assumption `R`, or
-else a `match` to split or a definition to unfold. -/
+/-- Tactic for solving the `IMonoPred` obligations introduced by fixpoints.
+Decomposes the goal according to the `@[imono]` rules, splits match statements, and tries to apply
+the assumpton `R`. -/
 meta partial def imonoGoal (rules : List Sym.BackwardRule) (goal : MVarId) : TacticM Unit := do
   -- The rules match syntactically, and Sym needs `let`-free terms: unfold reducible definitions
   -- such as `name.pre`, and reduce `(fun Φ x => …) Φ x` and `let next := Φ; next x`, first.
@@ -39,12 +39,13 @@ meta partial def imonoGoal (rules : List Sym.BackwardRule) (goal : MVarId) : Tac
     | e => return .continue e)
   let goal ← goal.replaceTargetDefEq (← Core.betaReduce target)
   let goals ← Sym.SymM.run do decompose rules (← Sym.preprocessMVar goal)
+  -- The main loop
   for goal in goals do
     setGoals [goal]
     let_expr IMonoPred _ _ _ P _ := ← instantiateMVars (← goal.getType)
       | throwError "imono: unexpected goal{goal}"
     let .const fn _ := P.cleanupAnnotations.getAppFn
-      | evalTactic (← `(tactic| (unfold IMonoPred; iintro #H HP; iapply H; iexact HP)))
+      | evalTactic (← `(tactic| ((repeat (apply IMonoPred.spec)); exact IMonoPred.call)))
     if (← getProjectionFnInfo? fn).isSome then throwError "imono: no rule for {fn}"
     let step ← if ← isMatcher fn then `(tactic| split) else `(tactic| unfold $(mkIdent fn):ident)
     evalTactic step

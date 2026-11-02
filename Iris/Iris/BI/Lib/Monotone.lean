@@ -41,6 +41,21 @@ variable {R P P' Q Q' : PROP}
 theorem arg {P : A → PROP} (h : ∀ x, ⊢ □ R -∗ P x) : ⊢ □ R -∗ ∀ x, P x :=
   wand_intro <| emp_sep.1.trans <| forall_intro fun x => emp_sep.2.trans (wand_elim (h x))
 
+/-- A recursive call, by the assumption. -/
+theorem call : IMonoPred iprop(P -∗ P') P P' := by
+  unfold IMonoPred
+  iintro #H HP
+  iapply H $$ HP
+
+/-- Specialize the assumption to the arguments of a recursive call. -/
+theorem spec {B : Sort _} {S : B → PROP} (b : B) (h : IMonoPred (S b) P P') :
+    IMonoPred iprop(∀ b, S b) P P' := by
+  unfold IMonoPred at *
+  iintro #H HP
+  iapply h $$ [] HP
+  iintro !>
+  iapply H
+
 /-- A body that does not mention the recursive function. -/
 theorem refl : IMonoPred R P P :=
   wand_intro <| emp_sep.1.trans <| wand_intro sep_elim_right
