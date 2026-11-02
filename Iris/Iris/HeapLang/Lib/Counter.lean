@@ -124,7 +124,7 @@ abbrev mcounterFrag (γ : GName) (n : Nat) : IProp GF := iOwn (F := MCounterRF) 
 abbrev mcounterInv (γ : GName) (l : Loc) : IProp GF := counterInv (mcounterAuth γ) l
 
 @[reducible, rocq_alias heap_lang.mcounter]
-noncomputable def mcounter (l : Loc) (n : Nat) : IProp GF := iprop%
+def mcounter (l : Loc) (n : Nat) : IProp GF := iprop%
   ∃ γ, inv N (mcounterInv γ l) ∧ mcounterFrag γ n
 
 @[rocq_alias heap_lang.mcounter_persistent]
@@ -217,7 +217,7 @@ abbrev ccounterAuth (γ : GName) (n : Nat) : IProp GF := iOwn (F := CCounterRF) 
 abbrev ccounterInv (γ : GName) (l : Loc) : IProp GF := counterInv (ccounterAuth γ) l
 
 @[rocq_alias heap_lang.ccounter_ctx]
-noncomputable abbrev ccounterCtx (γ : GName) (l : Loc) : IProp GF := inv N (ccounterInv γ l)
+abbrev ccounterCtx (γ : GName) (l : Loc) : IProp GF := inv N (ccounterInv γ l)
 
 @[reducible, rocq_alias heap_lang.ccounter]
 def ccounter (γ : GName) (q : Qp) (n : Nat) : IProp GF := iOwn (F := CCounterRF) γ (◯F{q} n)

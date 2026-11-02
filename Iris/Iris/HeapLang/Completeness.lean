@@ -54,7 +54,7 @@ theorem pointsTo_heapCellPts (l : Loc) (vo : Option Val) :
 instance instTimeless_heapInv (σ : State) : Timeless (heapInv (GF := GF) σ) := by
   infer_instance
 
-noncomputable abbrev baseCompletenessGoal (e₁ : Exp) (σ : State) (E : CoPset) : IProp GF := iprop%
+abbrev baseCompletenessGoal (e₁ : Exp) (σ : State) (E : CoPset) : IProp GF := iprop%
   ((⌜Atomic Atomicity.StronglyAtomic e₁⌝ ∗
       ∀ (Φ : Val → IProp GF),
         (▷ ∀ κ v₂ σ' efs, ⌜PrimStep.primStep (e₁, σ) κ (ToVal.ofVal v₂, σ', efs)⌝ ==∗

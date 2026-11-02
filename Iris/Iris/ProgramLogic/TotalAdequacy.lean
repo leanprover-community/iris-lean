@@ -50,7 +50,7 @@ private theorem step_append_inv (r₁ r₂ : List Expr) {t' : List Expr} {σ₁ 
 
 /-- One unfolding of the total thread-pool predicate. -/
 @[rocq_alias twptp_pre]
-noncomputable def pre (X : List Expr → IProp GF) (t₁ : List Expr) : IProp GF := iprop%
+def pre (X : List Expr → IProp GF) (t₁ : List Expr) : IProp GF := iprop%
   ∀ (t₂ : List Expr) (σ₁ : State) (ns : Nat) (κ κs : List Obs)
       (σ₂ : State) (nt : Nat),
     ⌜(t₁, σ₁) -<κ>->ₜₚ (t₂, σ₂)⌝ -∗
@@ -76,7 +76,7 @@ theorem pre_mono (X Y : List Expr → IProp GF) :
 
 /-- Total weakest precondition for a thread pool. -/
 @[rocq_alias twptp]
-noncomputable def get (t : List Expr) : IProp GF :=
+def get (t : List Expr) : IProp GF :=
   bi_least_fixpoint pre t
 
 instance get_ne : NonExpansive (get (ι := ι)) := list_nonexpansive _

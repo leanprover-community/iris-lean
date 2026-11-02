@@ -110,7 +110,7 @@ def invHeapInvP : IProp GF := iprop%
     [∗map] l ↦ p ∈ h, ⌜p.2 p.1⌝ ∗ l ↦ p.1
 
 @[rocq_alias inv_heap_inv]
-noncomputable def invHeapInv : IProp GF := inv invHeapN invHeapInvP
+def invHeapInv : IProp GF := inv invHeapN invHeapInvP
 
 @[rocq_alias inv_pointsto_own]
 def invPointsToOwn (l : L) (v : V) (I : V → Prop) : IProp GF :=

@@ -117,7 +117,7 @@ contractive_by
     · exact BI.BigSepL.bigSepL_dist <| fun _ => Hwp m m_n _ _ _ _
 
 @[rocq_alias wp_def]
-noncomputable instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
+instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
   wp s := Iris.wp s
 
 #rocq_ignore wp_aux "We do not use Iris' custom seal/unseal visibility control"

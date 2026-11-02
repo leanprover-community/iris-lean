@@ -70,11 +70,11 @@ def slice_inv (γ : SliceName) (P : IProp GF) : IProp GF :=
   iprop% ∃ b : Bool, box_own_auth γ (●E (⟨b⟩ : BoolO)) ∗ if b then P else True
 
 @[rocq_alias slice]
-noncomputable def slice (N : Namespace) (γ : SliceName) (P : IProp GF) : IProp GF :=
+def slice (N : Namespace) (γ : SliceName) (P : IProp GF) : IProp GF :=
   iprop% box_own_prop γ P ∗ inv N (slice_inv γ P)
 
 @[rocq_alias box]
-noncomputable def box {M : Type _ → Type _} [LawfulFiniteMap M SliceName] (N : Namespace) (f : M Bool)
+def box {M : Type _ → Type _} [LawfulFiniteMap M SliceName] (N : Namespace) (f : M Bool)
   (P : IProp GF) : IProp GF :=
   iprop% ∃ Φ : SliceName → IProp GF,
     ▷ (P ≡ ([∗map] γ ↦ _x ∈ f, Φ γ)) ∗

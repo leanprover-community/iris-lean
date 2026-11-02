@@ -47,7 +47,7 @@ abbrev Args (Expr Val : Type _) (GF : BundledGFunctors) :=
 end Internal
 
 @[rocq_alias twp_pre]
-noncomputable def pre (s : Stuckness) (twp : CoPset → Expr → (Val → IProp GF) → IProp GF) (E : CoPset)
+def pre (s : Stuckness) (twp : CoPset → Expr → (Val → IProp GF) → IProp GF) (E : CoPset)
     (e₁ : Expr) (Φ : Val → IProp GF) : IProp GF :=
   match toVal e₁ with
   | some v => iprop% |={E}=> Φ v
@@ -64,7 +64,7 @@ noncomputable def pre (s : Stuckness) (twp : CoPset → Expr → (Val → IProp 
 namespace Internal
 
 @[rocq_alias twp_pre']
-noncomputable abbrev pre' (s : Stuckness) (X : Args Expr Val GF → IProp GF) : Args Expr Val GF → IProp GF
+abbrev pre' (s : Stuckness) (X : Args Expr Val GF → IProp GF) : Args Expr Val GF → IProp GF
   | (E, e, Φ) => pre s (fun E e Φ => X (E, e, Φ)) E e Φ
 
 end Internal
@@ -115,7 +115,7 @@ instance pre'_mono (s : Stuckness) : BIMonoPred (pre' (ι := ι) s) where
       exact ⟨.rfl, .rfl, hΦ⟩
 
 @[rocq_alias twp']
-noncomputable def get (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
+def get (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IProp GF) : IProp GF :=
   bi_least_fixpoint (pre' s) (E, e, Φ)
 
 #rocq_ignore twp_aux "Not needed"
@@ -124,7 +124,7 @@ noncomputable def get (s : Stuckness) (E : CoPset) (e : Expr) (Φ : Val → IPro
 
 end Internal
 
-noncomputable instance instTotalWp : TotalWp (IProp GF) Expr Val Stuckness where
+instance instTotalWp : TotalWp (IProp GF) Expr Val Stuckness where
   totalWp := Internal.get
 
 section Rules

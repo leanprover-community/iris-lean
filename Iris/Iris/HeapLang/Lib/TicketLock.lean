@@ -91,7 +91,7 @@ def lockInv (γ : GName) (lo ln : Loc) (R : IProp GF) : IProp GF := iprop(
     (own γ owner ∗ R ∨ own γ (ticket o)))
 
 @[rocq_alias heap_lang.ticket_lock.is_lock]
-noncomputable def isLock (γ : GName) (lk : Val) (R : IProp GF) : IProp GF := iprop(
+def isLock (γ : GName) (lk : Val) (R : IProp GF) : IProp GF := iprop(
   ∃ lo ln : Loc, ⌜lk = hl_val((#lo, #ln))⌝ ∗ inv ticketLockN (lockInv γ lo ln R))
 
 @[rocq_alias heap_lang.issued]
@@ -278,7 +278,7 @@ theorem release_spec (γ : GName) (lk : Val) (R : IProp GF) :
 end proof
 
 @[implicit_reducible, rocq_alias heap_lang.ticket_lock]
-noncomputable def instLock [HeapLangGS hlc GF] : Lock GF where
+def instLock [HeapLangGS hlc GF] : Lock GF where
   newlock := newlock
   acquire := acquire
   release := release

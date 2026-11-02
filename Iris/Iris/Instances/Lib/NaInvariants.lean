@@ -56,7 +56,7 @@ def own (p : NaInvPoolName) (E : CoPset) : IProp GF :=
   iOwn (E := W.inv) p (.valid E, .valid ∅)
 
 @[rocq_alias na_inv]
-noncomputable nonrec def inv (p : NaInvPoolName) (N : Namespace) (P : IProp GF) : IProp GF :=
+nonrec def inv (p : NaInvPoolName) (N : Namespace) (P : IProp GF) : IProp GF :=
   iprop(∃ i, ⌜i ∈ (↑N : CoPset)⌝ ∧
     inv N iprop(P ∗ iOwn (E := W.inv) p (.valid ∅, .valid {i}) ∨ own p {i}))
 

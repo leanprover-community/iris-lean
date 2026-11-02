@@ -11,18 +11,15 @@ public import Iris.Algebra.OFE
 
 The domain behind guarded fixpoints. An `Approx α` is a ball of `α`: everything that agrees with a
 point at a downward-closed set of step-indices. Ordered by inclusion (smaller balls are more
-precise), approximations form a `CCPO`, so `partial_fixpoint` can define functions into them.
+precise), approximations form a `CCPO`, so `partial_fixpoint` can define them by recursion.
 
-`ApproxFun.lift G` turns a functional `G` on curried functions into one on curried approximations.
-It is monotone for every `G`, and when `G` is contractive, its fixpoint is exact: `get` of it is
-the fixpoint of `G` (`lift_fix_get`). -/
+`lift G` runs `G` on every point of an approximation. It is monotone for every `G`, and when `G` is
+contractive, its fixpoint is exact: `get` of it is the fixpoint of `G` (`lift_fix_get`). -/
 
 @[expose] public section
 
 namespace Iris
 open OFE Lean.Order
-
-/-! ## Approximations of a single element -/
 
 namespace Approx
 variable {α : Type _} [OFE α]
@@ -33,6 +30,7 @@ def ball (c : α) (P : Nat → Prop) : α → Prop := fun y => ∀ m, P m → c 
 /-- Levels at which all elements of `S` agree. -/
 def prec (S : α → Prop) (m : Nat) : Prop := ∀ a b, S a → S b → a ≡{m}≡ b
 
+/-- `S` is a ball. -/
 def IsApprox (S : α → Prop) : Prop := ∃ c P, S = ball c P
 
 end Approx
@@ -42,6 +40,8 @@ def Approx (α : Type _) [OFE α] := {S : α → Prop // Approx.IsApprox S}
 
 namespace Approx
 variable {α : Type _} [OFE α]
+
+/-! ## Approximations form a CCPO -/
 
 instance : PartialOrder (Approx α) where
   rel S T := ∀ y, T.1 y → S.1 y
@@ -102,6 +102,7 @@ theorem exists_least_of_bounded {c : Approx α → Prop} (hne : ∃ S, c S) :
 
 variable [IsCOFE α] [Inhabited α]
 
+/-- The intersection of a set of approximations: the sup of a chain. -/
 def inter (c : Approx α → Prop) : α → Prop := fun y => ∀ S, c S → S.1 y
 
 theorem inter_isApprox {c : Approx α → Prop} (hc : chain c) : IsApprox (inter c) := by
@@ -157,131 +158,63 @@ instance : CCPO (Approx α) where
   has_csup {c} hc := ⟨⟨inter c, inter_isApprox hc⟩, fun _ =>
     ⟨fun h y hy z hz => h z hz y hy, fun h z hz y hy => h y hy z hz⟩⟩
 
-end Approx
+/-! ## Lifting a function to approximations -/
 
-/-! ## Curried approximations -/
+/-- The smallest ball containing `T`, or everything when `T` is empty. -/
+def hull (T : α → Prop) : Approx α :=
+  ⟨fun z => ∀ m, prec T m → ∀ a, T a → a ≡{m}≡ z, by
+    by_cases hne : ∃ a, T a
+    · obtain ⟨a, ha⟩ := hne
+      refine ⟨a, prec T, funext fun z => propext ⟨fun h m hm => h m hm a ha, ?_⟩⟩
+      exact fun h m hm b hb => (hm b a hb ha).trans (h m hm)
+    · refine ⟨default, fun _ => False, funext fun z => propext ⟨fun _ _ h => h.elim, ?_⟩⟩
+      exact fun _ _ _ a ha => (hne ⟨a, ha⟩).elim⟩
 
-/-- `τA` approximates the curried type `τ`, pointwise: `α` by `Approx α`, and functions by
-functions. -/
-class ApproxFun (τ : Type _) (τA : Type _) [OFE τ] [PartialOrder τA] where
-  /-- The elements of `τ` that `s` approximates. -/
-  Sel : τA → τ → Prop
-  /-- The pointwise hull of a set of elements. -/
-  hull : (τ → Prop) → τA
-  get : τA → τ
-  /-- `s` agrees with itself at level `n`, everywhere. -/
-  Precise : Nat → τA → Prop
-  sel_mono {s s' : τA} (h : s ⊑ s') {f : τ} : Sel s' f → Sel s f
-  sel_get (s : τA) : Sel s (get s)
-  sel_hull {T : τ → Prop} {f : τ} : T f → Sel (hull T) f
-  hull_mono {T T' : τ → Prop} : (∀ f, T' f → T f) → (∃ f, T' f) → hull T ⊑ hull T'
-  sel_dist {n : Nat} {s : τA} {f g : τ} : Precise n s → Sel s f → Sel s g → f ≡{n}≡ g
-  precise_hull {n : Nat} {T : τ → Prop} :
-    (∀ f g, T f → T g → f ≡{n}≡ g) → (∃ f, T f) → Precise n (hull T)
-  /-- An element that agrees with itself at every level is a singleton. -/
-  sel_eq_get {s : τA} {f : τ} : (∀ n, Precise n s) → Sel s f → f = get s
+omit [IsCOFE α] in
+theorem mem_hull {T : α → Prop} {a : α} (ha : T a) : (hull T).1 a :=
+  fun _ hm _ hb => hm _ _ hb ha
 
-namespace ApproxFun
+omit [IsCOFE α] in
+theorem prec_hull {T : α → Prop} {n : Nat} (hT : prec T n) (hne : ∃ a, T a) :
+    prec (hull T).1 n := by
+  obtain ⟨a, ha⟩ := hne
+  exact fun y z hy hz => (hy n hT a ha).symm.trans (hz n hT a ha)
 
-section base
-variable {α : Type _} [OFE α] [Inhabited α]
+/-- A point of an approximation. -/
+noncomputable def get (S : Approx α) : α := Classical.choose S.2.nonempty
 
-/-- The hull of a set: the smallest ball containing it, or everything when it is empty. -/
-def hullOf (T : α → Prop) : α → Prop := fun z => ∀ m, Approx.prec T m → ∀ a, T a → a ≡{m}≡ z
+omit [IsCOFE α] [Inhabited α] in
+theorem get_mem (S : Approx α) : S.1 (get S) := Classical.choose_spec S.2.nonempty
 
-theorem hullOf_isApprox (T : α → Prop) : Approx.IsApprox (hullOf T) := by
-  by_cases hne : ∃ a, T a
-  · obtain ⟨a, ha⟩ := hne
-    refine ⟨a, Approx.prec T, ?_⟩
-    funext z
-    apply propext
-    constructor
-    · intro h m hm
-      exact h m hm a ha
-    · intro h m hm b hb
-      exact (hm b a hb ha).trans (h m hm)
-  · refine ⟨default, fun _ => False, ?_⟩
-    funext z
-    apply propext
-    exact ⟨fun _ _ h => h.elim, fun _ _ _ a ha => (hne ⟨a, ha⟩).elim⟩
+/-- Run `G` on every point of `S`. -/
+def lift (G : α → α) (S : Approx α) : Approx α := hull fun y => ∃ x, S.1 x ∧ y = G x
 
-noncomputable instance : ApproxFun α (Approx α) where
-  Sel S a := S.1 a
-  hull T := ⟨hullOf T, hullOf_isApprox T⟩
-  get S := Classical.choose S.2.nonempty
-  Precise n S := Approx.prec S.1 n
-  sel_mono h _ hf := h _ hf
-  sel_get S := Classical.choose_spec S.2.nonempty
-  sel_hull ha := fun _ hm _ hb => hm _ _ hb ha
-  hull_mono hsub hne := by
-    obtain ⟨a', ha'⟩ := hne
-    intro z hz m hm a ha
-    have hm' : Approx.prec _ m := fun b d hb hd => hm b d (hsub b hb) (hsub d hd)
-    exact (hm a a' ha (hsub a' ha')).trans (hz m hm' a' ha')
-  sel_dist h hf hg := h _ _ hf hg
-  precise_hull hT hne := by
-    obtain ⟨a, ha⟩ := hne
-    intro y z hy hz
-    exact (hy _ hT a ha).symm.trans (hz _ hT a ha)
-  sel_eq_get h hf := OFE.eq_dist'.mpr fun n => h n _ _ hf (Classical.choose_spec _)
-
-end base
-
-section pi
-variable {A : Type _} {β : A → Type _} {βA : A → Type _} [∀ a, OFE (β a)]
-  [∀ a, PartialOrder (βA a)] [∀ a, ApproxFun (β a) (βA a)]
-
-noncomputable instance : ApproxFun ((a : A) → β a) ((a : A) → βA a) where
-  Sel s f := ∀ a, Sel (s a) (f a)
-  hull T a := hull fun y => ∃ f, T f ∧ f a = y
-  get s a := get (s a)
-  Precise n s := ∀ a, Precise (β a) n (s a)
-  sel_mono h _ hf a := sel_mono (h a) (hf a)
-  sel_get s a := sel_get (s a)
-  sel_hull hf a := sel_hull ⟨_, hf, rfl⟩
-  hull_mono hsub hne a := by
-    obtain ⟨f, hf⟩ := hne
-    exact hull_mono (fun _ ⟨g, hg, h⟩ => ⟨g, hsub g hg, h⟩) ⟨_, f, hf, rfl⟩
-  sel_dist h hf hg a := sel_dist (h a) (hf a) (hg a)
-  precise_hull hT hne a := by
-    obtain ⟨f, hf⟩ := hne
-    refine precise_hull ?_ ⟨_, f, hf, rfl⟩
-    rintro _ _ ⟨g, hg, rfl⟩ ⟨k, hk, rfl⟩
-    exact hT g k hg hk a
-  sel_eq_get h hf := funext fun a => sel_eq_get (fun n => h n a) (hf a)
-
-end pi
-
-/-! ## The lift of a functional -/
-
-variable {τ τA : Type _} [OFE τ] [CCPO τA] [ApproxFun τ τA]
-
-/-- Lift `G` to approximations: the hull of `G` applied to everything `s` approximates. -/
-def lift (G : τ → τ) (s : τA) : τA := hull fun y => ∃ f, Sel s f ∧ y = G f
-
-theorem sel_nonempty (s : τA) : ∃ f : τ, Sel s f := ⟨_, sel_get s⟩
-
+omit [IsCOFE α] in
 /-- Lifting is monotone, for any `G`. -/
-theorem lift_mono (G : τ → τ) : monotone (lift (τA := τA) G) := by
-  intro s s' h
-  obtain ⟨f, hf⟩ := sel_nonempty (τ := τ) s'
-  exact hull_mono (fun _ ⟨g, hg, hy⟩ => ⟨g, sel_mono h hg, hy⟩) ⟨_, f, hf, rfl⟩
+theorem lift_mono (G : α → α) : monotone (lift G) := by
+  intro S S' h z hz m hm a ha
+  -- `S' ⊆ S`, so the image of `S'` under `G` is inside the image of `S`.
+  have sub : ∀ y, (∃ x, S'.1 x ∧ y = G x) → ∃ x, S.1 x ∧ y = G x :=
+    fun _ ⟨x, hx, e⟩ => ⟨x, h x hx, e⟩
+  have hb : ∃ x, S'.1 x ∧ G (get S') = G x := ⟨_, get_mem S', rfl⟩
+  exact (hm _ _ ha (sub _ hb)).trans (hz m (fun y z hy hz => hm y z (sub y hy) (sub z hz)) _ hb)
 
-/-- For a contractive `G`, a fixpoint of `lift G` is exact, and `get` of it is a fixpoint of `G`. -/
-theorem lift_fix_get (G : τ → τ) [Contractive G] {s : τA} (hs : lift G s = s) :
-    get s = G (get s) := by
-  have hprec : ∀ n, Precise τ n s := by
+omit [IsCOFE α] in
+/-- For a contractive `G`, a fixpoint of `lift G` is a single point, and a fixpoint of `G`. -/
+theorem lift_fix_get (G : α → α) [Contractive G] {S : Approx α} (hS : lift G S = S) :
+    get S = G (get S) := by
+  have hprec : ∀ n, prec S.1 n := by
     intro n
     induction n using Nat.strongRecOn with
     | ind n ih =>
-      rw [← hs]
-      refine precise_hull ?_ ⟨_, _, sel_get s, rfl⟩
-      rintro _ _ ⟨f, hf, rfl⟩ ⟨g, hg, rfl⟩
-      exact Contractive.distLater_dist fun m hm => sel_dist (ih m hm) hf hg
-  have hmem : Sel (lift G s) (G (get s)) := sel_hull ⟨_, sel_get s, rfl⟩
-  rw [hs] at hmem
-  exact (sel_eq_get hprec hmem).symm
+      rw [← hS]
+      refine prec_hull ?_ ⟨_, _, get_mem S, rfl⟩
+      rintro _ _ ⟨x, hx, rfl⟩ ⟨y, hy, rfl⟩
+      exact Contractive.distLater_dist fun m hm => ih m hm x y hx hy
+  have hG : (lift G S).1 (G (get S)) := mem_hull ⟨_, get_mem S, rfl⟩
+  rw [hS] at hG
+  exact OFE.eq_dist'.mpr fun n => hprec n _ _ (get_mem S) hG
 
-end ApproxFun
+end Approx
 
 end Iris

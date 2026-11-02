@@ -32,7 +32,7 @@ variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable [TI : TpinvGS GF Expr H]
 
-noncomputable abbrev abstractECTXLangComplete (wp : AbstractWP Expr Val GF) (I : List Expr → State → IProp GF)
+abbrev abstractECTXLangComplete (wp : AbstractWP Expr Val GF) (I : List Expr → State → IProp GF)
   (n : Nat) (C : List Expr) (e₁ : Expr) (σ : State) (E : CoPset) :
     IProp GF := iprop%
    ⌜PrimStep.Reducible (e₁, σ)⌝ -∗ (n ↪thread e₁) -∗ I C σ ∗ tpInv C ∗ ⌜cfgSafe (C, σ)⌝ ={E}=∗
@@ -84,7 +84,7 @@ abbrev cfgInv (Cini : List Expr × State) (f : Forking) : IProp GF := iprop%
   ∃ cfg : List Expr × State,
     ACG.heap_inv cfg.1 cfg.2 ∗ tpInv cfg.1 ∗ ⌜cfgSafeForking cfg f⌝ ∗ ⌜Cini -·->ₜₚ* cfg⌝
 
-noncomputable def isCcfg (Cini : List Expr × State) (f : Forking) (γ : GName) : IProp GF :=
+def isCcfg (Cini : List Expr × State) (f : Forking) (γ : GName) : IProp GF :=
   CancelableInvariant.cinv completenessN γ (cfgInv (wp := wp) Cini f)
 
 instance isCcfg_persistent (Cini : List Expr × State) (f : Forking) (γ : GName) :

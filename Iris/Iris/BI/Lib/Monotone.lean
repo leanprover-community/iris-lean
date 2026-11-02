@@ -9,8 +9,8 @@ public import Iris.ProofMode
 
 /-! # Monotone predicate transformers
 
-A *curried predicate* is a `PROP`, or a function into curried predicates. `wandAll Φ Ψ` is the
-pointwise wand `∀ x, Φ x -∗ Ψ x`, and `BIMono F` says that `F` preserves it.
+`BIMono F` says that the predicate transformer `F : (A → PROP) → (A → PROP)` preserves pointwise
+wands, inside the BI: `□ (∀ x, Φ x -∗ Ψ x) -∗ ∀ x, F Φ x -∗ F Ψ x`.
 
 The `IMono` rules prove `BIMono` one connective at a time. Each rule has the form
 `⊢ □ R -∗ P -∗ P'`: under the persistent assumption `R`, the body `P` turns into `P'`. -/
@@ -22,81 +22,24 @@ open BI Iris.Std
 
 local bi PROP
 
-universe w in
-/-- A curried predicate: a `PROP`, or a function into curried predicates. -/
-class Curried (τ : Type _) (PROP : Type _) [BI PROP] where
-  /-- The arguments of a curried predicate, as a tuple. -/
-  Args : Type w
-  /-- Apply a curried predicate to all of its arguments. -/
-  app : τ → Args → PROP
-  /-- `∀ x, P x`, with one `∀` per argument. -/
-  all : (Args → PROP) → PROP
-  all_intro {Q : PROP} {P : Args → PROP} : (∀ a, Q ⊢ P a) → Q ⊢ all P
-  all_elim {P : Args → PROP} (a : Args) : all P ⊢ P a
-
-namespace Curried
-variable {PROP : Type _} [BI PROP]
-
-instance : Curried PROP PROP where
-  Args := Unit
-  app P _ := P
-  all P := P ()
-  all_intro h := h ()
-  all_elim _ := .rfl
-
-instance {α : Type _} {β : α → Type _} [∀ a, Curried (β a) PROP] :
-    Curried ((a : α) → β a) PROP where
-  Args := (a : α) × Args (β a) PROP
-  app f a := app (f a.1) a.2
-  all P := iprop(∀ a, all fun r => P ⟨a, r⟩)
-  all_intro h := forall_intro fun a => all_intro fun r => h ⟨a, r⟩
-  all_elim a := (forall_elim a.1).trans (all_elim a.2)
-
-variable {τ : Type _} [Curried τ PROP]
-
-/-- The pointwise wand `∀ x, Φ x -∗ Ψ x`. -/
-def wandAll (Φ Ψ : τ) : PROP := all fun a => iprop(app Φ a -∗ app Ψ a)
-
-theorem wandAll_intro {Q : PROP} {Φ Ψ : τ} (h : ∀ a, Q ∗ app Φ a ⊢ app Ψ a) :
-    Q ⊢ wandAll Φ Ψ :=
-  all_intro fun a => wand_intro (h a)
-
-theorem wandAll_elim {Φ Ψ : τ} (a : Args τ PROP) : wandAll Φ Ψ ∗ app Φ a ⊢ app Ψ a :=
-  (sep_mono_left (all_elim a)).trans wand_elim_left
-
-theorem wandAll_trans {Φ Ψ Ξ : τ} : wandAll Φ Ψ ∗ □ wandAll Ψ Ξ ⊢ wandAll Φ Ξ :=
-  wandAll_intro fun a => sep_right_comm.1.trans <| (sep_mono_left (wandAll_elim a)).trans <|
-    sep_symm.trans <| (sep_mono_left intuitionistically_elim).trans (wandAll_elim a)
-
-theorem wandAll_prop {P Q : PROP} : wandAll P Q = iprop(P -∗ Q) := rfl
-
-theorem wandAll_pi {α : Type _} {β : α → Type _} [∀ a, Curried (β a) PROP]
-    {Φ Ψ : (a : α) → β a} : wandAll (PROP := PROP) Φ Ψ = iprop(∀ a, wandAll (Φ a) (Ψ a)) := rfl
-
-end Curried
-
-open Curried
+variable {PROP : Type _} [BI PROP] {A : Sort _}
 
 /-- `F` is monotone inside the BI: it preserves pointwise wands. -/
-def BIMono {PROP : Type _} [BI PROP] {τ : Type _} [Curried τ PROP] (F : τ → τ) : Prop :=
-  ∀ Φ Ψ, ⊢ □ wandAll Φ Ψ -∗ wandAll (F Φ) (F Ψ)
+def BIMono (F : (A → PROP) → A → PROP) : Prop :=
+  ∀ Φ Ψ, ⊢ □ (∀ x, Φ x -∗ Ψ x) -∗ ∀ x, F Φ x -∗ F Ψ x
 
-theorem BIMono.const {PROP : Type _} [BI PROP] {τ : Type _} [Curried τ PROP] (c : τ) :
-    BIMono (PROP := PROP) fun _ : τ => c :=
-  fun _ _ => wand_intro <| sep_elim_right.trans <| wandAll_intro fun _ => sep_elim_right
+theorem BIMono.const (c : A → PROP) : BIMono fun _ => c := fun _ _ => by
+  iintro #_ %x H
+  iexact H
 
 /-! ## Rules for `imono` -/
 
 namespace IMono
-variable {PROP : Type _} [BI PROP] {R P P' Q Q' : PROP}
+variable {R P P' Q Q' : PROP}
 
-/-- Introduce the first argument of a curried predicate. -/
-theorem pi {α : Type _} {β : α → Type _} [∀ a, Curried (β a) PROP] {Φ Ψ : (a : α) → β a}
-    (h : ∀ a, ⊢ □ R -∗ wandAll (Φ a) (Ψ a)) : ⊢ □ R -∗ wandAll Φ Ψ :=
-  wand_intro <| emp_sep.1.trans <| forall_intro fun a => emp_sep.2.trans (wand_elim (h a))
-
-/-- A predicate with no arguments left. -/
-theorem prop (h : ⊢ □ R -∗ P -∗ P') : ⊢ □ R -∗ wandAll P P' := h
+/-- Introduce an argument of the predicates. -/
+theorem arg {P : A → PROP} (h : ∀ x, ⊢ □ R -∗ P x) : ⊢ □ R -∗ ∀ x, P x :=
+  wand_intro <| emp_sep.1.trans <| forall_intro fun x => emp_sep.2.trans (wand_elim (h x))
 
 /-- A body that does not mention the recursive function. -/
 theorem refl : ⊢ □ R -∗ P -∗ P :=

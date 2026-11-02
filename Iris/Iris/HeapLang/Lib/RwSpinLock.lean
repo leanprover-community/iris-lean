@@ -96,7 +96,7 @@ abbrev rwStateInv (γ : GName) (l : Loc) (Φ : Qp → IProp GF) : IProp GF := ip
          Φ q)
 
 @[rocq_alias heap_lang.is_rw_lock]
-noncomputable def isRwLock (γ : GName) (lk : Val) (Φ : Qp → IProp GF) : IProp GF := iprop%
+def isRwLock (γ : GName) (lk : Val) (Φ : Qp → IProp GF) : IProp GF := iprop%
   ▷ internalFractional Φ ∗ ∃ l : Loc, ⌜lk = hl_val(#l)⌝ ∗ inv rwLockN (rwStateInv γ l Φ)
 
 @[rocq_alias heap_lang.is_rw_lock_persistent]
@@ -396,7 +396,7 @@ theorem releaseWriter_spec (γ : GName) (lk : Val) (Φ : Qp → IProp GF) :
 end proof
 
 @[rocq_alias heap_lang.rw_spin_lock, implicit_reducible]
-noncomputable def instRwLock [HeapLangGS hlc GF] : RwLock GF where
+def instRwLock [HeapLangGS hlc GF] : RwLock GF where
   newlock := newlock
   acquireReader := acquireReader
   releaseReader := releaseReader

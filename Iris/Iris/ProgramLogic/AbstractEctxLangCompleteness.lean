@@ -35,7 +35,7 @@ variable {GF : BundledGFunctors} {HLC : HasLC} [IrisGS_gen HLC Expr GF]
 variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable [TI : TpinvGS GF Expr H]
 
-noncomputable abbrev ectxLangCompletenessStmt (wp : AbstractWP Expr Val GF)
+abbrev ectxLangCompletenessStmt (wp : AbstractWP Expr Val GF)
     (heap_inv : List Expr → State → IProp GF) (n : Nat) (C : List Expr) (e₁ : Expr) (σ : State)
     (K : Ectx) (E : CoPset) : IProp GF := iprop%
   ⌜BaseStep.Reducible (e₁, σ)⌝ -∗

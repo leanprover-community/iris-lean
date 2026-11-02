@@ -148,31 +148,59 @@ ifix even (n : Nat) : PROP := iprop(⌜n = 0⌝ ∨ ∃ m, ⌜n = m + 2⌝ ∗ e
 -- Induction with one varying parameter.
 theorem even_mod (n : Nat) : even (PROP := PROP) n ⊢ ⌜n % 2 = 0⌝ := by
   iintro H
-  iapply (even.ind (fun n => iprop(⌜n % 2 = 0⌝))) $$ [] %n H
+  iapply (even.iter (fun n => iprop(⌜n % 2 = 0⌝))) $$ [] %n H
   iintro !> %p Hp
   unfold even.pre
   icases Hp with (%h | ⟨%m, %h, %hm⟩)
   · ipureintro; omega
   · ipureintro; omega
 
+-- Strong induction: the hypothesis also knows that the fixpoint holds.
+example (n : Nat) : even (PROP := PROP) n ⊢ ⌜n % 2 = 0⌝ := by
+  iintro H
+  iapply (even.ind (fun n => iprop(⌜n % 2 = 0⌝))) $$ [] %n H
+  iintro !> %p Hp
+  dsimp only [even.pre]
+  icases Hp with (%h | ⟨%m, H⟩)
+  · ipureintro; omega
+  · icases H with ⟨Hh, H⟩
+    icases Hh with %h
+    icases H with ⟨%hm, -⟩
+    ipureintro; omega
+
+-- Persistence follows from closure conditions on the body.
+example (n : Nat) : Persistent (even (PROP := PROP) n) :=
+  even.persistent_absorbing (fun _ _ _ => by unfold even.pre; infer_instance)
+    (fun _ _ _ => by unfold even.pre; infer_instance) n
+
 icofix stream (P : PROP) : PROP := iprop(P ∗ ▷ stream P)
 
 -- Coinduction with no varying parameters: no quantifier.
 theorem stream_of_box (P : PROP) : □ P ⊢ stream iprop(□ P) := by
   iintro #HP
-  iapply (stream.coind iprop(□ P) iprop(□ P)) $$ [] HP
+  iapply (stream.coiter iprop(□ P) iprop(□ P)) $$ [] HP
   iintro !> #H
   unfold stream.pre
   isplit
   · iexact H
   · inext; iexact H
 
+-- Strong coinduction: the hypothesis may also conclude the fixpoint itself.
+example (P : PROP) : □ P ⊢ stream iprop(□ P) := by
+  iintro #HP
+  iapply (stream.coind iprop(□ P) iprop(□ P)) $$ [] HP
+  iintro !> #H
+  unfold stream.pre
+  isplit
+  · iexact H
+  · inext; ileft; iexact H
+
 ifix parity (b : Bool) (n : Nat) : PROP := iprop(⌜n = 0⌝ ∨ ∃ m, ⌜n = m + 1⌝ ∗ parity (!b) m)
 
 -- Two varying parameters are quantified separately, and a fixpoint can be `Φ`.
 example : ⊢ (□ ∀ b n, parity.pre (fun b n => parity (PROP := PROP) b n) b n -∗ parity b n) -∗
     ∀ b n, parity b n -∗ parity b n :=
-  parity.ind _
+  parity.iter _
 end
 
 run_cmd do
@@ -184,7 +212,8 @@ run_cmd do
 run_cmd do
   for decl in #[`zero, `indexed, `constant, `unchanged, `passed, `qualified, `passedPair, `both,
       `implicitSwap, `partialSwap, `sectionRec, `lifted, `inferredSwap, `even, `stream, `parity] do
-    for suffix in #[Lean.Name.anonymous, `pre, `pre_mono, `unfold, `ind, `coind] do
+    for suffix in #[Lean.Name.anonymous, `pre, `pre_mono, `unfold, `iter, `ind, `ind_wf,
+        `coiter, `coind, `paco, `strong_mono, `persistent_absorbing] do
       let name := `IrisTest.Fixpoint ++ decl ++ suffix
       unless (← Lean.getEnv).contains name do continue
       for axiomName in (← Lean.collectAxioms name) do

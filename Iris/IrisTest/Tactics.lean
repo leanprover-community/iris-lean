@@ -4559,8 +4559,8 @@ variable [BI PROP] {α : Type}
 /-- Tests `imono` on a body built from connectives. -/
 example : BIMono (PROP := PROP) (fun (Φ : α → PROP) x => iprop(Φ x ∗ Φ x)) := by imono
 
-/-- Tests `imono` with several curried arguments. -/
-example : BIMono (PROP := PROP) (fun (Φ : α → α → PROP) x y => iprop(Φ y x ∗ ▷ ∃ z, Φ x z)) := by
+/-- Tests `imono` with a pair of arguments. -/
+example : BIMono (PROP := PROP) (fun (Φ : α × α → PROP) p => iprop(Φ (p.2, p.1) ∗ ▷ ∃ z, Φ (p.1, z))) := by
   imono
 
 private def wrap0 (wp : α → PROP) (x : α) : PROP := iprop(wp x ∗ wp x)
@@ -4570,10 +4570,10 @@ private def wrap2 (wp : α → PROP) : α → PROP := wrap1 wp
 /-- Tests `imono` unfolding. -/
 example : BIMono (PROP := PROP) (wrap2 (PROP := PROP) (α := α)) := by imono
 
-private def stepPre (wp : α → Option α → PROP) (x : α) (y : Option α) : PROP :=
-  match y with
-  | none => iprop(wp x none ∨ wp x none)
-  | some _ => iprop(wp x none ∗ wp x none)
+private def stepPre (wp : α × Option α → PROP) (p : α × Option α) : PROP :=
+  match p.2 with
+  | none => iprop(wp (p.1, none) ∨ wp (p.1, none))
+  | some _ => iprop(wp (p.1, none) ∗ wp (p.1, none))
 
 /-- Tests `imono` on a match on an argument. -/
 example : BIMono (PROP := PROP) (stepPre (PROP := PROP) (α := α)) := by imono

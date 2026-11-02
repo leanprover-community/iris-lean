@@ -59,7 +59,7 @@ variable {GF : BundledGFunctors} {hlc : HasLC} [InvGS_gen hlc GF]
 #rocq_ignore uPred_fupd_unseal "`uPred_fupd` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias uPred_fupd]
-noncomputable def uPred_fupd (E1 E2 : CoPset) (P : IProp GF) : IProp GF :=
+def uPred_fupd (E1 E2 : CoPset) (P : IProp GF) : IProp GF :=
   iprop(wsat ∗ ownE E1 -∗ |==£> (wsat ∗ ownE E2 ∗ P))
 
 instance {E1 E2 : CoPset} : NonExpansive (uPred_fupd (GF := GF) (hlc := hlc) E1 E2) where
@@ -70,7 +70,7 @@ instance {E1 E2 : CoPset} : NonExpansive (uPred_fupd (GF := GF) (hlc := hlc) E1 
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne .rfl h
 
-noncomputable instance uPred_fupd_instance : FUpd (IProp GF) where
+instance uPred_fupd_instance : FUpd (IProp GF) where
   fupd := uPred_fupd
 
 end FUpd
@@ -82,7 +82,7 @@ open Std.LawfulSet
 #rocq_ignore uPred_fupd_mixin "The `BiFUpdMixin` laws are supplied directly when building `uPred_bi_fupd` below."
 
 @[rocq_alias uPred_bi_fupd]
-noncomputable instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (IProp GF) where
+instance uPred_bi_fupd {GF : BundledGFunctors} [InvGS_gen hlc GF] : BIFUpdate (IProp GF) where
   fupd := uPred_fupd
   subset Hsub := by
     simp only [uPred_fupd]

@@ -44,16 +44,18 @@ macro_rules
   | `(tactic| imono_step) => `(tactic| first
       | exact IMono.refl
       | (imono_rule <;> intros <;> imono_step)
-      | (simp only [Curried.wandAll_pi, Curried.wandAll_prop]; iintro #H HP; iapply H; iexact HP)
+      | (iintro #H HP; iapply H; iexact HP)
       | (split <;> imono_step)
       | (imono_unfold; imono_step))
 
-/-- Prove `BIMono F` for a fixpoint body `F`. The body is taken apart one connective at a time,
-down to the recursive calls; `match`es are split, and other definitions unfolded. -/
+/-- Prove that a fixpoint body `F` is monotone, stated as `BIMono F` or with its arguments spelled
+out: `∀ Φ Ψ, ⊢ □ (∀ x y, Φ x y -∗ Ψ x y) -∗ ∀ x y, F Φ x y -∗ F Ψ x y`. The body is taken apart one
+connective at a time, down to the recursive calls; `match`es are split, and other definitions
+unfolded. -/
 macro "imono" : tactic => `(tactic| (
+  try unfold BIMono
   intro Φ Ψ
-  repeat (apply IMono.pi; intro)
-  apply IMono.prop
+  repeat (apply IMono.arg; intro)
   try dsimp only
   imono_step))
 
