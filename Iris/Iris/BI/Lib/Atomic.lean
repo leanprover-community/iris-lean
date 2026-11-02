@@ -122,9 +122,22 @@ icofix atomic_update (Eo Ei : CoPset) (α : TA.Arg → PROP) (β Φ : TA.Arg →
 /-- `atomic_update` is also the greatest fixpoint of `Iris.BI.Lib.Fixpoint`. -/
 theorem atomic_update_eq_bi_greatest_fixpoint (Eo Ei : CoPset) (α : TA.Arg → PROP)
     (β Φ : TA.Arg → TB.Arg → PROP) :
-    atomic_update Eo Ei α β Φ = bi_greatest_fixpoint (atomic_update_pre Eo Ei α β Φ) () :=
-  congrFun ((atomic_update.eq_gfp Eo Ei α β Φ).trans
-    (gfp_eq_bi_greatest_fixpoint (F := atomic_update_pre Eo Ei α β Φ) _)) ()
+    atomic_update Eo Ei α β Φ = bi_greatest_fixpoint (atomic_update_pre Eo Ei α β Φ) () := by
+  have h : BIMono (atomic_update_pre Eo Ei α β Φ) := by unfold atomic_update_pre; imono
+  rw [← gfp_eq_bi_greatest_fixpoint h]
+  refine BIBase.BiEntails.to_eq ⟨?_, ?_⟩
+  · iintro H
+    iapply (CoMonotoneFixpoint.fix_coiter h fun _ => atomic_update Eo Ei α β Φ) $$ [] %() H
+    iintro !> %_ H
+    unfold atomic_update_pre
+    iapply atomic_update.unfold_mp $$ H
+  · iintro H
+    iapply (atomic_update.coiter Eo Ei α β Φ (CoMonotoneFixpoint.gfp _ h ())) $$ [] H
+    iintro !> H
+    have hu : CoMonotoneFixpoint.gfp _ h () ⊢
+        atomic_update.pre Eo Ei α β Φ (CoMonotoneFixpoint.gfp _ h ()) :=
+      CoMonotoneFixpoint.fix_unfold_mp h ()
+    iapply hu $$ H
 
 #rocq_ignore atomic_update_def "Rocq sealing auxiliary; folded into `atomic_update` (no sealing in Lean)."
 #rocq_ignore atomic_update_aux "Rocq sealing auxiliary."

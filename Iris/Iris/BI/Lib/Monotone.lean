@@ -14,7 +14,7 @@ public import Iris.ProofMode
 `BIMono F` says that the predicate transformer `F : (A → PROP) → (A → PROP)` preserves pointwise
 wands, inside the BI: `□ (∀ x, Φ x -∗ Ψ x) -∗ ∀ x, F Φ x -∗ F Ψ x`. Proving this involves solving
 an `IMonoPred` goal: the theorems in this file allow for a simple syntax-guided solution (see the
-tactic file `ProofMode/Monotone.lean`). -/
+tactic file `ProofMode/Lib/Monotone.lean`). -/
 
 @[expose] public section
 

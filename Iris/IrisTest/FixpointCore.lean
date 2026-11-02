@@ -139,7 +139,7 @@ example (b : Bool) : flip b = iprop(▷ flip (!b) -∗ False) := flip.unfold b
 
 -- Guarded fixpoints need a COFE with a default point.
 /--
-error: iguarded: the type of `notCOFE` must be a COFE with a default point, but there is no `IsCOFE` instance
+error: iguarded: the type of `notCOFE`, `Nat → Nat`, must be a COFE with a default point, but there is no `IsCOFE` instance
 -/
 #guard_msgs in
 iguarded notCOFE (n : Nat) : Nat := notCOFE n
