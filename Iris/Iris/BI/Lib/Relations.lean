@@ -197,7 +197,8 @@ theorem bi_rtc_trans (x₁ x₂ x₃ : A) :
     biRtc R x₁ x₂ -∗ biRtc R x₂ x₃ -∗ biRtc R x₁ x₃ := by
   irevert %x₁
   letI : NonExpansive (fun x => iprop(biRtc R x₂ x₃ -∗ biRtc R x x₃)) :=
-    ⟨fun _ _ _ h => wand_ne.ne .rfl (NonExpansive₂.ne h .rfl)⟩
+    (NonExpansive₂.ne_right BIBase.wand (biRtc R x₂ x₃)).comp
+      (NonExpansive₂.ne_left (biRtc R) x₃)
   iapply bi_rtc_ind_left
   iintro !> %x₁ ⟨Heq|⟨%x', HR, IH⟩⟩ H₂
   · irewrite [Heq]; itrivial
@@ -226,8 +227,8 @@ instance bi_rtc_affine [∀ x y, Affine (R x y)] (x y : A) :
 instance bi_rtc_persistent [∀ x y, Persistent (R x y)] (x y : A) :
     Persistent (biRtc R x y) where
   persistent := by
-    letI : NonExpansive (fun x => iprop(<pers> biRtc R x y)) := by
-      exact ⟨fun _ _ _ h => persistently_ne.ne (NonExpansive₂.ne h .rfl)⟩
+    letI : NonExpansive (fun x => iprop(<pers> biRtc R x y)) :=
+      persistently_ne.comp (NonExpansive₂.ne_left (biRtc R) y)
     irevert %x
     iapply bi_rtc_ind_left
     iintro !> %x ⟨#Heq|⟨%x', #HR, #Hrtc⟩⟩
@@ -267,7 +268,8 @@ theorem bi_tc_once (x₁ x₂ : A) : R x₁ x₂ -∗ biTc R x₁ x₂ := by
 theorem bi_tc_trans (x₁ x₂ x₃ : A) :
     biTc R x₁ x₂ -∗ biTc R x₂ x₃ -∗ biTc R x₁ x₃ := by
   letI : NonExpansive (fun x => iprop(biTc R x₂ x₃ -∗ biTc R x x₃)) :=
-    ⟨fun _ _ _ h => wand_ne.ne .rfl (NonExpansive.ne h)⟩
+    (NonExpansive₂.ne_right BIBase.wand (biTc R x₂ x₃)).comp
+      (NonExpansive₂.ne_left (biTc R) x₃)
   irevert %x₁
   iapply bi_tc_ind_left
   iintro !> %x₁ ⟨H | ⟨%x', HR, IH⟩⟩ H₂
@@ -284,7 +286,8 @@ theorem bi_tc_right (x y z : A) : biTc R x y -∗ R y z -∗ biTc R x z := by
 @[rocq_alias bi_tc_rtc_l]
 theorem bi_tc_rtc_left (x y z : A) : biRtc R x y -∗ biTc R y z -∗ biTc R x z := by
   letI : NonExpansive (fun x => iprop(biTc R y z -∗ biTc R x z)) :=
-    ⟨fun _ _ _ h => wand_ne.ne .rfl (NonExpansive.ne h)⟩
+    (NonExpansive₂.ne_right BIBase.wand (biTc R y z)).comp
+      (NonExpansive₂.ne_left (biTc R) z)
   irevert %x
   iapply bi_rtc_ind_left
   iintro !> %x ⟨Heq | ⟨%x', HR, IH⟩⟩ Hyz
@@ -334,7 +337,7 @@ instance bi_tc_persistent [∀ x y, Persistent (R x y)] (x y : A) :
     Persistent (biTc R x y) where
   persistent := by
     letI : NonExpansive (fun x => iprop(<pers> biTc R x y)) :=
-      ⟨fun _ _ _ h => persistently_ne.ne (NonExpansive₂.ne h .rfl)⟩
+      persistently_ne.comp (NonExpansive₂.ne_left (biTc R) y)
     irevert %x
     iapply bi_tc_ind_left
     iintro !> %x ⟨#H | ⟨%x', #_, #_⟩⟩ !>
