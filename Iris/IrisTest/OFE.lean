@@ -16,31 +16,30 @@ open Iris OFE
 
 section ne_of_discrete
 
-variable {α γ β : Type _} [OFE β]
+variable {α β : Type _} [OFE α] [Discrete α] [OFE β]
 
-/-- The basic case: an arbitrary function out of `DiscreteO α`. -/
-example (f : DiscreteO α → β) : NonExpansive f := inferInstance
+example (f : α → β) : NonExpansive f := inferInstance
 
-/-- Functions written as lambdas. -/
-example (g : α → β) : NonExpansive (fun x : DiscreteO α => g x.car) := inferInstance
+example (g : α → β) : NonExpansive (fun x : α => g x) := inferInstance
 
 example (f : Unit → β) : NonExpansive f := inferInstance
 
 example (f : Empty → β) : NonExpansive f := inferInstance
 
-example (f : Option (DiscreteO α) → β) : NonExpansive f := inferInstance
+example (f : Option α → β) : NonExpansive f := inferInstance
 
-example (f : DiscreteO α × DiscreteO γ → β) : NonExpansive f := inferInstance
+variable {γ : Type _} [OFE γ] [Discrete γ]
 
-example (f : DiscreteO α ⊕ DiscreteO γ → β) : NonExpansive f := inferInstance
+example (f : α × γ → β) : NonExpansive f := inferInstance
 
-example (P : DiscreteO α → Prop) (f : Subtype P → β) : NonExpansive f := inferInstance
+example (f : α ⊕ γ → β) : NonExpansive f := inferInstance
 
-example (f : DiscreteO α → β) {n : Nat} {x y : DiscreteO α} (h : x ≡{n}≡ y) :
-    f x ≡{n}≡ f y :=
+example (P : α → Prop) (f : Subtype P → β) : NonExpansive f := inferInstance
+
+example (f : α → β) {n : Nat} {x y : α} (h : x ≡{n}≡ y) : f x ≡{n}≡ f y :=
   NonExpansive.ne h
 
-example (f : DiscreteO α → β) : DiscreteO α -n> β := ⟨f, inferInstance⟩
+example (f : α → β) : α -n> β := ⟨f, inferInstance⟩
 
 end ne_of_discrete
 
