@@ -133,10 +133,10 @@ def Exp.yieldIfNotVal : Exp → ITree heaplangE Unit
   | .val _ => return ()
   | _ => yield
 
+mutual
+
 /-- Recursively denote the given expression `e`. -/
 def Exp.denote (e : Exp) : ITree heaplangE Val :=
-  let denoteYield e :=
-    if e.isVal then denote e else yieldAfter (denote e)
   -- continue the denotation with expression e
   let cont e := do step; e.yieldIfNotVal; denote e
   -- like cont but specialized for the value case
@@ -146,74 +146,74 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
   | .var x => fail s!"Unbound variable {reprStr x}"
   | .rec_ f x e => do contVal <| .rec_ f x e
   | .app e₁ e₂ => do
-    let v ← denoteYield e₂
-    let f ← denoteYield e₁
+    let v ← Exp.denoteYield e₂
+    let f ← Exp.denoteYield e₁
     let ⟨f', x', e⟩ ← f.rec!
     let body := e.subst f' f |>.subst x' v
     cont body
   | .unop op e => do
-    let v ← denoteYield e
+    let v ← Exp.denoteYield e
     let r ← op.denote v
     contVal r
   | .binop op e₁ e₂ => do
-    let v₂ ← denoteYield e₂
-    let v₁ ← denoteYield e₁
+    let v₂ ← Exp.denoteYield e₂
+    let v₁ ← Exp.denoteYield e₁
     let r ← op.denote v₁ v₂
     contVal r
   | .if e₀ e₁ e₂ => do
-    let c ← denoteYield e₀
+    let c ← Exp.denoteYield e₀
     if ← c.bool! then cont e₁
     else cont e₂
   | .pair e₁ e₂ => do
-    let v₂ ← denoteYield e₂
-    let v₁ ← denoteYield e₁
+    let v₂ ← Exp.denoteYield e₂
+    let v₁ ← Exp.denoteYield e₁
     contVal <| .pair v₁ v₂
   | .fst e => do
-    let v ← denoteYield e
+    let v ← Exp.denoteYield e
     let p ← v.pair!
     contVal p.1
   | .snd e => do
-    let v ← denoteYield e
+    let v ← Exp.denoteYield e
     let p ← v.pair!
     contVal <| p.2
   | .injL e => do
-    let v ← denoteYield e
+    let v ← Exp.denoteYield e
     contVal <| .injL v
   | .injR e => do
-    let v ← denoteYield e
+    let v ← Exp.denoteYield e
     contVal <| .injR v
   | .case e₀ e₁ e₂ => do
-    let v ← denoteYield e₀
+    let v ← Exp.denoteYield e₀
     match v with
     | .injL w => cont (.app e₁ (.val w))
     | .injR w => cont (.app e₂ (.val w))
     | _ => fail "Case: not a sum value"
   | .allocN e₁ e₂ => do
-    let v ← denoteYield e₂
-    let vn ← denoteYield e₁
+    let v ← Exp.denoteYield e₂
+    let vn ← Exp.denoteYield e₁
     let n ← vn.int!
     if n ≤ 0 then fail "AllocN: count must be positive"
     let l ← HeapE.allocN n.toNat v
     contVal <| .lit (.loc l)
   | .free e => do
-    let v ← denoteYield e
+    let v ← Exp.denoteYield e
     let l ← v.loc!
     let .some _ ← storeOpt (Val:=Val) l none
       | fail "free: location not allocated"
     contVal <| .lit .unit
   | .load e => do
-    let v ← denoteYield e
+    let v ← Exp.denoteYield e
     let r ← load! (← v.loc!)
     contVal r
   | .store e₁ e₂ => do
-    let v₂ ← denoteYield e₂
-    let v₁ ← denoteYield e₁
+    let v₂ ← Exp.denoteYield e₂
+    let v₁ ← Exp.denoteYield e₁
     let _ ← store! (← v₁.loc!) v₂
     contVal <| .lit .unit
   | .cmpXchg e₀ e₁ e₂ => do
-    let v₂ ← denoteYield e₂
-    let v₁ ← denoteYield e₁
-    let v₀ ← denoteYield e₀
+    let v₂ ← Exp.denoteYield e₂
+    let v₁ ← Exp.denoteYield e₁
+    let v₀ ← Exp.denoteYield e₀
     let l ← v₀.loc!
     let vl ← load! l
     if !Val.compareSafe vl v₁ then
@@ -224,13 +224,13 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
     else
       contVal <| .pair vl (.lit <| .bool false)
   | .xchg e₁ e₂ => do
-    let v₂ ← denoteYield e₂
-    let v₁ ← denoteYield e₁
+    let v₂ ← Exp.denoteYield e₂
+    let v₁ ← Exp.denoteYield e₁
     let r ← store! (← v₁.loc!) v₂
     contVal r
   | .faa e₁ e₂ => do
-    let v₂ ← denoteYield e₂
-    let v₁ ← denoteYield e₁
+    let v₂ ← Exp.denoteYield e₂
+    let v₁ ← Exp.denoteYield e₁
     let l ← v₁.loc!
     let i₂ ← v₂.int!
     let old ← load! l
@@ -238,12 +238,19 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
     let _ ← store! l (.lit (.int (i₁ + i₂)) : Val)
     contVal old
   | .fork e => do
-    let _ ← ConcE.fork (denoteYield e >>= fun _ => return ⟨⟩)
+    let _ ← ConcE.fork (Exp.denoteYield e >>= fun _ => return ⟨⟩)
     contVal <| .lit .unit
   | .newProph => do
     fail "prophecy is not implemented"
   | .resolve _ _ _ => do
     fail "prophecy is not implemented"
 partial_fixpoint
+
+/-- Evaluate a subexpression, yielding afterwards exactly when it was not already a value. -/
+def Exp.denoteYield (e : Exp) : ITree heaplangE Val :=
+  if e.isVal then e.denote else yieldAfter <| e.denote
+partial_fixpoint
+
+end
 
 end Iris.HeapLang
