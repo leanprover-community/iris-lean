@@ -8,6 +8,11 @@ open Lean Elab Term Tactic Meta Command
 
 public meta section
 
+register_option iris.timing.log : Bool := {
+  defValue := false
+  descr := "print timing information to the log"
+}
+
 private def msOf (ns : Nat) : Float :=
   Float.ofNat ns / 1000000.0
 
@@ -22,8 +27,9 @@ private def median (xs : Array Nat) : Nat :=
     let s := xs.qsort (· < ·)
     s[s.size / 2]!
 
-def emitBench (label : String) (rep ns kHeartbeats : Nat) : CoreM Unit :=
-  logInfo s!"BENCH|{label}|{rep}|{ns}|{kHeartbeats}"
+def emitBench (label : String) (rep ns kHeartbeats : Nat) : CoreM Unit := do
+  if iris.timing.log.get (← getOptions) then
+     logInfo s!"BENCH|{label}|{rep}|{ns}|{kHeartbeats}"
 
 syntax (name := itimeNLabelled) "itimeN " num ppSpace str ppSpace tacticSeq : tactic
 

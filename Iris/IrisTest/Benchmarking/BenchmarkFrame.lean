@@ -34,6 +34,10 @@ theorem frame_simple_pat_30 : (P 0 ∗ P 1 ∗ P 2 ∗ P 3 ∗ P 4 ∗ P 5 ∗ P
   iintro ⟨H0, H1, H2, H3, H4, H5, H6, H7, H8, H9, H10, H11, H12, H13, H14, H15, H16, H17, H18, H19, H20, H21, H22, H23, H24, H25, H26, H27, H28, H29⟩
   itime "frame_simple_pat|frame|30" (iframe)
 
+theorem frame_simple_pat_40 : (P 0 ∗ P 1 ∗ P 2 ∗ P 3 ∗ P 4 ∗ P 5 ∗ P 6 ∗ P 7 ∗ P 8 ∗ P 9 ∗ P 10 ∗ P 11 ∗ P 12 ∗ P 13 ∗ P 14 ∗ P 15 ∗ P 16 ∗ P 17 ∗ P 18 ∗ P 19 ∗ P 20 ∗ P 21 ∗ P 22 ∗ P 23 ∗ P 24 ∗ P 25 ∗ P 26 ∗ P 27 ∗ P 28 ∗ P 29 ∗ P 30 ∗ P 31 ∗ P 32 ∗ P 33 ∗ P 34 ∗ P 35 ∗ P 36 ∗ P 37 ∗ P 38 ∗ P 39) ⊢ (P 0 ∗ P 1 ∗ P 2 ∗ P 3 ∗ P 4 ∗ P 5 ∗ P 6 ∗ P 7 ∗ P 8 ∗ P 9 ∗ P 10 ∗ P 11 ∗ P 12 ∗ P 13 ∗ P 14 ∗ P 15 ∗ P 16 ∗ P 17 ∗ P 18 ∗ P 19 ∗ P 20 ∗ P 21 ∗ P 22 ∗ P 23 ∗ P 24 ∗ P 25 ∗ P 26 ∗ P 27 ∗ P 28 ∗ P 29 ∗ P 30 ∗ P 31 ∗ P 32 ∗ P 33 ∗ P 34 ∗ P 35 ∗ P 36 ∗ P 37 ∗ P 38 ∗ P 39) := by
+  iintro ⟨H0, H1, H2, H3, H4, H5, H6, H7, H8, H9, H10, H11, H12, H13, H14, H15, H16, H17, H18, H19, H20, H21, H22, H23, H24, H25, H26, H27, H28, H29, H30, H31, H32, H33, H34, H35, H36, H37, H38, H39⟩;
+  itime "frame_simple_pat|frame|40" (iframe)
+
 /-! ### Framing: goal in the reverse order of the premises -/
 
 theorem frame_reverse_pat_10 : (P 0 ∗ P 1 ∗ P 2 ∗ P 3 ∗ P 4 ∗ P 5 ∗ P 6 ∗ P 7 ∗ P 8 ∗ P 9) ⊢ (P 9 ∗ P 8 ∗ P 7 ∗ P 6 ∗ P 5 ∗ P 4 ∗ P 3 ∗ P 2 ∗ P 1 ∗ P 0) := by
@@ -55,5 +59,9 @@ theorem frame_reverse_pat_25 : (P 0 ∗ P 1 ∗ P 2 ∗ P 3 ∗ P 4 ∗ P 5 ∗ 
 theorem frame_reverse_pat_30 : (P 0 ∗ P 1 ∗ P 2 ∗ P 3 ∗ P 4 ∗ P 5 ∗ P 6 ∗ P 7 ∗ P 8 ∗ P 9 ∗ P 10 ∗ P 11 ∗ P 12 ∗ P 13 ∗ P 14 ∗ P 15 ∗ P 16 ∗ P 17 ∗ P 18 ∗ P 19 ∗ P 20 ∗ P 21 ∗ P 22 ∗ P 23 ∗ P 24 ∗ P 25 ∗ P 26 ∗ P 27 ∗ P 28 ∗ P 29) ⊢ (P 29 ∗ P 28 ∗ P 27 ∗ P 26 ∗ P 25 ∗ P 24 ∗ P 23 ∗ P 22 ∗ P 21 ∗ P 20 ∗ P 19 ∗ P 18 ∗ P 17 ∗ P 16 ∗ P 15 ∗ P 14 ∗ P 13 ∗ P 12 ∗ P 11 ∗ P 10 ∗ P 9 ∗ P 8 ∗ P 7 ∗ P 6 ∗ P 5 ∗ P 4 ∗ P 3 ∗ P 2 ∗ P 1 ∗ P 0) := by
   iintro ⟨H0, H1, H2, H3, H4, H5, H6, H7, H8, H9, H10, H11, H12, H13, H14, H15, H16, H17, H18, H19, H20, H21, H22, H23, H24, H25, H26, H27, H28, H29⟩
   itime "frame_reverse_pat|frame|30" (iframe)
+
+theorem frame_reverse_pat_40 : (P 0 ∗ P 1 ∗ P 2 ∗ P 3 ∗ P 4 ∗ P 5 ∗ P 6 ∗ P 7 ∗ P 8 ∗ P 9 ∗ P 10 ∗ P 11 ∗ P 12 ∗ P 13 ∗ P 14 ∗ P 15 ∗ P 16 ∗ P 17 ∗ P 18 ∗ P 19 ∗ P 20 ∗ P 21 ∗ P 22 ∗ P 23 ∗ P 24 ∗ P 25 ∗ P 26 ∗ P 27 ∗ P 28 ∗ P 29 ∗ P 30 ∗ P 31 ∗ P 32 ∗ P 33 ∗ P 34 ∗ P 35 ∗ P 36 ∗ P 37 ∗ P 38 ∗ P 39) ⊢ (P 39 ∗ P 38 ∗ P 37 ∗ P 36 ∗ P 35 ∗ P 34 ∗ P 33 ∗ P 32 ∗ P 31 ∗ P 30 ∗ P 29 ∗ P 28 ∗ P 27 ∗ P 26 ∗ P 25 ∗ P 24 ∗ P 23 ∗ P 22 ∗ P 21 ∗ P 20 ∗ P 19 ∗ P 18 ∗ P 17 ∗ P 16 ∗ P 15 ∗ P 14 ∗ P 13 ∗ P 12 ∗ P 11 ∗ P 10 ∗ P 9 ∗ P 8 ∗ P 7 ∗ P 6 ∗ P 5 ∗ P 4 ∗ P 3 ∗ P 2 ∗ P 1 ∗ P 0) := by
+  iintro ⟨H0, H1, H2, H3, H4, H5, H6, H7, H8, H9, H10, H11, H12, H13, H14, H15, H16, H17, H18, H19, H20, H21, H22, H23, H24, H25, H26, H27, H28, H29, H30, H31, H32, H33, H34, H35, H36, H37, H38, H39⟩;
+  itime "frame_reverse_pat|frame|40" (iframe)
 
 end IrisTest.Benchmarking
