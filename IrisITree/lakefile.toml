@@ -10,7 +10,7 @@ path = "../Iris"
 [[require]]
 name = "Coinductive"
 scope = "ISTA-PLV"
-rev = "80bf0dc38320e3a5729f668cb9a2c7026f6e5cea"
+rev = "67e58456693895b9a6523f484fc00927032b5984"
 
 [[lean_lib]]
 name = "IrisITree"
