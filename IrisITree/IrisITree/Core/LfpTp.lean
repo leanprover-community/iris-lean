@@ -55,6 +55,17 @@ theorem lfp_tpF_mono (tp1 tp2 : List ((α → PROP) → PROP) → PROP) :
   · iexact HF
   · iintro %Ms HM'; iapply Hwand; iapply HMS $$ HM'
 
+theorem lfp_tpF_mono' tp (F G : (α → PROP) → α → PROP) :
+    □ (∀ Φ x, F Φ x -∗ G Φ x) -∗
+    ∀ Ms, lfp_tpF F tp Ms -∗ lfp_tpF G tp Ms := by
+  iintro #Hwand %Ms Htp; unfold lfp_tpF
+  iintro %i %M %Heq
+  ispecialize Htp $$ %i %M %Heq
+  iapply bi_mono0_mono $$ Htp [Hwand]
+  iintro %x ⟨%Φ, ⟨HF, Htp⟩⟩
+  iexists Φ; iframe Htp
+  iapply Hwand $$ [$]
+
 /-- Helper function for [lfp_*_perm_*]. -/
 private theorem perm_pick_erase {β : Type _} {Ms1 Ms2 : List β} {i : Nat} {M : β}
     (hperm : Ms1.Perm Ms2) (Hi : Ms2[i]? = some M) :
@@ -147,7 +158,6 @@ theorem lfp_tp_nil : ⊢ (lfp_tp F [] : PROP) := by
 theorem lfp_tp_ind (Φ : List ((α → PROP) → PROP) → PROP) :
     □ (∀ Ms, lfp_tpF F (fun Ms => iprop(Φ Ms ∧ lfp_tp F Ms)) Ms -∗ Φ Ms) -∗
     ∀ Ms, lfp_tp F Ms -∗ Φ Ms := by
-  letI := ne_of_discrete fun (Ms : DiscreteO (List ((α → PROP) → PROP))) => Φ Ms.car
   unfold lfp_tp
   iintro #Hwand %Ms Hlfp
   iapply least_fixpoint_ind (lfp_tpF_discrete F) (fun Ms => Φ Ms.car) $$ [] %⟨Ms⟩ Hlfp

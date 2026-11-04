@@ -30,7 +30,6 @@ def wpiConstF {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PRO
       | ITreeF.tau t' => wpi t'
       | ITreeF.vis i k => H.ihandle i (fun a => wpi (k a)) (fun a => wpi (k a))
 
-
 section wp_itree_const
 
 variable {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PROP]
@@ -43,7 +42,7 @@ instance (H : IHandler PROP E) (Φ : R → PROP) :
     case tau t' => exact BIFUpdate.ne.ne <| Hwp t'
     case vis i k =>
       apply BIFUpdate.ne.ne
-      apply OFE.NonExpansive₂.ne (f := H.ihandle i)
+      apply OFE.NonExpansive₂.ne
       · intro a; apply Hwp (k a)
       · intro a; apply Hwp (k a)
 
@@ -65,7 +64,7 @@ instance wp_itree_const_mono (H : IHandler PROP E) (Φ : R → PROP) :
   mono_pred := by
     iintro %wp1 %wp2 %Hne1 %Hne2 #Hwand %t Hwp
     iapply wpiConstF_mono $$ Hwand Hwp
-  mono_pred_ne := ne_of_discrete _
+  mono_pred_ne := inferInstance
 
 /-- The constant-Φ weakest precondition, as the least fixpoint of `wpi_constF`. -/
 def wpiConst (H : IHandler PROP E) (Φ : R → PROP) : ITree E R → PROP :=
@@ -75,7 +74,6 @@ theorem wpi_const_iter (H : IHandler PROP E) (Φ : R → PROP)
     (P : ITree E R → PROP) :
     □ (∀ y, wpiConstF H Φ P y -∗ P y) -∗
     ∀ t, wpiConst H Φ t -∗ P t := by
-  letI := ne_of_discrete P
   iintro #Hwand %t Hwp
   iapply least_fixpoint_iter (wpiConstF H Φ) $$ Hwand
   unfold wpiConst; iexact Hwp
@@ -104,15 +102,15 @@ section wpi_tp_section
 variable {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PROP] [BIAffine PROP]
 
 theorem wpi_tp_intro (t : ITree E R) (H : IHandler PROP E) (Φ : R → PROP) :
-    WPi t @> H; ∅ {{ Φ }} ⊢ wpi_tp H [fun P => P t] Φ := by
-  letI : ∀ t, OFE.NonExpansive (fun Ψ : R → PROP =>
-      iprop(□ (∀ r, Ψ r -∗ Φ r) -∗ bi_least_fixpoint (wpiConstF H Φ) t)) :=
-    fun _ => ⟨fun _ _ _ HΨ => wand_ne.ne
-      (intuitionistically_ne.ne (forall_ne fun r => wand_ne.ne (HΨ r) .rfl)) .rfl⟩
+    WPi t @> H; ∅ {{ Φ }} -∗
+    WPi_tp [fun P => P t] @> H {{ Φ }} := by
+  let G := fun t (Ψ: R → PROP) => iprop%
+    □ (∀ r, Ψ r -∗ Φ r) -∗ bi_least_fixpoint (wpiConstF H Φ) t
+  letI : ∀ t, OFE.NonExpansive (G t) := fun _ => ⟨fun _ _ _ HΨ => wand_ne.ne
+    (intuitionistically_ne.ne (forall_ne fun r => wand_ne.ne (HΨ r) .rfl)) .rfl⟩
   iintro Hwpi; unfold wpi_tp
   iapply lfp_tp_intro
-  iapply (wpi_ind (fun t Ψ => iprop(□ (∀ r, Ψ r -∗ Φ r) -∗
-    bi_least_fixpoint (wpiConstF H Φ) t))) $$ [] %t %Φ Hwpi
+  iapply wpi_ind G $$ [] Hwpi
   · iintro !> %t %Ψ Hstep #Hpost
     iapply least_fixpoint_unfold_mpr
     cases t <;> simp [wpiConstF, wpiF]
@@ -127,6 +125,16 @@ theorem wpi_tp_intro (t : ITree E R) (H : IHandler PROP E) (Φ : R → PROP) :
       · iintro !> %a ⟨Hconst, -⟩
         iapply Hconst; iintro !> %r ⟨⟩
   · iintro !> %r $
+
+theorem wpi_tp_fupd (Ms : List ((ITree E R → PROP) → PROP)) H Φ :
+    WPi_tp Ms @> H {{ v, |={∅}=> Φ v }} -∗
+    WPi_tp Ms @> H {{ Φ }} := by
+  iintro Hwp; unfold wpi_tp; irevert %Ms Hwp
+  iapply lfp_tp_ind (wpiConstF H (fun v => iprop(|={∅}=> Φ v)))
+  iintro !> %Ns Hstep
+  iapply lfp_tp_unfold
+  -- iapply lfp_tpF_mono' $$ [] Hstep 
+  sorry
 
 end wpi_tp_section
 

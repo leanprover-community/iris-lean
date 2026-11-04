@@ -19,12 +19,6 @@ variable {PROP : Type _} [BI PROP] [BIFUpdate PROP]
 instance {E R} : COFE (ITree E R) := COFE.ofDiscrete _
 instance {E R} : OFE.Discrete (ITree E R) := ⟨fun h => h⟩
 
--- TODO: upstream? Make this an instance?
-/-- Every function out of a discrete OFE is non-expansive (like `ITree E R`). -/
-theorem ne_of_discrete [OFE α] [OFE.Discrete α] [OFE β] (f : α → β) :
-    OFE.NonExpansive f :=
-  ⟨fun _ _ _ Hx => .of_eq (congrArg f <| OFE.discrete Hx)⟩
-
 section wp_itree_def
 
 variable {E} (H : IHandler PROP E)
