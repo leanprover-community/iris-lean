@@ -59,6 +59,23 @@ theorem wpiConstF_mono (H : IHandler PROP E) (Φ : R → PROP)
     · iintro %a Hk; iapply Hwand $$ Hk
     · iintro !> %a Hk; iapply Hwand $$ Hk
 
+theorem wpiConstF_mono' (H : IHandler PROP E) (Φ Ψ : R → PROP) wp :
+    □ (∀ r, Φ r -∗ Ψ r) -∗
+    ∀ t, wpiConstF H Φ wp t -∗ wpiConstF H Ψ wp t := by
+  iintro #Hwand %t Hwp
+  cases t <;> simp [wpiConstF]
+  · imod Hwp; imodintro; iapply Hwand $$ [$]
+  · iexact Hwp
+  · iexact Hwp
+
+theorem wpiConstF_fupd (H : IHandler PROP E) Φ wp :
+    wpiConstF H (fun v => iprop% |={∅}=> Φ v) wp t -∗
+    wpiConstF H Φ wp t := by
+  cases t <;> simp [wpiConstF]
+  · iintro >HΦ //
+  · iintro HΦ //
+  · iintro HΦ //
+
 instance wp_itree_const_mono (H : IHandler PROP E) (Φ : R → PROP) :
     BIMonoPred (wpiConstF H Φ) where
   mono_pred := by
@@ -129,12 +146,59 @@ theorem wpi_tp_intro (t : ITree E R) (H : IHandler PROP E) (Φ : R → PROP) :
 theorem wpi_tp_fupd (Ms : List ((ITree E R → PROP) → PROP)) H Φ :
     WPi_tp Ms @> H {{ v, |={∅}=> Φ v }} -∗
     WPi_tp Ms @> H {{ Φ }} := by
-  iintro Hwp; unfold wpi_tp; irevert %Ms Hwp
+  iintro Hwp; unfold wpi_tp
   iapply lfp_tp_ind (wpiConstF H (fun v => iprop(|={∅}=> Φ v)))
   iintro !> %Ns Hstep
   iapply lfp_tp_unfold
-  -- iapply lfp_tpF_mono' $$ [] Hstep 
-  sorry
+  iapply lfp_tpF_mono' _ (wpiConstF H (fun v => iprop% |={∅}=> Φ v)) $$ [] [Hstep]
+  · iintro !> %Φ' %x Hwp
+    iapply wpiConstF_fupd $$ Hwp
+  · iapply lfp_tpF_mono _ _ _ $$ [] Hstep
+    iintro !> %Ns ⟨Hlfp, -⟩ //
+  · iexact Hwp
+
+theorem wpi_tp_wand (Ms : List ((ITree E R → PROP) → PROP)) H Φ Ψ :
+    □ (∀ r, Φ r -∗ Ψ r) -∗
+    WPi_tp Ms @> H {{ Φ }} -∗
+    WPi_tp Ms @> H {{ Ψ }} := by
+  iintro #Hwand Hwp; unfold wpi_tp
+  iapply lfp_tp_ind (wpiConstF H Φ) $$ [Hwand]
+  · iintro !> %Ns Hlfp
+    iapply lfp_tp_unfold
+    iapply lfp_tpF_mono' _ (wpiConstF H Φ) $$ [] [Hlfp]
+    · iintro !> %Φ' %x Hwp
+      iapply wpiConstF_mono' $$ Hwand Hwp
+    · iapply lfp_tpF_mono $$ [] Hlfp
+      iintro !> %Ns ⟨Hlfp, -⟩ //
+  · iexact Hwp
+
+/-- If thread `i` of the pool has finished with value `r`, the postcondition holds for `r`. -/
+theorem wpi_tp_elim' (i : Nat) H (Ms : List ((ITree E R → PROP) → PROP)) M Φ
+    (t : ITree E R) (r : R) :
+    Ms[i]? = some M →
+    t = pure r →
+    (∀ P, M P ={∅}=∗ P t) -∗
+    WPi_tp Ms @> H {{ Φ }} -∗
+    |={∅}=> Φ r := by
+  iintro %Hlook %rfl HM Htp
+  unfold wpi_tp
+  ihave Htp := lfp_tp_unfold (wpiConstF H Φ) Ms $$ Htp
+  simp only [lfp_tpF]
+  ispecialize Htp $$ %i %M %Hlook
+  ihave Htp := bi_mono0_mono_l $$ Htp [HM]
+  · iframe
+  imod bi_mono0_elim $$ Htp [] with ⟨%G, Hwpi, -⟩
+  · iintro %Q %Q' Hwand >HQ' !>; iapply Hwand $$ [$]
+  simp [wpiConstF]
+  iexact Hwpi
+
+/-- If thread `i` of the pool is `pure r`, the postcondition holds for `r`. -/
+theorem wpi_tp_elim (i : Nat) H (Ms : List ((ITree E R → PROP) → PROP)) M Φ (r : R) :
+    Ms[i]? = some M →
+    (∀ P, M P ={∅}=∗ P (pure r : ITree E R)) -∗
+    WPi_tp Ms @> H {{ Φ }} -∗
+    |={∅}=> Φ r :=
+  fun Hlook => wpi_tp_elim' i H Ms M Φ (pure r) r Hlook rfl
 
 end wpi_tp_section
 
