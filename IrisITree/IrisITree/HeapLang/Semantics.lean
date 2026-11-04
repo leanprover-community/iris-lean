@@ -17,18 +17,12 @@ namespace IrisITree
 
 open Iris.HeapLang ITree ITree.Effects ITree.Exec
 
--- TODO: decide where `LawfulLoc` should live; for now it comes from `IrisITree.Effects.Heap`.
 instance lawfulLoc_heaplang : LawfulLoc Loc where
   decEq := inferInstance
   add_zero l := by ext; simp
-  add_nat_inj l := by
-    intro i j Hij
-    have Hn := congrArg Loc.n Hij
-    simp at Hn
-    omega
-  add_pos_nle := by
-    intro l m
-    simp [compare, compareOfLessAndEq, Ordering.isLE]
+  add_nat_inj l i j := by ext; simp [Int.add_assoc]
+  add_pos_gt l m := by
+    simp [compare, compareOfLessAndEq]
     grind
 
 abbrev heaplangE := concE ⊕ₑ heapE Loc Val ⊕ₑ failE ⊕ₑ demonicE Loc ⊕ₑ stepE
@@ -199,7 +193,7 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
     let vn ← denoteYield e₁
     let n ← vn.int!
     if n ≤ 0 then fail "AllocN: count must be positive"
-    let l ← HeapE.allocN n.toNat v LawfulLoc.add_pos_nle
+    let l ← HeapE.allocN n.toNat v
     contVal <| .lit (.loc l)
   | .free e => do
     let v ← denoteYield e

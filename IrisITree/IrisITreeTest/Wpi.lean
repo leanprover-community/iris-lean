@@ -80,26 +80,38 @@ section heaplang
 
 open Iris.HeapLang
 
--- TODO: fix this later
--- variable {GF : BundledGFunctors} [InvGS GF] [heaplangHGS GF]
---   {m : StepModality (IProp GF)} {N : Namespace}
---   {P : IProp GF} (v : Val) (Φ : Val → IProp GF)
+variable {GF : BundledGFunctors} [InvGS GF] [heaplangHGS GF]
+  {stepm : StepMode (IProp GF)} {N : Namespace}
+  {P : IProp GF} (v : Val) (Φ : Val → IProp GF)
 
--- /-- Tests `iinv` on a HeapLang `WP` goal, which unfolds to `WPi` for `elimAcc_wpi`. -/
--- example : inv N iprop(<pers> P) -∗ Φ v -∗ WP (Exp.val v) @ m; ⊤ {{ Φ }} := by
---   iintro #Hinv HΦ
---   iinv Hinv with #HP
---   iapply wp_val
---   imodintro; iframe HP HΦ
+/-- Tests `iinv` on a HeapLang `WP` goal, which unfolds to `WPi` for `elimAcc_wpi`. -/
+example : inv N iprop(<pers> P) -∗ Φ v -∗ WP (Exp.val v) @ stepm; ⊤ {{ Φ }} := by
+  iintro #Hinv HΦ
+  iinv Hinv with #HP
+  iapply wp_val
+  imodintro; iframe HP HΦ
 
--- /-- Tests `iinv` with a timeless invariant on a HeapLang `WP` goal, via `isExcept0_wp`. -/
--- example {P : IProp GF} [Timeless P] (v : Val) (Φ : Val → IProp GF) :
---     inv N P -∗ (P -∗ P ∗ Φ v) -∗ WP (Exp.val v) @ m; ⊤ {{ Φ }} := by
---   iintro #Hinv HΦ
---   iinv Hinv with >HP
---   icases HΦ $$ HP with ⟨HP, HΦ⟩
---   iapply wp_val
---   imodintro; iframe HP HΦ
+/-- Tests `iinv` with a timeless invariant on a HeapLang `WP` goal, via `isExcept0_wp`. -/
+example {P : IProp GF} [Timeless P] (v : Val) (Φ : Val → IProp GF) :
+    inv N P -∗ (P -∗ P ∗ Φ v) -∗ WP (Exp.val v) @ stepm; ⊤ {{ Φ }} := by
+  iintro #Hinv HΦ
+  iinv Hinv with >HP
+  icases HΦ $$ HP with ⟨HP, HΦ⟩
+  iapply wp_val
+  imodintro; iframe HP HΦ
+
+/-- Tests that a constructed mode supports `iapply` from a `WP` premise to a `WPi` goal. -/
+example (m : IProp GF → IProp GF) [StepMod m] (e : Exp) :
+    WP e @ step[m]; ⊤ {{ Φ }} -∗
+    WPi e.denote @> heaplangH m; ⊤ {{ Φ }} := by
+  iintro Hwp
+  iapply Hwp
+
+/-- Tests the concise notation for total and partial modes. -/
+example (e : Exp) :
+    WP e @ step[(id : IProp GF → IProp GF)]; ⊤ {{ Φ }} -∗
+    WP e @ step[(BI.later : IProp GF → IProp GF)]; ⊤ {{ Φ }} := by
+  iapply wp_later_weaken
 
 end heaplang
 

@@ -19,18 +19,18 @@ open Iris Iris.BI ITree ITree.Effects
 variable {PROP : Type _} [BI PROP]
 
 /-- A logical modality used to interpret operational `step` events. -/
-class StepMod (sm : PROP → PROP) : Type where
-  mono (P Q : PROP) : (P -∗ Q) -∗ sm P -∗ sm Q
+class StepMod (m : PROP → PROP) : Prop where
+  mono (P Q : PROP) : (P -∗ Q) -∗ m P -∗ m Q
 
 namespace StepMod
 
-variable {sm : PROP → PROP} [StepMod sm]
+variable {m : PROP → PROP} [StepMod m]
 
-theorem map (P Q : PROP) : sm P -∗ (P -∗ Q) -∗ sm Q := by
+theorem map (P Q : PROP) : m P -∗ (P -∗ Q) -∗ m Q := by
   iintro HP Hwand
   iapply StepMod.mono $$ Hwand HP
 
-theorem wand (P Q : PROP) : sm iprop(P -∗ Q) -∗ P -∗ sm Q := by
+theorem wand (P Q : PROP) : m iprop(P -∗ Q) -∗ P -∗ m Q := by
   iintro Hwand HP
   iapply StepMod.map $$ Hwand
   iintro HPQ
@@ -51,17 +51,25 @@ instance stepMod_later : StepMod (PROP := PROP) BIBase.later where
 
 end StepMod
 
+/-- A step modality bundled with its monotonicity law, used as the mode of `WP`. -/
+structure StepMode (PROP : Type _) [BI PROP] where
+  m : PROP → PROP
+  [step_mod : StepMod m]
+
+/-- Bundle a step modality and its inferred law for use in `WP e @ step[m]`. -/
+notation "step[" m "]" => StepMode.mk m
+
 section handler
 
-/-- Interpret an operational step using the step modality `sm`. -/
-def stepH (sm : PROP → PROP) [StepMod sm] : IHandler PROP stepE where
-  ihandle := fun _ Φ _ => sm (Φ ⟨⟩)
+/-- Interpret an operational step using the step modality `m`. -/
+def stepH (m : PROP → PROP) [StepMod m] : IHandler PROP stepE where
+  ihandle := fun _ Φ _ => m (Φ ⟨⟩)
   ihandle_mono := by
     iintro %_ %Φ %Φ' %_ %_ HΦwand _ HΦ
     ispecialize HΦwand $$ %⟨⟩
     iapply StepMod.map $$ HΦ HΦwand
 
-instance stepH_sequential {sm : PROP → PROP} [StepMod sm] : Sequential (stepH sm):= by
+instance stepH_sequential {m : PROP → PROP} [StepMod m] : Sequential (stepH m):= by
   constructor
   iintro %_ %_ %_ H
   simp only [stepH]
@@ -80,11 +88,11 @@ section wpi_rules
 
 variable {PROP : Type _} [BI PROP] [BIFUpdate PROP]
   {E : Effect} {H : IHandler PROP E}
-  {sm : PROP → PROP} [StepMod sm]
-  [sub : stepE -< E] [Hin : InH (stepH sm) H]
+  {m : PROP → PROP} [StepMod m]
+  [sub : stepE -< E] [Hin : InH (stepH m) H]
 
 theorem wpi_step Ms Me (Φ : PUnit → PROP) :
-    sm iprop(|={Ms, Me}=> Φ ()) -∗
+    m iprop(|={Ms, Me}=> Φ ()) -∗
     WPi step @> H; Ms,Me {{ Φ }} := by
   unfold step
   iintro HΦ; iapply wpi_trigger
