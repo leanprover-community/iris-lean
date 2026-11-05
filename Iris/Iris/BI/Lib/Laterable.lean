@@ -124,15 +124,8 @@ def make_laterable [BI PROP] (Q : PROP) : PROP :=
 
 @[rocq_alias make_laterable_ne]
 instance make_laterable_ne [BI PROP] : NonExpansive <| make_laterable (PROP := PROP) where
-  ne := by
-    intro n P Q HPQ
-    unfold make_laterable
-    apply exists_ne
-    intro R
-    apply sep_ne.ne; rfl
-    apply intuitionistically_ne.ne
-    apply wand_ne.ne; rfl
-    apply except0_ne.ne; assumption
+  ne {_ _ _} h := exists_ne fun _ => sep_ne.ne .rfl
+    (intuitionistically_ne.ne (wand_ne.ne .rfl (except0_ne.ne h)))
 
 @[rw_mono_rule, rocq_alias make_laterable_mono]
 theorem make_laterable_mono [BI PROP] {Q1 Q2 : PROP} (h : Q1 ⊢ Q2) :
