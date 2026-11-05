@@ -23,7 +23,7 @@ linter.extra.unusedDecidableInType = false
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "v4.35.0"
+rev = "v4.36.0-rc1"
 
 [[require]]
 name = "iris"
