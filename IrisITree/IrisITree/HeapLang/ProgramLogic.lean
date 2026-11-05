@@ -161,12 +161,25 @@ theorem wp_later_weaken {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
   iintro Hwp
   iapply wpi_wandH $$ Hwp
 
--- theorem wp_bind (K : List ECtxItem) (e : Exp) (Φ : Val → IProp GF) :
---     WP e @ stepm; ⊤ {{ v,
---       WP (ProgramLogic.fill K (Exp.ofVal (Expr := Exp) v)) @ stepm; ⊤ {{ Φ }}
---     }} -∗
---     WP (ProgramLogic.fill K e) @ stepm; ⊤ {{ Φ }} := by
---   sorry
+/-- Evaluate an expression in an evaluation context. The full mask accounts for yields. -/
+theorem wp_bind (K : List ECtxItem) (e : Exp) (Φ : Val → IProp GF) :
+    WP e @ stepm; ⊤ {{ v, WP (ProgramLogic.fill K (Exp.val v)) @ stepm; ⊤ {{ Φ }} }} -∗
+    WP (ProgramLogic.fill K e) @ stepm; ⊤ {{ Φ }} := by
+  iintro Hwp
+  cases K with
+  | nil =>
+    simp only [ProgramLogic.EctxItemLanguage.fill_nil, wp_unfold, Exp.denote.eq_1]
+    iapply wpi_fupd
+    iapply wpi_wand $$ Hwp
+    iintro %v Hval
+    iapply wpi_pure' Φ v $$ Hval
+  | cons Ki K =>
+    simp only [wp_unfold]
+    rw [denote_bind _ _ (by simp)]
+    iapply wpi_bind
+    rw [Exp.denoteYield]
+    iapply wpi_denoteYield
+    iexact Hwp
 
 theorem wp_wand {M : CoPset} (e : Exp) (Φ Ψ : Val → IProp GF) :
     WP e @ stepm; M {{ Φ }} -∗

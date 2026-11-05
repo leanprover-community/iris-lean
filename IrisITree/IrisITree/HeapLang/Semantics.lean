@@ -10,6 +10,7 @@ public import ITree
 public import IrisITree.Effects.Heap
 public import Iris.HeapLang
 public import Iris.Std.BitOp
+import Iris.Std.FromMathlib
 
 @[expose] public section
 
@@ -242,7 +243,10 @@ def Exp.denote (e : Exp) : ITree heaplangE Val :=
     contVal <| .lit .unit
   | .newProph => do
     fail "prophecy is not implemented"
-  | .resolve _ _ _ => do
+  | .resolve e₀ e₁ e₂ => do
+    let _ ← Exp.denoteYield e₂
+    let _ ← Exp.denoteYield e₁
+    let _ ← Exp.denoteYield e₀
     fail "prophecy is not implemented"
 partial_fixpoint
 
@@ -252,5 +256,59 @@ def Exp.denoteYield (e : Exp) : ITree heaplangE Val :=
 partial_fixpoint
 
 end
+
+open Iris.ProgramLogic.EctxItemLanguage
+
+/-- A filled context item is never a value, so `denoteYield` evaluates it and then yields. -/
+private theorem denoteYield_fill_item (Ki : ECtxItem) (e : Exp) :
+    (Ki.fill e).denoteYield = yieldAfter (Ki.fill e).denote := by
+  rw [Exp.denoteYield]
+  cases Ki <;> rfl
+
+/-- Evaluate the expression in the hole before evaluation of a context item. -/
+theorem denote_bind_item (Ki : ECtxItem) (e : Exp) :
+    (Ki.fill e).denote = e.denoteYield >>= fun v => (Ki.fill (.val v)).denote := by
+  have denoteVal : ∀ v : Val, (Exp.val v).denoteYield = pure v := by
+    intro v; simp only [Exp.denoteYield, Exp.isVal, ↓reduceIte, Exp.denote]
+  revert e; induction Ki <;>
+    simp only [ECtxItem.fill, ← val_to_ofVal, Exp.denote, denoteYield_fill_item,
+      denoteVal, LawfulMonad.pure_bind, implies_true]
+  case resolveL Ki v1 v2 IH =>
+    intro e; simp only [yieldAfter, bind_pure_comp]
+    rw [IH]; simp only [bind_assoc, val_to_ofVal]
+
+/-- The yielding denotation composes with every evaluation-context item. -/
+theorem denoteYield_bind_item (Ki : ECtxItem) (e : Exp) :
+    (Ki.fill e).denoteYield =
+      e.denoteYield >>= fun v => (Ki.fill (.val v)).denoteYield := by
+  simp only [denoteYield_fill_item, ConcE.yieldAfter]
+  rw [denote_bind_item]
+  simp only [bind_assoc]
+
+/-- The yielding denotation composes with arbitrary evaluation contexts. -/
+theorem denoteYield_bind (K : List ECtxItem) (e : Exp) :
+    (ProgramLogic.fill K e).denoteYield =
+      e.denoteYield >>= fun v => (ProgramLogic.fill K (Exp.val v)).denoteYield := by
+  induction K generalizing e with
+  | nil =>
+    simp only [fill_nil, Exp.denoteYield,
+      Exp.isVal, ↓reduceIte, Exp.denote.eq_1, bind_pure]
+  | cons Ki K IH =>
+    simp only [fill_cons, fillItem]
+    rw [IH, denoteYield_bind_item, bind_assoc]
+    apply congrArg; funext v
+    exact (IH (Ki.fill (.val v))).symm
+   
+/-- A nonempty context evaluates its hole before continuing with the resulting value. -/
+theorem denote_bind (K : List ECtxItem) (e : Exp) (hK : K ≠ []) :
+    (ProgramLogic.fill K e).denote =
+      e.denoteYield >>= fun v => (ProgramLogic.fill K (Exp.val v)).denote := by
+  cases K using FromMathlib.List.reverseCases with
+  | nil => contradiction
+  | append_singleton Ks Ki =>
+    simp only [fill_append, fill_cons, fill_nil, fillItem]
+    rw [denote_bind_item, denoteYield_bind, LawfulMonad.bind_assoc]
+    apply congrArg; funext v
+    exact (denote_bind_item Ki (ProgramLogic.fill Ks (Exp.val v))).symm
 
 end Iris.HeapLang
