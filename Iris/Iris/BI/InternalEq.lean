@@ -217,7 +217,7 @@ theorem option_some_none_equivI {A : Type _} [OFE A] (a : A) :
   refine ⟨?_, false_elim⟩
   let Ψ : Option A → PROP := fun y =>
     match y with | some _ => iprop(⌜True⌝) | none => iprop(⌜False⌝)
-  have : NonExpansive Ψ := Option.ne_match _ ⟨fun {_ _ _} _ => Dist.rfl⟩ _
+  have : NonExpansive Ψ := Option.ne_match _ inferInstance _
   exact rewrite' Ψ .rfl true_intro
 
 theorem option_none_some_equivI {A : Type _} [OFE A] (a : A) :
@@ -242,7 +242,7 @@ theorem excl_equivI_excl_invalid {O : Type _} [OFE O] (a : O) :
   refine ⟨?_, false_elim⟩
   let Ψ : Excl O → PROP := fun y =>
     match y with | Excl.excl _ => iprop(⌜True⌝) | Excl.invalid => iprop(⌜False⌝)
-  have : NonExpansive Ψ := Excl.ne_match _ ⟨fun {_ _ _} _ => Dist.rfl⟩ _
+  have : NonExpansive Ψ := Excl.ne_match _ inferInstance _
   exact rewrite' Ψ .rfl true_intro
 
 theorem excl_equivI_invalid_excl {O : Type _} [OFE O] (a : O) :
@@ -280,9 +280,7 @@ theorem csum_equivI {A B : Type _} [OFE A] [OFE B] (sx sy : Csum A B) :
 theorem discreteFun_equivI_mp {A : Type _} {B : A → Type _} [OFEFun B] (f g : (x : A) → B x) :
     f ≡ g ⊢ ∀ x, f x ≡ g x := by
   let Ψ : ((x : A) → B x) → PROP := fun g => iprop(∀ x, f x ≡ g x)
-  have : NonExpansive Ψ := ⟨fun {_ _ _} h => sForall_ne ⟨
-    fun p ⟨a, ha⟩ => ⟨_, ⟨a, rfl⟩, ha ▸ (ne_r (f a)).ne (h a)⟩,
-    fun p ⟨a, ha⟩ => ⟨_, ⟨a, rfl⟩, ha ▸ (ne_r (f a)).ne (h a)⟩⟩⟩
+  have : NonExpansive Ψ := ⟨fun {_ _ _} h => forall_ne fun a => (ne_r (f a)).ne (h a)⟩
   exact rewrite' Ψ .rfl (forall_intro fun _ => refl)
 
 @[rocq_alias discrete_fun_equivI]
@@ -293,9 +291,7 @@ theorem discreteFun_equivI {A : Type _} {B : A → Type _} [OFEFun B] (f g : (x 
 theorem ofeMorO_equivI_mp {A B : Type _} [OFE A] [OFE B] (f g : A -n> B) :
     f ≡ g ⊢ ∀ x, f x ≡ g x := by
   let Ψ : (A -n> B) → PROP := fun g => iprop(∀ x, f x ≡ g x)
-  have : NonExpansive Ψ := ⟨fun {_ _ _} h => sForall_ne ⟨
-    fun p ⟨a, ha⟩ => ⟨_, ⟨a, rfl⟩, ha ▸ (ne_r (f a)).ne (h a)⟩,
-    fun p ⟨a, ha⟩ => ⟨_, ⟨a, rfl⟩, ha ▸ (ne_r (f a)).ne (h a)⟩⟩⟩
+  have : NonExpansive Ψ := ⟨fun {_ _ _} h => forall_ne fun a => (ne_r (f a)).ne (h a)⟩
   exact rewrite' Ψ .rfl (forall_intro fun _ => refl)
 
 theorem ofeMorO_equivI_mpr {A B : Type _} [OFE A] [OFE B] (f g : A -n> B) :
