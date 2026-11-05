@@ -43,9 +43,9 @@ instance {PROP E} [BI PROP] (H : IHandler PROP E) (i : E.I) :
   intro n Φ₁ Φ₂ HΦ s₁ s₂ Hs
   have Hmon : ∀ Φ s, H.ihandle i Φ s = iprop(∃ Φ' s', (∀ a, Φ' a -∗ Φ a) ∗ □ (∀ a, s' a -∗ s a) ∗ H.ihandle i Φ' s') := by
     iintro %Φ %s; isplit
-    · iintro Hwand; iexists Φ, s; isplitr;
+    · iintro Hwand; iexists Φ, s; isplitr
       · iintro %a $
-      · isplitr; imodintro;
+      · isplitr; imodintro
         iintro %a $; iexact Hwand
     · iintro ⟨%Φ', ⟨%s', ⟨HmonΦ, ⟨Hmons, HH⟩⟩⟩⟩
       iapply H.ihandle_mono $$ HmonΦ Hmons HH
@@ -206,6 +206,76 @@ instance {E GE : Effect.{u}} {R σ : Type _}
     simp; iframe; isplitr; itrivial
     iintro %_ $ !> //
 
+/-- Independent simple handlers preserve the separating conjunction of their invariants. -/
+instance sumSEH_adequate {E₁ E₂ : Effect.{u}} {S₁ S₂ : Type u}
+    (H₁ : IHandler PROP E₁) (H₂ : IHandler PROP E₂)
+    (EH₁ : SEHandler E₁ S₁) (EH₂ : SEHandler E₂ S₂)
+    [A₁ : SEHandlerAdequate H₁ EH₁] [A₂ : SEHandlerAdequate H₂ EH₂] :
+    SEHandlerAdequate (H₁ ⊕ₕ H₂) (EH₁ ⊕ₛₑₕ EH₂) where
+  inv s := iprop% A₁.inv s.1 ∗ A₂.inv s.2
+  adequate :=by
+    iintro %i %⟨s1, s2⟩ %C %Φ1 %Φ2 %Hse
+    cases i with
+    | inl i =>
+      simp only [sumH_inl, sumSEH] at ⊢ Hse
+      iintro Hh ⟨Hinv1, Hinv2⟩
+      ihave >⟨%a, %s', %HC, Hinv1, HΦ1⟩ := A₁.adequate $$ Hh [$]; assumption
+      imodintro; iexists a; iexists (s', s2)
+      iframe Hinv1 Hinv2 HΦ1
+      itrivial
+    | inr i =>
+      simp only [sumH_inr, sumSEH] at ⊢ Hse
+      iintro Hh ⟨Hinv1, Hinv2⟩
+      ihave >⟨%a, %s', %HC, Hinv2, HΦ2⟩ := A₂.adequate $$ Hh [$]; assumption
+      imodintro; iexists a; iexists (s1, s')
+      iframe Hinv1 Hinv2 HΦ2
+      itrivial
+
+/-- A thread-pool handler can be combined with a simple handler whose invariant is pool independent. -/
+instance sumESEH_adequate {E₁ E₂ GE : Effect.{u}} {R S₁ S₂ : Type u}
+    (H₁ : IHandler PROP E₁) (H₂ : IHandler PROP E₂)
+    (EH₁ : EHandler E₁ GE R S₁) (EH₂ : SEHandler E₂ S₂)
+    [A₁ : EHandlerAdequate H₁ EH₁] [A₂ : SEHandlerAdequate H₂ EH₂] :
+    EHandlerAdequate (H₁ ⊕ₕ H₂) (EH₁ ⊕ₑₕ EH₂.toEHandler) where
+  inv s Ms := iprop(A₁.inv s.1 Ms ∗ A₂.inv s.2)
+  adequate := by
+    intro G i ⟨s1, s2⟩ Ms C k Heh
+    cases i with
+    | inl i =>
+      simp only [sumH_inl]
+      iintro Hh ⟨Hinv1, Hinv2⟩
+      ihave >⟨%t', %s', %M', %Ms', %Msn, HC, Hperm, Hpre⟩ := A₁.adequate $$ Hh [$]; assumption
+      simp only; imodintro
+      /- Why can't we have iexists in one tactic? -/
+      iexists t'; iexists (s', s2); iexists M'; iexists Ms'; iexists Msn
+      iframe HC Hinv2 Hperm Hpre
+    | inr i =>
+      simp only [sumH_inr]
+      iintro Hh ⟨Hinv1, Hinv2⟩
+      ihave >⟨%a, %s, HC, Hinv2, HG⟩ := A₂.adequate $$ Hh [$]; assumption
+      simp only; imodintro
+      iexists (k a); iexists (s1, s); iexists (fun P => P (k a)); iexists Ms; iexists [fun P => P (k a)]
+      iframe HC Hinv1 Hinv2
+      isplitr; itrivial
+      simp; iframe HG
+      iintro %P HP !> //
+
+/-- Adequacy is preserved by an isomorphism of executable states. -/
+instance isoEH_adequate {E GE : Effect.{u}} {R S₁ S₂ : Type u}
+    (iso : Iso S₁ S₂) (H : IHandler PROP E) (EH : EHandler E GE R S₁)
+    [A : EHandlerAdequate H EH] : EHandlerAdequate H (isoEH iso EH) where
+  inv s Ms := A.inv (iso.invFun s) Ms
+  adequate := by
+    intro G i s Ms C k Heh
+    iintro Hh Hinv
+    ihave >⟨%t', %s', %M', %Ms', %Msn, HC, Hperm, HMsn, Hinv', Hpre⟩ :=
+      A.adequate $$ Hh Hinv; exact Heh
+    imodintro
+    iexists t'; iexists (iso.toFun s'); iexists M'; iexists Ms'; iexists Msn
+    simp only [invFun_toFun]
+    iframe HC Hperm HMsn Hinv' Hpre
+
 end adequate
 
 end IrisITree
+
