@@ -387,4 +387,14 @@ end alloc
 
 end wpi_rules
 
+section exec
+
+instance heapEH_adequate :
+    SEHandlerAdequate (heapH (G := G)) (heapEH Loc Val) where
+  inv s := stateInterp_heap s
+  adequate := by
+    exact (stateEH_adequate <| stateInterp_heap (G := G)).adequate
+
+end exec
+
 end IrisITree
