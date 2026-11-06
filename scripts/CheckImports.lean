@@ -68,7 +68,8 @@ private def moduleDir (mod : Name) : FilePath :=
 /-- Directories whose entry point is deliberately *not* imported by the entry point of
 their parent directory, e.g. `Iris/Algebra.lean` does not import `Iris/Algebra/Lib.lean`. -/
 private def detachedDirs : Array Name :=
-  #[`Iris.Algebra.Lib, `Iris.BI.Lib, `Iris.HeapLang.Lib, `Iris.Instances.Lib]
+  #[`Iris.Algebra.Lib, `Iris.BI.Lib, `Iris.HeapLang.Lib, `Iris.Instances.Lib,
+    `Iris.ProofMode.Lib]
 
 /-- All modules of the library, i.e. `root` and everything in its directory, sorted. -/
 private def libraryModules (root : Name) : IO (Array Name) := do

@@ -19,6 +19,8 @@ public import Iris.Instances.Lib.CInvariants
 public import Iris.Instances.Lib.NaInvariants
 public import Iris.ProgramLogic.Language
 public import Iris.ProgramLogic.WeakestPre
+public import Iris.BI.Lib.Monotone
+public meta import Iris.ProofMode.Lib.Monotone
 
 @[expose] public section
 
@@ -4549,4 +4551,64 @@ example [BI PROP] {P : PROP} {m n : Nat} {T : Nat → Prop}
 
 end iinduction
 
+
+section imono
+
+variable [BI PROP] {α : Type}
+
+/-- Tests `imono` on a body built from connectives. -/
+example : BIMono (PROP := PROP) (fun (Φ : α → PROP) x => iprop(Φ x ∗ Φ x)) := by imono
+
+/-- Tests `imono` with a pair of arguments. -/
+example : BIMono (PROP := PROP) (fun (Φ : α × α → PROP) p => iprop(Φ (p.2, p.1) ∗ ▷ ∃ z, Φ (p.1, z))) := by
+  imono
+
+private def wrap0 (wp : α → PROP) (x : α) : PROP := iprop(wp x ∗ wp x)
+private def wrap1 (wp : α → PROP) : α → PROP := wrap0 wp
+private def wrap2 (wp : α → PROP) : α → PROP := wrap1 wp
+
+/-- Tests `imono` unfolding. -/
+example : BIMono (PROP := PROP) (wrap2 (PROP := PROP) (α := α)) := by imono
+
+private def stepPre (wp : α × Option α → PROP) (p : α × Option α) : PROP :=
+  match p.2 with
+  | none => iprop(wp (p.1, none) ∨ wp (p.1, none))
+  | some _ => iprop(wp (p.1, none) ∗ wp (p.1, none))
+
+/-- Tests `imono` on a match on an argument. -/
+example : BIMono (PROP := PROP) (stepPre (PROP := PROP) (α := α)) := by imono
+
+private def choicePre (wp : α × (α ⊕ α) → PROP) (x : α × (α ⊕ α)) : PROP :=
+  match x.2 with
+  | .inl a => iprop(wp (x.1, .inr a) ∨ wp (x.1, .inr a))
+  | .inr a => iprop(wp (x.1, .inl a) ∨ wp (x.1, .inl a))
+
+/-- Tests `imono` on a match on a projection. -/
+example : BIMono (PROP := PROP) (choicePre (PROP := PROP) (α := α)) := by imono
+
+/-- Tests `imono` on iterated laters and big operators. -/
+example (l : List α) : BIMono (PROP := PROP) (fun (Φ : α → PROP) x =>
+    iprop(▷^[2] Φ x ∗ ([∧list] y ∈ l, Φ y) ∗ [∨list] y ∈ l, Φ y)) := by
+  imono
+
+private def tuplePre (wp : Nat × Bool → PROP) : Nat × Bool → PROP
+  | (n, b) => iprop(wp (n, !b) ∗ wp (n + 1, b))
+
+/-- Tests `imono` on a body that matches on a tuple argument. -/
+example : BIMono (PROP := PROP) tuplePre := by imono
+
+/-- Tests `imono` on telescopic quantifiers. -/
+example {TT : Iris.Std.Tele} : BIMono (PROP := PROP) (fun (Φ : TT.Arg → PROP) _ =>
+    iprop(BI.texist (fun y => Φ y) ∗ BI.tforall (fun z => Φ z))) := by
+  imono
+
+/-- Tests `imono` on a doubly negative occurrence. -/
+example : BIMono (PROP := PROP) (fun (Φ : α → PROP) x => iprop((Φ x -∗ False) -∗ False)) := by
+  imono
+
+-- Tests that `imono` fails on a negative occurrence.
+#guard_msgs (drop error) in
+example : BIMono (PROP := PROP) (fun (Φ : α → PROP) x => iprop(Φ x -∗ Φ x)) := by imono
+
+end imono
 end IrisTest

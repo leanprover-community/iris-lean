@@ -24,6 +24,7 @@ public import Iris.Std.Namespaces
 public import Iris.Std.Nat
 public import Iris.Std.Notation
 public import Iris.Std.Option
+public import Iris.Std.Order
 public import Iris.Std.PartialMap
 public import Iris.Std.Positives
 public import Iris.Std.Prod
