@@ -298,7 +298,7 @@ theorem denoteYield_bind (K : List ECtxItem) (e : Exp) :
     rw [IH, denoteYield_bind_item, bind_assoc]
     apply congrArg; funext v
     exact (IH (Ki.fill (.val v))).symm
-   
+
 /-- A nonempty context evaluates its hole before continuing with the resulting value. -/
 theorem denote_bind (K : List ECtxItem) (e : Exp) (hK : K ≠ []) :
     (ProgramLogic.fill K e).denote =

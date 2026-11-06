@@ -6,6 +6,7 @@ Authors: Yunsong Yang, Michael Sammler
 
 module
 
+public import IrisITree.Core.Wpi
 public import IrisITree.Core.LfpTp
 public import Iris.Instances.Lib.FUpd
 

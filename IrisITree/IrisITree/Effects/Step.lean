@@ -56,6 +56,8 @@ structure StepMode (PROP : Type _) [BI PROP] where
   m : PROP → PROP
   [step_mod : StepMod m]
 
+attribute [instance] StepMode.step_mod
+
 /-- Bundle a step modality and its inferred law for use in `WP e @ step[m]`. -/
 notation "step[" m "]" => StepMode.mk m
 

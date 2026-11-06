@@ -9,8 +9,6 @@ module
 public import Iris.BI.BigOp.BigSepList
 public import Iris.BI.Lib.Fixpoint
 public import IrisITree.Core.BIMono
--- TODO remove this import once ne_of_discrete is upstreamed
-public import IrisITree.Core.Wpi
 
 public section
 
