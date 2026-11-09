@@ -274,6 +274,47 @@ instance isoEH_adequate {E GE : Effect.{u}} {R S₁ S₂ : Type u}
     simp only [invFun_toFun]
     iframe HC Hperm HMsn Hinv' Hpre
 
+/-- Two thread-pool handlers: the pending threads are split between their invariants. -/
+instance {E₁ E₂ : Effect.{u}} {S₁ S₂ : Type u}
+    (H₁ : IHandler PROP E₁) (H₂ : IHandler PROP E₂)
+    (EH₁ : EHandler E₁ GE R S₁) (EH₂ : EHandler E₂ GE R S₂)
+    [A₁ : EHandlerAdequate H₁ EH₁] [A₂ : EHandlerAdequate H₂ EH₂] :
+    EHandlerAdequate (H₁ ⊕ₕ H₂) (EH₁ ⊕ₑₕ EH₂) where
+  inv s Ms := iprop% ∃ Ms1 Ms2, <affine> ⌜Ms.Perm (Ms1 ++ Ms2)⌝ ∗ A₁.inv s.1 Ms1 ∗ A₂.inv s.2 Ms2
+  adequate := by
+    intro G i ⟨s1, s2⟩ Ms C k Heh
+    cases i with
+    | inl i =>
+      simp only [sumH_inl]; iintro Hh ⟨%Ms1, %Ms2, ⟨%Hsplit, Hinv1, Hinv2⟩⟩
+      ihave >⟨%t', %s', %M', %Ms₁', %Msn, HC, %Hperm, Hspawn, Hinv1, Hclose⟩ :=
+        A₁.adequate $$ Hh Hinv1; exact Heh
+      imodintro
+      iexists t', (s', s2), M', Ms₁' ++ Ms2, Msn
+      iframe; isplitl
+      · ipureintro
+        open List in
+        calc M' :: (Ms₁' ++ Ms2)
+        _ = (M' :: Ms₁') ++ Ms2 := rfl
+        _ ~ (Msn ++ Ms1) ++ Ms2 := Hperm.append_right Ms2
+        _ = Msn ++ (Ms1 ++ Ms2) := append_assoc _ _ _
+        _ ~ Msn ++ Ms := Hsplit.symm.append_left Msn
+      · itrivial
+    | inr i =>
+      simp only [sumH_inr]; iintro Hh ⟨%Ms1, %Ms2, ⟨%Hsplit, Hinv1, Hinv2⟩⟩
+      ihave >⟨%t', %s', %M', %Ms₂', %Msn, HC, %Hperm, Hspawn, Hinv2, Hclose⟩ :=
+        A₂.adequate $$ Hh Hinv2; exact Heh
+      imodintro
+      iexists t', (s1, s'), M', Ms1 ++ Ms₂', Msn
+      iframe; isplitl
+      · ipureintro
+        open List in
+        calc M' :: (Ms1 ++ Ms₂')
+        _ ~ Ms1 ++ (M' :: Ms₂') := perm_middle.symm
+        _ ~ Ms1 ++ (Msn ++ Ms2) := Hperm.append_left Ms1
+        _ ~ Msn ++ (Ms1 ++ Ms2) := perm_append_comm_assoc _ _ _
+        _ ~ Msn ++ Ms := Hsplit.symm.append_left Msn
+      · itrivial
+
 end adequate
 
 end IrisITree
