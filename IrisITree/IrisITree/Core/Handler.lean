@@ -220,14 +220,14 @@ instance sumSEH_adequate {E₁ E₂ : Effect.{u}} {S₁ S₂ : Type u}
       simp only [sumH_inl, sumSEH] at ⊢ Hse
       iintro Hh ⟨Hinv1, Hinv2⟩
       ihave >⟨%a, %s', %HC, Hinv1, HΦ1⟩ := A₁.adequate $$ Hh [$]; assumption
-      imodintro; iexists a; iexists (s', s2)
+      imodintro; iexists a, (s', s2)
       iframe Hinv1 Hinv2 HΦ1
       itrivial
     | inr i =>
       simp only [sumH_inr, sumSEH] at ⊢ Hse
       iintro Hh ⟨Hinv1, Hinv2⟩
       ihave >⟨%a, %s', %HC, Hinv2, HΦ2⟩ := A₂.adequate $$ Hh [$]; assumption
-      imodintro; iexists a; iexists (s1, s')
+      imodintro; iexists a, (s1, s')
       iframe Hinv1 Hinv2 HΦ2
       itrivial
 
@@ -246,15 +246,14 @@ instance sumESEH_adequate {E₁ E₂ GE : Effect.{u}} {R S₁ S₂ : Type u}
       iintro Hh ⟨Hinv1, Hinv2⟩
       ihave >⟨%t', %s', %M', %Ms', %Msn, HC, Hperm, Hpre⟩ := A₁.adequate $$ Hh [$]; assumption
       simp only; imodintro
-      /- Why can't we have iexists in one tactic? -/
-      iexists t'; iexists (s', s2); iexists M'; iexists Ms'; iexists Msn
+      iexists t', (s', s2), M', Ms', Msn
       iframe HC Hinv2 Hperm Hpre
     | inr i =>
       simp only [sumH_inr]
       iintro Hh ⟨Hinv1, Hinv2⟩
       ihave >⟨%a, %s, HC, Hinv2, HG⟩ := A₂.adequate $$ Hh [$]; assumption
       simp only; imodintro
-      iexists (k a); iexists (s1, s); iexists (fun P => P (k a)); iexists Ms; iexists [fun P => P (k a)]
+      iexists k a, (s1, s), (fun P => P (k a)), Ms, [fun P => P (k a)]
       iframe HC Hinv1 Hinv2
       isplitr; itrivial
       simp; iframe HG
@@ -271,11 +270,10 @@ instance isoEH_adequate {E GE : Effect.{u}} {R S₁ S₂ : Type u}
     ihave >⟨%t', %s', %M', %Ms', %Msn, HC, Hperm, HMsn, Hinv', Hpre⟩ :=
       A.adequate $$ Hh Hinv; exact Heh
     imodintro
-    iexists t'; iexists (iso.toFun s'); iexists M'; iexists Ms'; iexists Msn
+    iexists t', iso.toFun s', M', Ms', Msn
     simp only [invFun_toFun]
     iframe HC Hperm HMsn Hinv' Hpre
 
 end adequate
 
 end IrisITree
-

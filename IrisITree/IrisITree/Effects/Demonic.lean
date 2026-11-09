@@ -67,7 +67,7 @@ instance demonicEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] {α : Typ
     simp [demonicH, demonicEH] at Hhandle ⊢
     rcases Hhandle with ⟨a, s', HC⟩
     iintro HΦ1 Hinv; imodintro
-    iexists ⟨a, s'⟩; iexists s; iframe
+    iexists ⟨a, s'⟩, s; iframe
     isplitr; itrivial
     iapply HΦ1
 
