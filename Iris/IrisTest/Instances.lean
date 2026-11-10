@@ -9,6 +9,7 @@ public import Iris.BI
 public import Iris.Algebra.Frac
 public import Iris.ProofMode.SynthInstance
 public import Iris.ProofMode.Instances
+public import Iris.ProofMode.InstancesFrame
 public import Iris.ProofMode.InstancesMake
 public import Iris.ProofMode.InstancesUpdates
 public import Iris.ProofMode.NatCancel
@@ -661,5 +662,81 @@ set_option pp.mvars false in
 #ipm_synth @FromForall PROP _ iprop(|={E,_}=> ∀ x, Ψ x) (_ : Type) _
 
 end TCSideCondition
+
+/- Tests framing a hypothesis against itself, and `<affine> R` against `R` (`frameHere`) -/
+section frameHere
+variable {PROP : Type u} [BI PROP] (R S : PROP)
+
+/- `frame_here` leaves `emp`. -/
+/-- info: solution: Frame false R R iprop(emp), new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false R R _
+
+/-- info: None -/
+#guard_msgs in
+#ipm_synth Frame false R S _
+
+/- `frame_here` below a separating conjunction -/
+/-- info: solution: Frame false R iprop(S ∗ R) S, new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false R iprop(S ∗ R) _
+
+/- An intuitionistic hypothesis is framed in both conjuncts. -/
+/-- info: solution: Frame true R iprop(R ∗ R) iprop(emp), new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame true R iprop(R ∗ R) _
+
+/- `frame_affinely_here` leaves `emp`. -/
+/-- info: solution: Frame false iprop(<affine> R) R iprop(emp), new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false iprop(<affine> R) R _
+
+/-- info: solution: Frame false iprop(<affine> R) iprop(<affine> R) iprop(emp), new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false iprop(<affine> R) iprop(<affine> R) _
+
+/- If the goal is an mvar, `frame_affinely_here` is tried before `frame_here`. -/
+/-- info: solution: Frame false iprop(<affine> R) R iprop(emp), new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false iprop(<affine> R) _ _
+
+/-- info: solution: Frame false iprop(<affine> <affine> R) iprop(<affine> R) iprop(emp), new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false iprop(<affine> <affine> R) iprop(<affine> _) _
+
+/- If the hypothesis is an mvar, `frame_affinely_here` is not tried. -/
+/-- info: solution: Frame false R R iprop(emp), new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false _ R _
+
+/-- info: solution: Frame false S iprop(S ∗ R) R, new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false _ iprop(S ∗ R) _
+
+/-- info: solution: Frame false iprop(<affine> R) R iprop(emp), new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false iprop(<affine> _) R _
+
+variable [BIAffine PROP]
+
+/- `frame_here_absorbing` leaves `True`. -/
+/-- info: solution: Frame false R R iprop(True), new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false R R _
+
+/- `frame_affinely_here_absorbing` is tried before `frame_affinely_here`. -/
+/-- info: solution: Frame false iprop(<affine> R) R iprop(True), new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false iprop(<affine> R) R _
+
+/-- info: solution: Frame false iprop(<affine> R) iprop(<affine> R) iprop(True), new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false iprop(<affine> R) iprop(<affine> R) _
+
+/-- info: solution: Frame false iprop(<affine> R) R iprop(True), new goals: [] -/
+#guard_msgs in
+#ipm_synth Frame false iprop(<affine> R) _ _
+
+end frameHere
 
 end IrisTest

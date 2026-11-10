@@ -9,6 +9,7 @@ public import Iris.BI
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ClassesMake
 public import Iris.ProofMode.Expr
+public import Iris.ProofMode.InstancesMake
 public import Iris.ProofMode.SynthInstance
 public import Iris.Std.TC
 
@@ -28,40 +29,6 @@ end
 
 namespace Iris.ProofMode
 open Qq Iris.BI Iris.Std
-
-/-
-When framing [R] against itself, we leave [True] if possible since it is a weaker goal.
-Otherwise we leave [emp]. Only if all those options fail, we start decomposing [R].
--/
-@[ipm_backtrack, rocq_alias frame_here_absorbing]
-instance (priority := high + 10) frame_here_absorbing [BI PROP]
-    p (R : PROP) [QuickAbsorbing R] :
-    Frame p R R iprop(True) where
-  frame := calc
-    _ ⊢ True ∗ □?p R := sep_comm.mp
-    _ ⊢ True ∗ R     := sep_mono_right intuitionisticallyIf_elim
-    _ ⊢ R            := quick_absorbing.absorbing
-
-@[ipm_backtrack, rocq_alias frame_here]
-instance (priority := high + 5) frame_here [BI PROP] p (R : PROP) :
-    Frame p R R iprop(emp) where
-  frame := sep_emp.1.trans intuitionisticallyIf_elim
-
-@[ipm_backtrack, rocq_alias frame_affinely_here_absorbing]
-instance (priority := high + 10) frame_affinely_here_absorbing [BI PROP] p (R : PROP)
-    [QuickAbsorbing R] : Frame p iprop(<affine> R) R iprop(True) where
-  frame := calc
-    _ ⊢ True ∗ □?p <affine> R := sep_comm.mp
-    _ ⊢ True ∗ R              := sep_mono_right <| intuitionisticallyIf_elim.trans affinely_elim
-    _ ⊢ R                     := quick_absorbing.absorbing
-
-@[ipm_backtrack, rocq_alias frame_affinely_here]
-instance (priority := high + 10) frame_affinely_here [BI PROP] p (R : PROP) :
-    Frame p iprop(<affine> R) R iprop(emp) where
-  frame := calc
-    _ ⊢ □?p <affine> R := sep_emp.mp
-    _ ⊢ <affine> R     := intuitionisticallyIf_elim
-    _ ⊢ R              := affinely_elim
 
 @[ipm_backtrack, rocq_alias frame_here_pure_persistent]
 instance frame_here_pure_persistent [BI PROP] {a : Bool} {φ : Prop} {Q : PROP}
@@ -346,6 +313,41 @@ instance frame_bigSepMS_disjUnion [BI PROP] {MS A}
 
 section TacticTheorems
 
+/-
+When framing [R] against itself, we leave [True] if possible since it is a weaker goal.
+Otherwise we leave [emp]. Only if all those options fail, we start decomposing [R].
+These four theorems are applied by the tactic `frameHere`.
+-/
+@[rocq_alias frame_here_absorbing]
+theorem frame_here_absorbing [BI PROP]
+    p (R : PROP) [QuickAbsorbing R] :
+    Frame p R R iprop(True) where
+  frame := calc
+    _ ⊢ True ∗ □?p R := sep_comm.mp
+    _ ⊢ True ∗ R     := sep_mono_right intuitionisticallyIf_elim
+    _ ⊢ R            := quick_absorbing.absorbing
+
+@[rocq_alias frame_here]
+theorem frame_here [BI PROP] p (R : PROP) :
+    Frame p R R iprop(emp) where
+  frame := sep_emp.1.trans intuitionisticallyIf_elim
+
+@[rocq_alias frame_affinely_here_absorbing]
+theorem frame_affinely_here_absorbing [BI PROP] p (R : PROP)
+    [QuickAbsorbing R] : Frame p iprop(<affine> R) R iprop(True) where
+  frame := calc
+    _ ⊢ True ∗ □?p <affine> R := sep_comm.mp
+    _ ⊢ True ∗ R              := sep_mono_right <| intuitionisticallyIf_elim.trans affinely_elim
+    _ ⊢ R                     := quick_absorbing.absorbing
+
+@[rocq_alias frame_affinely_here]
+theorem frame_affinely_here [BI PROP] p (R : PROP) :
+    Frame p iprop(<affine> R) R iprop(emp) where
+  frame := calc
+    _ ⊢ □?p <affine> R := sep_emp.mp
+    _ ⊢ <affine> R     := intuitionisticallyIf_elim
+    _ ⊢ R              := affinely_elim
+
 @[rocq_alias maybe_frame_default_persistent]
 theorem maybeFrame_default_persistent [BI PROP] (R P : PROP) :
   Frame true R P P where
@@ -461,6 +463,62 @@ def maybeFrame {prop : Q(Type u)} {bi : Q(BI $prop)} (p : Q(Bool))
     have : $Q =Q $P := ⟨⟩
     return some (q(maybeFrame_default $R $P))
 
+/-- Returns `R'` if `R` is `<affine> R'` up to reducible unfolding. -/
+def matchAffinely? (R : Expr) : MetaM (Option Expr) := do
+  let_expr affinely _ _ R' := ← whnfR R | return none
+  return R'
+
+/--
+Frames `<affine> R` against `R`, or `R` against itself. In both cases the absorbing variant is
+tried first, since it leaves the weaker goal `True`.
+
+`frame_here_absorbing` and `frame_here` both have the shape `Frame p R R _`. As two instances, each
+of them would unify `R` with the goal. This tactic unifies once and then chooses the remaining
+goal.
+
+The priority is lower than that of the other `Frame` tactics, such that this tactic runs after them
+and before the `Frame` instances.
+-/
+@[ipm_tactic_instance:10 Frame _ _ _ _]
+def frameHere : SynthTactic := fun e => do
+  let_expr Frame prop bi p R P Q := e | return .continue
+  have u := e.getAppFn.constLevels![0]!
+  have prop : Q(Type u) := prop
+  have _bi : Q(BI $prop) := bi
+  have p : Q(Bool) := p
+  have R : Q($prop) := R
+  -- `<affine> R'` against `R'`
+  if let some R' ← matchAffinely? R then
+    have R' : Q($prop) := R'
+    if ← isDefEq P R' then
+      if let .some _ ← trySynthInstanceQ q(QuickAbsorbing $R') then
+        if ← isDefEq Q q(iprop(True) : $prop) then
+          return .success q(frame_affinely_here_absorbing $p $R')
+      if ← isDefEq Q q(iprop(emp) : $prop) then
+        return .success q(frame_affinely_here $p $R')
+      return .continue
+  -- `R` against itself
+  if ← isDefEq P R then
+    if let .some _ ← trySynthInstanceQ q(QuickAbsorbing $R) then
+      if ← isDefEq Q q(iprop(True) : $prop) then
+        return .success q(frame_here_absorbing $p $R)
+    if ← isDefEq Q q(iprop(emp) : $prop) then
+      return .success q(frame_here $p $R)
+  return .continue
+
+/--
+Synthesizes `MakeSep P Q ?PQ`. If `makeSep_default` is the only candidate instance, its result
+`P ∗ Q` is built directly instead of running the synthesis.
+-/
+def synthMakeSep {prop : Q(Type u)} {_bi : Q(BI $prop)} (P Q : Q($prop)) :
+    MetaM ((PQ : Q($prop)) × Q(MakeSep $P $Q $PQ)) := do
+  let PQ : Q($prop) ← mkFreshExprMVarQ q($prop)
+  if ← isOnlyCandidateInstance q(MakeSep $P $Q $PQ) ``makeSep_default then
+    return ⟨q(iprop($P ∗ $Q)), q(makeSep_default $P $Q)⟩
+  let .some inst ← synthInstanceRecursiveQ q(MakeSep $P $Q $PQ) |
+    throwError "MakeSep should always succeed"
+  return ⟨PQ, inst⟩
+
 @[ipm_tactic_instance Frame _ _ iprop(_ ∗ _) _]
 def frameSep : SynthTactic := fun e => do
   let_expr Frame prop bi p R P _ := e | return .continue
@@ -478,21 +536,15 @@ def frameSep : SynthTactic := fun e => do
     if let .inl _ := matchBool p then
       let Q2 : Q($prop) ← mkFreshExprMVarQ q($prop)
       if let .some _ ← synthInstanceRecursiveQ q(Frame $p $R $P2 $Q2) then
-        let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
-        let .some _ ← synthInstanceRecursiveQ q(MakeSep $Q1 $Q2 $Q') |
-          throwError "MakeSep should always succeed"
+        let ⟨Q', _⟩ ← synthMakeSep Q1 Q2
         return .success q(frame_sep_both $R $P1 $P2 $Q1 $Q2 $Q')
-    let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
-    let .some _ ← synthInstanceRecursiveQ q(MakeSep $Q1 $P2 $Q') |
-      throwError "MakeSep should always succeed"
+    let ⟨Q', _⟩ ← synthMakeSep Q1 P2
     return .success q(frame_sep_left $p $R $P1 $P2 $Q1 $Q')
   else
     let Q2 : Q($prop) ← mkFreshExprMVarQ q($prop)
     let .some _ ← synthInstanceRecursiveQ q(Frame $p $R $P2 $Q2) |
       return .continue
-    let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
-    let .some _ ← synthInstanceRecursiveQ q(MakeSep $P1 $Q2 $Q') |
-      throwError "MakeSep should always succeed"
+    let ⟨Q', _⟩ ← synthMakeSep P1 Q2
     return .success q(frame_sep_right $p $R $P1 $P2 $Q2 $Q')
 
 @[ipm_tactic_instance Frame _ _ iprop(_ ∧ _) _]
