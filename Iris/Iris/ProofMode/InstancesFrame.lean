@@ -32,9 +32,12 @@ open Qq Iris.BI Iris.Std
 /-
 When framing [R] against itself, we leave [True] if possible since it is a weaker goal.
 Otherwise we leave [emp]. Only if all those options fail, we start decomposing [R].
+
+The following four theorems are not instances. They are applied by the synthesis tactic `frameHere`
+below, which unifies [R] with the goal only once.
 -/
-@[ipm_backtrack, rocq_alias frame_here_absorbing]
-instance (priority := high + 10) frame_here_absorbing [BI PROP]
+@[rocq_alias frame_here_absorbing]
+theorem frame_here_absorbing [BI PROP]
     p (R : PROP) [QuickAbsorbing R] :
     Frame p R R iprop(True) where
   frame := calc
@@ -42,21 +45,21 @@ instance (priority := high + 10) frame_here_absorbing [BI PROP]
     _ ⊢ True ∗ R     := sep_mono_right intuitionisticallyIf_elim
     _ ⊢ R            := quick_absorbing.absorbing
 
-@[ipm_backtrack, rocq_alias frame_here]
-instance (priority := high + 5) frame_here [BI PROP] p (R : PROP) :
+@[rocq_alias frame_here]
+theorem frame_here [BI PROP] p (R : PROP) :
     Frame p R R iprop(emp) where
   frame := sep_emp.1.trans intuitionisticallyIf_elim
 
-@[ipm_backtrack, rocq_alias frame_affinely_here_absorbing]
-instance (priority := high + 10) frame_affinely_here_absorbing [BI PROP] p (R : PROP)
+@[rocq_alias frame_affinely_here_absorbing]
+theorem frame_affinely_here_absorbing [BI PROP] p (R : PROP)
     [QuickAbsorbing R] : Frame p iprop(<affine> R) R iprop(True) where
   frame := calc
     _ ⊢ True ∗ □?p <affine> R := sep_comm.mp
     _ ⊢ True ∗ R              := sep_mono_right <| intuitionisticallyIf_elim.trans affinely_elim
     _ ⊢ R                     := quick_absorbing.absorbing
 
-@[ipm_backtrack, rocq_alias frame_affinely_here]
-instance (priority := high + 10) frame_affinely_here [BI PROP] p (R : PROP) :
+@[rocq_alias frame_affinely_here]
+theorem frame_affinely_here [BI PROP] p (R : PROP) :
     Frame p iprop(<affine> R) R iprop(emp) where
   frame := calc
     _ ⊢ □?p <affine> R := sep_emp.mp
@@ -460,6 +463,57 @@ def maybeFrame {prop : Q(Type u)} {bi : Q(BI $prop)} (p : Q(Bool))
     Q.mvarId!.assign P
     have : $Q =Q $P := ⟨⟩
     return some (q(maybeFrame_default $R $P))
+
+/--
+Frames `R` against itself, or `<affine> R` against `R`, by applying `frame_affinely_here`,
+`frame_affinely_here_absorbing`, `frame_here_absorbing` and `frame_here`. They are tried in this
+order, which is the order in which they were tried when they were instances.
+
+`frame_here_absorbing` and `frame_here` both have the shape `Frame p R R _`, so as two instances
+each of them unified `R` with the goal. This tactic unifies once and then chooses the remaining
+goal.
+
+The priority is lower than that of the other `Frame` tactics, such that this tactic runs after them
+and before the `Frame` instances.
+-/
+@[ipm_tactic_instance:10 Frame _ _ _ _]
+def frameHere : SynthTactic := fun e => do
+  let_expr Frame prop bi p R P Q := e | return .continue
+  have u := e.getAppFn.constLevels![0]!
+  have prop : Q(Type u) := prop
+  have _bi : Q(BI $prop) := bi
+  have p : Q(Bool) := p
+  have R : Q($prop) := R
+  let mctx ← getMCtx
+  -- `Frame p (<affine> R') R' _`. Like the lookup of instances, we only consider this if `R` is
+  -- `<affine> _` up to reducible unfolding, or a metavariable.
+  let Rw ← whnfR (← instantiateMVars R)
+  if Rw.isAppOf ``affinely || Rw.getAppFn.isMVar then
+    let R' : Q($prop) ← mkFreshExprMVarQ q($prop)
+    if ← isDefEq R q(iprop(<affine> $R')) <&&> isDefEq P R' then
+      have R' : Q($prop) := ← instantiateMVars R'
+      let mctx' ← getMCtx
+      if ← isDefEq Q q(iprop(emp) : $prop) then
+        return .success q(frame_affinely_here $p $R')
+      setMCtx mctx'
+      if let .some _ ← trySynthInstanceQ q(QuickAbsorbing $R') then
+        if ← isDefEq Q q(iprop(True) : $prop) then
+          return .success q(frame_affinely_here_absorbing $p $R')
+    setMCtx mctx
+  -- `Frame p R R _`
+  unless ← isDefEq P R do
+    setMCtx mctx
+    return .continue
+  have R : Q($prop) := ← instantiateMVars R
+  let mctx' ← getMCtx
+  if let .some _ ← trySynthInstanceQ q(QuickAbsorbing $R) then
+    if ← isDefEq Q q(iprop(True) : $prop) then
+      return .success q(frame_here_absorbing $p $R)
+  setMCtx mctx'
+  if ← isDefEq Q q(iprop(emp) : $prop) then
+    return .success q(frame_here $p $R)
+  setMCtx mctx
+  return .continue
 
 @[ipm_tactic_instance Frame _ _ iprop(_ ∗ _) _]
 def frameSep : SynthTactic := fun e => do
