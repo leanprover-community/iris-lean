@@ -466,9 +466,10 @@ def maybeFrame {prop : Q(Type u)} {bi : Q(BI $prop)} (p : Q(Bool))
     return some (q(maybeFrame_default $R $P))
 
 /--
-Frames `R` against itself, or `<affine> R` against `R`, by applying `frame_affinely_here`,
-`frame_affinely_here_absorbing`, `frame_here_absorbing` and `frame_here`. They are tried in this
-order, which is the order in which they were tried when they were instances.
+Frames `R` against itself, or `<affine> R` against `R`, by applying
+`frame_affinely_here_absorbing`, `frame_affinely_here`, `frame_here_absorbing` and `frame_here`,
+in this order. In both pairs the absorbing variant is tried first, as in Rocq, since it leaves the
+weaker goal `True`.
 
 `frame_here_absorbing` and `frame_here` both have the shape `Frame p R R _`, so as two instances
 each of them unified `R` with the goal. This tactic unifies once and then chooses the remaining
@@ -494,12 +495,12 @@ def frameHere : SynthTactic := fun e => do
     if ← isDefEq R q(iprop(<affine> $R')) <&&> isDefEq P R' then
       have R' : Q($prop) := ← instantiateMVars R'
       let mctx' ← getMCtx
-      if ← isDefEq Q q(iprop(emp) : $prop) then
-        return .success q(frame_affinely_here $p $R')
-      setMCtx mctx'
       if let .some _ ← trySynthInstanceQ q(QuickAbsorbing $R') then
         if ← isDefEq Q q(iprop(True) : $prop) then
           return .success q(frame_affinely_here_absorbing $p $R')
+      setMCtx mctx'
+      if ← isDefEq Q q(iprop(emp) : $prop) then
+        return .success q(frame_affinely_here $p $R')
     setMCtx mctx
   -- `Frame p R R _`
   unless ← isDefEq P R do
