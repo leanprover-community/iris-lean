@@ -9,6 +9,7 @@ public import Iris.BI
 public import Iris.ProofMode.Classes
 public import Iris.ProofMode.ClassesMake
 public import Iris.ProofMode.Expr
+public import Iris.ProofMode.InstancesMake
 public import Iris.ProofMode.SynthInstance
 public import Iris.Std.TC
 
@@ -515,6 +516,24 @@ def frameHere : SynthTactic := fun e => do
   setMCtx mctx
   return .continue
 
+/--
+Synthesizes `MakeSep P Q ?PQ`. If `makeSep_default` is the only candidate instance for this goal,
+its result `P ∗ Q` is built directly instead of running the synthesis.
+-/
+def synthMakeSep {prop : Q(Type u)} {_bi : Q(BI $prop)} (P Q : Q($prop)) :
+    MetaM ((PQ : Q($prop)) × Q(MakeSep $P $Q $PQ)) := do
+  let PQ : Q($prop) ← mkFreshExprMVarQ q($prop)
+  -- After framing, one side is often `emp`. Then `makeSep_default` is not the only candidate, so
+  -- we skip looking up the candidates.
+  let isEmp (e : Expr) : MetaM Bool := return (← instantiateMVars e).isAppOf ``BIBase.emp
+  unless (← isEmp P) || (← isEmp Q) do
+    let insts ← SynthInstance.getInstances (← instantiateMVars q(MakeSep $P $Q $PQ))
+    if insts.size == 1 && insts[0]!.val.isConstOf ``makeSep_default then
+      return ⟨q(iprop($P ∗ $Q)), q(makeSep_default $P $Q)⟩
+  let .some inst ← synthInstanceRecursiveQ q(MakeSep $P $Q $PQ) |
+    throwError "MakeSep should always succeed"
+  return ⟨PQ, inst⟩
+
 @[ipm_tactic_instance Frame _ _ iprop(_ ∗ _) _]
 def frameSep : SynthTactic := fun e => do
   let_expr Frame prop bi p R P _ := e | return .continue
@@ -532,21 +551,15 @@ def frameSep : SynthTactic := fun e => do
     if let .inl _ := matchBool p then
       let Q2 : Q($prop) ← mkFreshExprMVarQ q($prop)
       if let .some _ ← synthInstanceRecursiveQ q(Frame $p $R $P2 $Q2) then
-        let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
-        let .some _ ← synthInstanceRecursiveQ q(MakeSep $Q1 $Q2 $Q') |
-          throwError "MakeSep should always succeed"
+        let ⟨Q', _⟩ ← synthMakeSep Q1 Q2
         return .success q(frame_sep_both $R $P1 $P2 $Q1 $Q2 $Q')
-    let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
-    let .some _ ← synthInstanceRecursiveQ q(MakeSep $Q1 $P2 $Q') |
-      throwError "MakeSep should always succeed"
+    let ⟨Q', _⟩ ← synthMakeSep Q1 P2
     return .success q(frame_sep_left $p $R $P1 $P2 $Q1 $Q')
   else
     let Q2 : Q($prop) ← mkFreshExprMVarQ q($prop)
     let .some _ ← synthInstanceRecursiveQ q(Frame $p $R $P2 $Q2) |
       return .continue
-    let Q' : Q($prop) ← mkFreshExprMVarQ q($prop)
-    let .some _ ← synthInstanceRecursiveQ q(MakeSep $P1 $Q2 $Q') |
-      throwError "MakeSep should always succeed"
+    let ⟨Q', _⟩ ← synthMakeSep P1 Q2
     return .success q(frame_sep_right $p $R $P1 $P2 $Q2 $Q')
 
 @[ipm_tactic_instance Frame _ _ iprop(_ ∧ _) _]
