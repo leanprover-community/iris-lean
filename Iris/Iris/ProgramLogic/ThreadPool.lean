@@ -10,7 +10,7 @@ public import Iris.ProgramLogic.EctxLanguage
 public import Iris.ProgramLogic.Adequacy
 public import Iris.Instances.Lib.GhostMap
 public import Iris.Std.FromMathlib
-public import Batteries.Data.List.Lemmas
+public import Init.Data.List.Nat.TakeDrop
 
 namespace Iris.ProgramLogic
 
@@ -68,7 +68,7 @@ theorem cfg_step {tp : List Expr} {σ : State} {n : Nat} {e : Expr}
     Step (tp, σ) κ (tp.set n e' ++ efs, σ') := by
   obtain ⟨hlt, rfl⟩ := List.getElem?_eq_some_iff.mp Hlu
   simpa only [List.getElem_cons_drop hlt, List.take_append_drop,
-    ← List.set_eq_take_cons_drop e' hlt] using
+    List.set_eq_take_append_cons_drop, ite_eq_left hlt] using
     Step.of_primStep Hprim (t₁ := tp.take n) (t₂ := tp.drop (n+1))
 
 theorem getElem?_set_append_self {tp : List Expr} {n : Nat} {a : Expr} {efs : List Expr}

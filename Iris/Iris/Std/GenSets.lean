@@ -7,7 +7,7 @@ module
 
 public import Iris.Std.Classes
 public import Iris.Std.Infinite
-import Batteries.Data.List.Perm
+import Init.Data.List.Perm
 import Iris.Std.List
 
 @[expose] public section
@@ -1160,43 +1160,18 @@ theorem set_choose (X : S) (h : size X ≠ 0) : ∃ x, x ∈ X := by
     rw [<-mem_toList, hlist]
     simp [List.mem_cons]
 
--- FIXME: Golf
-theorem size_union {X Y : S} (h : X ## Y) : size X + size Y = size (X ∪ Y) := by
-  simp only [size, <-List.length_append]
-  have h_disj : ∀ x, x ∈ toList X → x ∉ toList Y := by
-    intro x hx hy
-    rw [mem_toList] at hx hy
-    exact h _ ⟨hx, hy⟩
-
-  have hnodup_X : (toList X).Nodup := LawfulFiniteSet.toList_nodup
-  have hnodup_Y : (toList Y).Nodup := LawfulFiniteSet.toList_nodup
-  have hnodup_XY : (toList (X ∪ Y)).Nodup := LawfulFiniteSet.toList_nodup
-
-  have hnodup_append : (toList X ++ toList Y).Nodup := by
-    rw [List.nodup_append]
-    refine ⟨hnodup_X, hnodup_Y, ?_⟩
+theorem toList_union_perm {s t : S} (hdisj : s ## t) :
+    (toList (s ∪ t)).Perm (toList s ++ toList t) := by
+  apply (List.perm_ext_iff_of_nodup toList_nodup _).mpr
+  · intro x
+    rw [mem_toList, mem_union, List.mem_append, mem_toList, mem_toList]
+  · refine List.nodup_append.mpr ⟨toList_nodup, toList_nodup, ?_⟩
     intro a ha b hb heq
     subst heq
-    exact h_disj a ha hb
+    exact hdisj a ⟨mem_toList.mp ha, mem_toList.mp hb⟩
 
-  have h_mem : ∀ z, z ∈ toList (X ∪ Y) ↔ z ∈ toList X ++ toList Y := by
-    intro z
-    rw [mem_toList, mem_union, List.mem_append, mem_toList, mem_toList]
-  have : (toList (X ∪ Y)).length = (toList X ++ toList Y).length := by
-    apply Nat.le_antisymm
-    · apply List.Subperm.length_le
-      apply List.subperm_of_subset hnodup_XY
-      intro a ha
-      rw [h_mem] at ha
-      exact ha
-    · apply List.Subperm.length_le
-      apply List.subperm_of_subset hnodup_append
-      intro a ha
-      rw [mem_toList, mem_union]
-      rw [List.mem_append, mem_toList, mem_toList] at ha
-      exact ha
-
-  rw [this]
+theorem size_union {X Y : S} (h : X ## Y) : size X + size Y = size (X ∪ Y) := by
+  simpa only [size, List.length_append] using (toList_union_perm h).length_eq.symm
 
 -- FIXME: Golf
 /-- Proper subsets have strictly smaller size. -/
@@ -1358,22 +1333,6 @@ theorem toList_ofList {l : List A} (H : List.Nodup l) :
   List.Perm l (toList (ofList l : S)) := by
   apply (List.perm_ext_iff_of_nodup H toList_nodup).mpr
   intro x; rw [mem_toList, <-mem_ofList]
-
--- FIXME: Golf
-theorem toList_union_perm {s t : S} (hdisj : s ## t) :
-    (toList (s ∪ t)).Perm (toList s ++ toList t) := by
-  apply (List.perm_ext_iff_of_nodup toList_nodup _).mpr
-  · intro x
-    rw [mem_toList, mem_union, List.mem_append, mem_toList, mem_toList]
-  · apply List.nodup_append.mpr
-    constructor
-    · exact toList_nodup
-    · constructor
-      · exact toList_nodup
-      · intro a ha b hb heq
-        subst heq
-        rw [mem_toList] at ha hb
-        exact hdisj a ⟨ha, hb⟩
 
 theorem fold_insert {β : Type _} {f : β → A → β}
     (hcomm : ∀ b x y, f (f b x) y = f (f b y) x)

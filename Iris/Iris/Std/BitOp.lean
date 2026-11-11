@@ -4,8 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Batteries.Data.Int
-public import Batteries.Data.Nat.Bitwise
+public import Init.Data.Nat.Bitwise.Lemmas
 import all Init.Data.Nat.Bitwise.Basic
 public import Iris.Init
 
@@ -55,35 +54,17 @@ end Nat
 namespace Nat
 
 -- Helper lemmas for commutativity of Nat bitwise operations
-theorem or_comm (a b : Nat) : a ||| b = b ||| a := by
-  apply Nat.eq_of_testBit_eq; intro i
-  simp only [Nat.testBit_or]
-  cases a.testBit i <;> cases b.testBit i <;> rfl
+theorem or_comm (a b : Nat) : a ||| b = b ||| a := _root_.Nat.or_comm a b
 
-theorem and_comm (a b : Nat) : a &&& b = b &&& a := by
-  apply Nat.eq_of_testBit_eq; intro i
-  simp only [Nat.testBit_and]
-  cases a.testBit i <;> cases b.testBit i <;> rfl
+theorem and_comm (a b : Nat) : a &&& b = b &&& a := _root_.Nat.and_comm a b
 
-theorem xor_comm (a b : Nat) : a ^^^ b = b ^^^ a := by
-  apply Nat.eq_of_testBit_eq; intro i
-  simp only [Nat.testBit_xor]
-  cases a.testBit i <;> cases b.testBit i <;> rfl
+theorem xor_comm (a b : Nat) : a ^^^ b = b ^^^ a := _root_.Nat.xor_comm a b
 
-theorem or_assoc (a b c : Nat) : (a ||| b) ||| c = a ||| (b ||| c) := by
-  apply Nat.eq_of_testBit_eq; intro i
-  simp only [Nat.testBit_or]
-  cases a.testBit i <;> cases b.testBit i <;> cases c.testBit i <;> rfl
+theorem or_assoc (a b c : Nat) : (a ||| b) ||| c = a ||| (b ||| c) := _root_.Nat.or_assoc a b c
 
-theorem and_assoc (a b c : Nat) : (a &&& b) &&& c = a &&& (b &&& c) := by
-  apply Nat.eq_of_testBit_eq; intro i
-  simp only [Nat.testBit_and]
-  cases a.testBit i <;> cases b.testBit i <;> cases c.testBit i <;> rfl
+theorem and_assoc (a b c : Nat) : (a &&& b) &&& c = a &&& (b &&& c) := _root_.Nat.and_assoc a b c
 
-theorem xor_assoc (a b c : Nat) : (a ^^^ b) ^^^ c = a ^^^ (b ^^^ c) := by
-  apply Nat.eq_of_testBit_eq; intro i
-  simp only [Nat.testBit_xor]
-  cases a.testBit i <;> cases b.testBit i <;> cases c.testBit i <;> rfl
+theorem xor_assoc (a b c : Nat) : (a ^^^ b) ^^^ c = a ^^^ (b ^^^ c) := _root_.Nat.xor_assoc a b c
 
 theorem testBit_ldiff (a b i : Nat) :
   (ldiff a b).testBit i = (a.testBit i && !(b.testBit i)) := by
