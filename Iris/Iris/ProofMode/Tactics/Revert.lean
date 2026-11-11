@@ -237,9 +237,9 @@ def checkDependentHyps {u} {prop : Q(Type $u)} {bi} {e : Q($prop)}
       the `generalizing` clause but are not themselves included:\
       \n{"\n".intercalate (leanLines ++ irisLines)}"
 
-def iRevertCore (targets : List SelTarget) {u : Level} {prop: Q(Type $u)}
-    {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e) (goal: Q($prop))
-    (k : ∀ {e : Q($prop)}, Hyps bi e → (goal: Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
+def iRevertCore (targets : List SelTarget) {u : Level} {prop : Q(Type $u)}
+    {bi : Q(BI $prop)} {e : Q($prop)} (hyps : Hyps bi e) (goal : Q($prop))
+    (k : ∀ {e : Q($prop)}, Hyps bi e → (goal : Q($prop)) → ProofModeM Q($e ⊢ $goal) := addBIGoal) :
     ProofModeM Q($e ⊢ $goal) := do
   let init : RevertState e goal := { e, hyps, goal, pf := q(id) }
   let st ← targets.reverse.foldlM (init := init) fun st target => do

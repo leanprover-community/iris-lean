@@ -13,3 +13,6 @@ public import IrisTest.HeapLang.Linter
 public import IrisTest.HeapLang.Par
 public import IrisTest.HeapLang.Semantics
 public import IrisTest.HeapLang.Tactics
+public import IrisTest.HeapLang.VCGen
+public import IrisTest.HeapLang.VCGenLoeb
+public import IrisTest.HeapLang.VCGenValueForm

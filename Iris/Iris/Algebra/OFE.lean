@@ -1647,7 +1647,7 @@ open COFE
 def Sigma.mapO {P1 P2 : A → Type _} [∀ x, OFE (P1 x)] [∀ x, OFE (P2 x)] :
   ((a : A) → P1 a -n> P2 a) -n> Sigma P1 -n> Sigma P2 where
   f g := ⟨fun x => ⟨_, g x.fst x.snd⟩, ⟨by rintro n ⟨x, xH⟩ ⟨y, yH⟩ ⟨⟨⟩, hdist⟩; exact ⟨rfl, (g x).ne.ne hdist⟩⟩⟩
-  ne := ⟨fun n f g hdist x => ⟨rfl, hdist _ _⟩⟩
+  ne := ⟨fun n f g hdist ⟨a, b⟩ => ⟨rfl, by simpa using hdist a b⟩⟩
 
 open OFunctor in
 abbrev SigmaOF (F : A → OFunctorPre) : OFunctorPre :=

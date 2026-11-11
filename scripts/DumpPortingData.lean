@@ -77,7 +77,7 @@ meta partial def discoverModules (srcDir : System.FilePath) : IO (Array Name) :=
         result := result.push (modPrefix ++ stem.toName)
   return result
 
-public meta unsafe def main (args : List String) : IO Unit := do
+meta unsafe def main (args : List String) : IO Unit := do
   let outputPath := args.head? |>.getD ".lake/porting_data.json"
   -- Initialize Lean
   Lean.enableInitializersExecution

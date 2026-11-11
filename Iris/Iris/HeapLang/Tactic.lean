@@ -104,10 +104,10 @@ public meta partial def fill (K : Q(List ECtxItem)) (e : Q(Exp)) : MetaM Q(Exp) 
   | ~q($Ki :: $K) => do
     fill K (←fillItem e Ki)
 
-public meta partial def fillQ (K: Q(List ECtxItem)) (e : Q(Exp)) : MetaM ((res : Q(Exp)) × PLift ($res =Q ProgramLogic.fill $K $e)):=
+public meta partial def fillQ (K : Q(List ECtxItem)) (e : Q(Exp)) : MetaM ((res : Q(Exp)) × PLift ($res =Q ProgramLogic.fill $K $e)):=
   return ⟨←fill K e , .up ⟨⟩⟩
 
-meta def quoteList {α : Q(Type u)}: List Q($α) → Q(List $α)
+meta def quoteList {α : Q(Type u)} : List Q($α) → Q(List $α)
   | [] => q([])
   | x :: xs => q($x :: $(quoteList xs))
 
