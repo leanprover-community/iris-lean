@@ -6,7 +6,6 @@ Authors: Mario Carneiro, Markus de Medeiros
 module
 
 public import Iris.Std.List
-import Batteries.Data.List.Perm
 
 @[expose] public section
 
@@ -67,7 +66,7 @@ theorem fresh [InfiniteType A] (X : _root_.List A) : ∃ a : A, a ∉ X := by
     intro _ ha
     obtain ⟨_, _, rfl⟩ := _root_.List.mem_map.mp ha
     exact Hcontra _
-  have H := _root_.List.subperm_of_subset hnodup hsub |>.length_le
+  have H := hnodup.length_le_of_subset hsub
   simp only [_root_.List.length_map, Nalloc, L, _root_.List.length_range] at H
   omega
 

@@ -7,7 +7,6 @@ module
 
 public import Iris.Algebra.Monoid
 public import Iris.Algebra.CMRA
-import Batteries.Data.List.Perm
 public import Iris.Std.List
 public import Iris.Std.PartialMap
 public import Iris.Std.GenSets

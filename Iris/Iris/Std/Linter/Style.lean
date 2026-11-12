@@ -6,7 +6,6 @@ Authors: Michael Rothgang
 -/
 module
 
-public import Batteries.Tactic.Lint.Basic
 public meta import Lean.Linter.Basic
 public meta import Lean.Linter.EnvLinter.Basic
 public meta import Iris.Std.Linter.DeclarationNames

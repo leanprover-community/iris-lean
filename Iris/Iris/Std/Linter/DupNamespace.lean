@@ -6,7 +6,6 @@ Authors: Floris van Doorn
 -/
 module
 
-public import Batteries.Tactic.Lint
 public import Lean.Linter.Deprecated
 public meta import Lean.Linter.Basic
 public meta import Iris.Std.Linter.DeclarationNames

@@ -4,8 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Batteries.Data.Int
-public import Batteries.Data.Nat.Bitwise
 import all Init.Data.Nat.Bitwise.Basic
 public import Iris.Init
 
@@ -49,41 +47,6 @@ theorem shiftLeft'_false : ∀ n, shiftLeft' false m n = m <<< n
 
 /-- NB. Copied from Mathlib -/
 @[simp] theorem shiftRight_eq (m n : Nat) : Nat.shiftRight m n = m >>> n := rfl
-
-end Nat
-
-namespace Nat
-
--- Helper lemmas for commutativity of Nat bitwise operations
-theorem or_comm (a b : Nat) : a ||| b = b ||| a := by
-  apply Nat.eq_of_testBit_eq; intro i
-  simp only [Nat.testBit_or]
-  cases a.testBit i <;> cases b.testBit i <;> rfl
-
-theorem and_comm (a b : Nat) : a &&& b = b &&& a := by
-  apply Nat.eq_of_testBit_eq; intro i
-  simp only [Nat.testBit_and]
-  cases a.testBit i <;> cases b.testBit i <;> rfl
-
-theorem xor_comm (a b : Nat) : a ^^^ b = b ^^^ a := by
-  apply Nat.eq_of_testBit_eq; intro i
-  simp only [Nat.testBit_xor]
-  cases a.testBit i <;> cases b.testBit i <;> rfl
-
-theorem or_assoc (a b c : Nat) : (a ||| b) ||| c = a ||| (b ||| c) := by
-  apply Nat.eq_of_testBit_eq; intro i
-  simp only [Nat.testBit_or]
-  cases a.testBit i <;> cases b.testBit i <;> cases c.testBit i <;> rfl
-
-theorem and_assoc (a b c : Nat) : (a &&& b) &&& c = a &&& (b &&& c) := by
-  apply Nat.eq_of_testBit_eq; intro i
-  simp only [Nat.testBit_and]
-  cases a.testBit i <;> cases b.testBit i <;> cases c.testBit i <;> rfl
-
-theorem xor_assoc (a b c : Nat) : (a ^^^ b) ^^^ c = a ^^^ (b ^^^ c) := by
-  apply Nat.eq_of_testBit_eq; intro i
-  simp only [Nat.testBit_xor]
-  cases a.testBit i <;> cases b.testBit i <;> cases c.testBit i <;> rfl
 
 theorem testBit_ldiff (a b i : Nat) :
   (ldiff a b).testBit i = (a.testBit i && !(b.testBit i)) := by

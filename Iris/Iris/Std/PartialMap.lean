@@ -5,7 +5,6 @@ Authors: Zongyuan Liu, Markus de Medeiros
 -/
 module
 
-import Batteries.Data.List.Perm
 import Iris.Std.FromMathlib
 public import Iris.Std.GenSets
 

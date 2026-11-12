@@ -11,7 +11,6 @@ import Iris.BI.DerivedLawsLater
 import Iris.BI.Instances
 import Iris.BI.BigOp.BigSepSet
 import Iris.Std.TC
-import Batteries.Data.List.Perm
 
 public section
 
