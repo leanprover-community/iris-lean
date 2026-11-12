@@ -7,7 +7,6 @@ module
 
 public import Iris.Std.Classes
 public import Iris.Std.Infinite
-import Init.Data.List.Perm
 import Iris.Std.List
 
 @[expose] public section

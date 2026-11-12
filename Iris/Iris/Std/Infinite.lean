@@ -6,7 +6,6 @@ Authors: Mario Carneiro, Markus de Medeiros
 module
 
 public import Iris.Std.List
-import Init.Data.List.Perm
 
 @[expose] public section
 

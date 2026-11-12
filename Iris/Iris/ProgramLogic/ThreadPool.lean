@@ -10,7 +10,6 @@ public import Iris.ProgramLogic.EctxLanguage
 public import Iris.ProgramLogic.Adequacy
 public import Iris.Instances.Lib.GhostMap
 public import Iris.Std.FromMathlib
-public import Init.Data.List.Nat.TakeDrop
 
 namespace Iris.ProgramLogic
 
