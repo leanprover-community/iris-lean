@@ -140,23 +140,23 @@ end HeapLangGS
 
 section Adequacy
 
-@[rocq_alias heap_lang.heap_adequacy]
-theorem heap_adequacy [HeapLangGpreS .hasLC GF] (e : Exp) σ (φ : Val → Prop)
-    (Hwp : ∀ [HeapLangGS .hasLC GF], ⊢ invHeapInv -∗ (WP e {{ v, ⌜φ v⌝ }})) :
+@[rocq_alias heap_lang.heap_adequacy_gen]
+theorem heap_adequacy_gen hlc GF [HeapLangGpreS hlc GF] (e : Exp) σ (φ : Val → Prop)
+    (Hwp : ∀ [HeapLangGS hlc GF], ⊢ invHeapInv -∗ (WP e {{ v, ⌜φ v⌝ }})) :
     adequate .NotStuck e σ (fun v _ => φ v) := by
-  refine wp_adequacy (GF := GF) .NotStuck e σ φ ?_
+  refine wp_adequacy_gen (hlc := hlc) (GF := GF) .NotStuck e σ φ ?_
   intro inst κs
   imod genHeap_init (GF := GF) (H := HeapF) σ.heap with ⟨%γh, ⟨Hh, _⟩⟩
   imod invHeap_init Loc _ (GF := GF) (H := HeapF) (E:= ⊤) with ⟨%γi, >Hi⟩
   imod (ProphMap.init κs σ.usedProphId) with ⟨%Gproph, Hproph⟩
-  letI instHeapLangGS : HeapLangGS .hasLC GF := ⟨γh, Gproph, γi⟩
+  letI instHeapLangGS : HeapLangGS hlc GF := ⟨γh, Gproph, γi⟩
   imodintro
   iexists (fun σ κs => iprop% Iris.genHeapInterp σ.heap ∗ Iris.prophMapInterp κs σ.usedProphId)
   iexists (fun _ => iprop(True))
   simp only []
   -- NOTE: iframe %(@Hwp _) does not work here
-  ihave Hwp := (@Hwp _) $$ Hi
-  iframe Hwp Hproph Hh
+  ihave $ := (@Hwp _) $$ Hi
+  iframe Hproph Hh
 
 end Adequacy
 
