@@ -573,15 +573,6 @@ theorem lc_fupd_elim_later_keep {E : CoPset} {P : PROP} [inst1 : Plain P] [inst2
   · iintro HP' !> {$Hlc} {HP}
     exact siPure_siEmpValid_elim
 
-omit instBFupd in
-@[rocq_alias later_credits_plain.laterN_False]
-theorem laterN_False [BILoeb PROP] : ⊢ ∃ n, ▷^[n] False := by
-  iloeb as IH
-  icases IH with ⟨%n, Hn⟩
-  iexists n + 1
-  dsimp [BIBase.laterN, Nat.repeat]
-  iassumption
-
 include lc_fupd_elim_later lc_soundness fupd_keep_si_pure' in
 @[rocq_alias later_credits_plain.contradiction]
 theorem contradiction [BILoeb PROP] : False := by
