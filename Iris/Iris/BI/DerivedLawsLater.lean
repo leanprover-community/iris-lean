@@ -280,7 +280,7 @@ instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
 @[rocq_alias bi.not_not_later_False]
 theorem not_not_later_False [BILoeb PROP] : ⊢ ¬ ¬ ▷ False := entails_imp loeb
 
-@[rocq_alias bi.later_credits_plain.laterN_False]
+@[rocq_alias bi.laterN_False]
 theorem laterN_False [BILoeb PROP] : ⊢ ∃ n, ▷^[n] False := by
   refine true_intro.trans (loeb_weak ?_)
   refine later_exists.mpr.trans (exists_elim fun n => ?_)
