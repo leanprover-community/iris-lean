@@ -19,6 +19,7 @@ open scoped PartialMap
 
 variable {PROP : Type _} [BI PROP]
 variable {K : Type _} {V : Type _} {M : Type _ → Type _} [LawfulFiniteMap M K]
+local bi PROP
 
 namespace BigAndM
 
@@ -203,19 +204,19 @@ theorem bigAndM_persistently {Φ : K → V → PROP} {m : M V} :
 
 @[rocq_alias big_andM_pure_1]
 theorem bigAndM_pure_intro {φ : K → V → Prop} {m : M V} :
-    ([∧map] k ↦ x ∈ m, ⌜φ k x⌝ : PROP) ⊢ ⌜PartialMap.all φ m⌝ :=
+    ([∧map] k ↦ x ∈ m, ⌜φ k x⌝) ⊢ ⌜PartialMap.all φ m⌝ :=
   bigAndM_forall.1.trans <|
   (forall_mono fun _ => (forall_mono fun _ => pure_imp.2).trans pure_forall.2).trans pure_forall.2
 
 @[rocq_alias big_andM_pure_2]
 theorem bigAndM_pure_elim {φ : K → V → Prop} {m : M V} :
-    (⌜PartialMap.all φ m⌝ : PROP) ⊢ [∧map] k ↦ x ∈ m, ⌜φ k x⌝ :=
+    ⌜PartialMap.all φ m⌝ ⊢ [∧map] k ↦ x ∈ m, ⌜φ k x⌝ :=
   pure_forall.1.trans <|
   (forall_mono fun _ => pure_forall.1.trans <| forall_mono fun _ => pure_imp.1).trans bigAndM_forall.2
 
 @[rocq_alias big_andM_pure]
 theorem bigAndM_pure {φ : K → V → Prop} {m : M V} :
-    ([∧map] k ↦ x ∈ m, ⌜φ k x⌝ : PROP) ⊣⊢ ⌜PartialMap.all φ m⌝ :=
+    ([∧map] k ↦ x ∈ m, ⌜φ k x⌝) ⊣⊢ ⌜PartialMap.all φ m⌝ :=
   ⟨bigAndM_pure_intro, bigAndM_pure_elim⟩
 
 @[rocq_alias big_andM_later]

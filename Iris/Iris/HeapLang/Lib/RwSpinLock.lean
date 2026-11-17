@@ -77,6 +77,7 @@ attribute [reducible, instance] RwSpinLockG.elemG
 section proof
 
 variable {GF : BundledGFunctors} [HeapLangGS hlc GF] [RwSpinLockG GF]
+local bi (IProp GF)
 
 def rwLockN : Namespace := nroot .@ "rw_lock"
 
@@ -132,7 +133,7 @@ theorem own_auth_singleton_2 {γ : GName} {dq : DFrac} {v : Qp} {g : ReaderFracs
 
 private theorem own_auth_auth_False {γ : GName} {q₁ q₂ : Qp} {g₁ g₂ : ReaderFracs}
     (h : ¬ (q₁ + q₂).val ≤ 1) :
-    own γ (●{.own q₁} .ofSet g₁) ∗ own γ (●{.own q₂} .ofSet g₂) ⊢@{IProp GF} False := by
+    own γ (●{.own q₁} .ofSet g₁) ∗ own γ (●{.own q₂} .ofSet g₂) ⊢ False := by
   iintro ⟨H₁, H₂⟩
   icombine H₁ H₂ gives %Hvalid
   rw [Auth.auth_dfrac_op_valid, DFrac.op_own, DFrac.valid_own] at Hvalid
@@ -166,12 +167,12 @@ private theorem rwStateInv_mono {γ : GName} {l : Loc} (Φ Ψ : Qp → IProp GF)
 
 @[rocq_alias heap_lang.writer_locked_exclusive]
 theorem writerLocked_exclusive (γ : GName) :
-    writerLocked γ ∗ writerLocked γ ⊢@{IProp GF} False :=
+    writerLocked γ ∗ writerLocked γ ⊢ False :=
   own_auth_auth_False (by grind)
 
 @[rocq_alias heap_lang.writer_locked_not_reader_locked]
 theorem writerLocked_not_readerLocked (γ : GName) (q : Qp) :
-    writerLocked γ ∗ readerLocked γ q ⊢@{IProp GF} False := by
+    writerLocked γ ∗ readerLocked γ q ⊢ False := by
   iintro H
   unfold writerLocked readerLocked
   ihave %Hmem := own_auth_singleton_2 $$ H

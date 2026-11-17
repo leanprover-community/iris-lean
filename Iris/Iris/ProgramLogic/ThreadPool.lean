@@ -10,12 +10,13 @@ public import Iris.ProgramLogic.EctxLanguage
 public import Iris.ProgramLogic.Adequacy
 public import Iris.Instances.Lib.GhostMap
 public import Iris.Std.FromMathlib
-public import Batteries.Data.List.Lemmas
 
 namespace Iris.ProgramLogic
 
 open Iris.ProgramLogic.PrimStep
 open Language Language.Notation Relation FromMathlib.Relation.TransGen
+
+local bi (IProp GF)
 
 @[expose] public section
 
@@ -66,7 +67,7 @@ theorem cfg_step {tp : List Expr} {σ : State} {n : Nat} {e : Expr}
     Step (tp, σ) κ (tp.set n e' ++ efs, σ') := by
   obtain ⟨hlt, rfl⟩ := List.getElem?_eq_some_iff.mp Hlu
   simpa only [List.getElem_cons_drop hlt, List.take_append_drop,
-    ← List.set_eq_take_cons_drop e' hlt] using
+    List.set_eq_take_append_cons_drop, ite_eq_left hlt] using
     Step.of_primStep Hprim (t₁ := tp.take n) (t₂ := tp.drop (n+1))
 
 theorem getElem?_set_append_self {tp : List Expr} {n : Nat} {a : Expr} {efs : List Expr}
@@ -179,7 +180,7 @@ public abbrev tpInv (tp : List Expr) : IProp GF := iprop%
   ∃ m : H Expr, ⌜∀ n, PartialMap.get? m n = tp[n]?⌝ ∗ TI.tp_name ↪●MAP m
 
 public theorem tpInv_lookup (tp : List Expr) (n : Nat) (e₁ : Expr) (dq : DFrac) :
-    tpInv tp ⊢@{IProp GF} (n ↪thread{dq} e₁) -∗ ⌜tp[n]? = some e₁⌝ := by
+    tpInv tp ⊢ (n ↪thread{dq} e₁) -∗ ⌜tp[n]? = some e₁⌝ := by
   unfold isThread
   iintro ⟨%m, %He, Hauth⟩ Hfrag
   ihave %Hlookup := ghost_map_lookup $$ Hauth Hfrag
@@ -187,7 +188,7 @@ public theorem tpInv_lookup (tp : List Expr) (n : Nat) (e₁ : Expr) (dq : DFrac
   rw [← Hlookup, He _]
 
 public theorem tpInv_update (tp : List Expr) (n : Nat) (e₁ e₂ : Expr) :
-    tpInv tp ⊢@{IProp GF} (n ↪thread e₁) ==∗ tpInv (tp.set n e₂) ∗ (n ↪thread e₂) := by
+    tpInv tp ⊢ (n ↪thread e₁) ==∗ tpInv (tp.set n e₂) ∗ (n ↪thread e₂) := by
   iintro Hinv Hfrag
   ihave %Hlookup := tpInv_lookup $$ Hinv Hfrag
   unfold isThread
@@ -200,7 +201,7 @@ public theorem tpInv_update (tp : List Expr) (n : Nat) (e₁ e₂ : Expr) :
   grind
 
 public theorem tpInv_new_threads (efs tp : List Expr) :
-    ⊢@{IProp GF} tpInv tp ==∗ (tpInv (tp ++ efs) ∗ ([∗list] n ↦ e' ∈ efs, (tp.length + n) ↪thread e')) := by
+    ⊢ tpInv tp ==∗ (tpInv (tp ++ efs) ∗ ([∗list] n ↦ e' ∈ efs, (tp.length + n) ↪thread e')) := by
   unfold isThread
   iintro ⟨%m, %He, Hauth⟩
   have Hdisj : PartialMap.disjoint (FiniteMap.map_seq (M := H) tp.length efs) m := by
@@ -250,7 +251,7 @@ variable {H : Type _ → Type _} [LawfulFiniteMap H Nat]
 variable {Expr : Type _} [GhostMapG GF Nat Expr H]
 
 public theorem tpInv_alloc :
-    ⊢@{IProp GF} |==> ∃ γ,
+    ⊢ |==> ∃ γ,
       tpInvIni (Expr := Expr) (TI := { toGhostMapG := inferInstance, tp_name := γ }) := by
   imod ghost_map_alloc_empty (H := H) with ⟨%γ, H⟩
   imodintro

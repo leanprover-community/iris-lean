@@ -17,6 +17,7 @@ open Iris.Algebra BigOpL BIBase
 /-! # Big Conjunction over Lists -/
 
 variable {PROP : Type _} [BI PROP] {A : Type _}
+local bi PROP
 
 namespace BigAndL
 
@@ -115,21 +116,21 @@ theorem bigAndL_persistently {Φ : Nat → A → PROP} {l : List A} :
 
 @[rocq_alias big_andL_pure_1]
 theorem bigAndL_pure_intro {φ : Nat → A → Prop} {l : List A} :
-    ([∧list] k ↦ x ∈ l, (⌜φ k x⌝ : PROP)) ⊢ ⌜∀ k x, l[k]? = some x → φ k x⌝ := by
+    ([∧list] k ↦ x ∈ l, ⌜φ k x⌝) ⊢ ⌜∀ k x, l[k]? = some x → φ k x⌝ := by
   refine bigAndL_forall.1.trans ?_
   refine (forall_mono fun _ => (forall_mono fun _ => pure_imp.2).trans pure_forall.2).trans ?_
   exact pure_forall.2
 
 @[rocq_alias big_andL_pure_2]
 theorem bigAndL_pure_elim {φ : Nat → A → Prop} {l : List A} :
-    (⌜∀ k x, l[k]? = some x → φ k x⌝ : PROP) ⊢ [∧list] k ↦ x ∈ l, ⌜φ k x⌝ := by
+    ⌜∀ k x, l[k]? = some x → φ k x⌝ ⊢ [∧list] k ↦ x ∈ l, ⌜φ k x⌝ := by
   refine pure_forall.1.trans ?_
   refine (forall_mono fun _ => pure_forall.1.trans (forall_mono fun _ => pure_imp.1)).trans ?_
   exact bigAndL_forall.2
 
 @[rocq_alias big_andL_pure]
 theorem bigAndL_pure {φ : Nat → A → Prop} {l : List A} :
-    ([∧list] k ↦ x ∈ l, (⌜φ k x⌝ : PROP)) ⊣⊢ ⌜∀ k x, l[k]? = some x → φ k x⌝ :=
+    ([∧list] k ↦ x ∈ l, ⌜φ k x⌝) ⊣⊢ ⌜∀ k x, l[k]? = some x → φ k x⌝ :=
   ⟨bigAndL_pure_intro, bigAndL_pure_elim⟩
 
 @[rocq_alias big_andL_elem_of]

@@ -15,15 +15,15 @@ open Iris HeapLang
 section test
 
 variable (v : Val) (e : Exp)
-/-- info: hl((#1 + (#1 + v(&v)))) : Exp -/
+/-- info: hl(((#1 + #1) + v(&v))) : Exp -/
 #guard_msgs in
 #check hl(#1 + #1 + &(.ofVal v))
 /--
 info: Exp.binop BinOp.plus
-  (@ProgramLogic.ToVal.ofVal Exp Val instToVal (Val.lit ↑(@OfNat.ofNat Int (nat_lit 1) (@instOfNat (nat_lit 1)))))
   (Exp.binop BinOp.plus
     (@ProgramLogic.ToVal.ofVal Exp Val instToVal (Val.lit ↑(@OfNat.ofNat Int (nat_lit 1) (@instOfNat (nat_lit 1)))))
-    (@ProgramLogic.ToVal.ofVal Exp Val instToVal v)) : Exp
+    (@ProgramLogic.ToVal.ofVal Exp Val instToVal (Val.lit ↑(@OfNat.ofNat Int (nat_lit 1) (@instOfNat (nat_lit 1))))))
+  (@ProgramLogic.ToVal.ofVal Exp Val instToVal v) : Exp
 -/
 #guard_msgs in
 set_option pp.explicit true in
@@ -37,7 +37,7 @@ set_option pp.explicit true in
 #check hl((#1 + #1) + &v)
 
 set_option linter.heapLang.freeVars false in
-/-- info: hl((#1 = (v + (v(&v) + &e)))) : Exp -/
+/-- info: hl((#1 = ((v + v(&v)) + &e))) : Exp -/
 #guard_msgs in
 #check hl(#1 = v + &v + &e)
 
@@ -81,7 +81,7 @@ info: (Exp.rec_ (Binder.named "f") (Binder.named "x") (Exp.var "x")).app
 set_option pp.explicit true in
 #check hl((rec f x := x) #1)
 
-/-- info: hl((λ x y, let z := #1; #2; (x + (y + z)))) : Exp -/
+/-- info: hl((λ x y, let z := #1; #2; ((x + y) + z))) : Exp -/
 #guard_msgs in
 #check hl(λ x y, let z := #1; #2; x + y + z)
 
@@ -90,7 +90,7 @@ info: Exp.rec_ Binder.anon (Binder.named "x")
   (Exp.rec_ Binder.anon (Binder.named "y")
     ((Exp.rec_ Binder.anon (Binder.named "z")
           ((Exp.rec_ Binder.anon Binder.anon
-                (Exp.binop BinOp.plus (Exp.var "x") (Exp.binop BinOp.plus (Exp.var "y") (Exp.var "z")))).app
+                (Exp.binop BinOp.plus (Exp.binop BinOp.plus (Exp.var "x") (Exp.var "y")) (Exp.var "z"))).app
             (@ProgramLogic.ToVal.ofVal Exp Val instToVal
               (Val.lit ↑(@OfNat.ofNat Int (nat_lit 2) (@instOfNat (nat_lit 2))))))).app
       (@ProgramLogic.ToVal.ofVal Exp Val instToVal
@@ -116,11 +116,11 @@ set_option pp.explicit true in
 
 /--
 info: hl((λ x y,
-      ((((#1 + (#2 +ₗ (#3 - (#4 * (#5 / (#6 % #7)))))) &&& #8) ||| (#9 ^^^ (#10 <<< (#11 >>> #12)))) ≤
-          (#13 ≤ (#14 < (#15 = (#16 + ((-#17) + (~#18))))))))) : Exp
+      ((((((#1 + #2) +ₗ #3) - (((#4 * #5) / #6) % #7)) &&& #8) ||| (#9 ^^^ ((#10 <<< #11) >>> #12))) ≤
+          (#13 ≤ (#14 < (#15 = ((#16 + (-#17)) + (~#18)))))))) : Exp
 -/
 #guard_msgs in
-#check hl(λ x y, #1 + #2 +ₗ #3 - #4 * #5 / #6 % #7 &&& #8 ||| #9 ^^^ #10 <<< #11 >>> #12 <= #13 ≤ #14 < #15 = #16 + (-#17) + (~#18))
+#check hl(λ x y, #1 + #2 +ₗ #3 - #4 * #5 / #6 % #7 &&& #8 ||| #9 ^^^ #10 <<< #11 >>> #12 <= (#13 ≤ (#14 < (#15 = #16 + (-#17) + (~#18)))))
 
 /--
 info: Exp.rec_ Binder.anon (Binder.named "x")
@@ -128,39 +128,39 @@ info: Exp.rec_ Binder.anon (Binder.named "x")
     (Exp.binop BinOp.le
       (Exp.binop BinOp.or
         (Exp.binop BinOp.and
-          (Exp.binop BinOp.plus
-            (@ProgramLogic.ToVal.ofVal Exp Val instToVal
-              (Val.lit ↑(@OfNat.ofNat Int (nat_lit 1) (@instOfNat (nat_lit 1)))))
+          (Exp.binop BinOp.minus
             (Exp.binop BinOp.offset
-              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
-                (Val.lit ↑(@OfNat.ofNat Int (nat_lit 2) (@instOfNat (nat_lit 2)))))
-              (Exp.binop BinOp.minus
+              (Exp.binop BinOp.plus
                 (@ProgramLogic.ToVal.ofVal Exp Val instToVal
-                  (Val.lit ↑(@OfNat.ofNat Int (nat_lit 3) (@instOfNat (nat_lit 3)))))
+                  (Val.lit ↑(@OfNat.ofNat Int (nat_lit 1) (@instOfNat (nat_lit 1)))))
+                (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                  (Val.lit ↑(@OfNat.ofNat Int (nat_lit 2) (@instOfNat (nat_lit 2))))))
+              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                (Val.lit ↑(@OfNat.ofNat Int (nat_lit 3) (@instOfNat (nat_lit 3))))))
+            (Exp.binop BinOp.tmod
+              (Exp.binop BinOp.tdiv
                 (Exp.binop BinOp.mult
                   (@ProgramLogic.ToVal.ofVal Exp Val instToVal
                     (Val.lit ↑(@OfNat.ofNat Int (nat_lit 4) (@instOfNat (nat_lit 4)))))
-                  (Exp.binop BinOp.tdiv
-                    (@ProgramLogic.ToVal.ofVal Exp Val instToVal
-                      (Val.lit ↑(@OfNat.ofNat Int (nat_lit 5) (@instOfNat (nat_lit 5)))))
-                    (Exp.binop BinOp.tmod
-                      (@ProgramLogic.ToVal.ofVal Exp Val instToVal
-                        (Val.lit ↑(@OfNat.ofNat Int (nat_lit 6) (@instOfNat (nat_lit 6)))))
-                      (@ProgramLogic.ToVal.ofVal Exp Val instToVal
-                        (Val.lit ↑(@OfNat.ofNat Int (nat_lit 7) (@instOfNat (nat_lit 7)))))))))))
+                  (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                    (Val.lit ↑(@OfNat.ofNat Int (nat_lit 5) (@instOfNat (nat_lit 5))))))
+                (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                  (Val.lit ↑(@OfNat.ofNat Int (nat_lit 6) (@instOfNat (nat_lit 6))))))
+              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                (Val.lit ↑(@OfNat.ofNat Int (nat_lit 7) (@instOfNat (nat_lit 7)))))))
           (@ProgramLogic.ToVal.ofVal Exp Val instToVal
             (Val.lit ↑(@OfNat.ofNat Int (nat_lit 8) (@instOfNat (nat_lit 8))))))
         (Exp.binop BinOp.xor
           (@ProgramLogic.ToVal.ofVal Exp Val instToVal
             (Val.lit ↑(@OfNat.ofNat Int (nat_lit 9) (@instOfNat (nat_lit 9)))))
-          (Exp.binop BinOp.shiftl
+          (Exp.binop BinOp.shiftr
+            (Exp.binop BinOp.shiftl
+              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                (Val.lit ↑(@OfNat.ofNat Int (nat_lit 10) (@instOfNat (nat_lit 10)))))
+              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                (Val.lit ↑(@OfNat.ofNat Int (nat_lit 11) (@instOfNat (nat_lit 11))))))
             (@ProgramLogic.ToVal.ofVal Exp Val instToVal
-              (Val.lit ↑(@OfNat.ofNat Int (nat_lit 10) (@instOfNat (nat_lit 10)))))
-            (Exp.binop BinOp.shiftr
-              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
-                (Val.lit ↑(@OfNat.ofNat Int (nat_lit 11) (@instOfNat (nat_lit 11)))))
-              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
-                (Val.lit ↑(@OfNat.ofNat Int (nat_lit 12) (@instOfNat (nat_lit 12)))))))))
+              (Val.lit ↑(@OfNat.ofNat Int (nat_lit 12) (@instOfNat (nat_lit 12))))))))
       (Exp.binop BinOp.le
         (@ProgramLogic.ToVal.ofVal Exp Val instToVal
           (Val.lit ↑(@OfNat.ofNat Int (nat_lit 13) (@instOfNat (nat_lit 13)))))
@@ -171,19 +171,19 @@ info: Exp.rec_ Binder.anon (Binder.named "x")
             (@ProgramLogic.ToVal.ofVal Exp Val instToVal
               (Val.lit ↑(@OfNat.ofNat Int (nat_lit 15) (@instOfNat (nat_lit 15)))))
             (Exp.binop BinOp.plus
-              (@ProgramLogic.ToVal.ofVal Exp Val instToVal
-                (Val.lit ↑(@OfNat.ofNat Int (nat_lit 16) (@instOfNat (nat_lit 16)))))
               (Exp.binop BinOp.plus
+                (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                  (Val.lit ↑(@OfNat.ofNat Int (nat_lit 16) (@instOfNat (nat_lit 16)))))
                 (Exp.unop UnOp.minus
                   (@ProgramLogic.ToVal.ofVal Exp Val instToVal
-                    (Val.lit ↑(@OfNat.ofNat Int (nat_lit 17) (@instOfNat (nat_lit 17))))))
-                (Exp.unop UnOp.neg
-                  (@ProgramLogic.ToVal.ofVal Exp Val instToVal
-                    (Val.lit ↑(@OfNat.ofNat Int (nat_lit 18) (@instOfNat (nat_lit 18))))))))))))) : Exp
+                    (Val.lit ↑(@OfNat.ofNat Int (nat_lit 17) (@instOfNat (nat_lit 17)))))))
+              (Exp.unop UnOp.neg
+                (@ProgramLogic.ToVal.ofVal Exp Val instToVal
+                  (Val.lit ↑(@OfNat.ofNat Int (nat_lit 18) (@instOfNat (nat_lit 18)))))))))))) : Exp
 -/
 #guard_msgs in
 set_option pp.explicit true in
-#check hl(λ x y, #1 + #2 +ₗ #3 - #4 * #5 / #6 % #7 &&& #8 ||| #9 ^^^ #10 <<< #11 >>> #12 <= #13 ≤ #14 < #15 = #16 + (-#17) + (~#18))
+#check hl(λ x y, #1 + #2 +ₗ #3 - #4 * #5 / #6 % #7 &&& #8 ||| #9 ^^^ #10 <<< #11 >>> #12 <= (#13 ≤ (#14 < (#15 = #16 + (-#17) + (~#18)))))
 
 /--
 info: Exp.rec_ Binder.anon (Binder.named "x")
@@ -207,6 +207,15 @@ set_option linter.heapLang.freeVars false in
 /-- info: hl(if if a then b else #false then #true else if c then d else #false) : Exp -/
 #guard_msgs in
 #check hl(a && b || c && d)
+
+/-- info: hl(((#1 - #2) - #3)) : Exp -/
+#guard_msgs in
+#check hl(#1 - #2 - #3)
+
+set_option linter.heapLang.freeVars false in
+/-- info: hl(if if a then b else #false then c else #false) : Exp -/
+#guard_msgs in
+#check hl(a && b && c)
 
 /-- info: hl((#1, #2, #3)) : Exp -/
 #guard_msgs in
@@ -343,5 +352,95 @@ variable (p : ProphId) (w : Val) (e : Exp)
 #check hl(resolve(&e, v(#p), v(&w)))
 
 end test
+
+/-! Associativity and precedence of binops
+`quot`, `rem`, `≪`, `≫` are `/`, `%`, `<<<`, `>>>`. -/
+section assoc
+
+variable (a b c d : Exp)
+
+-- left/right assoc of each binop
+example : hl(&a + &b + &c) = hl((&a + &b) + &c) := rfl
+example : hl(&a +ₗ &b +ₗ &c) = hl((&a +ₗ &b) +ₗ &c) := rfl
+example : hl(&a - &b - &c) = hl((&a - &b) - &c) := rfl
+example : hl(&a * &b * &c) = hl((&a * &b) * &c) := rfl
+example : hl(&a / &b / &c) = hl((&a / &b) / &c) := rfl
+example : hl(&a % &b % &c) = hl((&a % &b) % &c) := rfl
+example : hl(&a <<< &b <<< &c) = hl((&a <<< &b) <<< &c) := rfl
+example : hl(&a >>> &b >>> &c) = hl((&a >>> &b) >>> &c) := rfl
+example : hl(&a && &b && &c) = hl((&a && &b) && &c) := rfl
+example : hl(&a || &b || &c) = hl((&a || &b) || &c) := rfl
+-- mixing at the same level
+example : hl(&a + &b +ₗ &c - &d) = hl(((&a + &b) +ₗ &c) - &d) := rfl
+-- differs from Rocq: `a * ((b / c) % d)`
+example : hl(&a * &b / &c % &d) = hl(((&a * &b) / &c) % &d) := rfl
+example : hl(&a <<< &b >>> &c) = hl((&a <<< &b) >>> &c) := rfl
+-- differs from Rocq: `(a % b) <<< c`
+example : hl(&a % &b <<< &c) = hl(&a % (&b <<< &c)) := rfl
+example : hl(&a <<< &b % &c) = hl((&a <<< &b) % &c) := rfl
+-- precedence between levels
+example : hl(&a + &b * &c) = hl(&a + (&b * &c)) := rfl
+example : hl(&a * &b + &c) = hl((&a * &b) + &c) := rfl
+example : hl(&a +ₗ &b * &c) = hl(&a +ₗ (&b * &c)) := rfl
+example : hl(&a + &b <<< &c) = hl(&a + (&b <<< &c)) := rfl
+example : hl(&a <<< &b + &c) = hl((&a <<< &b) + &c) := rfl
+example : hl(&a * &b <<< &c) = hl(&a * (&b <<< &c)) := rfl
+example : hl(&a <<< &b * &c) = hl((&a <<< &b) * &c) := rfl
+example : hl(&a / &b * &c) = hl((&a / &b) * &c) := rfl
+-- differs from Rocq: `a * (b / c)`
+example : hl(&a * &b / &c) = hl((&a * &b) / &c) := rfl
+example : hl(&a + &b = &c + &d) = hl((&a + &b) = (&c + &d)) := rfl
+-- `&&` and `||` sit below the comparisons, unlike Rocq
+example : hl(&a && &b || &c && &d) = hl((&a && &b) || (&c && &d)) := rfl
+example : hl(&a || &b && &c) = hl(&a || (&b && &c)) := rfl
+example : hl(&a + &b || &c) = hl((&a + &b) || &c) := rfl
+-- differs from Rocq: `(a || b) + c`
+example : hl(&a || &b + &c) = hl(&a || (&b + &c)) := rfl
+example : hl(&a * &b && &c) = hl((&a * &b) && &c) := rfl
+-- differs from Rocq: `(a && b) * c`
+example : hl(&a && &b * &c) = hl(&a && (&b * &c)) := rfl
+-- differs from Rocq: `a + (b && c)`
+example : hl(&a + &b && &c) = hl((&a + &b) && &c) := rfl
+-- differs from Rocq: `a < (b || c)`
+example : hl(&a < &b || &c) = hl((&a < &b) || &c) := rfl
+-- differs from Rocq: `(a || b) < c`
+example : hl(&a || &b < &c) = hl(&a || (&b < &c)) := rfl
+-- unary operators
+example : hl(-&a + &b) = hl((-&a) + &b) := rfl
+example : hl(-&a * &b) = hl((-&a) * &b) := rfl
+-- differs from Rocq: `~ (a + b)`
+example : hl(~&a + &b) = hl((~&a) + &b) := rfl
+-- differs from Rocq: `~ (a = b)`
+example : hl(~&a = &b) = hl((~&a) = &b) := rfl
+
+-- differs from Rocq, where `&&` binds tighter than `=` so this does not parse
+example : hl(&a = &b && &c = &d) = hl((&a = &b) && (&c = &d)) := rfl
+-- comparison chains: expected to fail
+/-- info: false -/
+#guard_msgs in
+#eval return (Lean.Parser.runParserCategory (← Lean.getEnv) `term "hl(&a < &b < &c)").toBool
+/-- info: false -/
+#guard_msgs in
+#eval return (Lean.Parser.runParserCategory (← Lean.getEnv) `term "hl(&a ≤ &b ≤ &c)").toBool
+/-- info: false -/
+#guard_msgs in
+#eval return (Lean.Parser.runParserCategory (← Lean.getEnv) `term "hl(&a = &b = &c)").toBool
+/-- info: false -/
+#guard_msgs in
+#eval return (Lean.Parser.runParserCategory (← Lean.getEnv) `term "hl(&a ≤ &b < &c)").toBool
+-- explicit parentheses are fine
+/-- info: hl((&a ≤ (&b ≤ (&c < (&d = &a))))) : Exp -/
+#guard_msgs in
+#check hl(&a ≤ (&b ≤ (&c < (&d = &a))))
+
+/-! Operators without a Rocq counterpart. -/
+example : hl(&a &&& &b &&& &c) = hl((&a &&& &b) &&& &c) := rfl
+example : hl(&a ||| &b ||| &c) = hl((&a ||| &b) ||| &c) := rfl
+example : hl(&a ^^^ &b ^^^ &c) = hl((&a ^^^ &b) ^^^ &c) := rfl
+/-- info: false -/
+#guard_msgs in
+#eval return (Lean.Parser.runParserCategory (← Lean.getEnv) `term "hl(&a <= &b < &c)").toBool
+
+end assoc
 
 end IrisTest.HeapLang

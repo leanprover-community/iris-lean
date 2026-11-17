@@ -20,6 +20,8 @@ namespace Iris
 
 open ProgramLogic Language Language.Notation Iris.Std
 
+local bi (IProp GF)
+
 @[expose] public section
 
 abbrev AbstractWP (Expr Val : Type _) (GF : BundledGFunctors) :=
@@ -193,7 +195,7 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
 theorem wp_inv_open_maybe (e : Expr) (E₁ E₂ : CoPset) (Φ : Val → IProp GF) :
     (|={E₁, E₂}=>
       (∃ K e', ⌜Context K⌝ ∗ ⌜e = K e'⌝ ∗ ⌜Atomic .WeaklyAtomic e'⌝ ∗
-          Wp.wp (PROP := IProp GF) (Val := Val) Stuckness.NotStuck E₂ e'
+          Wp.wp (Val := Val) Stuckness.NotStuck E₂ e'
           (fun v' => iprop% |={E₂, E₁}=> Wp.wp (Val := Val) Stuckness.NotStuck E₁ (K v') Φ)) ∨
       (|={E₂, E₁}=> Wp.wp (Val := Val) Stuckness.NotStuck E₁ e Φ))
     ⊢ Wp.wp (Val := Val) Stuckness.NotStuck E₁ e Φ := by

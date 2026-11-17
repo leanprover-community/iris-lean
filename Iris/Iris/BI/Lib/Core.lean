@@ -21,6 +21,7 @@ def coreP [Sbi PROP] (P : PROP) : PROP :=
   iprop% ∀ Q, <affine> ■ (Q -∗ <pers> Q) -∗ <affine> ■ (P -∗ Q) -∗ Q
 
 variable [Sbi PROP]
+local bi PROP
 
 @[rocq_alias coreP_intro]
 theorem coreP_intro {P : PROP} : P -∗ coreP P := by

@@ -63,11 +63,12 @@ private theorem loc_add_nat_zero (l : Loc) : l + (0 : Nat) = l := by
 section Proof
 
 variable {GF : BundledGFunctors} {hlc : HasLC} [HeapLangGS hlc GF]
+local bi (IProp GF)
 
 @[rocq_alias heap_lang.wp_array_free]
 theorem wp_array_free (s : Stuckness) (E : CoPset) (l : Loc) (vs : List Val) (n : Int)
     (hn : n = vs.length) :
-    {{ (l ↦∗ vs : IProp GF) }} hl(&arrayFree #l #n) @ s; E {{ RET hl_val(#()); True }} := by
+    {{ (l ↦∗ vs) }} hl(&arrayFree #l #n) @ s; E {{ RET hl_val(#()); True }} := by
   subst hn
   iintro %Φ Hl HΦ
   iinduction vs generalizing %l Hl HΦ with
@@ -87,7 +88,7 @@ theorem wp_array_free (s : Stuckness) (E : CoPset) (l : Loc) (vs : List Val) (n 
 @[rocq_alias heap_lang.wp_array_copy_to]
 theorem wp_array_copy_to (s : Stuckness) (E : CoPset) (dst src : Loc) (vdst vsrc : List Val)
     (dq : DFrac) (n : Int) (hdst : (vdst.length : Int) = n) (hsrc : (vsrc.length : Int) = n) :
-    {{ (dst ↦∗ vdst ∗ src ↦∗{dq} vsrc : IProp GF) }} hl(&arrayCopyTo #dst #src #n) @ s; E
+    {{ (dst ↦∗ vdst ∗ src ↦∗{dq} vsrc) }} hl(&arrayCopyTo #dst #src #n) @ s; E
     {{ RET hl_val(#()); dst ↦∗ vsrc ∗ src ↦∗{dq} vsrc }} := by
   subst hdst
   iintro %Φ ⟨Hdst, Hsrc⟩ HΦ
@@ -118,7 +119,7 @@ theorem wp_array_copy_to (s : Stuckness) (E : CoPset) (dst src : Loc) (vdst vsrc
 @[rocq_alias heap_lang.wp_array_clone]
 theorem wp_array_clone (s : Stuckness) (E : CoPset) (l : Loc) (dq : DFrac) (vl : List Val)
     (n : Int) (hvl : (vl.length : Int) = n) (hn : 0 < n) :
-    {{ (l ↦∗{dq} vl : IProp GF) }} hl(&arrayClone #l #n) @ s; E
+    {{ (l ↦∗{dq} vl) }} hl(&arrayClone #l #n) @ s; E
     {{ l', RET hl_val(#l'); l' ↦∗ vl ∗ l ↦∗{dq} vl }} := by
   iintro %Φ Hvl HΦ
   wp_lam

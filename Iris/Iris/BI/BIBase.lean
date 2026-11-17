@@ -8,6 +8,7 @@ module
 public import Iris.BI.Notation
 public import Iris.Std.Classes
 public import Iris.Std.DelabRule
+public meta import Iris.BI.LocalBI
 public import Iris.Std.Rewrite
 public import Iris.Std.BigOp
 public import Iris.Std.Notation
@@ -68,7 +69,7 @@ def «forall» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sForall f
 def «exists» [BIBase PROP] {α : Sort _} (P : α → PROP) : PROP := sExists fun p => ∃ a, P a = p
 
 @[inherit_doc BIBase.Entails]
-macro:25 P:term:29 " ⊢ " Q:term:25 : term => ``(BIBase.Entails iprop($P) iprop($Q))
+macro:25 P:term:29 " ⊢ " Q:term:25 : term => ``(BIBase.Entails (PROP := bi%) iprop($P) iprop($Q))
 
 @[inherit_doc BIBase.Entails]
 macro:25 P:term:29 " ⊢@{" PROP:term "} " Q:term:25 : term =>
@@ -244,10 +245,10 @@ structure BiEntails [BIBase PROP] (P Q : PROP) where
 @[rocq_alias bi_emp_valid]
 def EmpValid [BIBase PROP] (P : PROP) : Prop := emp ⊢ P
 
-macro:25 "⊢ " P:term:25 : term => ``(EmpValid iprop($P))
+macro:25 "⊢ " P:term:25 : term => ``(EmpValid (PROP := bi%) iprop($P))
 macro:25 "⊢@{" PROP:term "} " P:term:25 : term =>
   ``(EmpValid (PROP:=$PROP) iprop($P))
-macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(BiEntails iprop($P) iprop($Q))
+macro:25 P:term:29 " ⊣⊢ " Q:term:29 : term => ``(BiEntails (PROP := bi%) iprop($P) iprop($Q))
 macro:25 P:term:29 " ⊣⊢@{" PROP:term "} " Q:term:29 : term =>
   ``(BiEntails (PROP:=$PROP) iprop($P) iprop($Q))
 

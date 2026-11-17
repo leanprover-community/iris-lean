@@ -35,6 +35,7 @@ class FrameFractionalQp (qR qP : Qp) (r : outParam Qp) : Prop where
 
 section Lemmas
 variable {PROP : Type _} [BI PROP] {P P1 P2 : PROP} {Φ : Qp → PROP} {q q1 q2 : Qp}
+local bi PROP
 
 /-- ## AsFractional manipulation lemmas
 
@@ -126,8 +127,8 @@ instance fractional_embed {PROP' : Type _} [BI PROP'] [BiEmbed PROP PROP'] [hΦ 
     Fractional (fun q => (iprop(⎡Φ q⎤) : PROP')) where
   fractional p q := calc
     (iprop(⎡Φ (p + q)⎤) : PROP')
-    _ ⊣⊢ ⎡Φ p ∗ Φ q⎤   := .ofMono embed_mono (hΦ.fractional p q)
-    _ ⊣⊢ ⎡Φ p⎤ ∗ ⎡Φ q⎤ := embed_sep ..
+    _ ⊣⊢@{PROP'} ⎡Φ p ∗ Φ q⎤   := .ofMono embed_mono (hΦ.fractional p q)
+    _ ⊣⊢@{PROP'} ⎡Φ p⎤ ∗ ⎡Φ q⎤ := embed_sep ..
 
 @[rocq_alias as_fractional_embed]
 instance as_fractional_embed {PROP' : Type _} [BI PROP'] [BiEmbed PROP PROP']
@@ -202,6 +203,7 @@ end Lemmas
 
 section Divide
 variable {PROP : Type _} [BI PROP]
+local bi PROP
 open BI.BigSepL
 
 theorem fractional_bigSepL_replicate {Φ : Qp → PROP} [Fractional Φ] (r : Qp) (k : Nat) :
@@ -240,6 +242,7 @@ invariant and transported along an internal `∗-∗`. -/
 
 section InternalFractional
 variable {PROP : Type _} [BI PROP] {Φ Ψ : Qp → PROP}
+local bi PROP
 
 @[rocq_alias internal_fractional]
 def internalFractional (Φ : Qp → PROP) : PROP := iprop(□ ∀ p q, Φ (p + q) ∗-∗ Φ p ∗ Φ q)

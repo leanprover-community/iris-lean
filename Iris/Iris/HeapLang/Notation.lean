@@ -61,37 +61,37 @@ syntax:max "#" term:max : hl_exp
 syntax:max ident : hl_exp
 -- levels are taken from https://github.com/leanprover/lean4/blob/985f350dcd18fc7814dfa677cac09933f44f3215/src/Init/Notation.lean#L280
 /-- addition -/
-syntax:65 hl_exp:66 " + " hl_exp:65 : hl_exp
+syntax:65 hl_exp:65 " + " hl_exp:66 : hl_exp
 /-- offset -/
-syntax:65 hl_exp:66 " +ₗ " hl_exp:65 : hl_exp
+syntax:65 hl_exp:65 " +ₗ " hl_exp:66 : hl_exp
 /-- subtraction -/
-syntax:65 hl_exp:66 " - " hl_exp:65 : hl_exp
+syntax:65 hl_exp:65 " - " hl_exp:66 : hl_exp
 /-- multiplication -/
-syntax:70 hl_exp:71 " * " hl_exp:70 : hl_exp
+syntax:70 hl_exp:70 " * " hl_exp:71 : hl_exp
 /-- division -/
-syntax:70 hl_exp:71 " / " hl_exp:70 : hl_exp
+syntax:70 hl_exp:70 " / " hl_exp:71 : hl_exp
 /-- modulo -/
-syntax:70 hl_exp:71 " % " hl_exp:70 : hl_exp
+syntax:70 hl_exp:70 " % " hl_exp:71 : hl_exp
 /-- and -/
-syntax:60 hl_exp:61 " &&& " hl_exp:60 : hl_exp
+syntax:60 hl_exp:60 " &&& " hl_exp:61 : hl_exp
 /-- or -/
-syntax:55 hl_exp:56 " ||| " hl_exp:55 : hl_exp
+syntax:55 hl_exp:55 " ||| " hl_exp:56 : hl_exp
 /-- xor -/
-syntax:58 hl_exp:59 " ^^^ " hl_exp:58 : hl_exp
+syntax:58 hl_exp:58 " ^^^ " hl_exp:59 : hl_exp
 /-- shiftl -/
-syntax:75 hl_exp:76 " <<< " hl_exp:75 : hl_exp
+syntax:75 hl_exp:75 " <<< " hl_exp:76 : hl_exp
 /-- shiftr -/
-syntax:75 hl_exp:76 " >>> " hl_exp:75 : hl_exp
+syntax:75 hl_exp:75 " >>> " hl_exp:76 : hl_exp
 /-- le -/
-syntax:50 hl_exp:50 " <= " hl_exp:50 : hl_exp
-syntax:50 hl_exp:50 " ≤ " hl_exp:50 : hl_exp
+syntax:50 hl_exp:51 " <= " hl_exp:51 : hl_exp
+syntax:50 hl_exp:51 " ≤ " hl_exp:51 : hl_exp
 /-- lt -/
-syntax:50 hl_exp:50 " < " hl_exp:50 : hl_exp
+syntax:50 hl_exp:51 " < " hl_exp:51 : hl_exp
 /-- equality -/
-syntax:50 hl_exp:50 " = " hl_exp:50 : hl_exp
+syntax:50 hl_exp:51 " = " hl_exp:51 : hl_exp
 
-syntax:35 hl_exp:36 "&&" hl_exp:35 : hl_exp
-syntax:30 hl_exp:31 "||" hl_exp:30 : hl_exp
+syntax:35 hl_exp:35 "&&" hl_exp:36 : hl_exp
+syntax:30 hl_exp:30 "||" hl_exp:31 : hl_exp
 
 /-- neg -/
 syntax:100 "~" hl_exp:100 : hl_exp

@@ -24,6 +24,7 @@ namespace BigSepM2
 
 variable {PROP : Type _} [BI PROP]
 variable {K : Type _} {A B : Type u} {M : Type _ → Type _} [LawfulFiniteMap M K]
+local bi PROP
 
 attribute [local grind =]
   LawfulPartialMap.get?_zipWith LawfulPartialMap.get?_map LawfulPartialMap.get?_empty
@@ -428,7 +429,7 @@ theorem bigSepM2_and (Φ Ψ : K → A → B → PROP) {m1 : M A} {m2 : M B} :
 
 @[rocq_alias big_sepM2_pure_1]
 theorem bigSepM2_pure_intro {φ : K → A → B → Prop} {m1 : M A} {m2 : M B} :
-    ([∗map] k ↦ x1;x2 ∈ m1;m2, (⌜φ k x1 x2⌝ : PROP)) ⊢
+    ([∗map] k ↦ x1;x2 ∈ m1;m2, ⌜φ k x1 x2⌝) ⊢
       ⌜∀ k x1 x2, get? m1 k = some x1 → get? m2 k = some x2 → φ k x1 x2⌝ := by
   refine bigSepM2_alt.mp.trans <| and_elim_r.trans ?_
   exact bigSepM_pure_intro.trans <| pure_mono fun hall k x1 x2 h1 h2 => hall k (x1, x2) <| by grind
@@ -436,8 +437,8 @@ theorem bigSepM2_pure_intro {φ : K → A → B → Prop} {m1 : M A} {m2 : M B} 
 @[rocq_alias big_sepM2_affinely_pure_2]
 theorem bigSepM2_affinely_pure_elim (φ : K → A → B → Prop) {m1 : M A} {m2 : M B}
     (hdom : ∀ k, (get? m1 k).isSome ↔ (get? m2 k).isSome) :
-    (<affine> ⌜∀ k x1 x2, get? m1 k = some x1 → get? m2 k = some x2 → φ k x1 x2⌝ : PROP) ⊢
-      [∗map] k ↦ x1;x2 ∈ m1;m2, (<affine> ⌜φ k x1 x2⌝ : PROP) := by
+    (<affine> ⌜∀ k x1 x2, get? m1 k = some x1 → get? m2 k = some x2 → φ k x1 x2⌝) ⊢
+      [∗map] k ↦ x1;x2 ∈ m1;m2, (<affine> ⌜φ k x1 x2⌝) := by
   refine and_intro (affinely_elim.trans <| pure_intro hdom) ?_ |>.trans <|
     (bigSepM2_alt_lookup (Φ := fun k x1 x2 => iprop(<affine> ⌜φ k x1 x2⌝))).mpr
   refine (affinely_mono <| pure_mono fun hall k xy hget => ?_).trans bigSepM_affinely_pure_elim
@@ -446,7 +447,7 @@ theorem bigSepM2_affinely_pure_elim (φ : K → A → B → Prop) {m1 : M A} {m2
 
 @[rocq_alias big_sepM2_pure]
 theorem bigSepM2_pure [BIAffine PROP] (φ : K → A → B → Prop) (m1 : M A) (m2 : M B) :
-    ([∗map] k ↦ x1;x2 ∈ m1;m2, (⌜φ k x1 x2⌝ : PROP)) ⊣⊢
+    ([∗map] k ↦ x1;x2 ∈ m1;m2, ⌜φ k x1 x2⌝) ⊣⊢
       ⌜(∀ k, (get? m1 k).isSome ↔ (get? m2 k).isSome) ∧
         ∀ k x1 x2, get? m1 k = some x1 → get? m2 k = some x2 → φ k x1 x2⌝ := by
   refine ⟨(and_intro bigSepM2_lookup_iff bigSepM2_pure_intro).trans pure_and.1,

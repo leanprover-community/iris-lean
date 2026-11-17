@@ -15,6 +15,8 @@ namespace Iris
 
 open BI DFrac DFracAgree ProofMode
 
+local bi (IProp GF)
+
 /-! ## Ghost variable -/
 
 abbrev GhostVarF (A : Type) : COFE.OFunctorPre := constOF (DFracAgreeR (DiscreteO A))
@@ -63,16 +65,16 @@ instance (γ : GName) (a : A) (q : Qp) :
 
 @[rocq_alias ghost_var_alloc_strong]
 theorem ghost_var_alloc_strong (a : A) (P : GName → Prop) (HP : PredInfinite P) :
-    ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ γ ↪VAR a :=
+    ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ γ ↪VAR a :=
   iOwn_alloc_strong _ _ HP.exists_ge (mk_valid.mpr valid_own_one)
 
 @[rocq_alias ghost_var_alloc]
-theorem ghost_var_alloc (a : A) : ⊢@{IProp GF} |==> ∃ γ, γ ↪VAR a :=
+theorem ghost_var_alloc (a : A) : ⊢ |==> ∃ γ, γ ↪VAR a :=
   iOwn_alloc _ (mk_valid.mpr valid_own_one)
 
 @[rocq_alias ghost_var_valid_2]
 theorem ghost_var_valid_2 (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFrac) :
-    ⊢@{IProp GF} (γ ↪VAR{dq1} a1) -∗ (γ ↪VAR{dq2} a2) -∗ ⌜✓ (dq1 • dq2) ∧ a1 = a2⌝ := by
+    ⊢ (γ ↪VAR{dq1} a1) -∗ (γ ↪VAR{dq2} a2) -∗ ⌜✓ (dq1 • dq2) ∧ a1 = a2⌝ := by
   unfold ghost_var
   iintro Hvar1 Hvar2
   icombine Hvar1 Hvar2 gives %H
@@ -82,7 +84,7 @@ theorem ghost_var_valid_2 (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DF
 
 @[rocq_alias ghost_var_agree]
 theorem ghost_var_agree (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A) (dq2 : DFrac) :
-    ⊢@{IProp GF} (γ ↪VAR{dq1} a1) -∗ (γ ↪VAR{dq2} a2) -∗ ⌜a1 = a2⌝ := by
+    ⊢ (γ ↪VAR{dq1} a1) -∗ (γ ↪VAR{dq2} a2) -∗ ⌜a1 = a2⌝ := by
   iintro Hvar1 Hvar2
   ihave ⟨-, $⟩ := ghost_var_valid_2 $$ Hvar1 Hvar2
 
@@ -109,19 +111,19 @@ instance (priority := default - 20) (γ : GName) (a1 : A) (dq1 : DFrac) (a2 : A)
 
 @[rocq_alias ghost_var_split]
 theorem ghost_var_split (γ : GName) (a : A) (q1 q2 : Qp) :
-    ⊢@{IProp GF} (γ ↪VAR{.own (q1 + q2)} a) -∗ (γ ↪VAR{.own q1} a) ∗ (γ ↪VAR{.own q2} a) := by
+    ⊢ (γ ↪VAR{.own (q1 + q2)} a) -∗ (γ ↪VAR{.own q1} a) ∗ (γ ↪VAR{.own q2} a) := by
   iintro ⟨$, $⟩
 
 @[rocq_alias ghost_var_update]
 theorem ghost_var_update (b : A) (γ : GName) (a : A) :
-    ⊢@{IProp GF} (γ ↪VAR a) ==∗ γ ↪VAR b := by
+    ⊢ (γ ↪VAR a) ==∗ γ ↪VAR b := by
   unfold ghost_var
   iapply iOwn_update (.exclusive (mk_valid.mpr valid_own_one))
 
 @[rocq_alias ghost_var_update_2]
 theorem ghost_var_update_2 (b : A) (γ : GName) (a1 : A) (q1 : Qp) (a2 : A) (q2 : Qp)
     (Hq : q1 + q2 = 1) :
-    ⊢@{IProp GF} (γ ↪VAR{.own q1} a1) -∗ (γ ↪VAR{.own q2} a2) ==∗
+    ⊢ (γ ↪VAR{.own q1} a1) -∗ (γ ↪VAR{.own q2} a2) ==∗
       (γ ↪VAR{.own q1} b) ∗ (γ ↪VAR{.own q2} b) := by
   unfold ghost_var
   iintro H1 H2
@@ -130,19 +132,19 @@ theorem ghost_var_update_2 (b : A) (γ : GName) (a1 : A) (q1 : Qp) (a2 : A) (q2 
 
 @[rocq_alias ghost_var_update_halves]
 theorem ghost_var_update_halves (b : A) (γ : GName) (a1 a2 : A) :
-    ⊢@{IProp GF} (γ ↪VAR{.own (1 : Qp).half} a1) -∗ (γ ↪VAR{.own (1 : Qp).half} a2) ==∗
+    ⊢ (γ ↪VAR{.own (1 : Qp).half} a1) -∗ (γ ↪VAR{.own (1 : Qp).half} a2) ==∗
       (γ ↪VAR{.own (1 : Qp).half} b) ∗ (γ ↪VAR{.own (1 : Qp).half} b) :=
   ghost_var_update_2 b γ a1 _ a2 _ (Qp.half_add_half 1)
 
 @[rocq_alias ghost_var_persist]
 theorem ghost_var_persist (γ : GName) (dq : DFrac) (a : A) :
-    ⊢@{IProp GF} (γ ↪VAR{dq} a) ==∗ γ ↪VAR{.discard} a := by
+    ⊢ (γ ↪VAR{dq} a) ==∗ γ ↪VAR{.discard} a := by
   unfold ghost_var
   iapply iOwn_update persist
 
 @[rocq_alias ghost_var_unpersist]
 theorem ghost_var_unpersist (γ : GName) (a : A) :
-    ⊢@{IProp GF} (γ ↪VAR{.discard} a) ==∗ ∃ q, γ ↪VAR{.own q} a := by
+    ⊢ (γ ↪VAR{.discard} a) ==∗ ∃ q, γ ↪VAR{.own q} a := by
   unfold ghost_var
   iintro H
   imod iOwn_updateP unpersist $$ H with ⟨%x, %⟨q, rfl⟩, G⟩

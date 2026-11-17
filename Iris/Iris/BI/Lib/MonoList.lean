@@ -38,6 +38,7 @@ attribute [reducible, instance] MonoListG.elem
 namespace MonoList
 
 variable {GF : BundledGFunctors} {α : Type _} [MonoListG GF α]
+local bi (IProp GF)
 
 /-! ## Helper functions -/
 
@@ -139,7 +140,7 @@ instance {γ} {l : List α} q :
 
 @[rocq_alias mono_list_auth_own_agree]
 theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (l1 l2 : List α) :
-    ⊢@{IProp GF} (γ ↪●ML{dq1} l1) -∗ (γ ↪●ML{dq2} l2) -∗
+    ⊢ (γ ↪●ML{dq1} l1) -∗ (γ ↪●ML{dq2} l2) -∗
       ⌜✓ (dq1 • dq2) ∧ l1 = l2⌝ := by
   unfold auth_own
   iintro H1 H2
@@ -150,7 +151,7 @@ theorem auth_own_agree (γ : GName) (dq1 dq2 : DFrac) (l1 l2 : List α) :
 
 @[rocq_alias mono_list_auth_own_exclusive]
 theorem auth_own_exclusive (γ : GName) (l1 l2 : List α) :
-    ⊢@{IProp GF} (γ ↪●ML l1) -∗ (γ ↪●ML l2) -∗ False := by
+    ⊢ (γ ↪●ML l1) -∗ (γ ↪●ML l2) -∗ False := by
   unfold auth_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
@@ -159,7 +160,7 @@ theorem auth_own_exclusive (γ : GName) (l1 l2 : List α) :
 
 @[rocq_alias mono_list_auth_lb_own_valid]
 theorem auth_lb_own_valid (γ : GName) (dq : DFrac) (l1 l2 : List α) :
-    ⊢@{IProp GF} (γ ↪●ML{dq} l1) -∗ (γ ↪◯ML l2) -∗ ⌜✓ dq ∧ l2 <+: l1⌝ := by
+    ⊢ (γ ↪●ML{dq} l1) -∗ (γ ↪◯ML l2) -∗ ⌜✓ dq ∧ l2 <+: l1⌝ := by
   unfold auth_own lb_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
@@ -169,7 +170,7 @@ theorem auth_lb_own_valid (γ : GName) (dq : DFrac) (l1 l2 : List α) :
 
 @[rocq_alias mono_list_lb_own_valid]
 theorem lb_own_valid (γ : GName) (l1 l2 : List α) :
-    ⊢@{IProp GF} (γ ↪◯ML l1) -∗ (γ ↪◯ML l2) -∗ ⌜l1 <+: l2 ∨ l2 <+: l1⌝ := by
+    ⊢ (γ ↪◯ML l1) -∗ (γ ↪◯ML l2) -∗ ⌜l1 <+: l2 ∨ l2 <+: l1⌝ := by
   unfold lb_own
   iintro H1 H2
   icases iOwn_cmraValid_op $$ [$H1 $H2] with %Hvalid
@@ -178,7 +179,7 @@ theorem lb_own_valid (γ : GName) (l1 l2 : List α) :
 
 @[rocq_alias mono_list_idx_agree]
 theorem idx_agree (γ : GName) (i : Nat) (a1 a2 : α) :
-    ⊢@{IProp GF} (γ ↪◯ML[i] a1) -∗ (γ ↪◯ML[i] a2) -∗ ⌜a1 = a2⌝ := by
+    ⊢ (γ ↪◯ML[i] a1) -∗ (γ ↪◯ML[i] a2) -∗ ⌜a1 = a2⌝ := by
   unfold idx_own
   iintro H1 H2
   icases H1 with ⟨%l1, %Hl1, H1⟩
@@ -189,7 +190,7 @@ theorem idx_agree (γ : GName) (i : Nat) (a1 a2 : α) :
 
 @[rocq_alias mono_list_auth_idx_lookup]
 theorem auth_idx_lookup (γ : GName) (dq : DFrac) (l : List α) (i : Nat) (a : α) :
-    ⊢@{IProp GF} (γ ↪●ML{dq} l) -∗ (γ ↪◯ML[i] a) -∗ ⌜l[i]? = some a⌝ := by
+    ⊢ (γ ↪●ML{dq} l) -∗ (γ ↪◯ML[i] a) -∗ ⌜l[i]? = some a⌝ := by
   unfold idx_own
   iintro H1 H2
   icases H2 with ⟨%l1, %Hl1, H2⟩
@@ -201,7 +202,7 @@ theorem auth_idx_lookup (γ : GName) (dq : DFrac) (l : List α) (i : Nat) (a : �
 
 @[rocq_alias mono_list_lb_own_get]
 theorem lb_own_get (γ : GName) (dq : DFrac) (l : List α) :
-    ⊢@{IProp GF} (γ ↪●ML{dq} l) -∗ (γ ↪◯ML l) := by
+    ⊢ (γ ↪●ML{dq} l) -∗ (γ ↪◯ML l) := by
   unfold auth_own lb_own
   iintro H
   iapply iOwn_ord_mono $$ H
@@ -209,21 +210,21 @@ theorem lb_own_get (γ : GName) (dq : DFrac) (l : List α) :
 
 @[rocq_alias mono_list_lb_own_le]
 theorem lb_own_le (γ : GName) {l : List α} (l' : List α) (h : l' <+: l) :
-    ⊢@{IProp GF} (γ ↪◯ML l) -∗ (γ ↪◯ML l') := by
+    ⊢ (γ ↪◯ML l) -∗ (γ ↪◯ML l') := by
   unfold lb_own
   iintro H
   iapply iOwn_ord_mono $$ H
   exact MonoList.lb_mono_ord (h.map _)
 
 @[rocq_alias mono_list_lb_own_nil]
-theorem lb_own_nil (γ : GName) : ⊢@{IProp GF} |==> (γ ↪◯ML ([] : List α)) := by
+theorem lb_own_nil (γ : GName) : ⊢ |==> (γ ↪◯ML ([] : List α)) := by
   unfold lb_own
   rw [List.map_nil]
   iapply iOwn_unit
 
 @[rocq_alias mono_list_idx_own_get]
 theorem idx_own_get (γ : GName) {l : List α} (i : Nat) (a : α) (h : l[i]? = some a) :
-    ⊢@{IProp GF} (γ ↪◯ML l) -∗ (γ ↪◯ML[i] a) := by
+    ⊢ (γ ↪◯ML l) -∗ (γ ↪◯ML[i] a) := by
   unfold idx_own
   iintro H
   iexists l
@@ -233,7 +234,7 @@ theorem idx_own_get (γ : GName) {l : List α} (i : Nat) (a : α) (h : l[i]? = s
 
 @[rocq_alias mono_list_own_alloc]
 theorem own_alloc (l : List α) :
-    ⊢@{IProp GF} |==> ∃ γ, (γ ↪●ML l) ∗ (γ ↪◯ML l) := by
+    ⊢ |==> ∃ γ, (γ ↪●ML l) ∗ (γ ↪◯ML l) := by
   unfold auth_own lb_own
   imod iOwn_alloc (F := constOF (MonoList (DiscreteO α)))
       (●ML (l.map DiscreteO.mk) • ◯ML (l.map DiscreteO.mk)) with ⟨%γ, H⟩
@@ -244,7 +245,7 @@ theorem own_alloc (l : List α) :
 
 @[rocq_alias mono_list_auth_own_update]
 theorem auth_own_update (γ : GName) {l : List α} (l' : List α) (h : l <+: l') :
-    ⊢@{IProp GF} (γ ↪●ML l) ==∗ (γ ↪●ML l') ∗ (γ ↪◯ML l') := by
+    ⊢ (γ ↪●ML l) ==∗ (γ ↪●ML l') ∗ (γ ↪◯ML l') := by
   iintro H
   ihave >Hauth : |==> (γ ↪●ML l') $$ [H]
   · unfold auth_own
@@ -255,12 +256,12 @@ theorem auth_own_update (γ : GName) {l : List α} (l' : List α) (h : l <+: l')
 
 @[rocq_alias mono_list_auth_own_update_app]
 theorem auth_own_update_app (γ : GName) {l : List α} (l' : List α) :
-    ⊢@{IProp GF} (γ ↪●ML l) ==∗ (γ ↪●ML (l ++ l')) ∗ (γ ↪◯ML (l ++ l')) :=
+    ⊢ (γ ↪●ML l) ==∗ (γ ↪●ML (l ++ l')) ∗ (γ ↪◯ML (l ++ l')) :=
   auth_own_update γ (l ++ l') (List.prefix_append ..)
 
 @[rocq_alias mono_list_auth_own_persist]
 theorem auth_own_persist (γ : GName) (dq : DFrac) (l : List α) :
-    ⊢@{IProp GF} (γ ↪●ML{dq} l) ==∗ (γ ↪●ML□ l) := by
+    ⊢ (γ ↪●ML{dq} l) ==∗ (γ ↪●ML□ l) := by
   unfold auth_own
   iintro H
   iapply iOwn_update $$ H
@@ -268,7 +269,7 @@ theorem auth_own_persist (γ : GName) (dq : DFrac) (l : List α) :
 
 @[rocq_alias mono_list_auth_own_unpersist]
 theorem auth_own_unpersist (γ : GName) (l : List α) :
-    ⊢@{IProp GF} (γ ↪●ML□ l) ==∗ ∃ q, γ ↪●ML{DFrac.own q} l := by
+    ⊢ (γ ↪●ML□ l) ==∗ ∃ q, γ ↪●ML{DFrac.own q} l := by
   unfold auth_own
   iintro H
   imod iOwn_updateP (auth_unpersist _) $$ H with ⟨%a, %⟨q, rfl⟩, H⟩

@@ -17,6 +17,7 @@ public import Iris.BI.Updates
 
 namespace Iris
 open BI
+local bi PROP
 
 /-- Later credits: `£ n` denotes ownership of `n` later credits. -/
 @[rocq_alias LaterCredits]
@@ -29,7 +30,7 @@ notation:max "£ " i:40 => LaterCredits.lc i
 
 @[rocq_alias BiLaterCredits]
 class BILaterCredits (PROP : Type _) [BI PROP] extends LaterCredits PROP where
-  lc_split {n m : Nat} : £ (n + m) ⊣⊢@{PROP} £ n ∗ £ m
+  lc_split {n m : Nat} : £ (n + m) ⊣⊢ £ n ∗ £ m
   lc_timeless (n : Nat) : Timeless (PROP := PROP) (£ n)
   lc_0_persistent : Persistent (PROP := PROP) (£ 0)
   lc_affine (n : Nat) : Affine (PROP := PROP) (£ n)
@@ -40,7 +41,7 @@ attribute [instance] lc_timeless lc_0_persistent lc_affine
 
 @[rocq_alias BiBUpdLaterCredits]
 class BIBUpdLaterCredits (PROP : Type _) [BI PROP] [BILaterCredits PROP] [BIUpdate PROP] where
-  lc_zero : ⊢@{PROP} |==> £ 0
+  lc_zero : ⊢ |==> £ 0
 export BIBUpdLaterCredits (lc_zero)
 
 @[rocq_alias BiFUpdLaterCredits]
@@ -58,12 +59,12 @@ variable {PROP : Type _} [BI PROP] [BILaterCredits PROP]
 #rocq_ignore lc_0_affine "Defined in the `BILaterCredits` class."
 
 @[rocq_alias lc_succ]
-theorem lc_succ {n : Nat} : £ (.succ n) ⊣⊢@{PROP} £ 1 ∗ £ n := by
+theorem lc_succ {n : Nat} : £ (.succ n) ⊣⊢ £ 1 ∗ £ n := by
   rw [Nat.succ_eq_add_one, Nat.add_comm]
   exact lc_split
 
 @[rocq_alias lc_weaken]
-theorem lc_weaken {n : Nat} (m : Nat) (h : m ≤ n) : £ n ⊢@{PROP} £ m := by
+theorem lc_weaken {n : Nat} (m : Nat) (h : m ≤ n) : £ n ⊢ £ m := by
   obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le h
   exact lc_split.mp.trans sep_elim_left
 

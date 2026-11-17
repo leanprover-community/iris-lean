@@ -13,8 +13,15 @@ name = "batteries"
 scope = "leanprover-community"
 rev = "v4.36.0-rc1"
 
+# The meta code of `local stepindex` (kept free of Iris dependencies). Not precompiled: that would
+# need a C toolchain with Lean's headers in every build (e.g. the radar benchmark's wrapper has none).
+[[lean_lib]]
+name = "IrisStepIndex"
+roots = ["IrisStepIndex.Registry", "IrisStepIndex.Elab"]
+
 [[lean_lib]]
 name = "Iris"
+precompileLibrary = true
 
 [[lean_lib]]
 name = "IrisTest"

@@ -599,6 +599,8 @@ instance : SbiEmpValidExist (UPred M) where
 theorem uPredSiEmpValid_exist_mp {α : Type _} {P : α → UPred M} :
     (<si_emp_valid> (∃ x, P x) : SiProp) ⊢ ∃ x, <si_emp_valid> P x := siEmpValid_exist_mp
 
+local bi (UPred M)
+
 /-- The Sbi-derived plainly on UPred unfolds to `UPred.plainly`. -/
 theorem plainly_eq_uPred_plainly (P : UPred M) : iprop(■ P) = UPred.plainly P := rfl
 
@@ -633,7 +635,7 @@ instance : BIUpdate (UPred M) where
 #rocq_ignore uPred_bupd_mixin "Inlined in BIUpdate instance construction"
 
 @[rocq_alias uPred_primitive.bupd_si_pure]
-theorem bupd_siPure (Pi : SiProp) : (|==> <si_pure> Pi : UPred M) ⊢ <si_pure> Pi := by
+theorem bupd_siPure (Pi : SiProp) : |==> <si_pure> Pi ⊢ <si_pure> Pi := by
   intro n x Hv
   have L : ✓{n} x.val • unit := unit_right_id.symm.dist.validN.1 x.property
   let ⟨_, _, Hv'⟩ := Hv n unit n.le_refl L
@@ -651,7 +653,7 @@ theorem ownM_op (m1 m2 : M) : ownM (m1 • m2) ⊣⊢ ownM m1 ∗ ownM m2 :=
   ⟨fun _ _ H => ⟨m1, m2, H, ordN_refl m1, ordN_refl m2⟩,
    fun _ _ ⟨_, _, H, H1, H2⟩ => (op_monoN_ord H1 H2).trans H⟩
 
-theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : internalCmraValid m ⊢@{UPred M} False :=
+theorem ownM_always_invalid_elim (m : M) (H : ∀ n, ¬✓{n} m) : internalCmraValid m ⊢ False :=
   fun n _ => H n
 
 @[rocq_alias uPred.ownM_unit, rocq_alias uPred_primitive.ownM_unit]
@@ -701,9 +703,9 @@ theorem later_ownM (a : M) : ▷ ownM a ⊢ ∃ b, ownM b ∧ ▷ (a ≡ b)
     let ⟨b, hb, hab⟩ := ordN_extend (validN_succ x.property) hx
     ⟨iprop(ownM b ∧ ▷ (a ≡ b)), ⟨b, rfl⟩, hb, hab.symm⟩
 
-theorem pure_soundness : (⊢ (⌜P⌝ : UPred M)) → P := (· 0 ⟨unit, unit_validN⟩ (ordN_refl unit))
+theorem pure_soundness : (⊢ ⌜P⌝) → P := (· 0 ⟨unit, unit_validN⟩ (ordN_refl unit))
 
-theorem later_soundness : (⊢ ▷ P) → ⊢@{UPred M} P :=
+theorem later_soundness : (⊢ ▷ P) → ⊢ P :=
   fun HP n _ H => P.mono (HP n.succ ⟨unit, unit_validN⟩ (ordN_refl unit)) H .refl
 
 section derived
@@ -730,10 +732,10 @@ theorem ownM_ord_mono {a b : M} (hinc : b ≼ₒ a) : ownM a ⊢ ownM b :=
 theorem ownM_mono [IncOrd M] {a b : M} (hinc : b ≼ a) : ownM a ⊢ ownM b :=
   ownM_ord_mono (IncOrd.inc_ord hinc)
 
-theorem ownM_unit_emp : ownM unit ⊣⊢@{UPred M} emp := .rfl
+theorem ownM_unit_emp : ownM unit ⊣⊢ emp := .rfl
 
 @[rocq_alias uPred.ownM_unit']
-theorem ownM_unit' [IncOrd M] : ownM unit ⊣⊢@{UPred M} True := ownM_unit_emp.trans true_emp.symm
+theorem ownM_unit' [IncOrd M] : ownM unit ⊣⊢ True := ownM_unit_emp.trans true_emp.symm
 
 @[rocq_alias uPred.bupd_ownM_update]
 theorem bupd_ownM_update {x y : M} (hupd : x ~~> y) : ownM x ⊢ |==> ownM y := by
@@ -818,30 +820,30 @@ theorem modal_soundness {P : UPred M} [Plain P] (ms : List Modality)
     plainly_elim_persistently)).trans persistently_and_emp_elim
 
 @[rocq_alias uPred.consistency]
-theorem consistency : ¬ (⊢@{UPred M} False) := pure_soundness
+theorem consistency : ¬ (⊢ False) := pure_soundness
 
 end derived
 
 theorem plainly_valid_mpr [ORA A] (a : A) :
-    internalCmraValid a ⊢@{UPred M} ■ internalCmraValid a :=
+    internalCmraValid a ⊢ ■ internalCmraValid a :=
   fun _ _ hv => hv
 
 theorem persistently_valid_mpr [ORA A] (a : A) :
-    internalCmraValid a ⊢@{UPred M} <pers> internalCmraValid a :=
+    internalCmraValid a ⊢ <pers> internalCmraValid a :=
   (plainly_valid_mpr a).trans plainly_elim_persistently
 
 theorem plainly_valid [ORA A] (a : A) :
-    ■ internalCmraValid a ⊣⊢@{UPred M} internalCmraValid a :=
+    ■ internalCmraValid a ⊣⊢ internalCmraValid a :=
   ⟨plainly_elim, plainly_valid_mpr a⟩
 
 theorem intuitionistically_valid [IncOrd M] {A} [ORA A] (a : A) :
-    □ internalCmraValid a ⊣⊢@{UPred M} internalCmraValid a := by
+    □ internalCmraValid a ⊣⊢ internalCmraValid a := by
   constructor
   · exact intuitionistically_elim
   · exact (persistently_valid_mpr a).trans intuitionistically_iff_persistently.mpr
 
 theorem discrete_valid [ORA A] [Discrete A] (a : A) :
-    internalCmraValid a ⊣⊢@{UPred M} ⌜✓ a⌝ :=
+    internalCmraValid a ⊣⊢ ⌜✓ a⌝ :=
   ⟨fun n _ hv => (valid_iff_validN' n).mpr hv, fun _ _ hv => hv.validN⟩
 
 instance valid_timeless [ORA A] [Discrete A] {a : A} :

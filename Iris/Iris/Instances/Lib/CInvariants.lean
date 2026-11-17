@@ -23,6 +23,8 @@ namespace Iris
 
 open BI ORA OFE Iris Iris.Std LawfulSet Excl COFE ProofMode
 
+local bi (IProp GF)
+
 /-! # Cancelable Invariants -/
 
 abbrev CInvF : OFunctorPre :=
@@ -81,7 +83,7 @@ instance instPersistentCinv (N : Namespace) (γ : GName) (P : IProp GF) :
 
 @[rocq_alias cinv_own_valid]
 theorem own_valid {γ : GName} {q1 q2 : Qp} :
-    ⊢@{IProp GF} own γ q1 -∗ own γ q2 -∗ ⌜(q1 + q2).val ≤ 1⌝ := by
+    ⊢ own γ q1 -∗ own γ q2 -∗ ⌜(q1 + q2).val ≤ 1⌝ := by
   unfold own
   iintro H1 H2
   icombine H1 H2 as H
@@ -105,7 +107,7 @@ instance instAsFractionalOwn (γ : GName) (q : Qp) :
 
 @[rocq_alias cinv_own_excl_alloc]
 theorem own_excl_alloc (P : GName → Prop) (HP : PredInfinite P) :
-    ⊢@{IProp GF} |==> ∃ γ, ⌜P γ⌝ ∗ excl γ ∗ own γ (1 : Qp) := by
+    ⊢ |==> ∃ γ, ⌜P γ⌝ ∗ excl γ ∗ own γ (1 : Qp) := by
   imod iOwn_alloc_strong (E := W.inv)
     ((some (Excl.excl ()), none) • (none, some (DFrac.own 1)) :
       CInvF (IProp GF) (IProp GF)) P ?_
@@ -157,7 +159,7 @@ nonrec theorem cinv_iff {N : Namespace} {γ : GName} {P Q : IProp GF} :
 
 @[rocq_alias cinv_alloc_strong]
 theorem alloc_strong (P : GName → Prop) (HP : PredInfinite P) (E : CoPset) (N : Namespace) :
-    ⊢@{IProp GF} |={E}=> ∃ γ, ⌜P γ⌝ ∗ own γ (1 : Qp) ∗
+    ⊢ |={E}=> ∃ γ, ⌜P γ⌝ ∗ own γ (1 : Qp) ∗
       ∀ Q, ▷ Q ={E}=∗ cinv N γ Q := by
   imod own_excl_alloc P HP with ⟨%γ, %HPγ, Hexcl, Hown⟩
   imodintro
@@ -173,7 +175,7 @@ theorem alloc_strong (P : GName → Prop) (HP : PredInfinite P) (E : CoPset) (N 
 @[rocq_alias cinv_alloc_strong_open]
 theorem alloc_strong_open (P : GName → Prop) (HP : PredInfinite P) (E : CoPset) (N : Namespace)
   (Hsub : ↑N ⊆ E) :
-    ⊢@{IProp GF} |={E}=> ∃ γ, ⌜P γ⌝ ∗ own γ (1 : Qp) ∗
+    ⊢ |={E}=> ∃ γ, ⌜P γ⌝ ∗ own γ (1 : Qp) ∗
       ∀ (Q : IProp GF), |={E, E \ ↑N}=> cinv N γ Q ∗ (▷ Q ={E \ ↑N, E}=∗ True) := by
   imod own_excl_alloc P HP with ⟨%γ, %HPγ, Hexcl, Hown⟩
   imodintro
@@ -193,7 +195,7 @@ theorem alloc_strong_open (P : GName → Prop) (HP : PredInfinite P) (E : CoPset
 
 @[rocq_alias cinv_alloc_cofinite]
 theorem alloc_cofinite (G : List GName) (E : CoPset) (N : Namespace) :
-    ⊢@{IProp GF} |={E}=> ∃ γ, ⌜γ ∉ G⌝ ∗ own γ (1 : Qp) ∗
+    ⊢ |={E}=> ∃ γ, ⌜γ ∉ G⌝ ∗ own γ (1 : Qp) ∗
       ∀ Q, ▷ Q ={E}=∗ cinv N γ Q :=
   alloc_strong (· ∉ G) (PredInfinite.not_mem G) E N
 
@@ -209,7 +211,7 @@ theorem alloc (E : CoPset) (N : Namespace) (P : IProp GF) :
 
 @[rocq_alias cinv_alloc_open]
 theorem alloc_open (E : CoPset) (N : Namespace) (P : IProp GF) (Hsub : ↑N ⊆ E) :
-    ⊢@{IProp GF} |={E, E \ ↑N}=> ∃ γ, cinv N γ P ∗ own γ (1 : Qp) ∗
+    ⊢ |={E, E \ ↑N}=> ∃ γ, cinv N γ P ∗ own γ (1 : Qp) ∗
       (▷ P ={E \ ↑N, E}=∗ True) := by
   imod alloc_strong_open (fun _ => True) PredInfinite.true E N Hsub
     with ⟨%γ, _, Hown, Hmake⟩

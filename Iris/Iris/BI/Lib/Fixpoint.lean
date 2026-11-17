@@ -111,7 +111,7 @@ instance least_fixpoint_absorbing [BIMonoPred F]
     iapply wand_elim_swap
     revert x
     letI _ : NonExpansive fun x => iprop(True -∗ bi_least_fixpoint F x) :=
-      ⟨fun _ _ _ H => wand_ne.ne .rfl (NonExpansive.ne H)⟩
+      (NonExpansive₂.ne_right BIBase.wand iprop(True)).comp inferInstance
     iapply least_fixpoint_iter
     iintro !> %y HF HT
     iapply (least_fixpoint_unfold ..).to_bi
@@ -131,7 +131,7 @@ instance least_fixpoint_persistent_affine [BIMonoPred F]
     refine .trans ?_ persistently_of_intuitionistically
     revert x
     letI _ : NonExpansive fun x => iprop(□ bi_least_fixpoint F x) :=
-      ⟨fun _ _ _ H => intuitionistically_ne.ne (NonExpansive.ne H)⟩
+      intuitionistically_ne.comp inferInstance
     iapply least_fixpoint_iter
     iintro !> %y #HY !>
     iapply (least_fixpoint_unfold ..).to_bi
@@ -148,7 +148,7 @@ instance least_fixpoint_persistent_absorbing [BIMonoPred F]
   persistent := by
     revert x
     letI _ : NonExpansive fun x => iprop(<pers> bi_least_fixpoint F x) :=
-      ⟨fun _ _ _ H => persistently_ne.ne <| NonExpansive.ne H⟩
+      persistently_ne.comp inferInstance
     iapply least_fixpoint_iter
     iintro !> %y #HF !>
     iapply (least_fixpoint_unfold ..).to_bi
@@ -289,7 +289,7 @@ instance greatest_fixpoint_absorbing [BIMonoPred F]
   absorbing := by
     revert x
     letI _ : NonExpansive fun x => iprop(<absorb> bi_greatest_fixpoint F x) :=
-      ⟨fun _ _ _ H => absorbingly_ne.ne (NonExpansive.ne H)⟩
+      absorbingly_ne.comp inferInstance
     iapply greatest_fixpoint_coiter
     iintro !> %y >HF
     ihave HF : F (bi_greatest_fixpoint F) y $$ [HF]

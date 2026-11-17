@@ -14,6 +14,7 @@ namespace Iris.HeapLang
 public section
 
 variable [HeapLangGS hlc GF]
+local bi (IProp GF)
 
 @[rocq_alias heap_lang.nondet_bool]
 def nondetBool := hl_val% λ _,
@@ -25,7 +26,7 @@ def nondetBool := hl_val% λ _,
 
 @[rocq_alias heap_lang.nondet_bool_spec]
 theorem nondetBool.spec :
-    {{ (True : IProp GF) }} hl(&nondetBool #()) {{ (b : Bool), RET hl_val(#b); True }} := by
+    {{ True }} hl(&nondetBool #()) {{ (b : Bool), RET hl_val(#b); True }} := by
   iintro %Φ - K
   unfold nondetBool
   wp_alloc l with Hl

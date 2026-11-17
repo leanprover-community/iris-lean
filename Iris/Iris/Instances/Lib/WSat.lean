@@ -25,6 +25,8 @@ namespace Iris
 open Iris Iris.Std OFE COFE BI HeapView PartialMap DisjointLeibnizSet DFrac LawfulPartialMap BigSepM
   HeapView FiniteMap LawfulFiniteMap
 
+local bi (IProp GF)
+
 section WsatGS
 
 abbrev PosSet := Std.ExtTreeSet Pos compare
@@ -111,13 +113,13 @@ variable {GF : BundledGFunctors} [W : WsatGS GF]
 theorem ownE_empty : ⊢ |==> ownE (W := W) ∅ := iOwn_unit (ε := UORA.unit)
 
 @[rocq_alias ownE_op]
-theorem ownE_op {E1 E2} (Hdisj : E1 ## E2) : ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
+theorem ownE_op {E1 E2} (Hdisj : E1 ## E2) : ownE (E1 ∪ E2) ⊣⊢ ownE E1 ∗ ownE E2 := by
   refine .trans (.of_eq ?_) iOwn_op
   rw [disj_op_union Hdisj]
   rfl
 
 @[rocq_alias ownE_disjoint]
-theorem ownE_disjoint {E1 E2} : ownE E1 ∗ ownE E2 ⊢@{IProp GF} ⌜E1 ## E2⌝ := by
+theorem ownE_disjoint {E1 E2} : ownE E1 ∗ ownE E2 ⊢ ⌜E1 ## E2⌝ := by
   iintro ⟨H1, H2⟩
   icases iOwn_op $$ [H1 H2] with H
   · unfold ownE
@@ -128,7 +130,7 @@ theorem ownE_disjoint {E1 E2} : ownE E1 ∗ ownE E2 ⊢@{IProp GF} ⌜E1 ## E2�
   exact valid_op_iff_disj.mp H
 
 @[rocq_alias ownE_op']
-theorem ownE_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownE (E1 ∪ E2) ⊣⊢@{IProp GF} ownE E1 ∗ ownE E2 := by
+theorem ownE_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownE (E1 ∪ E2) ⊣⊢ ownE E1 ∗ ownE E2 := by
   constructor
   · iintro ⟨%Hdisj, H⟩
     iapply (ownE_op Hdisj).mp $$ H
@@ -142,7 +144,7 @@ theorem ownE_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownE (E1 ∪ E2) ⊣⊢@{IProp 
       isplitl [H1] <;> iassumption
 
 @[rocq_alias ownE_singleton_twice]
-theorem ownE_singleton_twice {i : Pos} : ownE {i} ∗ ownE {i} ⊢@{IProp GF} False :=
+theorem ownE_singleton_twice {i : Pos} : ownE {i} ∗ ownE {i} ⊢ False :=
   ownE_disjoint.trans (pure_mono fun h => h i (by simp [mem_singleton]))
 
 end ownE
@@ -152,17 +154,17 @@ section ownD
 variable {GF : BundledGFunctors} [W : WsatGS GF]
 
 @[rocq_alias ownD_empty]
-theorem ownD_empty : ⊢@{IProp GF} |==> ownD ∅ := iOwn_unit (ε := UORA.unit)
+theorem ownD_empty : ⊢ |==> ownD ∅ := iOwn_unit (ε := UORA.unit)
 
 @[rocq_alias ownD_op]
-theorem ownD_op {E1 E2} (Hdisj : E1 ## E2) : ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
+theorem ownD_op {E1 E2} (Hdisj : E1 ## E2) : ownD (E1 ∪ E2) ⊣⊢ ownD E1 ∗ ownD E2 := by
   refine .trans (.of_eq ?_) iOwn_op
   rw [disj_op_union Hdisj]
   rfl
 
 @[rocq_alias ownD_disjoint]
 theorem ownD_disjoint (E1 E2 : PosSet) :
-    ownD E1 ∗ ownD E2 ⊢@{IProp GF}  ⌜E1 ## E2⌝ := by
+    ownD E1 ∗ ownD E2 ⊢  ⌜E1 ## E2⌝ := by
   unfold ownD
   iintro ⟨H1, H2⟩
   icases iOwn_op $$ [H1 H2] with H
@@ -173,7 +175,7 @@ theorem ownD_disjoint (E1 E2 : PosSet) :
   exact valid_op_iff_disj.mp H
 
 @[rocq_alias ownD_op']
-theorem ownD_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownD (E1 ∪ E2) ⊣⊢@{IProp GF} ownD E1 ∗ ownD E2 := by
+theorem ownD_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownD (E1 ∪ E2) ⊣⊢ ownD E1 ∗ ownD E2 := by
   constructor
   · iintro ⟨%Hdisj, H⟩
     iapply (ownD_op Hdisj).mp $$ H
@@ -187,7 +189,7 @@ theorem ownD_op_iff {E1 E2} : ⌜E1 ## E2⌝ ∧ ownD (E1 ∪ E2) ⊣⊢@{IProp 
       isplitl [H1] <;> iassumption
 
 @[rocq_alias ownD_singleton_twice]
-theorem ownD_singleton_twice {i : Pos} : ownD {i} ∗ ownD {i} ⊢@{IProp GF} False :=
+theorem ownD_singleton_twice {i : Pos} : ownD {i} ∗ ownD {i} ⊢ False :=
     (ownD_disjoint {i} {i}).trans (pure_mono fun h => h i (by simp))
 
 end ownD
@@ -199,7 +201,7 @@ variable {GF : BundledGFunctors} [W : WsatGS GF]
 @[rocq_alias invariant_lookup]
 theorem invariant_lookup (I : InvMap (IProp GF)) (i : Pos) (P : IProp GF) :
     iOwn (E := W.inv) W.invariant_name (invMap I) ∗ ownI i P
-    ⊢@{IProp GF} ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ (Q ≡ P) := by
+    ⊢ ∃ Q, ⌜get? I i = .some Q⌝ ∗ ▷ (Q ≡ P) := by
   unfold ownI
   iintro H
   ihave H := iOwn_cmraValid_op $$ H

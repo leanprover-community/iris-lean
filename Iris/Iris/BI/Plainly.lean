@@ -26,6 +26,7 @@ open Iris.Std
 
 variable [Sbi PROP]
 variable {P Q R : PROP}
+local bi PROP
 
 section PlainlyLaws
 
@@ -108,7 +109,7 @@ theorem plainly_intro_plainly (H : ■ P ⊢ Q) : ■ P ⊢ ■ Q :=
   plainly_idem.2.trans <| plainly_mono <| H
 
 @[rocq_alias plainly_pure]
-theorem plainly_pure {φ} : ■ ⌜φ⌝ ⊣⊢ (⌜φ⌝ : PROP) := by
+theorem plainly_pure {φ} : ■ ⌜φ⌝ ⊣⊢ ⌜φ⌝ := by
   refine ⟨plainly_elim_persistently.trans persistently_elim, pure_elim' fun φ' => ?_⟩
   calc
     _ ⊢ ∀ a, ■ True := forall_intro Empty.rec
@@ -164,7 +165,7 @@ theorem plainly_imp : ■ (P → Q) ⊢ ■ P → ■ Q := by
   exact plainly_mono imp_elim_right
 
 @[rocq_alias plainly_emp_2]
-theorem plainly_emp_2 : (emp : PROP) ⊢ ■ emp := plainly_emp_intro
+theorem plainly_emp_2 : emp ⊢ ■ emp := plainly_emp_intro
 
 @[rocq_alias plainly_sep_dup]
 theorem plainly_sep_dup : ■ P ⊣⊢ ■ P ∗ ■ P := by
@@ -189,7 +190,7 @@ theorem plainly_and_sep_right_mp : P ∧ ■ Q ⊢ P ∗ ■ Q := calc
   _ ⊢ P ∗ ■ Q := sep_symm
 
 @[rocq_alias plainly_True_emp]
-theorem plainly_true_emp : ■ True ⊣⊢ ■ (emp : PROP) :=
+theorem plainly_true_emp : ■ True ⊣⊢ ■ emp :=
   ⟨plainly_emp_intro, plainly_mono true_intro⟩
 
 @[rocq_alias plainly_and_sep]
@@ -299,7 +300,7 @@ section AffineBI
 variable [BIAffine PROP]
 
 @[rocq_alias plainly_emp]
-theorem plainly_emp : ■ emp ⊣⊢ (emp : PROP) :=
+theorem plainly_emp : ■ emp ⊣⊢ emp :=
   ⟨plainly_elim, plainly_emp_2⟩
 
 @[rocq_alias plainly_and_sep_l]
@@ -337,7 +338,7 @@ instance plainly_absorbing (P : PROP) : Absorbing iprop(■ P) where
 
 @[rocq_alias plainly_si_pure]
 theorem plainly_siPure {Pi : SiProp} :
-    iprop(■ (<si_pure> Pi : PROP) ⊣⊢ <si_pure> Pi) :=
+    iprop(■ <si_pure> Pi ⊣⊢ <si_pure> Pi) :=
   ⟨siPure_mono siEmpValid_siPure.mp, siPure_mono siEmpValid_siPure.mpr⟩
 
 local macro "build_plainly_if" p:ident "from" thm:term : term =>  `(
@@ -349,7 +350,7 @@ local macro "build_plainly_if" p:ident "from" thm:term : term =>  `(
     | assumption))
 
 @[rocq_alias plainly_if_pure]
-theorem plainly_if_pure {φ} p : ■?p ⌜φ⌝ ⊣⊢ (⌜φ⌝ : PROP) :=
+theorem plainly_if_pure {φ} p : ■?p ⌜φ⌝ ⊣⊢ ⌜φ⌝ :=
   build_plainly_if p from plainly_pure
 
 @[rocq_alias plainly_if_and]
@@ -808,7 +809,7 @@ instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=
 
 @[rocq_alias plainly_internal_eq]
 theorem plainly_internalEq {A} [OFE A] {a b : A} :
-    iprop(■ (a ≡ b) ⊣⊢@{PROP} a ≡ b) := by
+    iprop(■ (a ≡ b) ⊣⊢ a ≡ b) := by
   refine ⟨plainly_elim, ?_⟩
   have : OFE.NonExpansive (β := PROP) (fun x ↦ iprop(■ (a ≡ x))) :=  {
     ne n x x' xx' := instPlainly_ne.ne ((internalEq.ne_r a).ne xx')
@@ -922,13 +923,13 @@ theorem except0_plainly_1 (P : PROP) : ◇ ■ P ⊢ ■ ◇ P :=
 @[rocq_alias except_0_plainly]
 theorem except0_plainly {P : PROP} : ◇ ■ P ⊣⊢ ■ ◇ P :=
   calc iprop(◇ <si_pure> <si_emp_valid> P)
-    _ ⊣⊢@{PROP} <si_pure> (◇ <si_emp_valid> P)   := siPure_except0.symm
+    _ ⊣⊢ <si_pure> (◇ <si_emp_valid> P)   := siPure_except0.symm
     _ ⊣⊢        <si_pure> (<si_emp_valid> (◇ P)) := .ofMono siPure_mono siEmpValid_except0.symm
 
 @[rocq_alias only_0_plainly]
 theorem only0_plainly {P : PROP} : <only0> ■ P ⊣⊢ ■ <only0> P :=
   calc iprop(<only0> <si_pure> <si_emp_valid> P)
-    _ ⊣⊢@{PROP} <si_pure> (<only0> <si_emp_valid> P)   := siPure_only0.symm
+    _ ⊣⊢ <si_pure> (<only0> <si_emp_valid> P)   := siPure_only0.symm
     _ ⊣⊢        <si_pure> (<si_emp_valid> (<only0> P)) := .ofMono siPure_mono siEmpValid_only0.symm
 
 @[rocq_alias later_plain]

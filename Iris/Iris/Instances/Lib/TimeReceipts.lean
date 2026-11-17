@@ -17,6 +17,8 @@ public import Iris.Instances.IProp
 namespace Iris
 open BI ProofMode Algebra
 
+local bi (IProp GF)
+
 @[rocq_alias time_receiptGpreS]
 class TimeReceiptGpreS (GF : BundledGFunctors) where
   elem : ElemG GF (constOF TimeReceipt)
@@ -85,51 +87,51 @@ instance {n : Nat} : Persistent (PROP := IProp GF) (⧖□ n) :=
   inferInstanceAs (Persistent (iOwn (E := TR.elem) TR.name _))
 
 @[rocq_alias time_receipt_excl_split]
-theorem excl_split (n₁ n₂ : Nat) : ⧖+ (n₁ + n₂) ⊣⊢@{IProp GF} ⧖+ n₁ ∗ ⧖+ n₂ :=
+theorem excl_split (n₁ n₂ : Nat) : ⧖+ (n₁ + n₂) ⊣⊢ ⧖+ n₁ ∗ ⧖+ n₂ :=
   iOwn_op (E := TR.elem) (a1 := fragExcl n₁) (a2 := fragExcl n₂)
 
 @[rocq_alias time_receipt_pers_split]
-theorem pers_split (n₁ n₂ : Nat) : ⧖□ (max n₁ n₂) ⊣⊢@{IProp GF} ⧖□ n₁ ∗ ⧖□ n₂ :=
+theorem pers_split (n₁ n₂ : Nat) : ⧖□ (max n₁ n₂) ⊣⊢ ⧖□ n₁ ∗ ⧖□ n₂ :=
   iOwn_op (E := TR.elem) (a1 := fragPers n₁) (a2 := fragPers n₂)
 
 @[rocq_alias time_receipt_excl_zero]
-theorem excl_zero : ⊢@{IProp GF} |==> ⧖+ 0 :=
+theorem excl_zero : ⊢ |==> ⧖+ 0 :=
   iOwn_unit (ε := UORA.unit)
 
 @[rocq_alias time_receipt_pers_zero]
-theorem pers_zero : ⊢@{IProp GF} |==> ⧖□ 0 :=
+theorem pers_zero : ⊢ |==> ⧖□ 0 :=
   iOwn_unit (ε := UORA.unit)
 
 @[rocq_alias time_receipt_excl_weaken]
-theorem excl_weaken {n₁ : Nat} (n₂ : Nat) (h : n₂ ≤ n₁) : ⊢@{IProp GF} ⧖+ n₁ -∗ ⧖+ n₂ := by
+theorem excl_weaken {n₁ : Nat} (n₂ : Nat) (h : n₂ ≤ n₁) : ⊢ ⧖+ n₁ -∗ ⧖+ n₂ := by
   obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le h
   iintro H
   icases (excl_split n₂ k).mp $$ H with ⟨$, -⟩
 
 @[rocq_alias time_receipt_pers_weaken]
-theorem pers_weaken {n₁ : Nat} (n₂ : Nat) (h : n₂ ≤ n₁) : ⊢@{IProp GF} ⧖□ n₁ -∗ ⧖□ n₂ := by
+theorem pers_weaken {n₁ : Nat} (n₂ : Nat) (h : n₂ ≤ n₁) : ⊢ ⧖□ n₁ -∗ ⧖□ n₂ := by
   rw [← Nat.max_eq_right h]
   iintro H
   icases (pers_split n₂ n₁).mp $$ H with ⟨$, -⟩
 
 @[rocq_alias time_receipt_excl_succ]
-theorem excl_succ (n : Nat) : ⧖+ (.succ n) ⊣⊢@{IProp GF} ⧖+ 1 ∗ ⧖+ n :=
+theorem excl_succ (n : Nat) : ⧖+ (.succ n) ⊣⊢ ⧖+ 1 ∗ ⧖+ n :=
   Nat.succ_eq_one_add n ▸ excl_split 1 n
 
 @[rocq_alias time_receipt_pers_incr]
-theorem pers_incr (n₁ n₂ : Nat) : ⊢@{IProp GF} ⧖+ n₁ -∗ ⧖□ n₂ ==∗ ⧖□ (n₁ + n₂) := by
+theorem pers_incr (n₁ n₂ : Nat) : ⊢ ⧖+ n₁ -∗ ⧖□ n₂ ==∗ ⧖□ (n₁ + n₂) := by
   unfold excl pers
   iintro Htr Htrp
   iapply iOwn_update_op (fragExcl_persist n₁ n₂) $$ [$Htr $Htrp]
 
 @[rocq_alias time_receipt_excl_pers_get]
-theorem excl_pers_get (n : Nat) : ⊢@{IProp GF} ⧖+ n ==∗ ⧖+ n ∗ ⧖□ n := by
+theorem excl_pers_get (n : Nat) : ⊢ ⧖+ n ==∗ ⧖+ n ∗ ⧖□ n := by
   unfold excl pers
   iintro Htr
   imod iOwn_update (fragExcl_get_pers n) $$ Htr with ⟨$, $⟩
 
 @[rocq_alias time_receipt_supply_pers_bound]
-theorem supply_pers_bound (n m : Nat) : ⊢@{IProp GF} supply m -∗ ⧖□ n -∗ ⌜n ≤ m⌝ := by
+theorem supply_pers_bound (n m : Nat) : ⊢ supply m -∗ ⧖□ n -∗ ⌜n ≤ m⌝ := by
   unfold supply pers
   iintro Hauth Htrp
   icombine Hauth Htrp gives %hop
@@ -138,14 +140,14 @@ theorem supply_pers_bound (n m : Nat) : ⊢@{IProp GF} supply m -∗ ⧖□ n -�
 
 @[rocq_alias time_receipt_supply_bound_both]
 theorem supply_bound_both (n₁ n₂ m : Nat) :
-    ⊢@{IProp GF} supply m -∗ ⧖+ n₁ -∗ ⧖□ n₂ -∗ ⌜n₁ + n₂ ≤ m⌝ := by
+    ⊢ supply m -∗ ⧖+ n₁ -∗ ⧖□ n₂ -∗ ⌜n₁ + n₂ ≤ m⌝ := by
   iintro Hauth Htr Htrp
   imod pers_incr $$ Htr Htrp with Htrp
   iapply supply_pers_bound $$ Hauth Htrp
 
 @[rocq_alias time_receipt_supply_incr]
 theorem supply_incr (k m n : Nat) :
-    ⊢@{IProp GF} supply m -∗ ⧖□ n ==∗ supply (m + k + k) ∗ ⧖+ k ∗ ⧖□ (n + k) := by
+    ⊢ supply m -∗ ⧖□ n ==∗ supply (m + k + k) ∗ ⧖+ k ∗ ⧖□ (n + k) := by
   unfold supply excl pers
   iintro Hauth Htrp
   imod iOwn_update_op (auth_incr m n k) $$ [$Hauth $Htrp] with ⟨⟨$, $⟩, $⟩
@@ -189,7 +191,7 @@ end Rules
 
 @[rocq_alias time_receipt_supply_alloc]
 theorem supply_alloc {GF : BundledGFunctors} [TimeReceiptGpreS GF] (n : Nat) :
-    ⊢@{IProp GF} |==> ∃ _ : TimeReceiptGS GF, supply (n + n) ∗ ⧖+ n := by
+    ⊢ |==> ∃ _ : TimeReceiptGS GF, supply (n + n) ∗ ⧖+ n := by
   imod iOwn_alloc (E := TimeReceiptGpreS.elem) _
     ((auth_op_fragExcl_valid_iff (n + n) n).mpr (Nat.le_refl _)) with ⟨%γ, Hauth, Htr⟩
   iexists ⟨γ⟩
