@@ -9,8 +9,6 @@ public import Iris.BI.BI
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris.BI
 
 /-- Require that the proposition `P` is persistent. -/

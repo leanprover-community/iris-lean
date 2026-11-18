@@ -10,8 +10,6 @@ public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
-local stepindex Nat
-
 /-!  # Logically atomic Hoare triples -/
 
 namespace Iris

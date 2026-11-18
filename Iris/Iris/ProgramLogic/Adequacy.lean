@@ -21,8 +21,6 @@ local bi (IProp GF)
 
 @[expose] public section
 
-local stepindex Nat
-
 variable {hlc : HasLC} {Expr State Obs Val : Type _}
 variable [Language Expr State Obs Val]
 variable {GF : BundledGFunctors} [iG : IrisGS_gen hlc Expr GF]

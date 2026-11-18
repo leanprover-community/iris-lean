@@ -12,7 +12,6 @@ namespace Iris.ProofMode
 
 public section
 
-local stepindex Nat
 open BI Iris.Std
 
 /- Syntax for `iinduction` and `iloeb` -/

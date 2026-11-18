@@ -11,8 +11,6 @@ namespace Iris.ProofMode
 
 public section
 
-local stepindex Nat
-
 #rocq_ignore tac_rename "No needed as Expr.lean provides the infrastructure"
 
 public meta section

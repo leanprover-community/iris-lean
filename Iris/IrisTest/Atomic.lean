@@ -9,8 +9,6 @@ public import Iris.ProgramLogic.Atomic
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace IrisTest
 open Iris ProgramLogic BI ProofMode Std
 

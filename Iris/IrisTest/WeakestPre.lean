@@ -10,8 +10,6 @@ public import Iris.HeapLang
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace IrisTest
 open Iris
 

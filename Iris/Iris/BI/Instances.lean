@@ -13,8 +13,6 @@ public import Iris.Std.Classes
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris.BI
 open Iris.Std
 open BI

@@ -11,7 +11,6 @@ namespace Iris.ProofMode
 
 public section
 
-local stepindex Nat
 open BI
 
 theorem hyps_replace_ieval [BI PROP] {P Q R : PROP}

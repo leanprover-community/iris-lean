@@ -13,8 +13,6 @@ namespace Iris.HeapLang
 
 public section
 
-local stepindex Nat
-
 variable [HeapLangGS hlc GF]
 local bi (IProp GF)
 

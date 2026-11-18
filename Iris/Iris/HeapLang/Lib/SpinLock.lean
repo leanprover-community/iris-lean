@@ -18,8 +18,6 @@ open BI Iris ProgramLogic
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace SpinLock
 
 @[rocq_alias heap_lang.spin_lock.newlock]

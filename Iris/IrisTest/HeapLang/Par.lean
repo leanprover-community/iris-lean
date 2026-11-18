@@ -9,7 +9,6 @@ public import Iris.HeapLang.Lib.Par
 
 @[expose] public section
 
-local stepindex Nat
 namespace IrisTest.HeapLang.Par
 
 open Iris HeapLang BI Iris ProgramLogic Spawn Iris.HeapLang.Par

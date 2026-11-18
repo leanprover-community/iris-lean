@@ -15,8 +15,6 @@ public import Iris.ProofMode.NatCancel
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace IrisTest
 open Lean Qq Iris BI ProofMode
 

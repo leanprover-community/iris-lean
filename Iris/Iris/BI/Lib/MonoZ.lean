@@ -9,8 +9,6 @@ public import Iris.BI.Lib.MonoNat
 
 @[expose] public section
 
-local stepindex Nat
-
 /-! # Ghost state for a monotonically increasing non-negative integer -/
 
 namespace Iris

@@ -10,8 +10,6 @@ public import Iris.ProofMode.SynthInstanceAttr
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 
 open ORA ProofMode

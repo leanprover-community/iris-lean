@@ -16,8 +16,6 @@ public import Iris.Std.GenSets
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris.Examples.Set
 open Iris.BI COFE Std.LawfulSet Iris.Std DisjointLeibnizSet
 

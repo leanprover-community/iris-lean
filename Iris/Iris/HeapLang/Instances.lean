@@ -16,7 +16,6 @@ public import Iris.Std.GenSetsInstances
 
 @[expose] public section
 
-local stepindex Nat
 namespace Iris.HeapLang
 
 open ProgramLogic ProgramLogic.Language FromMathlib EctxItemLanguage EctxLanguage

@@ -12,8 +12,6 @@ public import Iris.Instances.IProp
 
 @[expose] public section
 
-local stepindex Nat
-
 /-! # Time receipts -/
 
 namespace Iris

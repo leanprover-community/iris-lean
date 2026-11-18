@@ -16,7 +16,6 @@ import Iris.Std.List
 
 @[expose] public section
 
-local stepindex Nat
 namespace Iris.HeapLang
 
 open Iris.Std

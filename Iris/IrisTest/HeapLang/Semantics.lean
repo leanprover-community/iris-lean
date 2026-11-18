@@ -8,7 +8,6 @@ public import Iris.HeapLang.Instances
 
 @[expose] public section
 
-local stepindex Nat
 namespace IrisTest.HeapLang.Semantics
 
 open Iris.HeapLang

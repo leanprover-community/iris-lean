@@ -15,8 +15,6 @@ import Iris.Std.TC
 
 public section
 
-local stepindex Nat
-
 namespace Iris.BI
 
 open Iris.Algebra BigOpL BigOpMS BIBase Iris.Std BigSepL

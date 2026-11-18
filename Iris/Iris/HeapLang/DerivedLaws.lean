@@ -11,7 +11,6 @@ public import Iris.HeapLang.PrimitiveLaws
 
 @[expose] public section
 
-local stepindex Nat
 namespace Iris.HeapLang
 
 open Iris BI ProofMode ProgramLogic Iris.Std

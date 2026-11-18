@@ -17,8 +17,6 @@ open BI Iris ProgramLogic
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Arith
 
 @[rocq_alias heap_lang.minimum]

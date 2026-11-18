@@ -11,7 +11,6 @@ namespace Iris.ProofMode
 
 public section
 
-local stepindex Nat
 open BI
 
 @[rocq_alias tac_ex_falso]

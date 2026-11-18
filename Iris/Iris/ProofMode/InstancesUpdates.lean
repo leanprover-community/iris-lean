@@ -14,8 +14,6 @@ public import Iris.ProofMode.Display
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris.ProofMode
 
 open Iris.BI Iris.Std BIFUpdate

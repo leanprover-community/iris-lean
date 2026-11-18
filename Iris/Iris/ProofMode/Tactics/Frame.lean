@@ -13,7 +13,6 @@ namespace Iris.ProofMode
 
 public section
 
-local stepindex Nat
 open BI
 
 theorem frame_init [BI PROP] {e goal : PROP} :

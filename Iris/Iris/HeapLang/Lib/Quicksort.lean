@@ -14,8 +14,6 @@ open BI Iris ProgramLogic List
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Quicksort
 
 def nil : Val := hl_val% λ _, none()

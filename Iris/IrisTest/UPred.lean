@@ -11,8 +11,6 @@ public import Iris.Instances.UPred
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace IrisTest
 open Iris BI ProofMode ORA UPred
 

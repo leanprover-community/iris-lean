@@ -10,8 +10,6 @@ public import Iris.ProofMode.Classes
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris.ProofMode
 open Iris
 

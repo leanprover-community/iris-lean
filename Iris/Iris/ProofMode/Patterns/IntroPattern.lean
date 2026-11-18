@@ -12,8 +12,6 @@ public import Lean.Syntax
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris.ProofMode
 open Lean
 
