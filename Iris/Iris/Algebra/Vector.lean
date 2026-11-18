@@ -27,7 +27,7 @@ variable [OFE α]
 instance : OFE (Vector α n) where
   dist k u v := u.toList ≡{k}≡ v.toList
   dist_eqv := InvImage.equivalence dist_eqv
-  eq_dist' := ⟨fun h _ => h ▸ .rfl, fun h => Vector.toList_inj.mp (eq_of_dist h)⟩
+  eq_dist' := ⟨fun h _ => h ▸ .rfl, fun h => Vector.toList_inj.mp (eq_dist.mpr h)⟩
   dist_lt h hlt := h.lt hlt
 #rocq_ignore vecO "Use Vector"
 #rocq_ignore vec_equiv "OFE is Leibniz; use equality"

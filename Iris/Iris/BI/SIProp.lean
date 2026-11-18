@@ -491,7 +491,7 @@ theorem pure_soundness {φ : Prop} (h : True ⊢ ⌜φ⌝) : φ := h 0 trivial
 
 @[rocq_alias siProp_primitive.internal_eq_soundness]
 theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢ internalEq x y) : x = y :=
-  OFE.eq_of_dist fun n => h n trivial
+  OFE.eq_dist.mpr fun n => h n trivial
 
 @[rocq_alias siProp_primitive.later_soundness]
 theorem later_soundness {P : SiProp} (h : True ⊢ ▷ P) : True ⊢ P := fun n _ => h (n + 1) trivial
