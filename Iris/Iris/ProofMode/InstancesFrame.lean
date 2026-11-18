@@ -291,6 +291,12 @@ instance frame_tforall {TT : Tele} [BI PROP] p (R : PROP) (Φ Ψ : TT.Arg → PR
     exact (sep_mono_right <| (tforall_forall Ψ).mp.trans <| forall_elim x).trans
       (h x).frame_instantiatiate_exist_disabled.frame
 
+/-- Framing the element of a singleton list leaves no `[∗list] _ ∈ []` behind. -/
+instance (priority := high) frame_bigSepL_singleton [BI PROP] {A} p (Φ : Nat → A → PROP)
+    (R Q : PROP) (x : A) [h : Frame p R (Φ 0 x) Q] :
+    Frame p R ([∗list] k ↦ y ∈ [x], Φ k y) Q where
+  frame := h.frame.trans BigSepL.bigSepL_singleton.mpr
+
 @[ipm_backtrack, rocq_alias frame_big_sepL_cons]
 instance frame_bigSepL_cons [BI PROP] {A} p (Φ : Nat → A → PROP)
     (R Q : PROP) (l : List A) (x : A) (l' : List A)
