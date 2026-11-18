@@ -663,46 +663,32 @@ theorem wp_resolve_strong {e : Exp} {p : ProphId} {w : Val} {pvs : List (Val × 
   iintro %σ₁ %ns %obs %nt Hσ
   icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hheap, Hpmap⟩
   icases ProphMap.agree obs σ₁.usedProphId p pvs $$ [$Hpmap $Hp] with %Hagree
-  have hredR : Stuckness.MaybeReducible s (e, σ₁) →
-      Stuckness.MaybeReducible s (hl(resolve(&e, v(#p), v(&w))), σ₁) := fun Hred_e => by
+  ispecialize HWPe $$ Hp
+  isimp [wp_unfold.to_eq] at HWPe
+  simp only [wp.pre, hne]
+  imod HWPe $$ %σ₁ %ns %obs %nt [Hheap Hpmap] with ⟨%Hred_e, HWPe⟩
+  · rw [(stateInterp_split _ _ _ _).to_eq]; iframe
+  isplitr
+  · ipureintro
     cases s <;> simp only [Stuckness.MaybeReducible] at Hred_e ⊢
     refine prim_step_reducible_resolve ?_ Hred_e
     exact Std.ExtTreeSet.mem_iff_contains.mp Hagree.1
-  ihave HWPe : iprop(WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
-      ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }}) $$ [Hp HWPe]
-  · iapply HWPe; iexact Hp
-  ihave HWPe := (show iprop(WP e @ s; E {{ v_e, ∃ pvs', proph p pvs' ∗
-      ∀ pvs'', ⌜pvs' = (v_e, w) :: pvs''⌝ -∗ proph p pvs'' -∗ Φ v_e }}) ⊢ _
-    by rw [wp_unfold.to_eq]) $$ HWPe
-  ihave Hσ_e : iprop(stateInterp σ₁ ns obs nt) $$ [Hheap Hpmap]
-  · iapply (stateInterp_split σ₁ ns obs nt).mpr; iframe Hheap Hpmap
-  simp only [wp.pre, hne]
-  imod HWPe $$ %σ₁ %ns %obs %nt Hσ_e with ⟨%Hred_e, HWPe⟩
-  imodintro
-  isplitr
-  · ipureintro; exact hredR Hred_e
-  iintro %e₂ %σ₂ %eₜ %ob %obs' %Hsplit %Hstep Hcred
+  iintro !> %e₂ %σ₂ %eₜ %ob %obs' %Hsplit %Hstep Hcred
   obtain ⟨κ_inner, v_inner, hκ_eq, rfl, Hbase_e⟩ := step_resolve_decompose Hstep
-  have hsplit_inner : obs = κ_inner ++ ((p, (v_inner, w)) :: obs') := by
-    calc
-      obs = ob ++ obs' := Hsplit
-      _ = (κ_inner ++ [(p, (v_inner, w))]) ++ obs' := by rw [hκ_eq]
-      _ = κ_inner ++ ((p, (v_inner, w)) :: obs') := by simp [List.append_assoc]
   ispecialize HWPe $$ %_ %σ₂ %eₜ %κ_inner %((p, (v_inner, w)) :: obs')
-    %hsplit_inner %(EctxLanguage.primStep_of_baseStep Hbase_e) Hcred
+    [] %(EctxLanguage.primStep_of_baseStep Hbase_e) Hcred
+  · ipureintro
+    simp [Hsplit, hκ_eq, List.append_assoc]
   iapply step_fupdN_wand $$ HWPe
   iintro HWPe
   imod HWPe with ⟨Hσ_post, HWPval, Hefs⟩
-  icases (stateInterp_split σ₂ (ns + 1) ((p, (v_inner, w)) :: obs') (nt + eₜ.length)).mp
-    $$ Hσ_post with ⟨Hheap_e, Hpmap_e⟩
   imod wp_value_fupd'.mp $$ HWPval with ⟨%pvs', Hele, HΦ⟩
+  rw [(stateInterp_split _ _ _ _).to_eq]
+  icases Hσ_post with ⟨Hheap_e, Hpmap_e⟩
   icombine Hpmap_e Hele as Hcomb
-  imod (ProphMap.resolve_proph p (v_inner, w) obs' σ₂.usedProphId pvs') $$ Hcomb
-    with ⟨%pvs'', %hpvs'_eq, Hpmap_e, Hele⟩
-  imodintro
+  imod ProphMap.resolve_proph $$ Hcomb with ⟨%pvs'', %hpvs'_eq, Hpmap_e, Hele⟩
+  rw [(stateInterp_split _ _ _ _).to_eq]
   iframe
-  isplitl [Hheap_e Hpmap_e]
-  · iapply (stateInterp_split σ₂ (ns + 1) obs' (nt + eₜ.length)).mpr $$ [$]
   iapply wp_value'
   iapply HΦ $$ %pvs'' %hpvs'_eq Hele
 
