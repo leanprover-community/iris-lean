@@ -213,7 +213,7 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
 @[rocq_alias solver.embed_f]
 theorem Tower.embed_up (x : A F k) :
     Tower.embed (k+1) (up F k x) = Tower.embed k x := by
-  refine OFE.eq_of_dist (fun (n : Nat) i => ?_)
+  refine OFE.eq_of_dist (fun n i => ?_)
   dsimp [Tower.embed, embed]; split <;> rename_i h₁
   · simp [Nat.le_of_succ_le h₁]
     suffices ∀ a b (e₁ : k + 1 + a = i) (e₂ : k+b = i),
