@@ -27,10 +27,11 @@ variable {Expr State Obs Val : Type _} [Λ : Language Expr State Obs Val]
 variable {hlc : HasLC} {GF : BundledGFunctors}
 variable [ι : IrisGS_gen hlc Expr GF]
 
-local instance : OFE (List Expr) := OFE.ofDiscrete _
+local instance [Language Expr State Obs Val] : OFE (List Expr) := OFE.ofDiscrete _
 local instance list_nonexpansive (Ψ : List Expr → IProp GF) : NonExpansive Ψ :=
   ⟨fun _ _ _ hxy => hxy ▸ .rfl⟩
-local instance (priority := low) : OFE Val := OFE.ofDiscrete _
+local instance : OFE CoPset := OFE.ofDiscrete _
+local instance [Language Expr State Obs Val] : OFE Expr := OFE.ofDiscrete _
 
 namespace twptp
 

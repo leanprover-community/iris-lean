@@ -5,7 +5,6 @@ Authors: Yunsong Yang
 -/
 module
 
-public import Iris.Algebra.StepIndexFinite
 public import Iris.Algebra.OFE
 
 @[expose] public section
@@ -46,5 +45,15 @@ example (f : α → β) {n : SI} {x y : α} (h : x ≡{n}≡ y) : f x ≡{n}≡ 
 example (f : α → β) : α -n> β := ⟨f, inferInstance⟩
 
 end ne_of_discrete
+
+section dist_notation
+
+variable {α : Type _} [OFE α] (x y : α) (n : SI)
+
+/-- info: x ≡{n}≡ y : Prop -/
+#guard_msgs in
+#check x ≡{n}≡ y
+
+end dist_notation
 
 end IrisTest

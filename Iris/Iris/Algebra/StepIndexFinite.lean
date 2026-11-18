@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Alvin Tang. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alvin Tang
 -/
@@ -38,16 +38,5 @@ instance natSIdxFinite : SIdxFinite Nat where
 
 def SIdx.Limit.elim {I : Type u} [SIdx I] [SIdxFinite I] {n : I} {C : Sort v}
     (h : SIdx.Limit n) : C := SIdx.limit_finite n h |>.elim
-
-namespace OFE
-
-theorem Dist.leNat [OFE Nat α] {m n : Nat} {x y : α} (h : x ≡{n}≡ y) (h' : m ≤ n) : x ≡{m}≡ y :=
-  if hm : m = n then hm ▸ h else h.lt <| Nat.lt_of_le_of_ne h' hm
-
-theorem Contractive.succNat [OFE Nat α] [OFE Nat β] (f : α → β) [Contractive Nat f] {n : Nat} {x y}
-    (h : x ≡{n}≡ y) : f x ≡{n.succ}≡ f y :=
-  Contractive.distLater_dist <| distLater_succ.mpr h
-
-end OFE
 
 end Iris

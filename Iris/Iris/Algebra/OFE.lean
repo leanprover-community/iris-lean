@@ -21,9 +21,9 @@ class HasDist (SI : stepindex (Type _)) (α : Type _) where
 /-- Ordered family of equivalences -/
 @[indexed, rocq_alias ofe]
 class OFE (SI : stepindex (Type _)) [SIdx SI] (α : Type _) extends HasDist SI α where
-  dist_eqv {SI} : Equivalence (dist n)
-  eq_dist' {SI} : x = y ↔ ∀ n, dist n x y
-  dist_lt {SI} : dist n x y → m < n → dist m x y
+  dist_eqv : Equivalence (dist n)
+  eq_dist' : x = y ↔ ∀ n, dist n x y
+  dist_lt : dist n x y → m < n → dist m x y
 
 @[indexed]
 abbrev OFE.Dist {SI : stepindex (Type _)} {α : Type _} [HasDist SI α] : SI → α → α → Prop :=
@@ -38,7 +38,7 @@ abbrev OFE.Dist {SI : stepindex (Type _)} {α : Type _} [HasDist SI α] : SI →
 
 open OFE
 
-scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist (SI := stepindex%) n x y
+scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist n x y
 
 variable {SI : stepindex (Type _)} [SIdx SI]
 local stepindex SI
@@ -1206,12 +1206,12 @@ end BChain
 /-- Complete ordered family of equivalences -/
 @[indexed, rocq_alias Cofe]
 class IsCOFE (SI : stepindex (Type _)) (α : Type _) [SIdx SI] [OFE α] where
-  compl {SI} : Chain α → α
-  conv_compl {SI} {c : Chain α} : compl c ≡{n}≡ c n
-  lbcompl {SI} {n} : SIdx.Limit n → BChain α n → α
-  conv_lbcompl {SI} {n} (Hn : SIdx.Limit n) (c : BChain α n) {m} (hm : m < n) :
+  compl : Chain α → α
+  conv_compl {c : Chain α} : compl c ≡{n}≡ c n
+  lbcompl {n} : SIdx.Limit n → BChain α n → α
+  conv_lbcompl {n} (Hn : SIdx.Limit n) (c : BChain α n) {m} (hm : m < n) :
     lbcompl Hn c ≡{m}≡ c.bchain m hm
-  lbcompl_ne {SI} {n} (hn : SIdx.Limit n) (c1 c2 : BChain α n) {m} :
+  lbcompl_ne {n} (hn : SIdx.Limit n) (c1 c2 : BChain α n) {m} :
     (∀ p (Hp : p < n), c1.bchain p Hp ≡{m}≡ c2.bchain p Hp) →
     lbcompl hn c1 ≡{m}≡ lbcompl hn c2
 
@@ -2388,8 +2388,6 @@ section Later
 @[rocq_alias later] structure Later (A : Type u) : Type u where
   next :: car : A
 
-/-- Unlike Iris-Rocq, this needs `SIdxSucc`: our OFEs use Leibniz equality, and without a successor
-`DistLater` cannot separate values (with a single index it is always true). -/
 @[rocq_alias later_ofe_mixin]
 instance isOFE_later [OFE A] : OFE (Later A) where
   dist n x y := DistLater n x.car y.car
