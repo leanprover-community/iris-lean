@@ -139,14 +139,15 @@ end wpi_rules
 section wp_rules
 
 variable {GF} [InvGS GF] [G : heaplangHGS GF] {stepm : StepMode (IProp GF)}
+local bi (IProp GF)
 
 theorem wp_unfold {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
     WP e @ stepm; M {{ Φ }} = WPi e.denote @> heaplangH stepm.m; M {{ Φ }} := rfl
 
 /-- The identity (total) WP implies the later (partial) WP. -/
 theorem wp_later_weaken {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
-    WP e @ step[(id : IProp GF → IProp GF)]; M {{ Φ }} -∗
-    WP e @ step[(BI.later : IProp GF → IProp GF)]; M {{ Φ }} := by
+    WP e @ step[id]; M {{ Φ }} -∗
+    WP e @ step[BI.later]; M {{ Φ }} := by
   simp only [wp_unfold]
   iintro Hwp
   iapply wpi_wandH $$ Hwp
@@ -178,7 +179,7 @@ theorem wp_wand {M : CoPset} (e : Exp) (Φ Ψ : Val → IProp GF) :
   simp only [wp_unfold]
   apply wpi_wand
 
-theorem wp_frame_l {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
+theorem wp_frame_l {M : CoPset} (e : Exp) P (Φ : Val → IProp GF) :
     P ∗ WP e @ stepm; M {{ Φ }} -∗
     WP e @ stepm; M {{v , P ∗ Φ v}} := by
   iintro ⟨HP, Hwp⟩

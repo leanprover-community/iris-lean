@@ -103,7 +103,7 @@ private theorem filterMap_set_perm {T U : Type _} (f : T → U)
         · exact (List.Perm.swap _ _ _).trans (List.Perm.cons (f y) hp)
         · exact (List.Perm.swap _ _ _).trans ((List.Perm.cons (f y) hp).trans (List.Perm.swap _ _ _))
 
-instance coneEH_adequate {GE GR} :
+instance concEH_adequate {GE GR} :
     EHandlerAdequate (PROP:=PROP) concH (concEH (GE:=GE) (GR:=GR)) where
   inv s Ms := iprop(<affine> ⌜Ms = s.pool.filterMap fun t =>
       (fun t P => iprop(|={⊤, ∅}=> P t)) <$> t⌝)

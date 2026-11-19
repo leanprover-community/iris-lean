@@ -191,19 +191,19 @@ class SEHandlerAdequate {E : Effect.{_}} {σ : Type _}
       inv s -∗
       |={∅}=> ∃ a s', <affine> ⌜C a s'⌝ ∗ inv s' ∗ Φ1 a
 
-instance {E GE : Effect.{u}} {R σ : Type _}
+instance EH_of_SEH_adequate {E GE : Effect.{u}} {R σ : Type _}
     (H : IHandler PROP E) (EH : SEHandler E σ)
     [A : SEHandlerAdequate H EH] :
     EHandlerAdequate H (EH : EHandler E GE R σ) where
-  inv s _ := A.inv s
+  inv s Ms := iprop% <affine> ⌜Ms = []⌝ ∗ A.inv s
   adequate := by
     intro G i s Ms C k H0; simp at H0
-    iintro Hh Hinv
+    iintro Hh ⟨%rfl, Hinv⟩
     ihave >⟨%a, %s', %_, _, _⟩ := A.adequate $$ Hh [$]; assumption
-    imodintro; iexists (k a), _, (fun P => P (k a)), Ms, [fun P => P (k a)]
+    imodintro; iexists (k a), _, (fun P => P (k a)), [], [fun P => P (k a)]
     iframe; isplitr; itrivial
     isplitr; itrivial
-    simp; iframe; isplitr; itrivial
+    simp; isplitr; itrivial; isplitr; itrivial
     iintro %_ $ !> //
 
 /-- Independent simple handlers preserve the separating conjunction of their invariants. -/
@@ -231,51 +231,8 @@ instance sumSEH_adequate {E₁ E₂ : Effect.{u}} {S₁ S₂ : Type u}
       iframe Hinv1 Hinv2 HΦ2
       itrivial
 
-/-- A thread-pool handler can be combined with a simple handler whose invariant is pool independent. -/
-instance sumESEH_adequate {E₁ E₂ GE : Effect.{u}} {R S₁ S₂ : Type u}
-    (H₁ : IHandler PROP E₁) (H₂ : IHandler PROP E₂)
-    (EH₁ : EHandler E₁ GE R S₁) (EH₂ : SEHandler E₂ S₂)
-    [A₁ : EHandlerAdequate H₁ EH₁] [A₂ : SEHandlerAdequate H₂ EH₂] :
-    EHandlerAdequate (H₁ ⊕ₕ H₂) (EH₁ ⊕ₑₕ EH₂.toEHandler) where
-  inv s Ms := iprop(A₁.inv s.1 Ms ∗ A₂.inv s.2)
-  adequate := by
-    intro G i ⟨s1, s2⟩ Ms C k Heh
-    cases i with
-    | inl i =>
-      simp only [sumH_inl]
-      iintro Hh ⟨Hinv1, Hinv2⟩
-      ihave >⟨%t', %s', %M', %Ms', %Msn, HC, Hperm, Hpre⟩ := A₁.adequate $$ Hh [$]; assumption
-      simp only; imodintro
-      iexists t', (s', s2), M', Ms', Msn
-      iframe HC Hinv2 Hperm Hpre
-    | inr i =>
-      simp only [sumH_inr]
-      iintro Hh ⟨Hinv1, Hinv2⟩
-      ihave >⟨%a, %s, HC, Hinv2, HG⟩ := A₂.adequate $$ Hh [$]; assumption
-      simp only; imodintro
-      iexists k a, (s1, s), (fun P => P (k a)), Ms, [fun P => P (k a)]
-      iframe HC Hinv1 Hinv2
-      isplitr; itrivial
-      simp; iframe HG
-      iintro %P HP !> //
-
-/-- Adequacy is preserved by an isomorphism of executable states. -/
-instance isoEH_adequate {E GE : Effect.{u}} {R S₁ S₂ : Type u}
-    (iso : Iso S₁ S₂) (H : IHandler PROP E) (EH : EHandler E GE R S₁)
-    [A : EHandlerAdequate H EH] : EHandlerAdequate H (isoEH iso EH) where
-  inv s Ms := A.inv (iso.invFun s) Ms
-  adequate := by
-    intro G i s Ms C k Heh
-    iintro Hh Hinv
-    ihave >⟨%t', %s', %M', %Ms', %Msn, HC, Hperm, HMsn, Hinv', Hpre⟩ :=
-      A.adequate $$ Hh Hinv; exact Heh
-    imodintro
-    iexists t', iso.toFun s', M', Ms', Msn
-    simp only [invFun_toFun]
-    iframe HC Hperm HMsn Hinv' Hpre
-
 /-- Two thread-pool handlers: the pending threads are split between their invariants. -/
-instance {E₁ E₂ : Effect.{u}} {S₁ S₂ : Type u}
+instance sumEEH_adequate {E₁ E₂ GE : Effect.{u}} {R S₁ S₂ : Type u}
     (H₁ : IHandler PROP E₁) (H₂ : IHandler PROP E₂)
     (EH₁ : EHandler E₁ GE R S₁) (EH₂ : EHandler E₂ GE R S₂)
     [A₁ : EHandlerAdequate H₁ EH₁] [A₂ : EHandlerAdequate H₂ EH₂] :
@@ -314,6 +271,22 @@ instance {E₁ E₂ : Effect.{u}} {S₁ S₂ : Type u}
         _ ~ Msn ++ (Ms1 ++ Ms2) := perm_append_comm_assoc _ _ _
         _ ~ Msn ++ Ms := Hsplit.symm.append_left Msn
       · itrivial
+
+/-- Adequacy is preserved by an isomorphism of executable states. -/
+instance isoEH_adequate {E GE : Effect.{u}} {R S₁ S₂ : Type u}
+    (iso : Iso S₁ S₂) (H : IHandler PROP E) (EH : EHandler E GE R S₁)
+    [A : EHandlerAdequate H EH] : EHandlerAdequate H (isoEH iso EH) where
+  inv s Ms := A.inv (iso.invFun s) Ms
+  adequate := by
+    intro G i s Ms C k Heh
+    iintro Hh Hinv
+    ihave >⟨%t', %s', %M', %Ms', %Msn, HC, Hperm, HMsn, Hinv', Hpre⟩ :=
+      A.adequate $$ Hh Hinv; exact Heh
+    imodintro
+    iexists t', iso.toFun s', M', Ms', Msn
+    simp only [invFun_toFun]
+    iframe HC Hperm HMsn Hinv' Hpre
+
 
 end adequate
 

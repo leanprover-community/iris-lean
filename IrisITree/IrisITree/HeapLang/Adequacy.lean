@@ -17,6 +17,7 @@ namespace IrisITree
 open Iris BI Iris.HeapLang ITree ITree.Effects ITree.Exec
 
 variable {GF : BundledGFunctors} [InvGS GF] [heaplangHGS GF]
+local bi (IProp GF)
 
 section handler
 
@@ -27,6 +28,18 @@ instance heaplangEH_partial_adequate :
   unfold heaplangH heaplangEH
   infer_instance
 
+theorem heaplangEH_partial_adequate_inv_eq :
+  (heaplangEH_partial_adequate (GF := GF) (GE := heaplangE) (GR := Val)).inv s Ms ⊣⊢
+    <affine> ⌜Ms.Perm <| List.filterMap (fun t => Option.map (fun t P => iprop(|={⊤,∅}=> P t)) t) s.tp.pool⌝ ∗
+        stateInterp_heap s.heap ∗ £ s.steps_left := by
+  simp [EHandlerAdequate.inv.eq_def, heaplangEH_partial_adequate, inferInstance, isoEH_adequate, id, sumEEH_adequate, concEH_adequate, EH_of_SEH_adequate, SEHandlerAdequate.inv.eq_def, sumSEH_adequate, heapEH_adequate, failEH_adequate, demonicEH_adequate, stepEH_later_adequate]
+  isplit
+  · iintro ⟨%Ms1, %Ms2, %hp, %h1, %rfl, $, -, -, $⟩
+    ipureintro
+    grind
+  · iintro ⟨%hp, $, $⟩
+    itrivial
+
 /-- Total-correctness interpretation. -/
 instance heaplangEH_total_adequate :
     EHandlerAdequate (heaplangH (GF := GF) id)
@@ -34,15 +47,25 @@ instance heaplangEH_total_adequate :
   unfold heaplangH heaplangEH
   infer_instance
 
+theorem heaplangEH_total_adequate_inv_eq :
+  (heaplangEH_total_adequate (GF := GF) (GE := heaplangE) (GR := Val)).inv s Ms ⊣⊢
+    <affine> ⌜Ms.Perm <| List.filterMap (fun t => Option.map (fun t P => iprop(|={⊤,∅}=> P t)) t) s.tp.pool⌝ ∗
+        stateInterp_heap s.heap := by
+  simp [EHandlerAdequate.inv.eq_def, heaplangEH_total_adequate, inferInstance, isoEH_adequate, id, sumEEH_adequate, concEH_adequate, EH_of_SEH_adequate, SEHandlerAdequate.inv.eq_def, sumSEH_adequate, heapEH_adequate, failEH_adequate, demonicEH_adequate, stepEH_id_adequate]
+  isplit
+  · iintro ⟨%Ms1, %Ms2, %hp, %h1, %rfl, $, -, -⟩
+    ipureintro
+    grind
+  · iintro ⟨%hp, $⟩
+    itrivial
+
 /-- Initialize the partial execution invariant from the heap state and credits. -/
 private theorem heaplangEH_partial_init (σ : heapF Loc (Option Val)) (n : Nat) :
     stateInterp_heap σ ∗ £ n -∗
     (heaplangEH_partial_adequate (GF := GF) (GE := heaplangE) (GR := Val)).inv
       ⟨ConcState.new, σ, 0, n⟩ [] := by
-  change ⊢ (iprop(stateInterp_heap σ ∗ £ n -∗
-    <affine> ⌜([] : List ((ITree heaplangE Val → IProp GF) → IProp GF)) = []⌝ ∗
-      (stateInterp_heap σ ∗ (True ∗ (emp ∗ £ n)))) : IProp GF)
   iintro ⟨Hheap, Hcredits⟩
+  simp [heaplangEH_partial_adequate_inv_eq.to_eq, ConcState.new]
   iframe
   itrivial
 
@@ -51,10 +74,8 @@ private theorem heaplangEH_total_init (σ : heapF Loc (Option Val)) :
     stateInterp_heap σ -∗
     (heaplangEH_total_adequate (GF := GF) (GE := heaplangE) (GR := Val)).inv
       ⟨ConcState.new, σ, 0, 0⟩ [] := by
-  change ⊢ (iprop(stateInterp_heap σ -∗
-    <affine> ⌜([] : List ((ITree heaplangE Val → IProp GF) → IProp GF)) = []⌝ ∗
-      (stateInterp_heap σ ∗ (True ∗ (emp ∗ emp)))) : IProp GF)
   iintro Hheap
+  simp [heaplangEH_total_adequate_inv_eq.to_eq, ConcState.new]
   iframe
   itrivial
 
@@ -66,7 +87,7 @@ theorem heaplang_partial_adequacy (e : Exp)
     (C : ITree heaplangE Val → HeaplangState (ITree heaplangE Val) → Prop)
     (Hexec : exec (heaplangEH (fun _ => 1)) e.denote ⟨ConcState.new, σ, 0, n⟩ C)
     (Hwp : ∀ [InvGS GF] [_G : heaplangHGS GF], ([∗map] l ↦ w ∈ σ, (l ↦? w) : IProp GF) -∗
-        WP e @ step[(BI.later : IProp GF → IProp GF)] ; ⊤ {{ v, ⌜φ v⌝ }}) :
+        WP e @ step[later] ; ⊤ {{ v, ⌜φ v⌝ }}) :
     ∃ t' s', C t' s' ∧ ∀ v, t' = .ret v → φ v := by
   apply pure_soundness (PROP := IProp GF)
   apply fupd_soundness .hasLC n (E1 := ⊤) (E2 := ∅)
@@ -98,7 +119,7 @@ theorem heaplang_total_adequacy (e : Exp)
     (C : ITree heaplangE Val → HeaplangState (ITree heaplangE Val) → Prop)
     (Hexec : exec (heaplangEH (fun _ => 0)) e.denote ⟨ConcState.new, σ, 0, 0⟩ C)
     (Hwp : ∀ [InvGS GF] [_G : heaplangHGS GF], ([∗map] l ↦ w ∈ σ, (l ↦? w) : IProp GF) -∗
-      WP e @ step[(id : IProp GF → IProp GF)] ; ⊤ {{ v, ⌜φ v⌝ }}) :
+      WP e @ step[id] ; ⊤ {{ v, ⌜φ v⌝ }}) :
     ∃ t' s', C t' s' ∧ ∀ v, t' = .ret v → φ v := by
   apply pure_soundness (PROP := IProp GF)
   apply fupd_soundness .hasLC 0 (E1 := ⊤) (E2 := ∅)
