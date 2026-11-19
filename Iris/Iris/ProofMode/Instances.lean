@@ -163,6 +163,10 @@ instance intoWand_and_right (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
     [h : IntoWand p q R2 m P' Q'] : IntoWand p q iprop(R1 ∧ R2) m P' Q' where
   into_wand := (intuitionisticallyIf_mono and_elim_r).trans h.1
 
+instance intoWand_iff (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
+    [h : IntoWand p q iprop((R1 → R2) ∧ (R2 → R1)) m P' Q'] :
+    IntoWand p q iprop(R1 ↔ R2) m P' Q' := h
+
 instance intoWand_wandIff (p q : Bool) [BI PROP] (R1 R2 P' Q' : PROP)
     [h : IntoWand p q iprop((R1 -∗ R2) ∧ (R2 -∗ R1)) m P' Q'] :
     IntoWand p q iprop(R1 ∗-∗ R2) m P' Q' := h
@@ -656,6 +660,13 @@ instance intoAnd_persistently (p : Bool) [BI PROP] (P Q1 Q2 : PROP) [h : IntoAnd
         _ ⊢ □ P                := intuitionistically_persistently.1
         _ ⊢ □?true (Q1 ∧ Q2)   := h.1
         _ ⊢ □ <pers> (Q1 ∧ Q2) := intuitionistically_persistently.2
+
+@[ipm_backtrack]
+instance intoAnd_bigSepL_cons [BI PROP] {A} (p : Bool) (Φ : Nat → A → PROP) (l : List A) (x : A)
+    (l' : List A) (P Q : PROP) [hl : IsCons l x l']
+    [h : IntoAnd p iprop(Φ 0 x ∗ [∗list] k ↦ y ∈ l', Φ (k + 1) y) P Q] :
+    IntoAnd p ([∗list] k ↦ y ∈ l, Φ k y) P Q where
+  into_and := hl.is_cons ▸ h.into_and
 
 /-! ### FromSep -/
 
