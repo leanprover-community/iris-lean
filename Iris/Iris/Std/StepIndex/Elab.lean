@@ -64,23 +64,23 @@ public meta def expandIndexedNotation (decl si : Name) : Macro := fun stx => do
 section
 open Elab Command
 
-/-- Declares the scoped notation `tok` of `decl`: `tok` bare and applied, each with optional
-universes. -/
-meta def addIndexedNotation (decl : Name) (si : Name) (tok : String) : CoreM Unit :=
+/-- Declares the scoped notations `toks` of `decl`, each bare and applied, with optional universes,
+and the macro that expands them. -/
+meta def addIndexedNotations (decl si : Name) (toks : Array String) : CoreM Unit :=
   liftCommandElabM do
     let ns := mkIdent `Iris.StepIndex
-    let bare := notationKind decl tok false
-    let applied := notationKind decl tok true
-    let tok := Syntax.mkStrLit tok
+    elabCommand (← `(namespace $ns))
+    for tok in toks do
+      let bare := mkIdent (.mkSimple (notationKind decl tok false).getString!)
+      let applied := mkIdent (.mkSimple (notationKind decl tok true).getString!)
+      let tok := Syntax.mkStrLit tok
+      elabCommand (← `(scoped syntax:max (name := $bare) $tok:str (noWs ".{" level,+ "}")? : term))
+      elabCommand (← `(scoped syntax:lead (name := $applied)
+        $tok:str (noWs ".{" level,+ "}")? (Lean.Parser.Term.argument)+ : term))
     -- an antiquotation, since `@[scoped macro k]` would parse `macro` as the command
     let kind ← `(Parser.Term.attrKind| scoped)
-    let attrs ← #[bare, applied].mapM fun k =>
-      `(Parser.Term.attrInstance| $kind:attrKind macro $(mkIdent k))
-    elabCommand (← `(namespace $ns))
-    elabCommand (← `(scoped syntax:max (name := $(mkIdent (.mkSimple bare.getString!)))
-      $tok:str (noWs ".{" level,+ "}")? : term))
-    elabCommand (← `(scoped syntax:lead (name := $(mkIdent (.mkSimple applied.getString!)))
-      $tok:str (noWs ".{" level,+ "}")? (Lean.Parser.Term.argument)+ : term))
+    let attrs ← (toks.flatMap fun tok => #[notationKind decl tok false, notationKind decl tok true])
+      |>.mapM fun k => `(Parser.Term.attrInstance| $kind:attrKind macro $(mkIdent k))
     elabCommand (← `(@[$attrs,*] public aux_def indexed $(mkIdent decl) : Macro :=
       expandIndexedNotation $(quote decl) $(quote si)))
     elabCommand (← `(end $ns))
@@ -103,8 +103,7 @@ meta initialize registerBuiltinAttribute {
     let some i ← (indexedInfo? decl si.getId).run'
       | throwError "`@[indexed {si}]`: `{decl}` has no binder `{si}`"
     modifyEnv (indexedExt.addEntry · (decl, i))
-    for tok in i.spellings do
-      addIndexedNotation decl si.getId tok
+    addIndexedNotations decl si.getId i.spellings
 }
 
 open PrettyPrinter Delaborator SubExpr in

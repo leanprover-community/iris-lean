@@ -12,11 +12,12 @@ public meta import Lean.Elab.Term
 /-!
 # Step Index Registry
 
-The step index type of the current scope, set by `local stepindex T` (see `Iris.Std.StepIndex.Elab`).
-Notations read it through `stepindex%`.
+The state behind `local stepindex` and `@[indexed]` (see `Iris.Std.StepIndex.Elab`): the step index
+type of the current scope, which notations read through `stepindex%`, and the `@[indexed]`
+declarations.
 -/
 
-open Lean Elab Command Tactic
+open Lean Elab Command
 
 /-- The step index type of the current scope (`Name.anonymous` when none is set). -/
 public meta initialize siExt : SimpleScopedEnvExtension Name Name ←
@@ -49,7 +50,6 @@ public meta structure IndexedInfo where
   explicitPos : Option Nat
   /-- The spellings of its notation; the first one is used for printing. -/
   spellings : Array String
-  deriving Inhabited, Repr
 
 /-- The `@[indexed]` declarations. -/
 public meta initialize indexedExt :
