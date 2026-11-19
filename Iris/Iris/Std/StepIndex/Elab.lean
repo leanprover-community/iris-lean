@@ -29,75 +29,64 @@ namespace Iris.StepIndex
 
 open Lean
 
-/-- The step index binder of `decl`: its first binder whose type is `stepindex (Type _)`. -/
-meta def findIndexedInfo (decl : Name) : MetaM (Option IndexedInfo) := do
-  Meta.forallTelescope (← getConstInfo decl).type fun xs _ => do
+/-- The notation spellings of `decl` (see the module docstring). -/
+meta def spellingsOf (decl : Name) (isType : Bool) : Array String :=
+  let last := decl.getString!
+  let last := if last.endsWith "ᵢ" then (last.dropEnd 1).toString else last
+  let n := (decl.getPrefix.str last).replacePrefix `Iris .anonymous
+  let qualified := n.toString (escape := false)
+  if isType && !n.isAtomic then #[n.getString!, qualified] else #[qualified]
+
+/-- The step index binder of `decl` (its first binder of type `stepindex (Type _)`) and the
+spellings of its notation. -/
+meta def indexedInfo? (decl : Name) : MetaM (Option IndexedInfo) := do
+  Meta.forallTelescope (← getConstInfo decl).type fun xs body => do
     let mut expl := 0
     for i in [:xs.size] do
       let d ← xs[i]!.fvarId!.getDecl
       if isStepIndexBinder d.type then
         return some { name := d.userName, argIdx := i,
-                      explicitPos := if d.binderInfo.isExplicit then some expl else none }
+                      explicitPos := if d.binderInfo.isExplicit then some expl else none,
+                      spellings := spellingsOf decl body.isSort }
       if d.binderInfo.isExplicit then expl := expl + 1
     return none
 
-/-- The notation spellings of `decl` (see the module docstring). -/
-meta def spellingsOf (decl : Name) (isType : Bool) : Array String :=
-  let strip : Name → Name
-    | .str p s => .str p (if s.endsWith "ᵢ" then (s.dropEnd 1).toString else s)
-    | n => n
-  let n := (strip decl).replacePrefix `Iris .anonymous
-  let qualified := n.toString (escape := false)
-  match n with
-  | .str .anonymous _ => #[qualified]
-  | .str _ last => if isType then #[last, qualified] else #[qualified]
-  | _ => #[qualified]
-
-/-- The forms of a notation: the token alone, applied, and with explicit universes. -/
-inductive NotationForm where
-  | atom | app | univ
-
-/-- The syntax kind of the notation `tok` of `decl` in the form `form`. -/
-meta def notationKind (decl : Name) (tok : String) : NotationForm → Name
-  | .atom => .str `Iris.StepIndex s!"{decl} {tok}"
-  | .app => .str `Iris.StepIndex s!"{decl} {tok} app"
-  | .univ => .str `Iris.StepIndex s!"{decl} {tok} univ"
+/-- The syntax kind of the notation `tok` of `decl`, bare or applied. -/
+meta def notationKind (decl : Name) (tok : String) (applied : Bool) : Name :=
+  .str `Iris.StepIndex s!"{decl} {tok}{if applied then " app" else ""}"
 
 /--
-Expands the notation of `decl` (step index binder `si`) to `decl (si := stepindex%) args`: from
-`tok` (one node), `tok args` (two), or `tok.{us} args` (five).
+Expands the notation `tok.{us} args` of `decl` (universes and arguments optional) to
+`decl.{us} (si := stepindex%) args`, where `si` is the step index binder.
 -/
 public meta def expandIndexedNotation (decl si : Name) : Macro := fun stx => do
   let c := mkCIdentFrom stx[0] decl (canonical := true)
-  let (head, args) ← match stx.getNumArgs with
-    | 1 => pure (c.raw, #[])
-    | 2 => pure (c.raw, stx[1].getArgs)
-    | 5 => pure (mkNode ``Parser.Term.explicitUniv #[c, stx[1], stx[2], stx[3]], stx[4].getArgs)
-    | _ => Macro.throwUnsupported
+  let us := stx[1].getArgs  -- empty, or `.{`, levels, `}`
+  let head := if us.isEmpty then c.raw else mkNode ``Parser.Term.explicitUniv (#[c] ++ us)
+  let args := if stx.getNumArgs > 2 then stx[2].getArgs else #[]
   let siArg ← `(Parser.Term.namedArgument| ($(mkIdent si) := stepindex%))
   return Syntax.mkApp ⟨head⟩ ((#[siArg.raw] ++ args).map (⟨·⟩))
 
 section
 open Elab Command
 
-/-- Declares the scoped notation `tok` of `decl`: `tok` alone, `tok args`, and
-`tok.{us} args`. -/
+/-- Declares the scoped notation `tok` of `decl`: `tok` bare and applied, each with optional
+universes. -/
 meta def addIndexedNotation (decl : Name) (si : Name) (tok : String) : CoreM Unit :=
   liftCommandElabM do
     let ns := mkIdent `Iris.StepIndex
-    let k0 := notationKind decl tok .atom
-    let k1 := notationKind decl tok .app
-    let k2 := notationKind decl tok .univ
-    let tokLit := Syntax.mkStrLit tok
+    let bare := notationKind decl tok false
+    let applied := notationKind decl tok true
+    let tok := Syntax.mkStrLit tok
+    -- an antiquotation, since `@[scoped macro k]` would parse `macro` as the command
     let kind ← `(Parser.Term.attrKind| scoped)
-    let attrs ← #[k0, k1, k2].mapM fun k =>
+    let attrs ← #[bare, applied].mapM fun k =>
       `(Parser.Term.attrInstance| $kind:attrKind macro $(mkIdent k))
     elabCommand (← `(namespace $ns))
-    elabCommand (← `(scoped syntax:max (name := $(mkIdent (.mkSimple k0.getString!))) $tokLit:str : term))
-    elabCommand (← `(scoped syntax:lead (name := $(mkIdent (.mkSimple k1.getString!)))
-      $tokLit:str (Lean.Parser.Term.argument)+ : term))
-    elabCommand (← `(scoped syntax:lead (name := $(mkIdent (.mkSimple k2.getString!)))
-      $tokLit:str noWs ".{" level,+ "}" (Lean.Parser.Term.argument)* : term))
+    elabCommand (← `(scoped syntax:max (name := $(mkIdent (.mkSimple bare.getString!)))
+      $tok:str (noWs ".{" level,+ "}")? : term))
+    elabCommand (← `(scoped syntax:lead (name := $(mkIdent (.mkSimple applied.getString!)))
+      $tok:str (noWs ".{" level,+ "}")? (Lean.Parser.Term.argument)+ : term))
     elabCommand (← `(@[$attrs,*] public aux_def indexed $(mkIdent decl) : Macro :=
       expandIndexedNotation $(quote decl) $(quote si)))
     elabCommand (← `(end $ns))
@@ -115,20 +104,14 @@ meta initialize registerBuiltinAttribute {
   applicationTime := .afterTypeChecking
   add := fun decl _ kind => do
     unless kind == .global do throwError "`@[indexed]` must be global"
-    let some i ← (findIndexedInfo decl).run'
+    let some i ← (indexedInfo? decl).run'
       | throwError "`@[indexed]`: `{decl}` has no step index binder of type `stepindex (Type _)`"
-    let isType ← Meta.MetaM.run' <|
-      Meta.forallTelescope (← getConstInfo decl).type fun _ b => return b.isSort
-    let i := { i with spellings := spellingsOf decl isType }
+    if i.name.hasMacroScopes then
+      throwError "`@[indexed]`: the step index binder of `{decl}` must be named, to be passed by name"
     modifyEnv (indexedExt.addEntry · (decl, i))
     for tok in i.spellings do
       addIndexedNotation decl i.name tok
 }
-
-/-- Whether `si` is the section's step index. -/
-public meta def isSectionSI (si : Term) : CoreM Bool := do
-  let n := siExt.getState (← getEnv)
-  return !n.isAnonymous && si.raw.isIdent && si.raw.getId == n
 
 open PrettyPrinter Delaborator SubExpr in
 /-- Prints `C SI args` with the notation of `C` when `SI` is the section's step index. -/
@@ -137,8 +120,10 @@ open PrettyPrinter Delaborator SubExpr in
   let some c := e.getAppFn.constName? | failure
   let some i := (indexedExt.getState (← getEnv)).find? c | failure
   let some tok := i.spellings[0]? | failure
-  guard (e.getAppNumArgs > i.argIdx)
-  unless ← isSectionSI (← withNaryArg i.argIdx delab) do failure
+  let si := siExt.getState (← getEnv)
+  guard (!si.isAnonymous && e.getAppNumArgs > i.argIdx)
+  let `($n:ident) ← withNaryArg i.argIdx delab | failure
+  guard (n.getId == si)
   let stx : Term ← Lean.PrettyPrinter.Delaborator.delabApp
   let args ← match stx with
     | `($_:ident $args*) => pure (args.map (·.raw))
@@ -148,8 +133,8 @@ open PrettyPrinter Delaborator SubExpr in
     | some p => args.eraseIdxIfInBounds p
     | none => args
   if args.isEmpty then
-    return ⟨mkNode (notationKind c tok .atom) #[mkAtom tok]⟩
-  return ⟨mkNode (notationKind c tok .app) #[mkAtom tok, mkNullNode args]⟩
+    return ⟨mkNode (notationKind c tok false) #[mkAtom tok, mkNullNode]⟩
+  return ⟨mkNode (notationKind c tok true) #[mkAtom tok, mkNullNode, mkNullNode args]⟩
 
 end Iris.StepIndex
 
