@@ -120,4 +120,30 @@ theorem fixpoint_plain_affine [Sbi PROP] {A : Type _}
 
 end Laws
 
+/-! ## Moving a fixpoint across an isomorphism
+
+Used by `iguarded` to restate the laws above for curried fixpoints. -/
+
+section Conj
+
+variable {α β : Type _} [OFE α] [OFE β]
+
+/-- Conjugating by non-expansive maps preserves contractiveness. -/
+theorem contractive_conj {F : α → α} [Contractive F] (e : α → β) (e' : β → α) [NonExpansive e]
+    [NonExpansive e'] : Contractive fun b => e (F (e' b)) :=
+  ⟨fun h => NonExpansive.ne (Contractive.distLater_dist fun m hm => NonExpansive.ne (h m hm))⟩
+
+/-- The fixpoint moves across an isomorphism, for any default points. -/
+theorem fixpoint_conj [IsCOFE α] [IsCOFE β] {iα : Inhabited α} {iβ : Inhabited β} {F : α → α}
+    [Contractive F] (e : α → β) (e' : β → α) [NonExpansive e] [NonExpansive e']
+    (h : ∀ a, e' (e a) = a) :
+    e (fixpoint F) = @fixpoint β _ iβ (fun b => e (F (e' b))) (contractive_conj e e') := by
+  haveI := contractive_conj (F := F) e e'
+  refine @fixpoint_unique β _ iβ (fun b => e (F (e' b))).toContractiveHom _ ?_
+  change e (fixpoint F) = e (F (e' (e (fixpoint F))))
+  rw [h]
+  exact congrArg e (fixpoint_unfold F.toContractiveHom)
+
+end Conj
+
 end Iris
