@@ -57,7 +57,7 @@ public meta def isStepIndexBinder : Expr → Bool
 
 /-- Where an `@[indexed]` declaration takes its step index: the binder whose type is
 `stepindex (Type _)`. -/
-public structure IndexedInfo where
+public meta structure IndexedInfo where
   /-- The binder name of the step index. -/
   name : Name
   /-- Its position among all arguments. -/
@@ -66,48 +66,10 @@ public structure IndexedInfo where
   explicitPos : Option Nat
   deriving Inhabited, Repr
 
-/-- The `@[indexed]` declarations, and the last components of their names (a fast check that an
-identifier cannot name one). -/
-public meta structure IndexedTable where
-  decls : NameMap IndexedInfo := {}
-  lasts : NameSet := {}
-  deriving Inhabited
-
-/-- Add an `@[indexed]` declaration to the table. -/
-public meta def IndexedTable.insert (t : IndexedTable) (n : Name) (i : IndexedInfo) : IndexedTable :=
-  { decls := t.decls.insert n i, lasts := t.lasts.insert (.mkSimple n.getString!) }
-
 /-- The `@[indexed]` declarations. -/
 public meta initialize indexedExt :
-    SimplePersistentEnvExtension (Name × IndexedInfo) IndexedTable ←
+    SimplePersistentEnvExtension (Name × IndexedInfo) (NameMap IndexedInfo) ←
   registerSimplePersistentEnvExtension {
     addEntryFn := fun t (n, i) => t.insert n i
     addImportedFn := fun as => as.foldl (fun t a => a.foldl (fun t (n, i) => t.insert n i) t) {}
   }
-
-/--
-`@[indexed]` marks a declaration whose step index (the binder of type `stepindex (Type _)`, explicit
-or implicit, possibly a section variable) is filled in by `local stepindex T` sections: there `C a`
-elaborates as `C T a` (or `C (SI := T) a` for an implicit step index) and prints back as `C a`.
--/
-meta initialize registerBuiltinAttribute {
-  name := `indexed
-  descr := "the step index of this declaration is filled in by `local stepindex` sections"
-  applicationTime := .afterTypeChecking
-  add := fun decl _ kind => do
-    unless kind == .global do throwError "`@[indexed]` must be global"
-    let info ← getConstInfo decl
-    let r ← Meta.MetaM.run' <| Meta.forallTelescope info.type fun xs _ => do
-      let mut expl := 0
-      let mut r : Option IndexedInfo := none
-      for i in [:xs.size] do
-        let d ← xs[i]!.fvarId!.getDecl
-        if r.isNone && isStepIndexBinder d.type then
-          r := some { name := d.userName, argIdx := i,
-                      explicitPos := if d.binderInfo.isExplicit then some expl else none }
-        if d.binderInfo.isExplicit then expl := expl + 1
-      return r
-    let some i := r
-      | throwError "`@[indexed]`: `{decl}` has no step index binder of type `stepindex (Type _)`"
-    modifyEnv (indexedExt.addEntry · (decl, i))
-}
