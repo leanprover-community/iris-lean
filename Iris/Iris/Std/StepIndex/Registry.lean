@@ -43,9 +43,7 @@ It elaborates to a hole when no step index is set.
 
 /-- Where an `@[indexed SI]` declaration takes its step index: its binder `SI`. -/
 public meta structure IndexedInfo where
-  /-- The binder name of the step index. -/
-  name : Name
-  /-- Its position among all arguments. -/
+  /-- The position of `SI` among all arguments. -/
   argIdx : Nat
   /-- Its position among the explicit arguments, or `none` when it is not explicit. -/
   explicitPos : Option Nat

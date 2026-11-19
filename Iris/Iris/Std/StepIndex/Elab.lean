@@ -13,8 +13,9 @@ public import Iris.Std.StepIndex.Registry
 # `@[indexed]`, `local stepindex`, and their notations
 
 `@[indexed SI]` gives a declaration `C` with a step index binder `SI` a scoped notation `Cᵢ` (in
-`Iris.StepIndex`): `Cᵢ`, alone or applied, stands for `C (SI := stepindex%)`, so that the step index is known before instance search
-runs. `local stepindex T` opens these notations, together with a delaborator that prints `C T args`
+`Iris.StepIndex`): `Cᵢ`, alone or applied, stands for `C (SI := stepindex%)`, so that the step
+index is known before instance search runs. The applied form takes the arguments in, so that named
+arguments such as `Cᵢ (α := X)` go to `C`. `local stepindex T` opens these notations, together with a delaborator that prints `C T args`
 back as `Cᵢ args`. `C` itself is unchanged.
 
 Spellings: the declaration name without a leading `Iris.`, followed by `ᵢ`. A type (a class or
@@ -39,7 +40,7 @@ meta def indexedInfo? (decl si : Name) : MetaM (Option IndexedInfo) := do
     for i in [:xs.size] do
       let d ← xs[i]!.fvarId!.getDecl
       if d.userName == si then
-        return some { name := si, argIdx := i,
+        return some { argIdx := i,
                       explicitPos := if d.binderInfo.isExplicit then some expl else none,
                       spellings := spellingsOf decl body.isSort }
       if d.binderInfo.isExplicit then expl := expl + 1
@@ -56,10 +57,9 @@ Expands the notation `tok.{us} args` of `decl` (universes and arguments optional
 public meta def expandIndexedNotation (decl si : Name) : Macro := fun stx => do
   let c := mkCIdentFrom stx[0] decl (canonical := true)
   let us := stx[1].getArgs  -- empty, or `.{`, levels, `}`
-  let head := if us.isEmpty then c.raw else mkNode ``Parser.Term.explicitUniv (#[c] ++ us)
-  let args := if stx.getNumArgs > 2 then stx[2].getArgs else #[]
-  let siArg ← `(Parser.Term.namedArgument| ($(mkIdent si) := stepindex%))
-  return Syntax.mkApp ⟨head⟩ ((#[siArg.raw] ++ args).map (⟨·⟩))
+  let head : Term := ⟨if us.isEmpty then c.raw else mkNode ``Parser.Term.explicitUniv (#[c] ++ us)⟩
+  let args : Array Term := if stx.getNumArgs > 2 then stx[2].getArgs.map (⟨·⟩) else #[]
+  `($head ($(mkIdent si) := stepindex%) $args*)
 
 section
 open Elab Command
@@ -104,7 +104,7 @@ meta initialize registerBuiltinAttribute {
       | throwError "`@[indexed {si}]`: `{decl}` has no binder `{si}`"
     modifyEnv (indexedExt.addEntry · (decl, i))
     for tok in i.spellings do
-      addIndexedNotation decl i.name tok
+      addIndexedNotation decl si.getId tok
 }
 
 open PrettyPrinter Delaborator SubExpr in
@@ -118,8 +118,7 @@ open PrettyPrinter Delaborator SubExpr in
   guard (!si.isAnonymous && e.getAppNumArgs > i.argIdx)
   let `($n:ident) ← withNaryArg i.argIdx delab | failure
   guard (n.getId == si)
-  let stx : Term ← Lean.PrettyPrinter.Delaborator.delabApp
-  let args ← match stx with
+  let args ← match ← delabApp with
     | `($_:ident $args*) => pure (args.map (·.raw))
     | `($_:ident) => pure #[]
     | _ => failure

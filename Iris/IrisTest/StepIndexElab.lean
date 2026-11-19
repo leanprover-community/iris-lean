@@ -60,6 +60,9 @@ example (α : Type) : Barᵢ α = (α → SI) := rfl
 -- explicit universes
 example (α : Type) : Barᵢ.{0} α = (α → SI) := rfl
 
+-- a named argument goes to the declaration
+example : Barᵢ (α := Nat) = (Nat → SI) := rfl
+
 -- through a notation
 example (α : Type) : (bar% α) = (α → SI) := rfl
 
