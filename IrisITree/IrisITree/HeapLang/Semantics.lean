@@ -8,7 +8,8 @@ module
 
 public import ITree
 public import IrisITree.Effects.Heap
-public import Iris.HeapLang
+public import Iris.HeapLang.Semantics
+public import Iris.HeapLang.Instances
 public import Iris.Std.BitOp
 import Iris.Std.FromMathlib
 

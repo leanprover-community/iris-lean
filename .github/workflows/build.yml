@@ -52,6 +52,20 @@ jobs:
         working-directory: IrisMath
         run: lake exe check-imports --entry-points-only IrisMath
 
+  build-itree:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1.7.0
+        with:
+          lake-package-directory: IrisITree
+          build-args: "--wfail"
+          test: true
+          lint: true
+      - name: Check that all modules are imported by IrisITree.lean
+        working-directory: IrisITree
+        run: lake exe check-imports --entry-points-only IrisITree
+
   report:
     needs: build
     runs-on: ubuntu-latest
