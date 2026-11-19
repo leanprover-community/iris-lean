@@ -203,7 +203,7 @@ instance EH_of_SEH_adequate {E GE : Effect.{u}} {R σ : Type _}
     imodintro; iexists (k a), _, (fun P => P (k a)), [], [fun P => P (k a)]
     iframe; isplitr; itrivial
     isplitr; itrivial
-    simp; isplitr; itrivial; isplitr; itrivial
+    simp; isplitr; itrivial
     iintro %_ $ !> //
 
 /-- Independent simple handlers preserve the separating conjunction of their invariants. -/

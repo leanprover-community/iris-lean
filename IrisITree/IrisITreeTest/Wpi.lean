@@ -1,5 +1,6 @@
 module
 
+public import Iris.Instances.Lib.CInvariants
 public import IrisITree
 
 @[expose] public section
