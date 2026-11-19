@@ -12,8 +12,8 @@ public import Iris.Std.StepIndex.Registry
 /-!
 # `@[indexed]`, `local stepindex`, and their notations
 
-`@[indexed]` gives a declaration `C` a scoped notation `Cᵢ` (in `Iris.StepIndex`): `Cᵢ`, alone or
-applied, stands for `C (SI := stepindex%)`, so that the step index is known before instance search
+`@[indexed SI]` gives a declaration `C` with a step index binder `SI` a scoped notation `Cᵢ` (in
+`Iris.StepIndex`): `Cᵢ`, alone or applied, stands for `C (SI := stepindex%)`, so that the step index is known before instance search
 runs. `local stepindex T` opens these notations, together with a delaborator that prints `C T args`
 back as `Cᵢ args`. `C` itself is unchanged.
 
@@ -32,15 +32,14 @@ meta def spellingsOf (decl : Name) (isType : Bool) : Array String :=
   let qualified := n.toString (escape := false) ++ "ᵢ"
   if isType && !n.isAtomic then #[n.getString! ++ "ᵢ", qualified] else #[qualified]
 
-/-- The step index binder of `decl` (its first binder of type `stepindex (Type _)`) and the
-spellings of its notation. -/
-meta def indexedInfo? (decl : Name) : MetaM (Option IndexedInfo) := do
+/-- The step index binder `si` of `decl`, and the spellings of its notation. -/
+meta def indexedInfo? (decl si : Name) : MetaM (Option IndexedInfo) := do
   Meta.forallTelescope (← getConstInfo decl).type fun xs body => do
     let mut expl := 0
     for i in [:xs.size] do
       let d ← xs[i]!.fvarId!.getDecl
-      if isStepIndexBinder d.type then
-        return some { name := d.userName, argIdx := i,
+      if d.userName == si then
+        return some { name := si, argIdx := i,
                       explicitPos := if d.binderInfo.isExplicit then some expl else none,
                       spellings := spellingsOf decl body.isSort }
       if d.binderInfo.isExplicit then expl := expl + 1
@@ -89,20 +88,20 @@ meta def addIndexedNotation (decl : Name) (si : Name) (tok : String) : CoreM Uni
 end
 
 /--
-`@[indexed]` marks a declaration whose step index (the binder of type `stepindex (Type _)`, explicit
-or implicit, possibly a section variable) is filled in by `local stepindex T` sections: there the
-notation `Cᵢ a` elaborates as `C (SI := T) a`, and `C T a` prints back as `Cᵢ a`.
+`@[indexed SI]` marks a declaration whose step index is its binder `SI` (explicit or implicit,
+possibly a section variable), to be filled in by `local stepindex T` sections: there the notation
+`Cᵢ a` elaborates as `C (SI := T) a`, and `C T a` prints back as `Cᵢ a`.
 -/
 meta initialize registerBuiltinAttribute {
   name := `indexed
   descr := "the step index of this declaration is filled in by `local stepindex` sections"
   applicationTime := .afterTypeChecking
-  add := fun decl _ kind => do
+  add := fun decl stx kind => do
     unless kind == .global do throwError "`@[indexed]` must be global"
-    let some i ← (indexedInfo? decl).run'
-      | throwError "`@[indexed]`: `{decl}` has no step index binder of type `stepindex (Type _)`"
-    if i.name.hasMacroScopes then
-      throwError "`@[indexed]`: the step index binder of `{decl}` must be named, to be passed by name"
+    let some si ← Attribute.Builtin.getIdent? stx
+      | throwError "`@[indexed]` takes the name of the step index binder, e.g. `@[indexed SI]`"
+    let some i ← (indexedInfo? decl si.getId).run'
+      | throwError "`@[indexed {si}]`: `{decl}` has no binder `{si}`"
     modifyEnv (indexedExt.addEntry · (decl, i))
     for tok in i.spellings do
       addIndexedNotation decl i.name tok

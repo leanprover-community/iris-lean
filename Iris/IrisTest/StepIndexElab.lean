@@ -14,14 +14,14 @@ namespace IrisTest.StepIndexElab
 open Iris
 
 /-- An explicit step index. -/
-@[indexed] class Foo (SI : stepindex (Type _)) [SIdx SI] (α : Type _) where
+@[indexed SI] class Foo (SI : Type _) [SIdx SI] (α : Type _) where
   foo : α → SI → Prop
 
 /-- An implicit step index that nothing else determines. -/
-@[indexed] def Bar {SI : stepindex (Type _)} [SIdx SI] (α : Type _) : Type _ := α → SI
+@[indexed SI] def Bar {SI : Type _} [SIdx SI] (α : Type _) : Type _ := α → SI
 
 namespace A
-@[indexed] def Baz {SI : stepindex (Type _)} [SIdx SI] (n : SI) : SI := n
+@[indexed SI] def Baz {SI : Type _} [SIdx SI] (n : SI) : SI := n
 end A
 
 namespace B
@@ -32,7 +32,7 @@ end B
 notation "bar% " α => Bar (SI := stepindex%) α
 
 section
-variable {SI : stepindex Type} [SIdx SI]
+variable {SI : Type} [SIdx SI]
 local stepindex SI
 
 /-- info: SI -/
@@ -72,5 +72,22 @@ end
 
 -- outside a `local stepindex` section, the step index is written as usual
 example {SI : Type} [SIdx SI] (α : Type) [Foo SI α] : Bar (SI := SI) α = (α → SI) := rfl
+
+-- the step index binder may have any name
+@[indexed I] def Qux {I : Type _} [SIdx I] (α : Type _) : Type _ := α → I
+
+section
+variable {SI : Type} [SIdx SI]
+local stepindex SI
+example (α : Type) : Quxᵢ α = (α → SI) := rfl
+end
+
+/-- error: `@[indexed]` takes the name of the step index binder, e.g. `@[indexed SI]` -/
+#guard_msgs in
+@[indexed] def Bad₁ {SI : Type _} [SIdx SI] : Type _ := SI
+
+/-- error: `@[indexed J]`: `IrisTest.StepIndexElab.Bad₂` has no binder `J` -/
+#guard_msgs in
+@[indexed J] def Bad₂ {SI : Type _} [SIdx SI] : Type _ := SI
 
 end IrisTest.StepIndexElab

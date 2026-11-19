@@ -41,22 +41,7 @@ It elaborates to a hole when no step index is set.
   | .anonymous => Term.elabTerm (← `(_)) expectedType?
   | n => Term.elabTerm (mkIdent n) expectedType?
 
-/--
-`SI : stepindex (Type _)` marks `SI` as a step index binder, like `outParam` marks an output:
-`@[indexed]` declarations take theirs from the `local stepindex` section. It elaborates to its
-argument with a metadata marker (no constant to unfold), so it costs nothing in unification.
--/
-@[expose] elab "stepindex " t:term:max : term => do
-  let e ← Term.elabType t
-  return .mdata (KVMap.empty.insert `iris.stepindex (.ofBool true)) e
-
-/-- Whether a binder type carries the `stepindex` marker. -/
-public meta def isStepIndexBinder : Expr → Bool
-  | .mdata m _ => m.getBool `iris.stepindex
-  | _ => false
-
-/-- Where an `@[indexed]` declaration takes its step index: the binder whose type is
-`stepindex (Type _)`. -/
+/-- Where an `@[indexed SI]` declaration takes its step index: its binder `SI`. -/
 public meta structure IndexedInfo where
   /-- The binder name of the step index. -/
   name : Name
