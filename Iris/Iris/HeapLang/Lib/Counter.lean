@@ -15,7 +15,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris.HeapLang
 
-open BI Iris ProgramLogic ORA OFE Auth
+open BI Iris ProgramLogic ORA «OFE» Auth
 
 @[expose] public section
 

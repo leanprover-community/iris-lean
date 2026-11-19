@@ -18,7 +18,7 @@ local stepindex Nat
 
 namespace Iris
 
-open BI ORA Agree OFE Iris.UPred IProp Iris.Std ProofMode COFE
+open BI ORA Agree «OFE» Iris.UPred IProp Iris.Std ProofMode «COFE»
 
 local bi (IProp GF)
 

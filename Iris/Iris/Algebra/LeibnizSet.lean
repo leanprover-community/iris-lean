@@ -25,7 +25,7 @@ All sets are given the discrete Leibniz OFE, and as a consequence, is not relate
 OFE/ORA on the element type.
 -/
 
-open Iris Std ORA OFE LawfulSet
+open Iris Std ORA «OFE» LawfulSet
 
 inductive DisjointLeibnizSet (S : Type _) where
   | valid : S → DisjointLeibnizSet S

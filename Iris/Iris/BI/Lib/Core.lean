@@ -16,7 +16,7 @@ local stepindex Nat
 namespace Iris
 
 section Core
-open BI OFE
+open BI «OFE»
 
 @[rocq_alias coreP]
 def coreP [Sbi PROP] (P : PROP) : PROP :=

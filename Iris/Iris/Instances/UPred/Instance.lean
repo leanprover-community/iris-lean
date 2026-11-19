@@ -844,11 +844,11 @@ theorem intuitionistically_valid [IncOrd M] {A} [ORA A] (a : A) :
   · exact intuitionistically_elim
   · exact (persistently_valid_mpr a).trans intuitionistically_iff_persistently.mpr
 
-theorem discrete_valid [ORA A] [Discrete A] (a : A) :
+theorem discrete_valid [ORA A] [«Discrete» A] (a : A) :
     internalCmraValid a ⊣⊢ ⌜✓ a⌝ :=
   ⟨fun n _ hv => (valid_iff_validN' n).mpr hv, fun _ _ hv => hv.validN⟩
 
-instance valid_timeless [ORA A] [Discrete A] {a : A} :
+instance valid_timeless [ORA A] [«Discrete» A] {a : A} :
     Timeless (internalCmraValid a : UPred M) where
   timeless := by
     refine (later_mono (discrete_valid a).mp).trans ?_

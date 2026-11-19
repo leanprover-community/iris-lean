@@ -14,7 +14,7 @@ public import Iris.Algebra.Updates
 local stepindex Nat
 
 namespace Iris
-open OFE
+open «OFE»
 
 section GenMap
 
@@ -90,7 +90,7 @@ def IsFree {β : α → Type _} (f : (a : α) → Option (β a)) : α → Prop :
 
 /-! ## OFE -/
 
-section OFE
+section «OFE»
 variable (β : Type _) [OFE β]
 
 instance instOFE_GenMap : OFE (GenMap β) where
@@ -101,10 +101,10 @@ instance instOFE_GenMap : OFE (GenMap β) where
   eq_dist' {x y} := by
     refine ⟨fun h _ => h ▸ .rfl, fun h => ?_⟩
     obtain ⟨cx, bx⟩ := x; obtain ⟨cy, by'⟩ := y
-    have : cx = cy := eq_of_dist h
+    have : cx = cy := OFE.eq_of_dist h
     subst this; rfl
   dist_lt := Dist.lt
-end OFE
+end «OFE»
 
 theorem GenMap.singleton_discreteE {v : β} [OFE β] [DiscreteE v] :
     DiscreteE (GenMap.singleton (β := β) k v) where
@@ -386,7 +386,7 @@ end ORA
 /-! ## OFunctors -/
 
 section OFunctors
-open COFE ORA
+open «COFE» ORA
 
 abbrev GenMapOF (F : OFunctorPre) : OFunctorPre :=
   fun A B _ _ => GenMap (F A B)
@@ -406,7 +406,7 @@ instance instOFunctor_GenMapOF (F : OFunctorPre) [OFunctor F] :
   ofe {A B _ _} := instOFE_GenMap (F A B)
   map f₁ f₂ := GenMap.lift <| OFunctor.map (F := F) f₁ f₂
   map_ne.ne {n x1 x2} Hx {y1 y2} Hy k γ := by
-    simp only [HasDist.dist, OFE.Dist, Option.Forall₂, Option.map]
+    simp only [HasDist.dist, OFE.«Dist», Option.Forall₂, Option.map]
     cases _ : k.car γ <;> simp
     exact OFunctor.map_ne.ne Hx Hy _
   map_id {α β _ _} x := OFE.eq_of_dist <| by
@@ -442,7 +442,7 @@ instance instURFunctor_GenMapOF (F : COFE.OFunctorPre) [RFunctor F] :
       | some v =>
         revert Hcore
         cases h' : pcore v <;> cases h'' : pcore ((OFunctor.map f g).f v) <;>
-          simp_all [Option.mapC, optionMap]
+          simp_all [Option.mapC, «optionMap»]
     op z x := OFE.eq_of_dist <| by
       intro _ γ
       have Hop := @(URFunctor.map (F := OptionOF F) f g).op (z.car γ) (x.car γ)
@@ -468,7 +468,7 @@ instance instURFunctorContractive_GenMapOF (F : COFE.OFunctorPre) [RFunctorContr
     next n x' y' =>
     have Heqv := @(URFunctorContractive.map_contractive (F := OptionOF F)).1 _ x' y' h (x.car γ)
     simp only [Function.uncurry, URFunctor.map, Option.map] at Heqv ⊢
-    cases hc : x.car γ <;> simp [HasDist.dist, OFE.Dist, Option.Forall₂]
+    cases hc : x.car γ <;> simp [HasDist.dist, OFE.«Dist», Option.Forall₂]
     rw [hc] at Heqv
     exact Heqv
 

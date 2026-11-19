@@ -13,7 +13,7 @@ public import Iris.ProofMode
 local stepindex Nat
 
 namespace Iris
-open Iris.Std BI OFE
+open Iris.Std BI «OFE»
 
 
 @[rocq_alias BiMonoPred]
@@ -113,7 +113,7 @@ instance least_fixpoint_absorbing [BIMonoPred F]
     iapply wand_elim_swap
     revert x
     letI _ : NonExpansive fun x => iprop(True -∗ bi_least_fixpoint F x) :=
-      (NonExpansive₂.ne_right BIBase.wand iprop(True)).comp inferInstance
+      (OFE.NonExpansive₂.ne_right BIBase.wand iprop(True)).comp inferInstance
     iapply least_fixpoint_iter
     iintro !> %y HF HT
     iapply (least_fixpoint_unfold ..).to_bi

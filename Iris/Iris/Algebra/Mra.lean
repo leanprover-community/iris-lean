@@ -23,7 +23,7 @@ local stepindex Nat
 
 namespace Iris
 
-open ORA Iris.Std OFE
+open ORA Iris.Std «OFE»
 
 namespace Mra
 

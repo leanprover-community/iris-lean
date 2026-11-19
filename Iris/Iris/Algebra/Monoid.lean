@@ -19,7 +19,7 @@ namespace Iris.Algebra
 - Uses explicit `op` parameters to support multiple monoids on the same type.
 -/
 
-open OFE
+open «OFE»
 
 /-- A commutative monoid on an OFE, used for big operators.
 The operation must be non-expansive, associative, commutative, and have a left identity. -/

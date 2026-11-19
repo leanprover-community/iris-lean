@@ -14,7 +14,7 @@ public import Iris.ProofMode
 local stepindex Nat
 
 namespace Iris
-open Iris.Std BI OFE ProofMode
+open Iris.Std BI «OFE» ProofMode
 
 @[rocq_alias Fractional]
 class Fractional [BI PROP] (Φ : Qp → PROP) where

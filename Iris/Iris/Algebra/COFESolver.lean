@@ -14,7 +14,7 @@ local stepindex Nat
 #rocq_ignore solution "Use OFE.iso + Inhabited + COFE"
 
 namespace Iris.COFE.OFunctor
-open OFE
+open «OFE»
 
 
 variable {F : ∀ α β [COFE α] [COFE β], Type u} [OFunctorContractive F]
@@ -66,7 +66,7 @@ theorem down_up : ∀ {k} x, down F k (up F k x) = x
 @[rocq_alias solver.fg]
 theorem up_down {k} (x) : up F (k+1) (down F (k+1) x) ≡{k}≡ x := by
   refine (map_comp _ _ _ _ _).dist.symm.trans <| .trans ?_ (map_id _).dist
-  open OFunctorContractive in exact match k with
+  open «OFunctorContractive» in exact match k with
   | 0 => map_contractive.zero (x := (_, _)) (y := (_, _)) _ _
   | k+1 => map_contractive.succ (x := (_, _)) (y := (_, _)) _ ⟨up_down, up_down⟩ _
 
@@ -88,7 +88,7 @@ instance : OFE (Tower F) where
   }
   eq_dist' {_ _} := by
     rw [Tower.ext_iff, funext_iff]
-    exact (forall_congr' fun _ => eq_dist).trans forall_comm
+    exact (forall_congr' fun _ => OFE.eq_dist).trans forall_comm
   dist_lt h1 h2 _ := dist_lt (h1 _) h2
 
 #rocq_ignore solver.tower_equiv "Included in OFE (Tower F) instance"
@@ -346,8 +346,8 @@ theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) = X :=
 
 attribute [irreducible] Fix Fix.fold Fix.unfold Fix.iso
 
-end OFunctor
+end «OFunctor»
 
-end COFE
+end «COFE»
 
 end Iris

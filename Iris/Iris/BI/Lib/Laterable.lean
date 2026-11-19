@@ -17,7 +17,7 @@ local stepindex Nat
 namespace Iris
 
 section Laterable
-open BI OFE Iris.Std ProofMode
+open BI «OFE» Iris.Std ProofMode
 local bi PROP
 
 /-- Require that the proposition `P` is laterable. -/

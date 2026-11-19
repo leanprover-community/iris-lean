@@ -86,8 +86,8 @@ notation "●V " a => View.Auth (DFrac.own 1) a
 notation "◯V " b => View.Frag b
 
 namespace View
-section OFE
-open OFE UORA
+section «OFE»
+open «OFE» UORA
 variable [OFE A] [OFE B] {R : ViewRel A B}
 
 #rocq_ignore view_equiv "OFE is Leibniz; use equality"
@@ -107,7 +107,7 @@ instance instOFE : OFE (View R) where
     refine ⟨fun H _ => H ▸ ⟨.rfl, .rfl⟩, fun H => ?_⟩
     obtain ⟨xa, xf⟩ := x; obtain ⟨ya, yf⟩ := y
     simp only [View.mk.injEq]
-    exact ⟨eq_of_dist fun n => (H n).1, eq_of_dist fun n => (H n).2⟩
+    exact ⟨OFE.eq_of_dist fun n => (H n).1, OFE.eq_of_dist fun n => (H n).2⟩
   dist_lt H Hn := ⟨dist_lt H.1 Hn, dist_lt H.2 Hn⟩
 
 #rocq_ignore viewO "Use the plain View type and typeclass inference"
@@ -172,10 +172,10 @@ instance auth_discrete [UORA B] {dq a} [Ha : DiscreteE a] [He : DiscreteE (unit 
 instance frag_discrete [UORA B] [Hb : DiscreteE b] : DiscreteE (◯V b : View R) :=
   discrete Option.none_is_discrete Hb
 
-end OFE
+end «OFE»
 
 section ORA
-open IsViewRel toAgree OFE DFrac ORA
+open IsViewRel toAgree «OFE» DFrac ORA
 
 variable [OFE A] [UORA B] {R : ViewRel A B} [IsViewRel R]
 

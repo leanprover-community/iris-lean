@@ -15,7 +15,7 @@ local stepindex Nat
 
 namespace Iris
 
-open OFE COFE Iris.Algebra
+open «OFE» «COFE» Iris.Algebra
 
 /-! ## The pointwise list OFE -/
 
@@ -28,7 +28,7 @@ theorem forall₂_eq_of_forall₂_dist : ∀ {l k : List α},
   | [], _ :: _, h => nomatch h 0
   | _ :: _, [], h => nomatch h 0
   | _ :: _, _ :: _, h => List.cons_eq_cons.mpr
-    ⟨eq_of_dist (fun n => (List.forall₂_cons.mp <| h n).1),
+    ⟨OFE.eq_of_dist (fun n => (List.forall₂_cons.mp <| h n).1),
      forall₂_eq_of_forall₂_dist fun n => (List.forall₂_cons.mp (h n)).2⟩
 
 @[rocq_alias list_ofe_mixin]
@@ -343,7 +343,7 @@ theorem bigOpL_dist_2 {M α : Type _} [OFE M] [OFE α] {op : M → M → M} {uni
 /-! ## The list functor -/
 
 section functor
-open COFE
+open «COFE»
 
 /-- The list functor's action on morphisms: postcompose with `List.map`. -/
 @[rocq_alias listO_map]

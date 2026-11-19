@@ -10,7 +10,7 @@ public import Iris.Algebra.OFE
 @[expose] public section
 
 namespace IrisTest
-open Iris OFE
+open Iris «OFE»
 
 variable {SI : stepindex (Type _)} [SIdx SI]
 local stepindex SI

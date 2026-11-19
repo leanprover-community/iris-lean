@@ -14,7 +14,7 @@ local stepindex Nat
 /-!  # Logical Relation Closures -/
 
 namespace Iris
-open Iris.Std BI OFE
+open Iris.Std BI «OFE»
 
 @[rocq_alias bi_rtc_pre]
 def biRtcPre [Sbi PROP] [OFE A] (R : A → A → PROP) (x₂ : A) (rec : A → PROP) (x₁ : A) : PROP :=
@@ -192,14 +192,14 @@ theorem bi_rtc_once (x₁ x₂ : A) : R x₁ x₂ -∗ biRtc R x₁ x₂ := by
   iapply bi_rtc_refl
 
 local instance : NonExpansive (fun x => biRtc R x y) := NonExpansive₂.ne_left (biRtc R) y
-local instance : NonExpansive (fun y => biTc R x y) := NonExpansive₂.ne_right (biTc R) x
+local instance : NonExpansive (fun y => biTc R x y) := OFE.NonExpansive₂.ne_right (biTc R) x
 
 @[rocq_alias bi_rtc_trans]
 theorem bi_rtc_trans (x₁ x₂ x₃ : A) :
     biRtc R x₁ x₂ -∗ biRtc R x₂ x₃ -∗ biRtc R x₁ x₃ := by
   irevert %x₁
   letI : NonExpansive (fun x => iprop(biRtc R x₂ x₃ -∗ biRtc R x x₃)) :=
-    (NonExpansive₂.ne_right BIBase.wand (biRtc R x₂ x₃)).comp
+    (OFE.NonExpansive₂.ne_right BIBase.wand (biRtc R x₂ x₃)).comp
       (NonExpansive₂.ne_left (biRtc R) x₃)
   iapply bi_rtc_ind_left
   iintro !> %x₁ ⟨Heq|⟨%x', HR, IH⟩⟩ H₂
@@ -270,7 +270,7 @@ theorem bi_tc_once (x₁ x₂ : A) : R x₁ x₂ -∗ biTc R x₁ x₂ := by
 theorem bi_tc_trans (x₁ x₂ x₃ : A) :
     biTc R x₁ x₂ -∗ biTc R x₂ x₃ -∗ biTc R x₁ x₃ := by
   letI : NonExpansive (fun x => iprop(biTc R x₂ x₃ -∗ biTc R x x₃)) :=
-    (NonExpansive₂.ne_right BIBase.wand (biTc R x₂ x₃)).comp
+    (OFE.NonExpansive₂.ne_right BIBase.wand (biTc R x₂ x₃)).comp
       (NonExpansive₂.ne_left (biTc R) x₃)
   irevert %x₁
   iapply bi_tc_ind_left
@@ -288,7 +288,7 @@ theorem bi_tc_right (x y z : A) : biTc R x y -∗ R y z -∗ biTc R x z := by
 @[rocq_alias bi_tc_rtc_l]
 theorem bi_tc_rtc_left (x y z : A) : biRtc R x y -∗ biTc R y z -∗ biTc R x z := by
   letI : NonExpansive (fun x => iprop(biTc R y z -∗ biTc R x z)) :=
-    (NonExpansive₂.ne_right BIBase.wand (biTc R y z)).comp
+    (OFE.NonExpansive₂.ne_right BIBase.wand (biTc R y z)).comp
       (NonExpansive₂.ne_left (biTc R) z)
   irevert %x
   iapply bi_rtc_ind_left
@@ -353,7 +353,7 @@ theorem bi_nsteps_once_inv (x y : A) : biNsteps R 1 x y -∗ R x y := by
   icases Hn with ⟨%x', H, Heq⟩
   iunfold biNsteps at Heq
   irewrite [Heq] at H
-  · exact NonExpansive₂.ne_right R x
+  · exact OFE.NonExpansive₂.ne_right R x
   itrivial
 
 @[rocq_alias bi_nsteps_trans]
@@ -404,7 +404,7 @@ theorem bi_rtc_tc (x y : A) : biRtc R x y ⊣⊢ <affine> (x ≡ y) ∨ biTc R x
     · iright
       icases IH with ⟨Heq|Htc⟩
       · irewrite [Heq] at HR
-        · exact NonExpansive₂.ne_right R x
+        · exact OFE.NonExpansive₂.ne_right R x
         iapply bi_tc_once; itrivial
       · iapply bi_tc_left $$ HR Htc
   · iintro ⟨Heq|Htc⟩

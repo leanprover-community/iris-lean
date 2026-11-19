@@ -41,7 +41,7 @@ instance : OFE.Discrete DFrac := ⟨fun h => h⟩
 namespace DFrac
 open ORA
 
-open DFrac OFE.Discrete IsOp
+open DFrac OFE.«Discrete» IsOp
 
 @[rocq_alias dfrac_inhabited]
 instance : Inhabited DFrac := ⟨discard⟩
@@ -175,7 +175,7 @@ theorem valid_own_op_discard {q : Qp} : ✓ own q • discard ↔ q.val < 1 := b
   simp [ORA.op, op, ORA.Valid, valid]
 
 @[rocq_alias dfrac_cmra_discrete]
-instance : Discrete DFrac where
+instance : «Discrete» DFrac where
   discrete_valid {x} := by simp [ORA.Valid, ORA.ValidN]
 theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨fun h => h⟩
 

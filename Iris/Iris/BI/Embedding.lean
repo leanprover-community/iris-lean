@@ -24,7 +24,7 @@ public import Iris.Algebra.Monoid
 local stepindex Nat
 
 namespace Iris.BI
-open Iris Iris.Std OFE Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM
+open Iris Iris.Std «OFE» Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM
 
 /-! ## The `Embed` operation `⎡·⎤` -/
 

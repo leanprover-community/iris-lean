@@ -23,7 +23,7 @@ local stepindex Nat
 
 namespace Iris
 
-open BI ORA OFE Iris Iris.Std LawfulSet Excl COFE ProofMode
+open BI ORA «OFE» Iris Iris.Std LawfulSet Excl «COFE» ProofMode
 
 local bi (IProp GF)
 

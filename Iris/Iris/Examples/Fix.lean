@@ -26,7 +26,7 @@ This should provide better support for rewriting by relying on the default Lean
 tactics for simplification/rewriting.
 -/
 section Fix
-open Iris OFE COFE
+open Iris «OFE» «COFE»
 
 variable [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err]
 
@@ -38,12 +38,12 @@ instance : Inhabited (DomF (Val := Val) (Err := Err) (ULift Unit) (ULift Unit)) 
 
 end Fix
 
-open Iris OFE COFE in
+open Iris «OFE» «COFE» in
 abbrev Dom (Val : Type _) (Err : Type _) [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err] :=
   OFunctor.Fix (DomF (Val := Val) (Err := Err))
 
 namespace Dom
-open Iris OFE COFE
+open Iris «OFE» «COFE»
 
 variable [OFE V] [OFE E] [IsCOFE V] [IsCOFE E] [Inhabited E]
 

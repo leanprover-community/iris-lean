@@ -21,14 +21,15 @@ open Iris
 @[indexed] def Bar {SI : stepindex (Type _)} [SIdx SI] (α : Type _) : Type _ := α → SI
 
 namespace A
-@[indexed] def Baz {SI : stepindex (Type _)} [SIdx SI] (_ : SI) : Prop := True
+@[indexed] def Baz {SI : stepindex (Type _)} [SIdx SI] (n : SI) : SI := n
 end A
 
 namespace B
-def Baz (_ : Bool) : Prop := True
+def Baz (b : Bool) : Bool := b
 end B
 
-notation "bar% " α => Bar α
+-- a notation passes the step index itself: its expansion is not re-read as a token
+notation "bar% " α => Bar (SI := stepindex%) α
 
 section
 variable {SI : stepindex Type} [SIdx SI]
@@ -42,16 +43,16 @@ local stepindex SI
 #guard_msgs in
 #check fun (α : Type) [Foo α] => 0
 
--- the step index given by name, or with `@`
+-- the raw declaration is `«Foo»`, which takes the step index as usual
 /-- info: fun α [Foo α] => 0 : (α : Type) → [Foo α] → Nat -/
 #guard_msgs in
-#check fun (α : Type) [Foo (SI := SI) α] => 0
+#check fun (α : Type) [«Foo» SI α] => 0
 /-- info: fun α [Foo α] => 0 : (α : Type) → [Foo α] → Nat -/
 #guard_msgs in
-#check fun (α : Type) [@Foo SI _ α] => 0
+#check fun (α : Type) [@«Foo» SI _ α] => 0
 
--- a partial application, and a bare constant
-example : (Foo : Type → Type) = @Foo SI _ := rfl
+-- a bare token
+example : (Foo : Type → Type) = @«Foo» SI _ := rfl
 
 -- an implicit step index
 example (α : Type) : Bar α = (α → SI) := rfl
@@ -59,11 +60,10 @@ example (α : Type) : Bar α = (α → SI) := rfl
 -- through a notation
 example (α : Type) : (bar% α) = (α → SI) := rfl
 
--- an overloaded name: only `A.Baz` takes a step index
+-- a non-type is a token only by its qualified name: a short name is an ordinary identifier
+example (n : SI) : IrisTest.StepIndexElab.A.Baz n = n := rfl
 open A B in
-example (n : SI) : Baz n := trivial
-open A B in
-example : Baz true := trivial
+example : Baz true = true := rfl
 end
 
 -- outside a `local stepindex` section, the step index is written as usual

@@ -17,7 +17,7 @@ local stepindex Nat
 
 namespace Iris
 
-open OFE ORA View
+open «OFE» ORA View
 
 namespace Algebra.TimeReceipt
 

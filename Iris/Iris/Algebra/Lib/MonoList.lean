@@ -18,7 +18,7 @@ local stepindex Nat
 
 namespace Iris
 
-open OFE ORA UORA
+open «OFE» ORA UORA
 
 variable {α : Type _} [OFE α]
 

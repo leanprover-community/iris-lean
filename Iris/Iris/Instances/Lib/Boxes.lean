@@ -19,7 +19,7 @@ local stepindex Nat
 
 namespace Iris
 
-open BI ORA Agree OFE Iris.UPred IProp Iris.Std ProofMode COFE Auth ExclAuth Excl PartialMap BigSepM
+open BI ORA Agree «OFE» Iris.UPred IProp Iris.Std ProofMode «COFE» Auth ExclAuth Excl PartialMap BigSepM
 
 abbrev BoolO := DiscreteO Bool
 
@@ -202,7 +202,7 @@ theorem slice_delete_empty {M : Type _ → Type _} [LawfulFiniteMap M SliceName]
   isplit
   · inext
     irewrite [Heq']
-    · exact ⟨fun _ _ _ H => (NonExpansive₂.ne_right _ _).ne ((sep_ne.ne_left _ _).ne H)⟩
+    · exact ⟨fun _ _ _ H => (OFE.NonExpansive₂.ne_right _ _).ne ((sep_ne.ne_left _ _).ne H)⟩
     irewrite [Heq]
     · exact internalEq.ne_l _
     iapply prop_ext

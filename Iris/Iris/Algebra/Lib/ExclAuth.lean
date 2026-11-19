@@ -22,7 +22,7 @@ and the authority `●E a`.
 
 namespace Iris
 
-open OFE ORA Auth Excl Iris.Option Iris.OFE.Option
+open «OFE» ORA Auth Excl Iris.Option Iris.OFE.Option
 
 namespace ExclAuth
 

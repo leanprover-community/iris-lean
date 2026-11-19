@@ -294,7 +294,7 @@ end Raw
 
 section Quotient
 
-open OFE
+open «OFE»
 open Agree (Raw)
 
 variable {α : Type u}

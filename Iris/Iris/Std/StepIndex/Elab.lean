@@ -12,67 +12,22 @@ public import Iris.Std.StepIndex.Registry
 /-!
 # `@[indexed]`, `local stepindex`, and their notations
 
-`@[indexed]` gives each declaration `C` a scoped macro (in `Iris.StepIndex`) that rewrites `C args`
-to `C (SI := stepindex%) args`, so that the step index is known before instance search runs.
-`local stepindex T` opens these macros, together with a delaborator that prints `C T args` as
-`C args`.
+`@[indexed]` gives a declaration `C` a scoped notation (in `Iris.StepIndex`): the token `C`, alone
+or applied, stands for `C (SI := stepindex%)`, so that the step index is known before instance
+search runs. `local stepindex T` opens these notations, together with a delaborator that prints
+`C T args` back with the notation.
+
+The notation is a token, so inside a `local stepindex` section the raw declaration is written
+`«C»`, and `C` cannot be used where an identifier is expected (binders, `namespace`, `open`).
+
+Spellings: a trailing `ᵢ` and a leading `Iris.` are dropped from the declaration name. A type (a
+class or structure, or anything else ending in a sort) is spelled by its last component and by its
+qualified name; any other declaration only by its qualified name.
 -/
 
 namespace Iris.StepIndex
 
 open Lean
-
-/-- The identifier of a head `C` or `C.{u, …}`. -/
-meta def headIdent? (f : Syntax) : Option Ident :=
-  if f.isIdent then some ⟨f⟩
-  else if f.isOfKind ``Parser.Term.explicitUniv && f[0].isIdent then some ⟨f[0]⟩
-  else none
-
-/-- Whether the last components of `a` and `b` agree: a fast check that `a` cannot name `b`. -/
-meta def sameLast (a b : Name) : Bool :=
-  match a, b with
-  | .str _ s, .str _ t => s == t
-  | _, _ => false
-
-/-- The declarations that `f` names, not counting field accesses `C.f`. A notation or macro
-pre-resolves its identifiers. -/
-meta def resolveHead (f : Ident) : MacroM (List Name) := do
-  if let .ident _ _ _ pre := f.raw then
-    let ns := pre.filterMap fun | .decl n [] => some n | _ => none
-    unless ns.isEmpty do return ns
-  return (← Macro.resolveGlobalName f.getId).filterMap fun (n, fields) =>
-    if fields.isEmpty then some n else none
-
-/--
-Expands `C args`, or a bare `C`, to `C (si := stepindex%) args` when `C` names `decl`, an
-`@[indexed]` declaration with step index binder `si`. Each `@[indexed]` declaration registers this
-as its scoped macro.
-
-* It does nothing when `args` already name `si`: this is how the step index is given explicitly,
-  and it stops the macro from firing again on its own output.
-* When `C` is overloaded, the other declarations it names stay as alternatives of a choice node.
-* A macro cannot see local variables: a local that shadows `decl` is rewritten too, and then fails
-  on the named argument.
--/
-public meta def expandIndexed (decl si : Name) : Macro := fun stx => do
-  let (head, args) :=
-    if stx.isOfKind ``Parser.Term.app then (stx[0], stx[1].getArgs) else (stx, #[])
-  let some f := headIdent? head | Macro.throwUnsupported
-  unless sameLast f.getId.eraseMacroScopes decl do Macro.throwUnsupported
-  let names ← resolveHead f
-  unless names.contains decl do Macro.throwUnsupported
-  if args.any fun a => a.isOfKind ``Parser.Term.namedArgument &&
-      a[1].getId.eraseMacroScopes == si then
-    Macro.throwUnsupported
-  let siArg ← `(Parser.Term.namedArgument| ($(mkIdent si) := stepindex%))
-  let app (h : Syntax) (n : Name) : Term :=
-    Syntax.mkApp ⟨h⟩ <| (if n == decl then #[siArg.raw] ++ args else args).map (⟨·⟩)
-  if let [_] := names then return app head decl
-  -- overloaded: one alternative per declaration, its head resolved to that declaration
-  let alts := names.toArray.map fun n =>
-    let c := mkCIdentFrom f n
-    app (if head.isIdent then c else head.setArg 0 c) n
-  return mkNode choiceKind (alts.map (·.raw))
 
 /-- The step index binder of `decl`: its first binder whose type is `stepindex (Type _)`. -/
 meta def findIndexedInfo (decl : Name) : MetaM (Option IndexedInfo) := do
@@ -86,27 +41,73 @@ meta def findIndexedInfo (decl : Name) : MetaM (Option IndexedInfo) := do
       if d.binderInfo.isExplicit then expl := expl + 1
     return none
 
+/-- The notation spellings of `decl` (see the module docstring). -/
+meta def spellingsOf (decl : Name) (isType : Bool) : Array String :=
+  let strip : Name → Name
+    | .str p s => .str p (if s.endsWith "ᵢ" then (s.dropEnd 1).toString else s)
+    | n => n
+  let n := (strip decl).replacePrefix `Iris .anonymous
+  let qualified := n.toString (escape := false)
+  match n with
+  | .str .anonymous _ => #[qualified]
+  | .str _ last => if isType then #[last, qualified] else #[qualified]
+  | _ => #[qualified]
+
+/-- The forms of a notation: the token alone, applied, and with explicit universes. -/
+inductive NotationForm where
+  | atom | app | univ
+
+/-- The syntax kind of the notation `tok` of `decl` in the form `form`. -/
+meta def notationKind (decl : Name) (tok : String) : NotationForm → Name
+  | .atom => .str `Iris.StepIndex s!"{decl} {tok}"
+  | .app => .str `Iris.StepIndex s!"{decl} {tok} app"
+  | .univ => .str `Iris.StepIndex s!"{decl} {tok} univ"
+
+/--
+Expands the notation of `decl` (step index binder `si`) to `decl (si := stepindex%) args`: from
+`tok` (one node), `tok args` (two), or `tok.{us} args` (five).
+-/
+public meta def expandIndexedNotation (decl si : Name) : Macro := fun stx => do
+  let c := mkCIdentFrom stx[0] decl (canonical := true)
+  let (head, args) ← match stx.getNumArgs with
+    | 1 => pure (c.raw, #[])
+    | 2 => pure (c.raw, stx[1].getArgs)
+    | 5 => pure (mkNode ``Parser.Term.explicitUniv #[c, stx[1], stx[2], stx[3]], stx[4].getArgs)
+    | _ => Macro.throwUnsupported
+  let siArg ← `(Parser.Term.namedArgument| ($(mkIdent si) := stepindex%))
+  return Syntax.mkApp ⟨head⟩ ((#[siArg.raw] ++ args).map (⟨·⟩))
+
 section
 open Elab Command
 
-/-- Declares the scoped macro of the `@[indexed]` declaration `decl`, on applications `C args` and
-on bare `C` and `C.{u, …}`. -/
-meta def addIndexedMacro (decl : Name) (i : IndexedInfo) : CoreM Unit := liftCommandElabM do
-  let ns := mkIdent `Iris.StepIndex
-  let kind ← `(Parser.Term.attrKind| scoped)
-  let attrs ← [``Parser.Term.app, identKind, ``Parser.Term.explicitUniv].toArray.mapM fun k =>
-    `(Parser.Term.attrInstance| $kind:attrKind macro $(mkIdent k))
-  elabCommand (← `(namespace $ns))
-  elabCommand (← `(@[$attrs,*] public aux_def indexed $(mkIdent decl) : Macro :=
-    expandIndexed $(quote decl) $(quote i.name)))
-  elabCommand (← `(end $ns))
+/-- Declares the scoped notation `tok` of `decl`: `tok` alone, `tok args`, and
+`tok.{us} args`. -/
+meta def addIndexedNotation (decl : Name) (si : Name) (tok : String) : CoreM Unit :=
+  liftCommandElabM do
+    let ns := mkIdent `Iris.StepIndex
+    let k0 := notationKind decl tok .atom
+    let k1 := notationKind decl tok .app
+    let k2 := notationKind decl tok .univ
+    let tokLit := Syntax.mkStrLit tok
+    let kind ← `(Parser.Term.attrKind| scoped)
+    let attrs ← #[k0, k1, k2].mapM fun k =>
+      `(Parser.Term.attrInstance| $kind:attrKind macro $(mkIdent k))
+    elabCommand (← `(namespace $ns))
+    elabCommand (← `(scoped syntax:max (name := $(mkIdent (.mkSimple k0.getString!))) $tokLit:str : term))
+    elabCommand (← `(scoped syntax:lead (name := $(mkIdent (.mkSimple k1.getString!)))
+      $tokLit:str (Lean.Parser.Term.argument)+ : term))
+    elabCommand (← `(scoped syntax:lead (name := $(mkIdent (.mkSimple k2.getString!)))
+      $tokLit:str noWs ".{" level,+ "}" (Lean.Parser.Term.argument)* : term))
+    elabCommand (← `(@[$attrs,*] public aux_def indexed $(mkIdent decl) : Macro :=
+      expandIndexedNotation $(quote decl) $(quote si)))
+    elabCommand (← `(end $ns))
 
 end
 
 /--
 `@[indexed]` marks a declaration whose step index (the binder of type `stepindex (Type _)`, explicit
-or implicit, possibly a section variable) is filled in by `local stepindex T` sections: there `C a`
-elaborates as `C (SI := T) a` and prints back as `C a`.
+or implicit, possibly a section variable) is filled in by `local stepindex T` sections: there the
+notation `C a` elaborates as `C (SI := T) a` and prints back as `C a`.
 -/
 meta initialize registerBuiltinAttribute {
   name := `indexed
@@ -116,8 +117,12 @@ meta initialize registerBuiltinAttribute {
     unless kind == .global do throwError "`@[indexed]` must be global"
     let some i ← (findIndexedInfo decl).run'
       | throwError "`@[indexed]`: `{decl}` has no step index binder of type `stepindex (Type _)`"
+    let isType ← Meta.MetaM.run' <|
+      Meta.forallTelescope (← getConstInfo decl).type fun _ b => return b.isSort
+    let i := { i with spellings := spellingsOf decl isType }
     modifyEnv (indexedExt.addEntry · (decl, i))
-    addIndexedMacro decl i
+    for tok in i.spellings do
+      addIndexedNotation decl i.name tok
 }
 
 /-- Whether `si` is the section's step index. -/
@@ -126,17 +131,25 @@ public meta def isSectionSI (si : Term) : CoreM Bool := do
   return !n.isAnonymous && si.raw.isIdent && si.raw.getId == n
 
 open PrettyPrinter Delaborator SubExpr in
-/-- Prints `C SI args` as `C args` when `SI` is the section's step index. -/
+/-- Prints `C SI args` with the notation of `C` when `SI` is the section's step index. -/
 @[scoped delab app] public meta def delabIndexedApp : Delab := whenPPOption getPPNotation do
   let e ← getExpr
   let some c := e.getAppFn.constName? | failure
   let some i := (indexedExt.getState (← getEnv)).find? c | failure
-  let some p := i.explicitPos | failure
+  let some tok := i.spellings[0]? | failure
   guard (e.getAppNumArgs > i.argIdx)
   unless ← isSectionSI (← withNaryArg i.argIdx delab) do failure
   let stx : Term ← Lean.PrettyPrinter.Delaborator.delabApp
-  let `($f $args*) := stx | return stx
-  return Syntax.mkApp f (args.eraseIdxIfInBounds p)
+  let args ← match stx with
+    | `($_:ident $args*) => pure (args.map (·.raw))
+    | `($_:ident) => pure #[]
+    | _ => failure
+  let args := match i.explicitPos with
+    | some p => args.eraseIdxIfInBounds p
+    | none => args
+  if args.isEmpty then
+    return ⟨mkNode (notationKind c tok .atom) #[mkAtom tok]⟩
+  return ⟨mkNode (notationKind c tok .app) #[mkAtom tok, mkNullNode args]⟩
 
 end Iris.StepIndex
 

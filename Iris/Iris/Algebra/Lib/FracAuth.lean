@@ -22,7 +22,7 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 
 local stepindex Nat
 
-open Iris OFE ORA UORA Auth Option OrdInc
+open Iris «OFE» ORA UORA Auth Option OrdInc
 
 /-! ## Definitions -/
 

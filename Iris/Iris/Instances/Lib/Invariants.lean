@@ -22,7 +22,7 @@ local stepindex Nat
 
 namespace Iris
 
-open Iris OFE COFE BI FUpd
+open Iris «OFE» «COFE» BI FUpd
 
 section InvariantDefinition
 

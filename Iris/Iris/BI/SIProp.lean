@@ -23,7 +23,7 @@ usual connectives of higher-order logic and prove that these satisfy the axioms 
 -/
 
 namespace Iris
-open OFE BI
+open «OFE» BI
 
 /-- Step-indexed proposition, downward closed in the step index. -/
 @[rocq_alias siProp]
@@ -424,8 +424,8 @@ theorem sig_equiv_internalEq [OFE A] (P : A → Prop) (x y : { a : A // P a }) :
 theorem discrete_eq_internalEq [OFE A] (a b : A) [Idisc : Std.TCOr (DiscreteE a) (DiscreteE b)] :
     internalEq a b ⊢ ⌜a = b⌝ := by
   cases Idisc with
-  | l => exact fun _ hab => DiscreteE.discrete (hab.le (Nat.zero_le _))
-  | r => exact fun _ hab => (DiscreteE.discrete (hab.le (Nat.zero_le _)).symm).symm
+  | l => exact fun _ hab => OFE.DiscreteE.discrete (hab.le (Nat.zero_le _))
+  | r => exact fun _ hab => (OFE.DiscreteE.discrete (hab.le (Nat.zero_le _)).symm).symm
 
 @[rocq_alias siProp_primitive.later_equivI_1]
 theorem later_equiv_internalEq_mp [OFE A] (x y : A) :

@@ -12,7 +12,7 @@ public import Iris.BI
 local stepindex Nat
 
 namespace Iris
-open Iris.Std BI BI.BIBase OFE
+open Iris.Std BI BI.BIBase «OFE»
 
 section Laws
 

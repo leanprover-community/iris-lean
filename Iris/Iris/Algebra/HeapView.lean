@@ -38,7 +38,7 @@ local stepindex Nat
 open Iris
 
 section heapView
-open Std PartialMap Heap OFE ORA
+open Std PartialMap Heap «OFE» ORA
 
 variable (K V : Type _) (H : Type _ → Type _) [LawfulPartialMap H K] [ORA V]
 
@@ -168,7 +168,7 @@ end heapView
 
 namespace HeapView
 
-open Heap OFE View One DFrac ORA PartialMap Std LawfulPartialMap
+open Heap «OFE» View One DFrac ORA PartialMap Std LawfulPartialMap
 
 variable {K V : Type _} {H : Type _ → Type _} [LawfulPartialMap H K] [ORA V]
 
@@ -724,7 +724,7 @@ end heapViewFunctor
 end HeapView
 
 section FiniteHeapView
-open Std PartialMap Heap OFE ORA HeapView
+open Std PartialMap Heap «OFE» ORA HeapView
 open One DFrac LawfulPartialMap Algebra
 
 variable {K V : Type _} {H : Type _ → Type _} [DecidableEq K] [LawfulFiniteMap H K] [ORA V]

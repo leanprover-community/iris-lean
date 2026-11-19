@@ -16,7 +16,7 @@ public meta import Iris.Std.RocqPorting
 local stepindex Nat
 
 namespace Iris
-open Iris.Std Iris.ProofMode BI OFE
+open Iris.Std Iris.ProofMode BI «OFE»
 
 section definition
 

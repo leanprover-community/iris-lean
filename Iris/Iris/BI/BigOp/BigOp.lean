@@ -15,7 +15,7 @@ namespace Iris.BI
 local stepindex Nat
 
 public section List
-open Iris.Algebra Iris.Std OFE BIBase
+open Iris.Algebra Iris.Std «OFE» BIBase
 
 
 /-! ## MonoidOps instances for BI connectives -/
@@ -110,7 +110,7 @@ def bigSepL2 [BI PROP] {A B : Type _} (Φ : Nat → A → B → PROP)
 end List
 
 public section Map
-open Iris.Algebra Iris.Std OFE BIBase
+open Iris.Algebra Iris.Std «OFE» BIBase
 
 /--
 Big separating conjunction over a finite map's values, with key access.
@@ -144,7 +144,7 @@ def bigSepM2 {PROP : Type _} [BI PROP] {K : Type _} {A B : Type u} {M : Type _ �
 end Map
 
 public section Set
-open Iris.Algebra Iris.Std OFE BIBase
+open Iris.Algebra Iris.Std «OFE» BIBase
 
 /--
 Big separating conjunction over a finite set: `[∗set] x ∈ s, P x`.
@@ -576,7 +576,7 @@ end
 These instances ported from Rocq `bi_persistently_*_homomorphism` in
 `iris/bi/derived_laws.v`. -/
 public section Persistently
-open Iris.Algebra Iris.Std OFE BIBase
+open Iris.Algebra Iris.Std «OFE» BIBase
 
 @[rocq_alias bi.bi_persistently_and_homomorphism]
 instance bi_persistently_and_homomorphism [BI PROP] :

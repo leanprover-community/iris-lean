@@ -13,7 +13,7 @@ public import Iris.Algebra.Monoid
 local stepindex Nat
 
 namespace Iris
-open OFE
+open «OFE»
 
 /-- The underlying operation of a resource. -/
 @[rocq_alias Op]
@@ -963,11 +963,11 @@ namespace ORA
 variable [ORA α]
 
 @[rocq_alias CmraDiscrete]
-class Discrete (α : Type _) [ORA α] extends OFE.Discrete α where
+class «Discrete» (α : Type _) [ORA α] extends OFE.Discrete α where
   discrete_valid {x : α} : ✓{0} x → ✓ x
   discrete_ord {x y : α} : x ≼ₒ{0} y → x ≼ₒ y := by
     first | exact CMRA.ord_of_ord0 | exact fun ⟨z, hz⟩ => ⟨z, hz⟩
-export Discrete (discrete_valid discrete_ord)
+export «Discrete» (discrete_valid discrete_ord)
 #rocq_ignore discrete_validN_instance "Use CMRA instance"
 
 end ORA
@@ -1271,17 +1271,17 @@ end increasing
 section discreteORA
 
 @[rocq_alias cmra_discrete_valid_iff]
-theorem valid_iff_validN' [Discrete α] (n) {x : α} : ✓ x ↔ ✓{n} x :=
+theorem valid_iff_validN' [«Discrete» α] (n) {x : α} : ✓ x ↔ ✓{n} x :=
   ⟨Valid.validN, fun v => discrete_valid <| validN_of_le (Nat.zero_le n) v⟩
 
 @[rocq_alias cmra_discrete_valid_iff_0]
-theorem valid_0_iff_validN [Discrete α] (n) {x : α} : ✓{0} x ↔ ✓{n} x :=
+theorem valid_0_iff_validN [«Discrete» α] (n) {x : α} : ✓{0} x ↔ ✓{n} x :=
   ⟨Valid.validN ∘ discrete_valid, validN_of_le (Nat.zero_le n)⟩
 
-theorem ord_iff_ordN [Discrete α] (n) {x y : α} : x ≼ₒ y ↔ x ≼ₒ{n} y :=
+theorem ord_iff_ordN [«Discrete» α] (n) {x y : α} : x ≼ₒ y ↔ x ≼ₒ{n} y :=
   ⟨ordN_of_ord _, fun h => discrete_ord (ord0_of_ordN h)⟩
 
-theorem ord_0_iff_ordN [Discrete α] (n) {x y : α} : x ≼ₒ{0} y ↔ x ≼ₒ{n} y :=
+theorem ord_0_iff_ordN [«Discrete» α] (n) {x y : α} : x ≼ₒ{0} y ↔ x ≼ₒ{n} y :=
   ⟨fun h => ordN_of_ord n (discrete_ord h), ord0_of_ordN⟩
 
 end discreteORA
@@ -1293,7 +1293,7 @@ theorem cancelable {x y z : α} [Cancelable x] (v : ✓ (x • y)) (e : x • y 
   OFE.eq_of_dist fun _ => cancelableN v.validN e.dist
 
 @[rocq_alias discrete_cancelable]
-theorem discrete_cancelable {x : α} [Discrete α]
+theorem discrete_cancelable {x : α} [«Discrete» α]
     (H : ∀ {y z : α}, ✓ (x • y) → x • y = x • z → y = z) : Cancelable x where
   cancelableN {n} {_ _} v e := (H ((valid_iff_validN' n).mpr v) (Discrete.discrete e)).dist
 
@@ -1352,7 +1352,7 @@ theorem id_free_l {x : α} [IdFree x] {y} (v : ✓ x) : ¬(y • x = x) :=
   id_free_r v ∘ comm'.trans
 
 @[rocq_alias discrete_id_free]
-theorem discrete_id_free {x : α} [Discrete α] (H : ∀ y, ✓ x → ¬(x • y = x)) : IdFree x where
+theorem discrete_id_free {x : α} [«Discrete» α] (H : ∀ y, ✓ x → ¬(x • y = x)) : IdFree x where
   id_free0_r y v h := H y (Discrete.discrete_valid v) (Discrete.discrete_0 h)
 
 @[rocq_alias id_free_op_r]
@@ -1544,18 +1544,18 @@ structure CMRA.Hom (α β : Type _) [OFE α] [Op α] [PCore α] [Valid α]
 namespace ORA
 variable [ORA α]
 
-section Hom
+section «Hom»
 
 /-- A morphism between ORAs, written `α -C> β`, is defined to be a non-expansive function which
 preserves `validN`, `pcore`, `op`, the order and increasing elements. -/
 @[ext]
-structure Hom (α β : Type _) [ORA α] [ORA β] extends toCMRAHom : CMRA.Hom α β where
+structure «Hom» (α β : Type _) [ORA α] [ORA β] extends toCMRAHom : CMRA.Hom α β where
   protected monoN_ord {n x₁ x₂} : x₁ ≼ₒ{n} x₂ → f x₁ ≼ₒ{n} f x₂
   protected mono_ord {x₁ x₂} : x₁ ≼ₒ x₂ → f x₁ ≼ₒ f x₂
   protected increasing {x} : Increasing x → Increasing (f x)
 
 @[inherit_doc]
-infixr:25 " -C> " => Hom
+infixr:25 " -C> " => «Hom»
 
 instance [ORA β] : CoeFun (α -C> β) (fun _ => α → β) := ⟨fun F => F.f⟩
 
@@ -1566,7 +1566,7 @@ instance [ORA β] : OFE (α -C> β) where
     symm h := dist_eqv.symm h
     trans h1 h2 := dist_eqv.trans h1 h2
   }
-  eq_dist' {_ _} := Hom.ext_iff.trans eq_dist
+  eq_dist' {_ _} := Hom.ext_iff.trans OFE.eq_dist
   dist_lt := dist_lt
 
 @[rocq_alias cmra_morphism_id]
@@ -1611,7 +1611,7 @@ protected theorem Hom.monoN [ORA β] (f : α -C> β) n {x₁ x₂ : α} :
 protected theorem Hom.valid [ORA β] (f : α -C> β) {x : α} (H : ✓ x) : ✓ f x :=
   valid_iff_validN.mpr fun _ => f.validN H.validN
 
-end Hom
+end «Hom»
 end ORA
 
 section HomExt
@@ -1712,7 +1712,7 @@ end urFunctor
 
 section ComposeRF
 
-open COFE
+open «COFE»
 
 theorem RFunctorContractive.map_distLater {F : OFunctorPre} [RFunctorContractive F]
     [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] {n} {f₁ f₂ : α₂ -n> α₁} {g₁ g₂ : β₁ -n> β₂}
@@ -1728,7 +1728,7 @@ theorem URFunctorContractive.map_distLater {F : OFunctorPre} [URFunctorContracti
 
 variable {F₁ F₂ : OFunctorPre} [OFunctor F₂] [∀ α β, [COFE α] → [COFE β] → IsCOFE (F₂ α β)]
 
-open OFunctor in
+open «OFunctor» in
 @[rocq_alias rFunctor_oFunctor_compose]
 instance rFunctorComposeOF [RFunctor F₁] : RFunctor (ComposeOF F₁ F₂) where
   cmra := RFunctor.cmra (F := F₁)
@@ -1743,7 +1743,7 @@ instance rFunctorComposeOF [RFunctor F₁] : RFunctor (ComposeOF F₁ F₂) wher
     simp only [map_comp_eq]
     exact RFunctor.map_comp (F := F₁) _ _ _ _ _
 
-open OFunctor in
+open «OFunctor» in
 @[rocq_alias urFunctor_oFunctor_compose]
 instance urFunctorComposeOF [URFunctor F₁] : URFunctor (ComposeOF F₁ F₂) where
   cmra := URFunctor.cmra (F := F₁)
@@ -1762,7 +1762,7 @@ instance instRFunctorAffineComposeOF [RFunctor F₁] [RFunctorAffine F₁] :
     RFunctorAffine (ComposeOF F₁ F₂) where
   affine := RFunctorAffine.affine (F := F₁)
 
-open OFunctor in
+open «OFunctor» in
 @[rocq_alias rFunctor_oFunctor_compose_contractive_1]
 instance rFunctorComposeOF_contractive_left [RFunctorContractive F₁] :
     RFunctorContractive (ComposeOF F₁ F₂) where
@@ -1771,7 +1771,7 @@ instance rFunctorComposeOF_contractive_left [RFunctorContractive F₁] :
       (fun m hm _ => (map_ne (F := F₂)).ne (h m hm).2 (h m hm).1 _)
       (fun m hm _ => (map_ne (F := F₂)).ne (h m hm).1 (h m hm).2 _) x⟩
 
-open OFunctor in
+open «OFunctor» in
 @[rocq_alias urFunctor_oFunctor_compose_contractive_1]
 instance urFunctorComposeOF_contractive_left [URFunctorContractive F₁] :
     URFunctorContractive (ComposeOF F₁ F₂) where
@@ -1784,7 +1784,7 @@ end ComposeRF
 
 section ComposeRFContractive
 
-open COFE OFunctorContractive
+open «COFE» «OFunctorContractive»
 
 variable {F₁ F₂ : OFunctorPre} [OFunctorContractive F₂]
   [∀ α β, [COFE α] → [COFE β] → IsCOFE (F₂ α β)]
@@ -2036,7 +2036,7 @@ end DiscreteFun
 def mapCodHomC {α : Type _} {β₁ β₂ : α → Type _}
     [∀ x, UORA (β₁ x)] [∀ x, UORA (β₂ x)]
     (F : ∀ x, β₁ x -C> β₂ x) : (∀ x, β₁ x) -C> (∀ x, β₂ x) where
-  toHom := mapCodHom fun x => (F x).toHom
+  toHom := OFE.mapCodHom fun x => (F x).toHom
   validN h x := (F x).validN (h x)
   pcore _ := congrArg some (funext fun x => (F x).core.symm)
   op f g := funext fun x => (F x).op (f x) (g x)
@@ -2159,7 +2159,7 @@ def raValid : _root_.Iris.Valid (Option α) where
   ValidN := optionValidN
   Valid := optionValid
   validN_ne {n} x y H := by
-    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [Dist]
+    rcases x, y with ⟨_|_, _|_⟩ <;> simp_all [«Dist»]
     exact Dist.validN H |>.mp
   valid_iff_validN {x} := by
     rcases x with ⟨_|_⟩ <;> simp [valid_iff_validN]
@@ -2170,7 +2170,7 @@ def raValid : _root_.Iris.Valid (Option α) where
   OrderN := optionOrderN
   Order := optionOrder
   ordN_ne {n x x' y y'} ex ey h := by
-    rcases x, x', y, y' with ⟨_|x, _|x', _|y, _|y'⟩ <;> simp_all [Dist]
+    rcases x, x', y, y' with ⟨_|x, _|x', _|y, _|y'⟩ <;> simp_all [«Dist»]
     · exact h.of_dist ey
     · exact Ordered.OrderNR.ne ex ey h
   ordN_succ {n x y} h := by
@@ -3609,7 +3609,7 @@ section OfDiscrete
 @[rocq_alias discrete_cmra_discrete]
 instance ofDiscrete_discrete [OFE α] [OFE.Discrete α] (pcore : α → Option α)
     (op : α → α → α) (Valid : α → Prop) h₁ h₂ h₃ h₄ h₅ h₆ :
-    @Discrete α (ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆).toORA :=
+    @«Discrete» α (ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆).toORA :=
   letI := ofDiscrete pcore op Valid h₁ h₂ h₃ h₄ h₅ h₆
   { discrete_valid := id }
 
@@ -3679,7 +3679,7 @@ namespace ORA
     ordN_extend _ h := ⟨_, h, .rfl⟩ }
 
 instance ofDiscreteORAData_discrete [OFE α] [OFE.Discrete α] (d : DiscreteORAData α) :
-    @Discrete α (ofDiscreteORAData d) :=
+    @«Discrete» α (ofDiscreteORAData d) :=
   letI := ofDiscreteORAData d
   { discrete_valid := id, discrete_ord := id }
 

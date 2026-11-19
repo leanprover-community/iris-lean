@@ -14,7 +14,7 @@ local stepindex Nat
 
 namespace Iris
 
-open OFE COFE
+open «OFE» «COFE»
 
 /-! ## The vector OFE
 
@@ -27,7 +27,7 @@ variable [OFE α]
 instance : OFE (Vector α n) where
   dist k u v := u.toList ≡{k}≡ v.toList
   dist_eqv := InvImage.equivalence dist_eqv
-  eq_dist' := ⟨fun h _ => h ▸ .rfl, fun h => Vector.toList_inj.mp (eq_of_dist h)⟩
+  eq_dist' := ⟨fun h _ => h ▸ .rfl, fun h => Vector.toList_inj.mp (OFE.eq_of_dist h)⟩
   dist_lt h hlt := h.lt hlt
 #rocq_ignore vecO "Use Vector"
 #rocq_ignore vec_equiv "OFE is Leibniz; use equality"
@@ -41,7 +41,7 @@ instance vec_ofe_discrete [Discrete α] : Discrete (Vector α n) where
 
 @[rocq_alias vnil_discrete]
 instance vec_nil_discrete : DiscreteE (#v[] : Vector α 0) where
-  discrete h := Vector.toList_inj.mp (DiscreteE.discrete (x := []) (vec_dist_toList.mp h))
+  discrete h := Vector.toList_inj.mp (OFE.DiscreteE.discrete (x := []) (vec_dist_toList.mp h))
 
 /-- Discreteness of a vector transfers to its underlying list. -/
 instance vec_toList_discrete (v : Vector α n) [DiscreteE v] : DiscreteE v.toList where
@@ -56,7 +56,7 @@ instance vec_cons_discrete (x : α) (v : Vector α n) [DiscreteE x] [DiscreteE v
     DiscreteE (v.cons x) where
   discrete h := Vector.toList_inj.mp <| by
     rw [Vector.toList_cons]
-    exact DiscreteE.discrete (by simpa using vec_dist_toList.mp h)
+    exact OFE.DiscreteE.discrete (by simpa using vec_dist_toList.mp h)
 
 end ofe
 

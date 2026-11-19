@@ -23,7 +23,7 @@ local stepindex Nat
 
 namespace Iris
 
-open Iris OFE COFE BI Auth
+open Iris «OFE» «COFE» BI Auth
 
 local bi (IProp GF)
 

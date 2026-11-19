@@ -12,7 +12,7 @@ public import Iris.Algebra.Updates
 local stepindex Nat
 
 namespace Iris
-open OFE ORA
+open «OFE» ORA
 
 /-!
 # Dependent Function Resources
@@ -48,7 +48,7 @@ theorem discreteFunInsert_of_ne (f : (a : ι) → β a) (x x' : ι)
 
 end insert
 
-section OFE
+section «OFE»
 
 variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, OFE (β i)]
 
@@ -96,7 +96,7 @@ instance instDiscreteFunInsertDiscrete (f : (a : ι) → β a) (x : ι) (y : β 
     · rw [discreteFunInsert_of_ne (h := h) ..]
       exact discreteE_apply ‹DiscreteE f› x'
 
-end OFE
+end «OFE»
 
 section ORA
 

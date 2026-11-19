@@ -17,7 +17,7 @@ local stepindex Nat
 
 /-! ## The multiset union ORA -/
 
-open Iris Std ORA OFE
+open Iris Std ORA «OFE»
 
 @[grind!, rocq_alias gmultisetO, rocq_alias gmultisetR, rocq_alias gmultisetUR]
 inductive LeibnizMultiSet (MS : Type _) where

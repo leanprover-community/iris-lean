@@ -22,7 +22,7 @@ local stepindex Nat
 
 open Iris
 
-open OFE ORA UORA View
+open «OFE» ORA UORA View
 
 /-!
 ## Definition of the view relation for the authoritative camera.

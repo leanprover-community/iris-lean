@@ -64,6 +64,8 @@ public meta structure IndexedInfo where
   argIdx : Nat
   /-- Its position among the explicit arguments, or `none` when it is not explicit. -/
   explicitPos : Option Nat
+  /-- The spellings of its notation; the first one is used for printing. -/
+  spellings : Array String := #[]
   deriving Inhabited, Repr
 
 /-- The `@[indexed]` declarations. -/

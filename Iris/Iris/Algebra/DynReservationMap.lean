@@ -50,9 +50,9 @@ def DynReservationMap.mkToken [LawfulPartialMap H Pos] (e : CoPset) :
 #rocq_ignore to_reservation_map "OFE/CMRA are built directly, not via an isomorphism"
 #rocq_ignore from_reservation_map "OFE/CMRA are built directly, not via an isomorphism"
 
-section OFE
+section «OFE»
 
-open OFE
+open «OFE»
 
 variable [LawfulPartialMap H Pos] [OFE A]
 
@@ -70,7 +70,7 @@ instance : OFE (DynReservationMap A H) where
   }
   eq_dist' {x y} := by
     refine ⟨fun h _ => h ▸ ⟨.rfl, .rfl⟩, fun H => ?_⟩
-    exact DynReservationMap.ext (eq_of_dist fun n => (H n).1) (eq_of_dist fun n => (H n).2)
+    exact DynReservationMap.ext (OFE.eq_of_dist fun n => (H n).1) (OFE.eq_of_dist fun n => (H n).2)
   dist_lt h lt := ⟨dist_lt h.left lt, dist_lt h.right lt⟩
 
 @[rocq_alias dyn_reservation_map_ofe_discrete]
@@ -99,7 +99,7 @@ instance instNonExpansiveDynReservationMapSingleton :
 @[rocq_alias DynReservationMap_discrete]
 instance instDiscreteEDynReservationMapMk {a : H A} [DiscreteE a] :
     DiscreteE (DynReservationMap.mk a b) where
-  discrete h := DynReservationMap.ext (DiscreteE.discrete h.1) (DiscreteE.discrete h.2)
+  discrete h := DynReservationMap.ext (OFE.DiscreteE.discrete h.1) (OFE.DiscreteE.discrete h.2)
 
 @[rocq_alias dyn_reservation_map_data_discrete]
 instance instDiscreteEDynReservationMapSingleton {a : A} [DiscreteE a] :
@@ -111,11 +111,11 @@ instance instDiscreteEDynReservationMapToken :
     DiscreteE (DynReservationMap.mkToken (H := H) (A := A) e) :=
   by unfold DynReservationMap.mkToken; infer_instance
 
-end OFE
+end «OFE»
 
 section ORA
 
-open OFE ORA DisjointLeibnizSet LawfulSet
+open «OFE» ORA DisjointLeibnizSet LawfulSet
 
 namespace DynReservationMap
 
@@ -338,7 +338,7 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
   pcore_op_left | rfl => DynReservationMap.ext (core_op _) (core_op _)
   extend {n x y₁ y₂} v exy := by
     obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := extend (validN_data_of_validN v) exy.left
-    refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, eq_of_dist ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
+    refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, OFE.eq_of_dist ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
     exact fun m => ⟨xzz.dist, exy.right⟩
   toOrdered := raOrdered
   op_monoN_left_ord z h := ⟨op_monoN_left_ord z.data h.1, op_monoN_left_ord z.token h.2⟩

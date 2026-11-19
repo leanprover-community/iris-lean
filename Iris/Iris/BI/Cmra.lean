@@ -22,7 +22,7 @@ as `<si_pure> cmraValid a`.
 -/
 
 namespace Iris
-open BI OFE SiProp ORA Sbi
+open BI «OFE» SiProp ORA Sbi
 
 section CmraValid
 local bi PROP

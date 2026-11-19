@@ -32,7 +32,7 @@ namespace BUpdPlain
 
 section BupdPlainDef
 
-open OFE
+open «OFE»
 
 variable [Sbi PROP]
 local bi PROP

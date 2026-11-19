@@ -161,7 +161,7 @@ end heap_view
 section agree_inclusion
 local bi PROP
 
-open Iris BI Agree OFE
+open Iris BI Agree «OFE»
 
 variable [Sbi PROP] [OFE A]
 
@@ -287,7 +287,7 @@ end dfrac_agree
 
 section generic
 local bi PROP
-open BI ORA OFE
+open BI ORA «OFE»
 variable [Sbi PROP]
 
 @[rocq_alias ucmra_unit_validI]
@@ -353,7 +353,7 @@ end discrete_fun
 
 section excl
 local bi PROP
-open BI Excl OFE
+open BI Excl «OFE»
 variable [Sbi PROP] [OFE A]
 
 @[rocq_alias algebra.excl_equivI]
@@ -386,7 +386,7 @@ end excl
 
 section csum
 local bi PROP
-open BI Csum OFE ORA
+open BI Csum «OFE» ORA
 variable [Sbi PROP]
 
 @[rocq_alias algebra.csum_equivI]
@@ -431,7 +431,7 @@ end csum
 
 section list
 local bi PROP
-open BI OFE
+open BI «OFE»
 variable [Sbi PROP] [OFE A]
 
 @[rocq_alias list_equivI]

@@ -58,9 +58,9 @@ def ReservationMap.singleton [LawfulPartialMap H Pos] (k : Pos) (a : A) :
 def ReservationMap.mkToken [LawfulPartialMap H Pos] (e : CoPset) :
     ReservationMap A H := .mk ∅ (.valid e)
 
-section OFE
+section «OFE»
 
-open OFE
+open «OFE»
 
 variable [LawfulPartialMap H Pos] [OFE A]
 
@@ -80,7 +80,7 @@ instance : OFE (ReservationMap A H) where
     refine ⟨fun h _ => h ▸ ⟨.rfl, .rfl⟩, fun H => ?_⟩
     obtain ⟨xd, xt⟩ := x; obtain ⟨yd, yt⟩ := y
     simp only [ReservationMap.mk.injEq]
-    exact ⟨eq_of_dist fun n => (H n).1, eq_of_dist fun n => (H n).2⟩
+    exact ⟨OFE.eq_of_dist fun n => (H n).1, OFE.eq_of_dist fun n => (H n).2⟩
   dist_lt h lt := ⟨dist_lt h.left lt, dist_lt h.right lt⟩
 
 @[rocq_alias reservation_map_ofe_discrete]
@@ -118,7 +118,7 @@ instance instDiscreteEReservationMapMk {a : H A} [DiscreteE a] :
     DiscreteE (ReservationMap.mk a b) where
   discrete := fun h => OFE.eq_of_dist <| by
     intro n
-    exact ⟨(DiscreteE.discrete h.1).dist, (DiscreteE.discrete h.2).dist⟩
+    exact ⟨(OFE.DiscreteE.discrete h.1).dist, (OFE.DiscreteE.discrete h.2).dist⟩
 
 @[rocq_alias reservation_map_data_discrete]
 instance instDiscreteEReservationMapSingleton {a : A} [DiscreteE a] :
@@ -130,11 +130,11 @@ instance instDiscreteEReservationMapToken :
     DiscreteE (ReservationMap.mkToken (H := H) (A := A) e) :=
   by unfold ReservationMap.mkToken; infer_instance
 
-end OFE
+end «OFE»
 
 section ORA
 
-open OFE ORA DisjointLeibnizSet
+open «OFE» ORA DisjointLeibnizSet
 
 namespace ReservationMap
 

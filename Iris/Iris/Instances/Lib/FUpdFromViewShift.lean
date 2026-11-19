@@ -22,7 +22,7 @@ local stepindex Nat
 
 namespace Iris
 
-open Iris OFE BI
+open Iris «OFE» BI
 
 section fupd
 

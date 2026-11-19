@@ -26,7 +26,7 @@ step-index, and `siEmpValid : PROP → SiProp` that expresses that a proposition
 -/
 
 namespace Iris
-open OFE BI Iris.BI.BIBase
+open «OFE» BI Iris.BI.BIBase
 
 /-- Embedding of step-indexed propositions into a BI. -/
 @[rocq_alias SiPure]

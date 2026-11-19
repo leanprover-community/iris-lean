@@ -18,7 +18,7 @@ local stepindex Nat
 
 namespace Iris
 
-open COFE
+open «COFE»
 
 abbrev GType := Nat
 

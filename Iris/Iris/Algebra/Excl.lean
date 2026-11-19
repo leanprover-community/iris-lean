@@ -23,13 +23,13 @@ inductive Excl α where
 #rocq_ignore maybe_Excl "std++ `Maybe` class; pattern match instead"
 
 namespace Excl
-open OFE ORA
+open «OFE» ORA
 
 /-! ## COFE -/
 
 #rocq_ignore excl_equiv "OFE is Leibniz; use equality"
 
-@[simp, rocq_alias excl_dist] protected def Dist [OFE α] (n : Nat) : Excl α → Excl α → Prop
+@[simp, rocq_alias excl_dist] protected def «Dist» [OFE α] (n : Nat) : Excl α → Excl α → Prop
   | excl a, excl b => a ≡{n}≡ b
   | invalid, invalid => True
   | _, _ => False
@@ -112,7 +112,7 @@ instance [OFE α] : DiscreteE (@invalid α) where
 def exclChain [OFE α] (c : Chain (Excl α)) (a : α) : Chain α := by
   refine ⟨fun n => (c n).getD a, fun {n i} H => ?_⟩
   dsimp; have := c.cauchy H; revert this
-  cases c.chain i <;> cases c.chain n <;> simp [HasDist.dist, Dist]
+  cases c.chain i <;> cases c.chain n <;> simp [HasDist.dist, «Dist»]
 
 @[rocq_alias excl_cofe]
 instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
@@ -122,7 +122,7 @@ instance [OFE α] [IsCOFE α] : IsCOFE (Excl α) where
   compl c := (c 0).map fun x => IsCOFE.compl (exclChain c x)
   conv_compl {n} c := by
     have := c.cauchy (Nat.zero_le n); revert this
-    obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [HasDist.dist, Dist]
+    obtain _|x' := c.chain 0 <;> rcases e : c.chain n with _|y' <;> simp [HasDist.dist, «Dist»]
     refine fun _ => Dist.trans IsCOFE.conv_compl ?_
     simp [exclChain, e]
 

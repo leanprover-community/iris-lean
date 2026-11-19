@@ -20,7 +20,7 @@ closure.
 -/
 
 namespace IrisTest
-open Iris BI OFE ORA
+open Iris BI «OFE» ORA
 
 /-- The interpretation `sbi_unfold` gives to `▷`. Only used to state the expected
 goals below: writing the `match` under a `∃` binder makes the binder part of it. -/

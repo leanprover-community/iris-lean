@@ -24,7 +24,7 @@ inductive Csum (α β : Type _) where
 #rocq_ignore maybe_Cinl "std++ `Maybe` class; pattern match instead"
 #rocq_ignore maybe_Cinr "std++ `Maybe` class; pattern match instead"
 
-open Csum OFE ORA
+open Csum «OFE» ORA
 
 namespace Csum
 
@@ -32,7 +32,7 @@ namespace Csum
 
 #rocq_ignore csum_equiv "OFE is Leibniz; use equality"
 
-@[simp, rocq_alias csum_dist] def Dist [OFE α] [OFE β] (n : Nat) : Csum α β → Csum α β → Prop
+@[simp, rocq_alias csum_dist] def «Dist» [OFE α] [OFE β] (n : Nat) : Csum α β → Csum α β → Prop
   | inl a, inl a' => a ≡{n}≡ a'
   | inr b, inr b' => b ≡{n}≡ b'
   | invalid, invalid => True
@@ -99,7 +99,7 @@ instance [OFE α] [OFE β] [OFE.Discrete α] [OFE.Discrete β] : OFE.Discrete (C
 instance [OFE α] [OFE β] {a : α} [DiscreteE a] : DiscreteE (inl (β := β) a) where
   discrete {x} h := by
     cases x with
-    | inl => exact congrArg inl (DiscreteE.discrete (x := a) h)
+    | inl => exact congrArg inl (OFE.DiscreteE.discrete (x := a) h)
     | inr => exact h.elim
     | invalid => exact h.elim
 
@@ -108,7 +108,7 @@ instance [OFE α] [OFE β] {b : β} [DiscreteE b] : DiscreteE (inr (α := α) b)
   discrete {x} h := by
     cases x with
     | inl => exact h.elim
-    | inr => exact congrArg inr (DiscreteE.discrete (x := b) h)
+    | inr => exact congrArg inr (OFE.DiscreteE.discrete (x := b) h)
     | invalid => exact h.elim
 
 instance [OFE α] [OFE β] : DiscreteE (@invalid α β) where
@@ -131,14 +131,14 @@ def chainL [OFE α] [OFE β] (c : Chain (Csum α β)) (a : α) : Chain α where
   chain n := (c n).getInlD a
   cauchy {n i} h := by
     have hc := c.cauchy h; revert hc
-    cases c.chain i <;> cases c.chain n <;> simp [HasDist.dist, OFE.Dist]
+    cases c.chain i <;> cases c.chain n <;> simp [HasDist.dist, OFE.«Dist»]
 
 @[rocq_alias csum_chain_r]
 def chainR [OFE α] [OFE β] (c : Chain (Csum α β)) (b : β) : Chain β where
   chain n := (c n).getInrD b
   cauchy {n i} h := by
     have hc := c.cauchy h; revert hc
-    cases c.chain i <;> cases c.chain n <;> simp [HasDist.dist, OFE.Dist]
+    cases c.chain i <;> cases c.chain n <;> simp [HasDist.dist, OFE.«Dist»]
 
 @[rocq_alias csum_cofe]
 instance [OFE α] [OFE β] [IsCOFE α] [IsCOFE β] : IsCOFE (Csum α β) where

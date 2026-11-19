@@ -14,7 +14,7 @@ local stepindex Nat
 
 namespace Iris
 
-open OFE COFE
+open «OFE» «COFE»
 
 namespace Completion.Raw
 
@@ -49,13 +49,13 @@ theorem equiv_iff_dist (x y : Chain α) : Equiv x y ↔ ∀ n, dist n x y :=
 
 end Completion.Raw
 
-namespace Chain
+namespace «Chain»
 
 @[rocq_alias chain_inhabited]
 instance instInhabited [OFE α] [Inhabited α] : Inhabited (Chain α) :=
   ⟨Chain.const default⟩
 
-end Chain
+end «Chain»
 
 def Completion (α : Type u) [OFE α] :=
   Quotient (Completion.Raw.quotientSetoid (α := α))

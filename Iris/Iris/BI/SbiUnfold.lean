@@ -60,7 +60,7 @@ A goal whose head is a `match` is not translated: it has to be case split (with
 -/
 
 namespace Iris
-open BI OFE ORA _root_.Iris.SiProp
+open BI «OFE» ORA _root_.Iris.SiProp
 
 /-- Whether the interpretation produced by `SbiUnfold` has to be downwards closed. -/
 @[rocq_alias sbi_unfold_closure_indicator.sbi_unfold_closure_indicator]

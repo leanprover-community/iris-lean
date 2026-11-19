@@ -24,7 +24,7 @@ This file defines big operators (fold operations) at the abstract OFE level.
 These are parameterized by a monoid operation and include theorems about their properties.
 -/
 
-open OFE Iris.Std
+open «OFE» Iris.Std
 
 @[rocq_alias big_opL, expose] public def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     (Φ : Nat → A → M) (l : List A) : M :=
@@ -318,7 +318,7 @@ theorem bigOpL_comm_mset {B MS : Type _} [FiniteMultiSet MS B]
 #rocq_ignore big_opL_proper' "Use bigOpL_eq"
 #rocq_ignore big_opL_permutation' "Use bigOpL_eq_of_perm"
 
-section Hom
+section «Hom»
 
 variable {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
@@ -345,7 +345,7 @@ theorem bigOpL_hom_weak [H : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ 
   | .cons _ (.cons y ys) =>
     H.rel_trans (H.map_op) <| H.op_proper H.rel_refl <| bigOpL_hom_weak _ (List.cons_ne_nil y ys)
 
-end Hom
+end «Hom»
 end BigOpL
 
 namespace BigOpM

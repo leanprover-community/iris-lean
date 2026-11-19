@@ -260,7 +260,7 @@ theorem loeb_wand [BILoeb PROP] (P : PROP) : □ (▷ P -∗ P) ⊢ P :=
   (intuitionistically_mono (wand_mono_left intuitionistically_elim)).trans
     loeb_wand_intuitionistically
 
-open Iris BI OFE Contractive in
+open Iris BI «OFE» «Contractive» in
 @[rocq_alias bi.later_contractive_bi_löb]
 instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
   loeb_weak {P} HP := by

@@ -17,7 +17,7 @@ public import Iris.ProofMode
 local stepindex Nat
 namespace Iris
 
-open COFE Iris.Std ORA
+open «COFE» Iris.Std ORA
 
 /-- Apply an OFunctor at a fixed type -/
 abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [COFE T] :=
@@ -80,7 +80,7 @@ class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] wh
 
 #rocq_ignore subG_inG "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
-open OFE
+open «OFE»
 
 variable [I : RFunctorContractive F]
 
@@ -118,7 +118,7 @@ instance ElemG.unbundle.ne {E : ElemG GF F} [COFE T] :
 theorem ElemG.bundle_discreteE {GF : BundledGFunctors} (E : ElemG GF F)
     {v : F.ap (IProp GF)} [DiscreteE v] : DiscreteE (E.bundle v) where
   discrete hz := (congrArg (E.bundle (T := IProp GF))
-    (DiscreteE.discrete ((E.unbundle_bundle v).dist.symm.trans
+    (OFE.DiscreteE.discrete ((E.unbundle_bundle v).dist.symm.trans
       ((ElemG.unbundle.ne (T := IProp GF)).ne hz)))).trans (E.bundle_unbundle _)
 
 theorem bundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : F.ap (IProp GF)) :
@@ -172,7 +172,7 @@ end ElemG
 section Fold
 local bi (IProp FF)
 
-open Iris COFE Iris.UPred
+open Iris «COFE» Iris.UPred
 
 variable {FF : BundledGFunctors}
 
@@ -262,7 +262,7 @@ end Fold
 section iSingleton
 local bi (IProp GF)
 
-open IProp OFE Iris.UPred GenMap
+open IProp «OFE» Iris.UPred GenMap
 
 @[rocq_alias iRes_singleton]
 def iSingleton {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName)
@@ -558,7 +558,7 @@ def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName)
 
 section iOwn
 
-open IProp OFE Iris.UPred BI GenMap ProofMode
+open IProp «OFE» Iris.UPred BI GenMap ProofMode
 
 variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 
@@ -912,7 +912,7 @@ end iOwn
 
 section big_op_instances
 
-open IProp OFE Iris.UPred BI GenMap ProofMode Algebra Iris.Std
+open IProp «OFE» Iris.UPred BI GenMap ProofMode Algebra Iris.Std
 open scoped Iris.Std.PartialMap
 
 variable {GF F} [URFunctorContractive F] [E : ElemG GF F]
@@ -991,7 +991,7 @@ end big_op_instances
 section own_forall
 local bi (IProp GF)
 
-open IProp OFE BI
+open IProp «OFE» BI
 
 @[rocq_alias iRes_project]
 def iResProject {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName)

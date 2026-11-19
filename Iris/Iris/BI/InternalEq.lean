@@ -14,7 +14,7 @@ public import Iris.Algebra.Excl
 local stepindex Nat
 
 namespace Iris
-open BI OFE Iris.Std
+open BI «OFE» Iris.Std
 
 /--
   Internal equality in a BI with step-indexed structure, where `a ≡ b` is
@@ -53,7 +53,7 @@ theorem ne_l {A : Type _} [OFE A] (a : A) :
 
 theorem ne_r {A : Type _} [OFE A] (a : A) :
     NonExpansive (internalEq (PROP := PROP) a ·) :=
-  NonExpansive₂.ne_right internalEq a
+  OFE.NonExpansive₂.ne_right internalEq a
 
 @[rocq_alias internal_eq_refl]
 theorem refl {A : Type _} [OFE A] {P : PROP} {a : A} : P ⊢ a ≡ a := calc
@@ -300,7 +300,7 @@ theorem ofeMorO_equivI_mpr {A B : Type _} [OFE A] [OFE B] (f g : A -n> B) :
     (∀ x, f x ≡ g x) ⊢ f ≡ g := by
   refine (discreteFun_equivI f.f g.f).2 |>.trans ?_
   refine (sig_equivI_mp (x := f.toSubtype) (y := g.toSubtype)).trans ?_
-  exact of_internalEquiv_ne Hom.ofSubtype
+  exact of_internalEquiv_ne OFE.Hom.ofSubtype
 
 @[rocq_alias ofe_morO_equivI]
 theorem ofeMorO_equivI {A B : Type _} [OFE A] [OFE B] (f g : A -n> B) :
@@ -377,12 +377,12 @@ instance eq_timeless {A : Type _} [OFE A] (a b : A) [TCOr (DiscreteE a) (Discret
 
 @[rocq_alias internal_eq_iff]
 theorem internalEq_iff (P Q : PROP) : P ≡ Q ⊢ iprop(P ↔ Q) :=
-  letI _ := NonExpansive₂.ne_right (BIBase.iff) P
+  letI _ := OFE.NonExpansive₂.ne_right (BIBase.iff) P
   rewrite' (BIBase.iff P) .rfl (and_intro (imp_intro and_elim_r) (imp_intro and_elim_r))
 
 @[rocq_alias affinely_internal_eq_wand_iff]
 theorem affinely_internalEq_wandIff (P Q : PROP) : <affine> (P ≡ Q) ⊢ P ∗-∗ Q :=
-  letI _ := NonExpansive₂.ne_right (wandIff) P
+  letI _ := OFE.NonExpansive₂.ne_right (wandIff) P
   rewrite' (wandIff P) (affinely_elim.trans .rfl) (affinely_elim_emp.trans wandIff_refl)
 
 @[rocq_alias internal_eq_wand_iff]
@@ -402,7 +402,7 @@ theorem prop_ext_siEmpValid_mpr (P Q : PROP) :
 theorem prop_ext_siEmpValid_equiv (P Q : PROP) :
     SiProp.internalEq P Q ⊣⊢@{SiProp} <si_emp_valid> (P ∗-∗ Q) := by
   letI _ : NonExpansive (fun Q : PROP => iprop(<si_pure> <si_emp_valid> (P ∗-∗ Q))) :=
-    ((Sbi.siPure_ne (PROP := PROP)).comp Sbi.siEmpValid_ne).comp (NonExpansive₂.ne_right wandIff P)
+    ((Sbi.siPure_ne (PROP := PROP)).comp Sbi.siEmpValid_ne).comp (OFE.NonExpansive₂.ne_right wandIff P)
   refine ⟨?_, prop_ext_siEmpValid⟩
   rw [← siPure_entails (PROP := PROP)]
   change P ≡ Q ⊢ <si_pure> <si_emp_valid> (P ∗-∗ Q)

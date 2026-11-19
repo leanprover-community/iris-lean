@@ -24,7 +24,7 @@ fragment's resource to its payload.
 local stepindex Nat
 
 namespace Iris
-open OFE ORA UORA Auth Iris.Option Iris.OFE.Option UFrac
+open «OFE» ORA UORA Auth Iris.Option Iris.OFE.Option UFrac
 
 /-! ## Definitions -/
 
@@ -94,7 +94,7 @@ theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} 
 
 @[rocq_alias ufrac_auth_agree]
 theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
-  eq_of_dist (agreeN <| valid_iff_validN.mp h ·)
+  OFE.eq_of_dist (agreeN <| valid_iff_validN.mp h ·)
 
 #rocq_ignore ufrac_auth_agree_L "Use agree"
 

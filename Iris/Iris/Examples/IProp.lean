@@ -16,7 +16,7 @@ public import Iris.Std.HeapInstances
 local stepindex Nat
 
 namespace Iris.Examples
-open Iris.BI COFE
+open Iris.BI «COFE»
 
 section Example1
 
@@ -88,7 +88,7 @@ end Example2
 /-! Example: a typical step-indexed weakest precondition -/
 section Example3
 
-open OFE
+open «OFE»
 
 /- In this example, we are given a type of expressions and a type of states, as well as a
    single-stepping function from an operational semantics. -/

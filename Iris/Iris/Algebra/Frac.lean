@@ -161,7 +161,7 @@ theorem Frac.le_of_ord {p q : Qp} (H : p ≼ₒ q) : p ≤ q := by
 theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := le_of_ord (inc_iff_ord.mp H)
 
 @[rocq_alias frac_cmra_discrete]
-instance instDiscreteQp : Discrete Qp where
+instance instDiscreteQp : «Discrete» Qp where
   discrete_0 := fun h => h
   discrete_valid := id
 @[rocq_alias frac_full_exclusive]

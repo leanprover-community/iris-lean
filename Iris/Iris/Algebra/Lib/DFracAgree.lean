@@ -21,7 +21,7 @@ local stepindex Nat
 
 namespace Iris
 
-open OFE ORA DFrac
+open «OFE» ORA DFrac
 
 namespace DFracAgree
 
