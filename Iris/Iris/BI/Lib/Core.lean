@@ -16,7 +16,7 @@ local stepindex Nat
 namespace Iris
 
 section Core
-open BI «OFE»
+open BI OFE
 
 @[rocq_alias coreP]
 def coreP [Sbi PROP] (P : PROP) : PROP :=
@@ -53,7 +53,7 @@ instance coreP_affine (P : PROP) [Affine P] : Affine (coreP P) where
     iapply HC <;> iintro !> !> _ //
 
 @[rocq_alias coreP_ne]
-instance coreP_ne : NonExpansive (coreP (PROP := PROP)) where
+instance coreP_ne : NonExpansiveᵢ (coreP (PROP := PROP)) where
   ne _ _ _ H :=
     forall_ne fun _ => wand_ne.ne .rfl (wand_ne.ne
       (affinely_ne.ne (instPlainly_ne.ne (wand_ne.ne H .rfl))) .rfl)

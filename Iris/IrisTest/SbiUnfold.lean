@@ -20,7 +20,7 @@ closure.
 -/
 
 namespace IrisTest
-open Iris BI «OFE» ORA
+open Iris BI OFE ORA
 
 /-- The interpretation `sbi_unfold` gives to `▷`. Only used to state the expected
 goals below: writing the `match` under a `∃` binder makes the binder part of it. -/
@@ -29,7 +29,7 @@ private def laterP (φ : Nat → Prop) : Nat → Prop
   | m + 1 => φ m
 
 section RocqTests
-variable [Sbi PROP] {A : Type _} [OFE A] (x y z : A)
+variable [Sbi PROP] {A : Type _} [OFEᵢ A] (x y z : A)
 local bi PROP
 
 /-! ### These should *not* include a `∀ m ≤ n` -/
@@ -99,7 +99,7 @@ example (h : ∀ n, (∀ y, ∀ m ≤ n, x ≡{m}≡ y → y ≡{m}≡ z) → x 
 end RocqTests
 
 section LeanTests
-variable [Sbi PROP] [ORA A] [OFE B]
+variable [Sbi PROP] [ORA A] [OFEᵢ B]
 local bi PROP
 
 /- `prod_validI`. -/

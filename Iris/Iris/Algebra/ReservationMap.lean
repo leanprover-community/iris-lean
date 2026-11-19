@@ -58,18 +58,18 @@ def ReservationMap.singleton [LawfulPartialMap H Pos] (k : Pos) (a : A) :
 def ReservationMap.mkToken [LawfulPartialMap H Pos] (e : CoPset) :
     ReservationMap A H := .mk ∅ (.valid e)
 
-section «OFE»
+section OFE
 
-open «OFE»
+open OFE
 
-variable [LawfulPartialMap H Pos] [OFE A]
+variable [LawfulPartialMap H Pos] [OFEᵢ A]
 
 #rocq_ignore reservation_map_ofe_mixin "Not needed"
 #rocq_ignore reservation_map_equiv "Part of OFE instance"
 #rocq_ignore reservation_map_dist "Part of OFE instance"
 
 @[rocq_alias reservation_mapO]
-instance : OFE (ReservationMap A H) where
+instance : OFEᵢ (ReservationMap A H) where
   dist n x y := x.data ≡{n}≡ y.data ∧ x.token ≡{n}≡ y.token
   dist_eqv := {
     refl _ := ⟨.rfl, rfl⟩,
@@ -80,27 +80,27 @@ instance : OFE (ReservationMap A H) where
     refine ⟨fun h _ => h ▸ ⟨.rfl, .rfl⟩, fun H => ?_⟩
     obtain ⟨xd, xt⟩ := x; obtain ⟨yd, yt⟩ := y
     simp only [ReservationMap.mk.injEq]
-    exact ⟨OFE.eq_of_dist fun n => (H n).1, OFE.eq_of_dist fun n => (H n).2⟩
+    exact ⟨OFE.eq_of_distᵢ fun n => (H n).1, OFE.eq_of_distᵢ fun n => (H n).2⟩
   dist_lt h lt := ⟨dist_lt h.left lt, dist_lt h.right lt⟩
 
 @[rocq_alias reservation_map_ofe_discrete]
-instance instDiscreteReservationMap [Discrete A] : Discrete (ReservationMap A H) where
-  discrete_0 h := OFE.eq_of_dist <| by
+instance instDiscreteReservationMap [Discreteᵢ A] : Discreteᵢ (ReservationMap A H) where
+  discrete_0 h := OFE.eq_of_distᵢ <| by
     intro n
     exact ⟨(discrete_0 h.left).dist, (discrete_0 h.right).dist⟩
 
 instance instNonExpansiveReservationMapData :
-    NonExpansive (ReservationMap.mkData (H := H) (A := A)) where
+    NonExpansiveᵢ (ReservationMap.mkData (H := H) (A := A)) where
   ne _ _ _ h := ⟨h, rfl⟩
 
 @[rocq_alias ReservationMap_ne]
 instance instNonExpansive₂ReservationMapMk :
-    NonExpansive₂ (ReservationMap.mk (H := H) (A := A)) where
+    NonExpansive₂ᵢ (ReservationMap.mk (H := H) (A := A)) where
   ne _ _ _ hd _ _ ht := ⟨hd, ht⟩
 
 @[rocq_alias reservation_map_data_proj_ne]
 instance instNonExpansiveReservationMapDataProj :
-    NonExpansive (ReservationMap.data (H := H) (A := A)) where
+    NonExpansiveᵢ (ReservationMap.data (H := H) (A := A)) where
   ne _ _ _ h := h.left
 
 #rocq_ignore ReservationMap_proper "Derivable using NonExpansive.eqv"
@@ -110,31 +110,31 @@ instance instNonExpansiveReservationMapDataProj :
 
 @[rocq_alias reservation_map_data_ne]
 instance instNonExpansiveReservationMapSingleton :
-    NonExpansive (ReservationMap.singleton (H := H) (A := A) k) where
+    NonExpansiveᵢ (ReservationMap.singleton (H := H) (A := A) k) where
   ne _ _ _ h := ⟨singleton_dist h k, rfl⟩
 
 @[rocq_alias ReservationMap_discrete]
-instance instDiscreteEReservationMapMk {a : H A} [DiscreteE a] :
-    DiscreteE (ReservationMap.mk a b) where
-  discrete := fun h => OFE.eq_of_dist <| by
+instance instDiscreteEReservationMapMk {a : H A} [DiscreteEᵢ a] :
+    DiscreteEᵢ (ReservationMap.mk a b) where
+  discrete := fun h => OFE.eq_of_distᵢ <| by
     intro n
-    exact ⟨(OFE.DiscreteE.discrete h.1).dist, (OFE.DiscreteE.discrete h.2).dist⟩
+    exact ⟨(OFE.DiscreteE.discreteᵢ h.1).dist, (OFE.DiscreteE.discreteᵢ h.2).dist⟩
 
 @[rocq_alias reservation_map_data_discrete]
-instance instDiscreteEReservationMapSingleton {a : A} [DiscreteE a] :
-    DiscreteE (ReservationMap.singleton (H := H) k a) :=
+instance instDiscreteEReservationMapSingleton {a : A} [DiscreteEᵢ a] :
+    DiscreteEᵢ (ReservationMap.singleton (H := H) k a) :=
   by unfold ReservationMap.singleton ReservationMap.mkData;  infer_instance
 
 @[rocq_alias reservation_map_token_discrete]
 instance instDiscreteEReservationMapToken :
-    DiscreteE (ReservationMap.mkToken (H := H) (A := A) e) :=
+    DiscreteEᵢ (ReservationMap.mkToken (H := H) (A := A) e) :=
   by unfold ReservationMap.mkToken; infer_instance
 
-end «OFE»
+end OFE
 
 section ORA
 
-open «OFE» ORA DisjointLeibnizSet
+open OFE ORA DisjointLeibnizSet
 
 namespace ReservationMap
 
@@ -314,7 +314,7 @@ instance instORAReservationMap : ORA (ReservationMap A H) where
   pcore_op_left | rfl => ReservationMap.ext (core_op _) (core_op _)
   extend {n x y₁ y₂} v exy := by
     obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := extend (validN_data_of_validN v) exy.left
-    refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, OFE.eq_of_dist ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
+    refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, OFE.eq_of_distᵢ ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
     exact fun m => ⟨xzz.dist, exy.right⟩
   toOrdered := raOrdered
   op_monoN_left_ord z h := ⟨op_monoN_left_ord z.data h.1, op_monoN_left_ord z.token h.2⟩
@@ -396,7 +396,7 @@ instance [ORA.Discrete A] : ORA.Discrete (ReservationMap A H) where
 
 @[rocq_alias reservation_map_data_core_id]
 instance instCoreIdSingleton {a : A} [CoreId a] : CoreId (singleton (H := H) k a) where
-  core_id := OFE.eq_of_dist <| by
+  core_id := OFE.eq_of_distᵢ <| by
     refine fun n => OFE.some_dist_some.mpr ⟨?_, .rfl⟩
     exact (core_eqv_self (PartialMap.singleton k a : H A)).dist
 
@@ -408,7 +408,7 @@ theorem split_valid {x : ReservationMap A H} (vx : ✓ x) :
     exact ((not_valid_invalid (S := CoPset)) (hh ▸ (valid_token_of_valid vx))).elim
   | .valid t =>
     refine ⟨xd, t, ?_⟩
-    refine OFE.eq_of_dist ?_
+    refine OFE.eq_of_distᵢ ?_
     refine fun n => ⟨?_, ?_⟩
     · simp only [mkData, mkToken, op_data]
       exact Algebra.MonoidOps.op_right_id.symm.dist
@@ -423,7 +423,7 @@ theorem split_validN {x : ReservationMap A H} (vx : ✓{n} x) :
   | .error => exact ((not_valid_invalid (S := CoPset)) (hh ▸ H)).elim
   | .valid t =>
     refine ⟨xd, t, ?_⟩
-    refine OFE.eq_of_dist ?_
+    refine OFE.eq_of_distᵢ ?_
     refine fun m => ⟨?_, ?_⟩
     · simp only [mkData, mkToken, op_data]
       exact Algebra.MonoidOps.op_right_id.symm.dist
@@ -447,7 +447,7 @@ theorem valid_token : ✓ (mkToken (H := H) (A := A) e) :=
   ⟨Heap.valid_empty, fun i => .inl (get?_empty i)⟩
 
 theorem data_op (a b : H A) : mkData (a • b) = mkData a • mkData b := by
-  refine OFE.eq_of_dist ?_
+  refine OFE.eq_of_distᵢ ?_
   refine fun n => ⟨?_, ?_⟩
   · simp only [mkData, op_data]; exact .rfl
   · simp only [mkData, op_token]
@@ -460,7 +460,7 @@ theorem singleton_op k (a b : A) :
 
 theorem token_op (a b : CoPset) (h : a ## b) :
     mkToken (H := H) (A := A) (a ∪ b) = mkToken (H := H) (A := A) a • mkToken b := by
-  refine OFE.eq_of_dist ?_
+  refine OFE.eq_of_distᵢ ?_
   refine fun n => ⟨?_, ?_⟩
   · simp only [mkToken, op_data]
     exact Algebra.MonoidOps.op_left_id.symm.dist
@@ -526,7 +526,7 @@ instance {d : IsOp.Direction} {a b₁ b₂ : A} [hv : IsOp d a b₁ b₂] :
 @[rocq_alias reservation_map_token_union]
 theorem token_union {e₁ e₂} (he : e₁ ## e₂) :
     mkToken (H := H) (A := A) (e₁ ∪ e₂) = mkToken (H := H) (A := A) e₁ • mkToken e₂ := by
-  refine OFE.eq_of_dist ?_
+  refine OFE.eq_of_distᵢ ?_
   refine fun n => ⟨fun i => ?_, ?_⟩
   · simpa only [mkToken, get?_empty, op_data, Heap.get?_op] using .rfl
   · simp [mkToken, ORA.op, he]

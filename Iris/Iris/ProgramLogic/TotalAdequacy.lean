@@ -10,7 +10,7 @@ public import Iris.ProgramLogic.Adequacy
 
 namespace Iris.ProgramLogic
 
-open Iris «OFE» «COFE» BI Iris.BI Iris.Algebra Iris.Std FromMathlib LawfulSet
+open Iris OFE COFE BI Iris.BI Iris.Algebra Iris.Std FromMathlib LawfulSet
 open Language Language.Notation
 
 local bi (IProp GF)
@@ -27,11 +27,11 @@ variable {Expr State Obs Val : Type _} [Λ : Language Expr State Obs Val]
 variable {hlc : HasLC} {GF : BundledGFunctors}
 variable [ι : IrisGS_gen hlc Expr GF]
 
-local instance [Language Expr State Obs Val] : OFE (List Expr) := OFE.ofDiscrete _
-local instance list_nonexpansive (Ψ : List Expr → IProp GF) : NonExpansive Ψ :=
+local instance [Language Expr State Obs Val] : OFEᵢ (List Expr) := OFE.ofDiscrete _
+local instance list_nonexpansive (Ψ : List Expr → IProp GF) : NonExpansiveᵢ Ψ :=
   ⟨fun _ _ _ hxy => hxy ▸ .rfl⟩
-local instance : OFE CoPset := OFE.ofDiscrete _
-local instance [Language Expr State Obs Val] : OFE Expr := OFE.ofDiscrete _
+local instance : OFEᵢ CoPset := OFE.ofDiscrete _
+local instance [Language Expr State Obs Val] : OFEᵢ Expr := OFE.ofDiscrete _
 
 namespace twptp
 
@@ -82,7 +82,7 @@ theorem pre_mono (X Y : List Expr → IProp GF) :
 def get (t : List Expr) : IProp GF :=
   bi_least_fixpoint pre t
 
-instance get_ne : NonExpansive (get (ι := ι)) := list_nonexpansive _
+instance get_ne : NonExpansiveᵢ (get (ι := ι)) := list_nonexpansive _
 
 @[rocq_alias twptp_unfold]
 theorem unfold (t : List Expr) :
@@ -149,7 +149,7 @@ private theorem get_nil : ⊢ get (ι := ι) ([] : List Expr) := by
 theorem of_twp (s : Stuckness) (e : Expr) (Φ : Val → IProp GF) :
     WP e @ s ; ⊤ [{ Φ }] ⊢ get [e] := by
   let Ψ := fun (E : CoPset) (e : Expr) (_ : Val → IProp GF) => iprop(⌜E = ⊤⌝ -∗ get (ι := ι) [e])
-  letI : NonExpansive
+  letI : NonExpansiveᵢ
       (fun x : twp.Internal.Args Expr Val GF => Ψ x.1 x.2.1 x.2.2) :=
     ⟨fun _ _ _ ⟨hE, he, _⟩ => hE ▸ he ▸ .rfl⟩
   iintro He

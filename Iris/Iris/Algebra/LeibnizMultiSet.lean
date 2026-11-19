@@ -17,7 +17,7 @@ local stepindex Nat
 
 /-! ## The multiset union ORA -/
 
-open Iris Std ORA «OFE»
+open Iris Std ORA OFE
 
 @[grind!, rocq_alias gmultisetO, rocq_alias gmultisetR, rocq_alias gmultisetUR]
 inductive LeibnizMultiSet (MS : Type _) where
@@ -31,7 +31,7 @@ inductive LeibnizMultiSet (MS : Type _) where
 #rocq_ignore gmultiset_ra_mixin "Provided by the `CMRA (LeibnizMultiSet MS)` instance."
 #rocq_ignore gmultiset_ucmra_mixin "Provided by the `UCMRA (LeibnizMultiSet MS)` instance."
 
-instance : COFE (LeibnizMultiSet MS) := COFE.ofDiscrete _
+instance : COFEᵢ (LeibnizMultiSet MS) := COFE.ofDiscrete _
 
 namespace LeibnizMultiSet
 

@@ -17,12 +17,12 @@ local stepindex Nat
 
 namespace Iris
 
-open «OFE» ORA View
+open OFE ORA View
 
 namespace Algebra.TimeReceipt
 
-scoped instance : COFE Nat := COFE.ofDiscrete _
-scoped instance : OFE.Discrete Nat := ⟨fun h => h⟩
+scoped instance : COFEᵢ Nat := COFE.ofDiscrete _
+scoped instance : OFE.Discreteᵢ Nat := ⟨fun h => h⟩
 scoped instance : UCMRA Nat := CommMonoidLike.instUCMRA
 scoped instance : ORA.Discrete Nat := CommMonoidLike.instDiscrete
 scoped instance : CoreId (0 : Nat) := CommMonoidLike.instCoreIdZero
@@ -73,7 +73,7 @@ abbrev _root_.Iris.Algebra.TimeReceipt := View viewRel
 
 /- The `Nat` camera instances are scoped, so these are needed outside `namespace TimeReceipt`. -/
 @[rocq_alias time_receiptO]
-instance : OFE TimeReceipt := View.instOFE
+instance : OFEᵢ TimeReceipt := View.instOFE
 @[rocq_alias time_receiptR]
 instance : CMRA TimeReceipt := inferInstance
 @[rocq_alias time_receiptUR]

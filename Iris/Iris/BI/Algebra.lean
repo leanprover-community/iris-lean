@@ -161,9 +161,9 @@ end heap_view
 section agree_inclusion
 local bi PROP
 
-open Iris BI Agree «OFE»
+open Iris BI Agree OFE
 
-variable [Sbi PROP] [OFE A]
+variable [Sbi PROP] [OFEᵢ A]
 
 @[rocq_alias agree_equivI]
 theorem agree_equivI {a b : A} : toAgree a ≡ toAgree b ⊣⊢ a ≡ b := by
@@ -268,7 +268,7 @@ end auth
 
 section dfrac_agree
 local bi PROP
-variable [Sbi PROP] {A : Type _} [OFE A]
+variable [Sbi PROP] {A : Type _} [OFEᵢ A]
 
 open BI
 
@@ -287,7 +287,7 @@ end dfrac_agree
 
 section generic
 local bi PROP
-open BI ORA «OFE»
+open BI ORA OFE
 variable [Sbi PROP]
 
 @[rocq_alias ucmra_unit_validI]
@@ -307,7 +307,7 @@ theorem cmra_morphism_validI [ORA A] [ORA B] (f : A -C> B) (x : A) :
   siPure_mono fun _ => f.validN
 
 @[rocq_alias f_homom_includedI]
-theorem f_homom_includedI [ORA A] [ORA B] (x y : A) (f : A → B) [NonExpansive f]
+theorem f_homom_includedI [ORA A] [ORA B] (x y : A) (f : A → B) [NonExpansiveᵢ f]
     (Hf : ∀ c n, f x • f c ≡{n}≡ f (x • c)) :
     x ≼ y ⊢ f x ≼ f y :=
   siPure_mono <| BI.exists_elim fun c => BI.exists_intro_trans (f c) <|
@@ -353,8 +353,8 @@ end discrete_fun
 
 section excl
 local bi PROP
-open BI Excl «OFE»
-variable [Sbi PROP] [OFE A]
+open BI Excl OFE
+variable [Sbi PROP] [OFEᵢ A]
 
 @[rocq_alias algebra.excl_equivI]
 theorem excl_equivI (x y : Excl A) :
@@ -386,11 +386,11 @@ end excl
 
 section csum
 local bi PROP
-open BI Csum «OFE» ORA
+open BI Csum OFE ORA
 variable [Sbi PROP]
 
 @[rocq_alias algebra.csum_equivI]
-theorem csum_equivI [OFE A] [OFE B] (x y : Csum A B) :
+theorem csum_equivI [OFEᵢ A] [OFEᵢ B] (x y : Csum A B) :
     x ≡ y ⊣⊢
       match x, y with
       | inl a, inl b => iprop(a ≡ b)
@@ -431,8 +431,8 @@ end csum
 
 section list
 local bi PROP
-open BI «OFE»
-variable [Sbi PROP] [OFE A]
+open BI OFE
+variable [Sbi PROP] [OFEᵢ A]
 
 @[rocq_alias list_equivI]
 theorem list_equivI (l1 l2 : List A) :
@@ -447,7 +447,7 @@ open BI ORA Iris.Std PartialMap
 variable [Sbi PROP] {M : Type _ → Type _} {K : Type _} [LawfulPartialMap M K]
 
 @[rocq_alias gmap_equivI]
-theorem heap_equivI [OFE V] (m1 m2 : M V) :
+theorem heap_equivI [OFEᵢ V] (m1 m2 : M V) :
     m1 ≡ m2 ⊣⊢ ∀ i, get? m1 i ≡ get? m2 i := by
   sbi_unfold; intro _; exact .rfl
 
@@ -462,7 +462,7 @@ theorem singleton_validI [ORA V] (i : K) (x : V) :
   sbi_unfold; intro _; exact Heap.singleton_validN_iff
 
 @[rocq_alias gmap_union_equiv_eqI]
-theorem heap_union_equiv_eqI [OFE V] (m m1 m2 : M V) :
+theorem heap_union_equiv_eqI [OFEᵢ V] (m m1 m2 : M V) :
     m ≡ m1 ∪ m2 ⊣⊢
       ∃ m1' m2', ⌜m = m1' ∪ m2'⌝ ∧ m1' ≡ m1 ∧ m2' ≡ m2 := by
   sbi_unfold; intro _; exact _root_.PartialMap.union_dist_iff
@@ -472,7 +472,7 @@ end heap
 section view
 local bi PROP
 open BI ORA View ViewRel IsViewRel
-variable [Sbi PROP] [OFE A] [UORA B] {R : ViewRel A B} [IsViewRel R]
+variable [Sbi PROP] [OFEᵢ A] [UORA B] {R : ViewRel A B} [IsViewRel R]
 
 @[rocq_alias view_both_dfrac_validI_1]
 theorem view_both_dfrac_validI_1 (relI : SiProp) (dq : DFrac) (a : A) (b : B)
@@ -540,7 +540,7 @@ end view
 section excl_auth
 local bi PROP
 open BI ExclAuth
-variable [Sbi PROP] [OFE A]
+variable [Sbi PROP] [OFEᵢ A]
 
 @[rocq_alias excl_auth_agreeI]
 theorem excl_auth_agreeI (a b : A) :
@@ -552,7 +552,7 @@ end excl_auth
 section frac_agree
 local bi PROP
 open BI DFracAgree
-variable [Sbi PROP] {A : Type _} [OFE A]
+variable [Sbi PROP] {A : Type _} [OFEᵢ A]
 
 @[rocq_alias frac_agree_validI]
 theorem frac_agree_validI (q : Qp) (a : A) :

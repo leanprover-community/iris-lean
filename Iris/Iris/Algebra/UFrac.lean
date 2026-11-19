@@ -38,8 +38,8 @@ open ORA
 #rocq_ignore ufrac_pcore_instance "Use CMRA instance"
 #rocq_ignore ufrac_valid_instance "Use CMRA instance"
 
-@[simp] instance : COFE UFrac := COFE.ofDiscrete _
-instance : OFE.Discrete UFrac := ⟨fun h => h⟩
+@[simp] instance : COFEᵢ UFrac := COFE.ofDiscrete _
+instance : OFE.Discreteᵢ UFrac := ⟨fun h => h⟩
 
 @[simp] theorem dist_iff {n} {x y : UFrac} : x ≡{n}≡ y ↔ x = y := Iff.rfl
 
@@ -89,7 +89,7 @@ theorem le_of_ord {x y : UFrac} (H : x ≼ₒ y) : x.frac ≤ y.frac := by
 theorem le_of_inc {x y : UFrac} (H : x ≼ y) : x.frac ≤ y.frac := le_of_ord (inc_iff_ord.mp H)
 
 @[rocq_alias ufrac_cmra_discrete]
-instance : «Discrete» UFrac where
+instance : Discrete UFrac where
   discrete_0 := fun h => h
   discrete_valid := id
 @[rocq_alias ufrac_cancelable]

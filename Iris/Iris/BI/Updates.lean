@@ -193,7 +193,7 @@ delab_rule BIBase.wand
 
 @[rocq_alias BiBUpd]
 class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
-  [bupd_ne : OFE.NonExpansive (BUpd.bupd (PROP := PROP))]
+  [bupd_ne : OFE.NonExpansiveᵢ (BUpd.bupd (PROP := PROP))]
   intro {P : PROP} : P ⊢ |==> P
   mono {P Q : PROP} : (P ⊢ Q) → |==> P ⊢ |==> Q
   trans {P : PROP} : |==> |==> P ⊢ |==> P
@@ -203,7 +203,7 @@ class BIUpdate (PROP : Type _) [BI PROP] extends BUpd PROP where
 
 @[rocq_alias BiFUpd]
 class BIFUpdate (PROP : Type _) [BI PROP] extends FUpd PROP where
-  [ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP))]
+  [ne {E1 E2 : CoPset} : OFE.NonExpansiveᵢ (iprop(|={E1,E2}=> · : PROP))]
   subset {E1 E2 : CoPset} : E2 ⊆ E1 → ⊢ |={E1,E2}=> |={E2,E1}=> emp
   except0 {E1 E2 : CoPset} {P : PROP} : (◇ |={E1,E2}=> P) ⊢ |={E1,E2}=> P
   mono {E1 E2 : CoPset} {P Q : PROP} : (P ⊢ Q) → (|={E1,E2}=> P) ⊢ |={E1,E2}=> Q
@@ -240,7 +240,7 @@ variable [BI PROP] [BIUpdate PROP]
 open BIUpdate
 
 @[rocq_alias bupd_ne]
-instance bupd_ne : OFE.NonExpansive (BUpd.bupd (PROP := PROP)) := BIUpdate.bupd_ne
+instance bupd_ne : OFE.NonExpansiveᵢ (BUpd.bupd (PROP := PROP)) := BIUpdate.bupd_ne
 #rocq_ignore bupd_mono' "Use bupd_mono."
 #rocq_ignore bupd_flip_mono' "Use bupd_mono."
 #rocq_ignore bupd_proper "Derivable from bupd_ne with NonExpansive.eqv"
@@ -397,7 +397,7 @@ variable [BI PROP] [BIFUpdate PROP]
 open BIFUpdate LawfulSet
 
 @[rocq_alias updates.fupd_ne]
-instance fupd_ne {E1 E2 : CoPset} : OFE.NonExpansive (iprop(|={E1,E2}=> · : PROP)) := ne
+instance fupd_ne {E1 E2 : CoPset} : OFE.NonExpansiveᵢ (iprop(|={E1,E2}=> · : PROP)) := ne
 
 @[rocq_alias updates.fupd_mono]
 theorem fupd_mono {E1 E2 : CoPset} {P Q : PROP} (h : P ⊢ Q) : (|={E1,E2}=> P) ⊢ |={E1,E2}=> Q :=
@@ -648,7 +648,7 @@ variable [BI PROP] [BIFUpdate PROP]
 open BIFUpdate LawfulSet
 
 instance step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContractive PROP] :
-    OFE.Contractive (iprop(|={E1}[E2]▷=>^[n + 1] · : PROP)) where
+    OFE.Contractiveᵢ (iprop(|={E1}[E2]▷=>^[n + 1] · : PROP)) where
   distLater_dist {i x y} xy_i := by
     induction n with
     | zero => exact ne.ne (ι.distLater_dist (ne.ne <| xy_i · ·))
@@ -656,7 +656,7 @@ instance step_fupdN_contractive {E1 E2 : CoPset} {n : Nat} [ι : BILaterContract
 
 @[rocq_alias step_fupdN_ne]
 instance step_fupdN_ne {E1 E2 : CoPset} {n : Nat} :
-    OFE.NonExpansive (iprop(|={E1}[E2]▷=>^[n] · : PROP)) where
+    OFE.NonExpansiveᵢ (iprop(|={E1}[E2]▷=>^[n] · : PROP)) where
   ne {i x y} xy_i := by
     induction n with
     | zero => exact xy_i

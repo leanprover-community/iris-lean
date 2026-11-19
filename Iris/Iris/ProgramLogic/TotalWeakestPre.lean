@@ -11,7 +11,7 @@ public import Iris.ProofMode
 
 namespace Iris
 
-open ProgramLogic Language Language.Notation Iris.Std «OFE» BI
+open ProgramLogic Language Language.Notation Iris.Std OFE BI
 
 local bi (IProp GF)
 
@@ -37,8 +37,8 @@ abbrev Stuckness.MaybeReducibleNoObs : Stuckness → Expr × State → Prop
 
 namespace twp
 
-local instance : OFE CoPset := OFE.ofDiscrete _
-local instance [Language Expr State Obs Val] : OFE Expr := OFE.ofDiscrete _
+local instance : OFEᵢ CoPset := OFE.ofDiscrete _
+local instance [Language Expr State Obs Val] : OFEᵢ Expr := OFE.ofDiscrete _
 
 namespace Internal
 
@@ -137,7 +137,7 @@ theorem unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
 
 @[rocq_alias twp_ind]
 theorem induction (s : Stuckness) (Ψ : CoPset → Expr → (Val → IProp GF) → IProp GF)
-    [HΨ : NonExpansive (fun x : Internal.Args Expr Val GF => Ψ x.1 x.2.1 x.2.2)] :
+    [HΨ : NonExpansiveᵢ (fun x : Internal.Args Expr Val GF => Ψ x.1 x.2.1 x.2.2)] :
     □ (∀ e E Φ, pre s (fun E e Φ => iprop(Ψ E e Φ ∧ WP e @ s ; E [{ Φ }])) E e Φ -∗ Ψ E e Φ) -∗
     ∀ e E Φ, WP e @ s ; E [{ Φ }] -∗ Ψ E e Φ := by
   iintro #IH %e %E %Φ
@@ -149,7 +149,7 @@ theorem induction (s : Stuckness) (Ψ : CoPset → Expr → (Val → IProp GF) �
 
 @[rocq_alias twp_ne]
 instance ne {s : Stuckness} {E} {e : Expr} :
-    NonExpansive (TotalWp.totalWp (PROP := IProp GF) s E e) where
+    NonExpansiveᵢ (TotalWp.totalWp (PROP := IProp GF) s E e) where
   ne {n Φ₁ Φ₂} HΦ := by
     refine NonExpansive.ne (f := bi_least_fixpoint (Internal.pre' s)) ?_
     exact ⟨.rfl, .rfl, HΦ⟩
@@ -173,7 +173,7 @@ theorem strong_mono {s₁ s₂ : Stuckness} {E₁ E₂} {e : Expr} {Φ Ψ : Val 
     WP e @ s₁ ; E₁ [{ Φ }] -∗ (∀ v, Φ v ={E₂}=∗ Ψ v) -∗ WP e @ s₂ ; E₂ [{ Ψ }] := by
   let Pred := fun (E : CoPset) (e : Expr) (Φ : Val → IProp GF) => iprop%
     ∀ E₂ Ψ, ⌜E ⊆ E₂⌝ -∗ (∀ v, Φ v ={E₂}=∗ Ψ v) -∗ WP e @ s₂ ; E₂ [{ Ψ }]
-  have hPred : NonExpansive (fun x : Internal.Args Expr Val GF => Pred x.1 x.2.1 x.2.2) :=
+  have hPred : NonExpansiveᵢ (fun x : Internal.Args Expr Val GF => Pred x.1 x.2.1 x.2.2) :=
     ⟨fun _ _ _ ⟨hE, he, hΦ⟩ => hE ▸ he ▸ forall_ne fun _ => forall_ne fun _ => wand_ne.ne .rfl <|
       wand_ne.ne (forall_ne fun v => wand_ne.ne (hΦ v) .rfl) .rfl⟩
   iintro H HΦ
@@ -258,7 +258,7 @@ theorem bind (K : Expr → Expr) [ctx : Language.Context K]
   let Pred := fun (E : CoPset) (e : Expr) (Ψ : Val → IProp GF) => iprop%
     ∀ Φ, (∀ v, Ψ v -∗ WP (K v) @ s ; E [{ Φ }]) -∗
       WP (K e) @ s ; E [{ Φ }]
-  letI : NonExpansive (fun x : Internal.Args Expr Val GF => Pred x.1 x.2.1 x.2.2) :=
+  letI : NonExpansiveᵢ (fun x : Internal.Args Expr Val GF => Pred x.1 x.2.1 x.2.2) :=
     ⟨fun _ _ _ ⟨hE, he, hΨ⟩ => hE ▸ he ▸ BI.forall_ne fun _ =>
       BI.wand_ne.ne (BI.forall_ne fun v => BI.wand_ne.ne (hΨ v) .rfl) .rfl⟩
   iintro H
@@ -292,7 +292,7 @@ theorem bind_inv (K : Expr → Expr) [ctx : Language.Context K]
     WP (K e) @ s ; E [{ Φ }] ⊢ WP e @ s ; E [{ v, WP (K (↑v : Val)) @ s ; E [{ Φ }]}] := by
   let Pred := fun (E : CoPset) (e' : Expr) (Φ : Val → IProp GF) => iprop%
     ∀ e, ⌜e' = K e⌝ -∗ WP e @ s ; E [{ v, WP (K (↑v : Val)) @ s ; E [{ Φ }]}]
-  letI : NonExpansive (fun x : Internal.Args Expr Val GF => Pred x.1 x.2.1 x.2.2) :=
+  letI : NonExpansiveᵢ (fun x : Internal.Args Expr Val GF => Pred x.1 x.2.1 x.2.2) :=
     ⟨fun _ _ _ ⟨hE, he, hΦ⟩ => hE ▸ he ▸ BI.forall_ne fun _ =>
       BI.wand_ne.ne .rfl (NonExpansive.ne fun _ => NonExpansive.ne hΦ)⟩
   iintro H

@@ -60,7 +60,7 @@ A goal whose head is a `match` is not translated: it has to be case split (with
 -/
 
 namespace Iris
-open BI «OFE» ORA _root_.Iris.SiProp
+open BI OFE ORA _root_.Iris.SiProp
 
 /-- Whether the interpretation produced by `SbiUnfold` has to be downwards closed. -/
 @[rocq_alias sbi_unfold_closure_indicator.sbi_unfold_closure_indicator]
@@ -176,7 +176,7 @@ instance sbiUnfold_pure {φ : Prop} : SbiUnfold clo (iprop(⌜φ⌝) : PROP) (fu
     siPure_pure.symm.trans <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 
 @[rocq_alias sbi_unfold_internal_eq]
-instance sbiUnfold_internalEq [OFE A] {a b : A} :
+instance sbiUnfold_internalEq [OFEᵢ A] {a b : A} :
     SbiUnfold clo (iprop(a ≡ b) : PROP) (fun n => a ≡{n}≡ b) :=
   .of_closed Dist.le <| siPure_mono_bi <| biEntails_of_iff fun _ => .rfl
 

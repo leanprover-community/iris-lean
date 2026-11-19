@@ -22,7 +22,7 @@ local stepindex Nat
 
 namespace Iris
 
-open Iris «OFE» «COFE» BI FUpd
+open Iris OFE COFE BI FUpd
 
 section InvariantDefinition
 
@@ -49,14 +49,14 @@ open ProofMode
 variable {GF : BundledGFunctors} [InvGS_gen hlc GF]
 
 @[rocq_alias inv_contractive]
-instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
+instance inv_contractive (N : Namespace) : Contractiveᵢ (inv (GF := GF) N) where
   distLater_dist {n x y} H := by
     simp only [inv]
     refine intuitionistically_ne.ne ?_
     refine forall_ne (fun i => ?_)
     refine imp_ne.ne .rfl ?_
     refine wand_ne.ne .rfl ?_
-    refine (inferInstance : NonExpansive le_upd).ne ?_
+    refine (inferInstance : NonExpansiveᵢ le_upd).ne ?_
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne .rfl ?_
     refine sep_ne.ne ?_ ?_
@@ -65,7 +65,7 @@ instance inv_contractive (N : Namespace) : Contractive (inv (GF := GF) N) where
       exact Contractive.distLater_dist H
 
 @[rocq_alias inv_ne]
-instance inv_ne (N : Namespace) : NonExpansive (inv (GF := GF) N) := ne_of_contractive _
+instance inv_ne (N : Namespace) : NonExpansiveᵢ (inv (GF := GF) N) := ne_of_contractive _
 
 #rocq_ignore inv_proper "Subsumed by the NonExpansive instance `inv_ne`."
 

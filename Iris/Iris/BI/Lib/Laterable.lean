@@ -17,7 +17,7 @@ local stepindex Nat
 namespace Iris
 
 section Laterable
-open BI «OFE» Iris.Std ProofMode
+open BI OFE Iris.Std ProofMode
 local bi PROP
 
 /-- Require that the proposition `P` is laterable. -/
@@ -125,7 +125,7 @@ def make_laterable [BI PROP] (Q : PROP) : PROP :=
   iprop(∃ P, ▷ P ∗ □ (▷ P -∗ ◇ Q))
 
 @[rocq_alias make_laterable_ne]
-instance make_laterable_ne [BI PROP] : NonExpansive <| make_laterable (PROP := PROP) where
+instance make_laterable_ne [BI PROP] : NonExpansiveᵢ <| make_laterable (PROP := PROP) where
   ne {_ _ _} h := exists_ne fun _ => sep_ne.ne .rfl
     (intuitionistically_ne.ne (wand_ne.ne .rfl (except0_ne.ne h)))
 

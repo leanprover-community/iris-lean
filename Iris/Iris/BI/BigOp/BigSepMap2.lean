@@ -629,7 +629,7 @@ theorem bigSepM_bigSepM2_diag (Φ : K → A → A → PROP) (m : M A) :
   cases get? m k <;> rfl
 
 @[rocq_alias big_sepM2_ne_2]
-theorem bigSepM2_dist_2 (A B : Type uV) [OFE A] [OFE B]
+theorem bigSepM2_dist_2 (A B : Type uV) [OFEᵢ A] [OFEᵢ B]
     (Φ Ψ : K → A → B → PROP) (m1 : M A) (m2 : M B) (m1' : M A) (m2' : M B) (n : Nat)
     (hm1 : ∀ k, Option.Rel (fun x y => x ≡{n}≡ y) (get? m1 k) (get? m1' k))
     (hm2 : ∀ k, Option.Rel (fun x y => x ≡{n}≡ y) (get? m2 k) (get? m2' k))

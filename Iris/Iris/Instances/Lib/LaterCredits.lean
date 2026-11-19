@@ -23,7 +23,7 @@ local stepindex Nat
 namespace Iris
 
 open _root_.Std (Associative Commutative LeftIdentity LawfulLeftIdentity)
-open Iris «OFE» «COFE» BI Auth CommMonoidLike Iris.Std
+open Iris OFE COFE BI Auth CommMonoidLike Iris.Std
 local bi (IProp GF)
 
 section LcGS
@@ -42,8 +42,8 @@ scoped instance : LeftIdentity (Add.add (α := Credit)) (0 : Credit) where
 scoped instance : LawfulLeftIdentity (Add.add (α := Credit)) (0 : Credit) := ⟨Nat.zero_add⟩
 scoped instance : LeftCancelAdd Credit := ⟨Nat.add_left_cancel⟩
 
-scoped instance : COFE Credit := COFE.ofDiscrete _
-scoped instance : Discrete Credit := ⟨fun h => h⟩
+scoped instance : COFEᵢ Credit := COFE.ofDiscrete _
+scoped instance : Discreteᵢ Credit := ⟨fun h => h⟩
 scoped instance : UCMRA Credit := CommMonoidLike.instUCMRA
 scoped instance instIncOrdCredit : IncOrd Credit := inferInstance
 scoped instance : ORA.Discrete Credit := CommMonoidLike.instDiscrete
@@ -52,7 +52,7 @@ scoped instance {a : Credit} : Cancelable a := inferInstance
 /-- Later credits inclusion typeclass (`GF` contains the necessary functors for later credits) -/
 @[rocq_alias lcGpreS]
 class LcGpreS (GF : BundledGFunctors) where
-  lc_elem : ElemG GF (AuthURF (constOF Credit))
+  lc_elem : ElemG GF (AuthURF (constOFᵢ Credit))
 
 attribute [reducible, instance] LcGpreS.lc_elem
 
@@ -181,7 +181,7 @@ def le_upd_pre (P le_upd : IProp GF) : IProp GF :=
     (∃ m, ⌜m < n⌝ ∗ lc_supply m ∗ ▷ le_upd))
 
 @[rocq_alias le_upd.le_upd_pre_contractive]
-instance {P : IProp GF} : Contractive (le_upd_pre P) where
+instance {P : IProp GF} : Contractiveᵢ (le_upd_pre P) where
   distLater_dist {n x y} H := by
     simp only [le_upd_pre]
     refine forall_ne (fun i => ?_)
@@ -202,7 +202,7 @@ instance {P : IProp GF} : Contractive (le_upd_pre P) where
 #rocq_ignore le_upd.le_upd_unseal "`le_upd` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias le_upd.le_upd]
-def le_upd (P : IProp GF) : IProp GF := fixpoint (le_upd_pre P)
+def le_upd (P : IProp GF) : IProp GF := fixpointᵢ (le_upd_pre P)
 
 syntax:max "|==£> " term:40 : term
 
@@ -220,7 +220,7 @@ theorem le_upd_unfold {P : IProp GF} :
     (fixpoint_unfold ⟨le_upd_pre P, inferInstance⟩).to_bi.trans .rfl
 
 @[rocq_alias le_upd.le_upd_ne]
-instance : NonExpansive (le_upd (GF := GF)) where
+instance : NonExpansiveᵢ (le_upd (GF := GF)) where
   ne {n} := by
     apply WellFounded.induction Nat.lt_wfRel.wf n
     intro m IH P Q H
@@ -482,7 +482,7 @@ section le_upd_finally_rules
 variable {hlc : HasLC} [LcGS hlc GF]
 
 @[rocq_alias le_upd.le_upd_finally_ne]
-instance le_upd_finally_ne : NonExpansive (le_upd_finally (GF := GF)) where
+instance le_upd_finally_ne : NonExpansiveᵢ (le_upd_finally (GF := GF)) where
   ne _ _ _ H := by
     simp only [le_upd_finally]
     refine forall_ne (fun m => ?_)

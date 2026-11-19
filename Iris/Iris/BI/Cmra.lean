@@ -22,7 +22,7 @@ as `<si_pure> cmraValid a`.
 -/
 
 namespace Iris
-open BI «OFE» SiProp ORA Sbi
+open BI OFE SiProp ORA Sbi
 
 section CmraValid
 local bi PROP
@@ -39,7 +39,7 @@ delab_rule internalCmraValid
   | `($_ $a) => ``(iprop(✓ $a))
 
 @[rocq_alias internal_cmra_valid_ne]
-instance internalCmraValid_ne : NonExpansive (internalCmraValid (PROP := PROP) (A := A)) where
+instance internalCmraValid_ne : NonExpansiveᵢ (internalCmraValid (PROP := PROP) (A := A)) where
   ne _ _ _ h := siPure_ne.ne (instNonExpansiveCmraValid.ne h)
 
 #rocq_ignore internal_cmra_valid_proper "Derivable from internalCmraValid_ne with NonExpansive.eqv"
@@ -136,7 +136,7 @@ delab_rule internalCmraIncluded
 
 @[rocq_alias internal_included_nonexpansive]
 instance internalCmraIncluded_ne :
-    NonExpansive₂ (internalCmraIncluded (PROP := PROP) (A := A)) where
+    NonExpansive₂ᵢ (internalCmraIncluded (PROP := PROP) (A := A)) where
   ne n _ _ hx _ _ hy := by
     refine siPure_ne.ne ?_
     apply (exists_ne (fun a => NonExpansive₂.ne hy (op_commN.trans ((op_ne.ne hx).trans op_commN))))
@@ -191,7 +191,7 @@ theorem intuitionistically_internalCmraIncluded [BIAffine PROP] {a b : A} :
 @[rocq_alias internal_included_discrete]
 theorem internalCmraIncluded_discrete {a b : A} [ORA.Discrete A] :
     a ≼ b ⊣⊢ ⌜a ≼ b⌝ := by
-  haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
+  haveI : ∀ x : A, DiscreteEᵢ x := fun x => ⟨OFE.Discrete.discrete⟩
   refine ⟨?_, pure_elim' internalCmraIncluded_intro⟩
   calc internalCmraIncluded a b
     _ ⊢ <si_pure> (∃ c, b ≡ (a • c)) := siPure_internalCmraIncluded.mp
@@ -219,7 +219,7 @@ theorem internalCmraIncluded_trans {a b c : A} :
   exact and_intro and_elim_r (and_elim_left_trans (BI.internalEq_entails.mpr (fun n heq => op_left_dist _ heq)))
 
 /-- The internal `≼` is monotone under any nonexpansive map commuting with `•`. -/
-theorem internalCmraIncluded_map {B : Type _} [ORA B] (g : A → B) [NonExpansive g]
+theorem internalCmraIncluded_map {B : Type _} [ORA B] (g : A → B) [NonExpansiveᵢ g]
     (hg : ∀ x y : A, g (x • y) = g x • g y) {a b : A} :
     a ≼ b ⊢ g a ≼ g b :=
   siPure_mono <| BI.exists_elim fun c => BI.exists_intro_trans (g c) <| by
@@ -228,7 +228,7 @@ theorem internalCmraIncluded_map {B : Type _} [ORA B] (g : A → B) [NonExpansiv
 @[rocq_alias internal_included_timeless]
 instance internalCmraIncluded_timeless {a b : A} [ORA.Discrete A] :
     Timeless (PROP := PROP) iprop(a ≼ b) := by
-  haveI : ∀ x : A, DiscreteE x := fun x => ⟨OFE.Discrete.discrete⟩
+  haveI : ∀ x : A, DiscreteEᵢ x := fun x => ⟨OFE.Discrete.discrete⟩
   unfold internalCmraIncluded
   infer_instance
 
@@ -271,7 +271,7 @@ delab_rule internalCmraOrder
   | `($_ $a $b) => ``(iprop($a ≼ₒ $b))
 
 instance internalCmraOrder_ne :
-    NonExpansive₂ (internalCmraOrder (PROP := PROP) (A := A)) where
+    NonExpansive₂ᵢ (internalCmraOrder (PROP := PROP) (A := A)) where
   ne _ _ _ hx _ _ hy := siPure_ne.ne fun hm => ordN_dist_iff (hx.le hm) (hy.le hm)
 
 theorem internalCmraOrder_intro {P : PROP} {a b : A} (h : a ≼ₒ b) : P ⊢ a ≼ₒ b :=

@@ -12,17 +12,14 @@ public import Iris.Std.StepIndex.Registry
 /-!
 # `@[indexed]`, `local stepindex`, and their notations
 
-`@[indexed]` gives a declaration `C` a scoped notation (in `Iris.StepIndex`): the token `C`, alone
-or applied, stands for `C (SI := stepindex%)`, so that the step index is known before instance
-search runs. `local stepindex T` opens these notations, together with a delaborator that prints
-`C T args` back with the notation.
+`@[indexed]` gives a declaration `C` a scoped notation `Cᵢ` (in `Iris.StepIndex`): `Cᵢ`, alone or
+applied, stands for `C (SI := stepindex%)`, so that the step index is known before instance search
+runs. `local stepindex T` opens these notations, together with a delaborator that prints `C T args`
+back as `Cᵢ args`. `C` itself is unchanged.
 
-The notation is a token, so inside a `local stepindex` section the raw declaration is written
-`«C»`, and `C` cannot be used where an identifier is expected (binders, `namespace`, `open`).
-
-Spellings: a trailing `ᵢ` and a leading `Iris.` are dropped from the declaration name. A type (a
-class or structure, or anything else ending in a sort) is spelled by its last component and by its
-qualified name; any other declaration only by its qualified name.
+Spellings: the declaration name without a leading `Iris.`, followed by `ᵢ`. A type (a class or
+structure, or anything else ending in a sort) is also spelled by its last component, e.g. both
+`OFE.Homᵢ` and `Homᵢ`; any other declaration only by its qualified name, e.g. `OFE.eq_distᵢ`.
 -/
 
 namespace Iris.StepIndex
@@ -31,11 +28,9 @@ open Lean
 
 /-- The notation spellings of `decl` (see the module docstring). -/
 meta def spellingsOf (decl : Name) (isType : Bool) : Array String :=
-  let last := decl.getString!
-  let last := if last.endsWith "ᵢ" then (last.dropEnd 1).toString else last
-  let n := (decl.getPrefix.str last).replacePrefix `Iris .anonymous
-  let qualified := n.toString (escape := false)
-  if isType && !n.isAtomic then #[n.getString!, qualified] else #[qualified]
+  let n := decl.replacePrefix `Iris .anonymous
+  let qualified := n.toString (escape := false) ++ "ᵢ"
+  if isType && !n.isAtomic then #[n.getString! ++ "ᵢ", qualified] else #[qualified]
 
 /-- The step index binder of `decl` (its first binder of type `stepindex (Type _)`) and the
 spellings of its notation. -/
@@ -96,7 +91,7 @@ end
 /--
 `@[indexed]` marks a declaration whose step index (the binder of type `stepindex (Type _)`, explicit
 or implicit, possibly a section variable) is filled in by `local stepindex T` sections: there the
-notation `C a` elaborates as `C (SI := T) a` and prints back as `C a`.
+notation `Cᵢ a` elaborates as `C (SI := T) a`, and `C T a` prints back as `Cᵢ a`.
 -/
 meta initialize registerBuiltinAttribute {
   name := `indexed
@@ -142,13 +137,13 @@ namespace Iris
 
 public section
 open Lean Parser in
-/-- `local stepindex T` makes `T` the section's step index: `@[indexed]` declarations take it when
-theirs is not given, and print without it.
+/-- `local stepindex T` makes `T` the section's step index: there the notation `Cᵢ` of an
+`@[indexed]` declaration `C` stands for `C (SI := T)`, and `C T` prints as `Cᵢ`.
 
 ```
 local stepindex Nat
-variable [CMRA α]          -- CMRA Nat α
-example (x : α) : ✓ x → ✓ x := id
+variable [OFEᵢ α]          -- OFE Nat α
+example (x y : α) : x = y ↔ ∀ n, x ≡{n}≡ y := OFE.eq_distᵢ
 ```
 -/
 syntax (name := stepindexCmd) Term.attrKind &"stepindex " term : command

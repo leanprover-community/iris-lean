@@ -39,29 +39,33 @@ local stepindex SI
 #guard_msgs in
 #stepindex?
 
-/-- info: fun α [Foo α] => 0 : (α : Type) → [Foo α] → Nat -/
+/-- info: fun α [Fooᵢ α] => 0 : (α : Type) → [Fooᵢ α] → Nat -/
 #guard_msgs in
-#check fun (α : Type) [Foo α] => 0
+#check fun (α : Type) [Fooᵢ α] => 0
 
--- the raw declaration is `«Foo»`, which takes the step index as usual
-/-- info: fun α [Foo α] => 0 : (α : Type) → [Foo α] → Nat -/
+-- the declaration itself takes the step index as usual, and prints with the notation
+/-- info: fun α [Fooᵢ α] => 0 : (α : Type) → [Fooᵢ α] → Nat -/
 #guard_msgs in
-#check fun (α : Type) [«Foo» SI α] => 0
-/-- info: fun α [Foo α] => 0 : (α : Type) → [Foo α] → Nat -/
+#check fun (α : Type) [Foo SI α] => 0
+/-- info: fun α [Fooᵢ α] => 0 : (α : Type) → [Fooᵢ α] → Nat -/
 #guard_msgs in
-#check fun (α : Type) [@«Foo» SI _ α] => 0
+#check fun (α : Type) [@Foo SI _ α] => 0
 
 -- a bare token
-example : (Foo : Type → Type) = @«Foo» SI _ := rfl
+example : (Fooᵢ : Type → Type) = @Foo SI _ := rfl
 
 -- an implicit step index
-example (α : Type) : Bar α = (α → SI) := rfl
+example (α : Type) : Barᵢ α = (α → SI) := rfl
+
+-- explicit universes
+example (α : Type) : Barᵢ.{0} α = (α → SI) := rfl
 
 -- through a notation
 example (α : Type) : (bar% α) = (α → SI) := rfl
 
--- a non-type is a token only by its qualified name: a short name is an ordinary identifier
-example (n : SI) : IrisTest.StepIndexElab.A.Baz n = n := rfl
+-- a non-type is spelled only by its qualified name
+example (n : SI) : IrisTest.StepIndexElab.A.Bazᵢ n = n := rfl
+example (n : SI) : A.Baz n = n := rfl
 open A B in
 example : Baz true = true := rfl
 end

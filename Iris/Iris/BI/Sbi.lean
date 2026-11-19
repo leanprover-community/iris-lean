@@ -26,7 +26,7 @@ step-index, and `siEmpValid : PROP → SiProp` that expresses that a proposition
 -/
 
 namespace Iris
-open «OFE» BI Iris.BI.BIBase
+open OFE BI Iris.BI.BIBase
 
 /-- Embedding of step-indexed propositions into a BI. -/
 @[rocq_alias SiPure]
@@ -66,8 +66,8 @@ local bi PROP
 /-- The `Sbi` class: a BI with step-indexed structure. -/
 @[rocq_alias Sbi]
 class Sbi (PROP : Type _) extends BI PROP, SiPure PROP, SiEmpValid PROP where
-  siPure_ne : NonExpansive (α := SiProp) (β := PROP) SiPure.siPure
-  siEmpValid_ne : NonExpansive (α := PROP) (β := SiProp) SiEmpValid.siEmpValid
+  siPure_ne : NonExpansiveᵢ (α := SiProp) (β := PROP) SiPure.siPure
+  siEmpValid_ne : NonExpansiveᵢ (α := PROP) (β := SiProp) SiEmpValid.siEmpValid
   siPure_mono {Pi Qi : SiProp} (H : Pi ⊢@{SiProp} Qi) : <si_pure> Pi ⊢ <si_pure> Qi
   siEmpValid_mono {P Q : PROP} (H : P ⊢ Q) : <si_emp_valid> P ⊢@{SiProp} <si_emp_valid> Q
   siEmpValid_siPure {Pi : SiProp} : <si_emp_valid> (<si_pure> Pi : PROP) ⊣⊢@{SiProp} Pi
@@ -592,7 +592,7 @@ section PlainlyFromSbi
 variable [Sbi PROP]
 
 @[rocq_alias plainly_ne]
-instance instPlainly_ne : OFE.NonExpansive (BIBase.plainly (PROP := PROP)) where
+instance instPlainly_ne : OFE.NonExpansiveᵢ (BIBase.plainly (PROP := PROP)) where
   ne _ _ _ h := Sbi.siPure_ne.ne (Sbi.siEmpValid_ne.ne h)
 
 @[rocq_alias plainly_mono]
@@ -668,7 +668,7 @@ theorem plainly_sExists [SbiEmpValidExist PROP] {Φ : PROP → Prop} :
     exists_mono fun p => siPure_and.mp.trans (and_mono_left siPure_pure.mp)
 
 @[rocq_alias plainly_if_ne]
-instance instPlainlyIf_ne p : OFE.NonExpansive (BIBase.Plainly.plainlyIf (PROP := PROP) p) where
+instance instPlainlyIf_ne p : OFE.NonExpansiveᵢ (BIBase.Plainly.plainlyIf (PROP := PROP) p) where
   ne _ _ _ := fun h =>
     match p with
     | true => instPlainly_ne.ne h

@@ -19,12 +19,12 @@ local stepindex Nat
 
 namespace Iris
 
-open BI ORA «OFE» Iris Iris.Std LawfulSet DisjointLeibnizSet «COFE» ProofMode
+open BI ORA OFE Iris Iris.Std LawfulSet DisjointLeibnizSet COFE ProofMode
 
 local bi (IProp GF)
 
-abbrev NaInvF : OFunctorPre :=
-  ProdOF (constOF CoPsetDisjL) (constOF (DisjointLeibnizSet PosSet))
+abbrev NaInvF : OFunctorPreᵢ :=
+  ProdOFᵢ (constOFᵢ CoPsetDisjL) (constOFᵢ (DisjointLeibnizSet PosSet))
 
 @[rocq_alias na_invG]
 class NaInvG (GF : BundledGFunctors) where
@@ -39,7 +39,7 @@ attribute [reducible, instance] NaInvG.inv
 abbrev NaInvPoolName := GName
 
 instance instNaInvF_discreteE {α β : Type _} (x : DisjointLeibnizSet α) (y : DisjointLeibnizSet β) :
-    DiscreteE (x, y) := by infer_instance
+    DiscreteEᵢ (x, y) := by infer_instance
 
 instance coreId_valid_empty_empty : CoreId ((valid (∅ : CoPset), valid (∅ : PosSet))) where
   core_id := by rfl
@@ -68,14 +68,14 @@ instance instTimeless_own (p : NaInvPoolName) (E : CoPset) : Timeless (own (GF :
 
 @[rocq_alias na_inv_contractive]
 instance instContractive_inv (p : NaInvPoolName) (N : Namespace) :
-    Contractive (inv (GF := GF) p N) where
+    Contractiveᵢ (inv (GF := GF) p N) where
   distLater_dist {n x y} H := by
     refine exists_ne fun i => and_ne.ne .rfl ?_
     refine Contractive.distLater_dist fun m hm => ?_
     exact or_ne.ne (sep_ne.ne (H _ hm) .rfl) .rfl
 
 @[rocq_alias na_inv_ne]
-instance instNonExpansive_inv (p : NaInvPoolName) (N : Namespace) : NonExpansive (inv (GF := GF) p N) :=
+instance instNonExpansive_inv (p : NaInvPoolName) (N : Namespace) : NonExpansiveᵢ (inv (GF := GF) p N) :=
   ne_of_contractive _
 
 #rocq_ignore na_inv_proper "Subsumed by the NonExpansive instance `na_inv_ne`."

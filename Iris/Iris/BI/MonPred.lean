@@ -27,7 +27,7 @@ public import Iris.BI.BigOp.BigSepSet
 local stepindex Nat
 
 namespace Iris.BI
-open Iris Iris.Std «OFE»
+open Iris Iris.Std OFE
 
 /-- A `BiIndex` is an inhabited type equipped with a preorder `⊑`. Monotone
 predicates are functions out of a `BiIndex` that are monotone w.r.t. this order. -/
@@ -81,13 +81,13 @@ def upclosed [BI PROP] (Φ : I.car → PROP) : I.car → PROP :=
 
 end MonPred
 
-section «OFE»
+section OFE
 variable {I : BiIndex} {PROP : Type _} [BI PROP]
 
 /-- Pointwise OFE: `P ≡ Q := ∀ i, P i ≡ Q i`, `P ≡{n}≡ Q := ∀ i, P i ≡{n}≡ Q i`
 (Rocq `monPredO`). -/
 @[rocq_alias monPredO]
-instance : OFE (MonPred I PROP) where
+instance : OFEᵢ (MonPred I PROP) where
   dist n P Q := ∀ i, P.monPred_at i ≡{n}≡ Q.monPred_at i
   dist_eqv :=
     { refl _ _ := dist_eqv.refl _
@@ -95,7 +95,7 @@ instance : OFE (MonPred I PROP) where
       trans h1 h2 i := dist_eqv.trans (h1 i) (h2 i) }
   eq_dist' {P Q} := by
     refine ⟨fun h _ _ => h ▸ .rfl, fun h => ?_⟩
-    exact MonPred.ext fun i => OFE.eq_of_dist fun n => h n i
+    exact MonPred.ext fun i => OFE.eq_of_distᵢ fun n => h n i
   dist_lt h1 h2 i := dist_lt (h1 i) h2
 
 #rocq_ignore monPred_ofe_mixin "Rocq mixin record; subsumed by the OFE instance."
@@ -123,12 +123,12 @@ def ofSig :
   ne.1 _ _ _ h := h
 
 @[rocq_alias sig_monPred_ne]
-theorem ofSig_ne : OFE.NonExpansive (ofSig (I := I) (PROP := PROP)) := ofSig.ne
+theorem ofSig_ne : OFE.NonExpansiveᵢ (ofSig (I := I) (PROP := PROP)) := ofSig.ne
 
 #rocq_ignore sig_monPred_proper "OFE is Leibniz; use equality"
 
 @[rocq_alias monPred_sig_ne]
-theorem toSig_ne : OFE.NonExpansive (toSig (I := I) (PROP := PROP)) := toSig.ne
+theorem toSig_ne : OFE.NonExpansiveᵢ (toSig (I := I) (PROP := PROP)) := toSig.ne
 
 #rocq_ignore monPred_sig_proper "OFE is Leibniz; use equality"
 
@@ -142,7 +142,7 @@ theorem toSig_ofSig (P : { f : I.car → PROP // ∀ {i j : I.car}, I.rel.le i j
 end MonPred
 
 @[rocq_alias monPred_cofe]
-instance : IsCOFE (MonPred I PROP) where
+instance : IsCOFEᵢ (MonPred I PROP) where
   lbcompl := (·.elim)
   conv_lbcompl := (·.elim)
   lbcompl_ne := (·.elim)
@@ -150,12 +150,12 @@ instance : IsCOFE (MonPred I PROP) where
     let cf := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n> (I.car → PROP)).comp MonPred.toSig)
     { monPred_at := fun i => COFE.compl cf i
       monPred_mono := fun {i j} h =>
-        (LimitPreserving.entails (OFE.applyHom i) (OFE.applyHom j)).compl cf (fun n => (c n).monPred_mono h) }
+        (LimitPreserving.entails (OFE.applyHomᵢ i) (OFE.applyHomᵢ j)).compl cf (fun n => (c n).monPred_mono h) }
   conv_compl {n c} :=
     IsCOFE.conv_compl (n := n)
       (c := c.map ((⟨Subtype.val, inferInstance⟩ : _ -n> (I.car → PROP)).comp MonPred.toSig))
 
-end «OFE»
+end OFE
 
 namespace MonPred
 variable {I : BiIndex} {PROP : Type _}
@@ -810,7 +810,7 @@ theorem monPred_at_flip_mono {P Q : MonPred I PROP} {i j : I.car} (h : Q ⊢ P) 
 
 @[rocq_alias monPred_at_ne]
 theorem monPred_at_ne (i : I.car) :
-    OFE.NonExpansive (fun P : MonPred I PROP => P.monPred_at i) :=
+    OFE.NonExpansiveᵢ (fun P : MonPred I PROP => P.monPred_at i) :=
   ⟨fun _ _ _ h => dist_at.mp h i⟩
 
 #rocq_ignore monPred_at_proper "Use monPred_at_ne / monPred_at_mono."
@@ -1126,7 +1126,7 @@ theorem monPred_objectively_mono {P Q : MonPred I PROP} (h : P ⊢ Q) :
 
 @[rocq_alias monPred_objectively_ne]
 theorem monPred_objectively_ne :
-    OFE.NonExpansive (objectively (I := I) (PROP := PROP)) :=
+    OFE.NonExpansiveᵢ (objectively (I := I) (PROP := PROP)) :=
   ⟨fun _ _ _ h => dist_at.mpr fun _ => forall_ne fun k => dist_at.mp h k⟩
 
 #rocq_ignore monPred_objectively_mono' "Use monPred_objectively_mono."
@@ -1243,7 +1243,7 @@ theorem monPred_subjectively_mono {P Q : MonPred I PROP} (h : P ⊢ Q) :
 
 @[rocq_alias monPred_subjectively_ne]
 theorem monPred_subjectively_ne :
-    OFE.NonExpansive (subjectively (I := I) (PROP := PROP)) :=
+    OFE.NonExpansiveᵢ (subjectively (I := I) (PROP := PROP)) :=
   ⟨fun _ _ _ h => dist_at.mpr fun _ => exists_ne fun k => dist_at.mp h k⟩
 
 #rocq_ignore monPred_subjectively_mono' "Use monPred_subjectively_mono."
@@ -1659,12 +1659,12 @@ instance instSbiMonPred : Sbi (MonPred I PROP) where
 /-! ### Internal equality and the plainly modality on `MonPred` -/
 
 @[rocq_alias monPred_internal_eq_unfold]
-theorem monPred_internal_eq_unfold {A : Type _} [OFE A] :
+theorem monPred_internal_eq_unfold {A : Type _} [OFEᵢ A] :
     (internalEq : A → A → MonPred I PROP) =
       fun x y => iprop(⎡(x ≡ y : PROP)⎤) := rfl
 
 @[rocq_alias monPred_at_internal_eq]
-theorem monPred_at_internal_eq {A : Type _} [OFE A] (i : I.car) (a b : A) :
+theorem monPred_at_internal_eq {A : Type _} [OFEᵢ A] (i : I.car) (a b : A) :
     (iprop(a ≡ b) : MonPred I PROP).monPred_at i ⊣⊢ a ≡ b :=
   .rfl
 
@@ -1699,7 +1699,7 @@ instance siPure_objective (Pi : SiProp) : Objective (iprop(<si_pure> Pi) : MonPr
   objective_at _ _ := .rfl
 
 @[rocq_alias internal_eq_objective]
-instance internal_eq_objective {A : Type _} [OFE A] (x y : A) :
+instance internal_eq_objective {A : Type _} [OFEᵢ A] (x y : A) :
     Objective (iprop(x ≡ y) : MonPred I PROP) where
   objective_at _ _ := .rfl
 

@@ -55,7 +55,7 @@ abbrev Tickets := Std.ExtTreeSet Nat compare
 /-- The ticket now being served, together with the set of tickets handed out so far. -/
 abbrev TicketR := Auth (Option (Excl Unit) × DisjointLeibnizSet Tickets)
 
-abbrev TicketLockF : COFE.OFunctorPre := constOF TicketR
+abbrev TicketLockF : COFE.OFunctorPreᵢ := constOFᵢ TicketR
 
 instance : RFunctorAffine TicketLockF where affine := inferInstance
 

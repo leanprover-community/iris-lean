@@ -16,7 +16,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris.HeapLang
 
-open BI Iris Iris.Std ProgramLogic ORA «OFE» LeibnizMultiSet FiniteMultiSet
+open BI Iris Iris.Std ProgramLogic ORA OFE LeibnizMultiSet FiniteMultiSet
 
 @[expose] public section
 
@@ -64,7 +64,7 @@ def releaseWriter : Val := hl_val%
 
 abbrev ReaderFracs := ListPerm Qp
 
-abbrev RwSpinLockF : COFE.OFunctorPre := constOF (Auth (LeibnizMultiSet ReaderFracs))
+abbrev RwSpinLockF : COFE.OFunctorPreᵢ := constOFᵢ (Auth (LeibnizMultiSet ReaderFracs))
 
 @[rocq_alias heap_lang.rw_spin_lockG]
 class RwSpinLockG (GF : BundledGFunctors) where [elemG : ElemG GF RwSpinLockF]

@@ -12,7 +12,7 @@ public import Iris.HeapLang.Instances
 
 namespace Iris.HeapLang
 
-open BI «OFE»
+open BI OFE
 local bi (IProp GF)
 
 @[expose] public section
@@ -73,7 +73,7 @@ instance instTimelessWriterLocked γ : Timeless (rw.writerLocked L γ) :=
   rw.writerLocked_timeless γ
 
 @[rocq_alias heap_lang.is_rw_lock_contractive]
-instance isRwLock_contractive γ lk : Contractive (rw.isRwLock L γ lk) := by
+instance isRwLock_contractive γ lk : Contractiveᵢ (rw.isRwLock L γ lk) := by
   rw [contractive_internalEq (PROP := IProp GF)]
   iintro %Φ₁ %Φ₂ #HEQ
   ihave #HΦ : ▷ ∀ q, Φ₁ q ≡ Φ₂ q $$ [HEQ]

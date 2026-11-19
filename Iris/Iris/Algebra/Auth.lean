@@ -22,7 +22,7 @@ local stepindex Nat
 
 open Iris
 
-open «OFE» ORA UORA View
+open OFE ORA UORA View
 
 /-!
 ## Definition of the view relation for the authoritative camera.
@@ -66,7 +66,7 @@ theorem authViewRel_exists_iff {n : Nat} {b : A} : (∃ a, AuthViewRel n a b) �
   ⟨fun ⟨_, h⟩ => IsViewRel.rel_validN _ _ _ h, (⟨b, ⟨unit, by rw [unit_right_id]⟩, ·⟩)⟩
 
 @[rocq_alias auth_view_rel_discrete]
-instance [OFE.Discrete A] [ORA.Discrete A] : IsViewRelDiscrete (AuthViewRel (A := A)) where
+instance [OFE.Discreteᵢ A] [ORA.Discrete A] : IsViewRelDiscrete (AuthViewRel (A := A)) where
   discrete _ _ _ := fun ⟨⟨c, h⟩, hv⟩ =>
     ⟨⟨c, ordN_of_ord _ (discrete_ord h)⟩, (discrete_valid hv).validN⟩
 
@@ -81,7 +81,7 @@ abbrev Auth (A : Type _) [UORA A] :=
 namespace Auth
 variable [UORA A]
 
-instance : OFE (Auth A) := View.instOFE
+instance : OFEᵢ (Auth A) := View.instOFE
 instance instORA : ORA (Auth A) := View.instORA
 instance instUORA : UORA (Auth A) := View.instUORA
 
@@ -103,13 +103,13 @@ notation "● " a => auth (DFrac.own 1) a
 notation "◯ " b => frag b
 
 @[rocq_alias auth_auth_ne]
-nonrec instance auth_ne {dq : DFrac} : NonExpansive (auth dq : A → Auth A) :=
+nonrec instance auth_ne {dq : DFrac} : NonExpansiveᵢ (auth dq : A → Auth A) :=
   auth_ne
 
 #rocq_ignore auth_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
 
 @[rocq_alias auth_frag_ne]
-nonrec instance frag_ne : NonExpansive (frag : A → Auth A) :=
+nonrec instance frag_ne : NonExpansiveᵢ (frag : A → Auth A) :=
   frag_ne
 
 #rocq_ignore auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
@@ -122,7 +122,7 @@ nonrec theorem auth_dist_inj {n : Nat} {dq1 dq2 : DFrac} {a1 a2 : A}
 @[rocq_alias auth_auth_inj]
 theorem auth_inj {dq1 dq2 : DFrac} {a1 a2 : A} (h : (●{dq1} a1) = ●{dq2} a2) :
     dq1 = dq2 ∧ a1 = a2 :=
-  ⟨auth_inj_frac (n := 0) h.dist, OFE.eq_of_dist fun _ => dist_of_auth_dist h.dist⟩
+  ⟨auth_inj_frac (n := 0) h.dist, OFE.eq_of_distᵢ fun _ => dist_of_auth_dist h.dist⟩
 
 @[rocq_alias auth_frag_dist_inj]
 theorem frag_dist_inj {n : Nat} {b1 b2 : A} (h : (◯ b1 : Auth A) ≡{n}≡ ◯ b2) : b1 ≡{n}≡ b2 :=
@@ -130,14 +130,14 @@ theorem frag_dist_inj {n : Nat} {b1 b2 : A} (h : (◯ b1 : Auth A) ≡{n}≡ ◯
 
 @[rocq_alias auth_frag_inj]
 theorem frag_inj {b1 b2 : A} (h : (◯ b1 : Auth A) = ◯ b2) : b1 = b2 :=
-  OFE.eq_of_dist fun _ => dist_of_frag_dist h.dist
+  OFE.eq_of_distᵢ fun _ => dist_of_frag_dist h.dist
 
 @[rocq_alias auth_auth_discrete]
-nonrec instance auth_discrete {dq : DFrac} {a : A} [DiscreteE a] [DiscreteE (unit : A)] :
-    DiscreteE (●{dq} a) := auth_discrete
+nonrec instance auth_discrete {dq : DFrac} {a : A} [DiscreteEᵢ a] [DiscreteEᵢ (unit : A)] :
+    DiscreteEᵢ (●{dq} a) := auth_discrete
 
 @[rocq_alias auth_frag_discrete]
-nonrec instance frag_discrete {a : A} [DiscreteE a] : DiscreteE (◯ a : Auth A) :=
+nonrec instance frag_discrete {a : A} [DiscreteEᵢ a] : DiscreteEᵢ (◯ a : Auth A) :=
   frag_discrete
 
 /-! ## Operations -/
@@ -637,10 +637,10 @@ theorem authViewRel_map [UORA A'] [UORA B']
   fun ⟨⟨c, hinc⟩, hv⟩ => ⟨⟨g c, by rw [← g.op]; exact g.monoN_ord hinc⟩, g.validN hv⟩
 
 @[rocq_alias authURF]
-abbrev AuthURF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
+abbrev AuthURF (T : COFE.OFunctorPreᵢ) [URFunctor T] : COFE.OFunctorPreᵢ :=
   fun A B _ _ => Auth (T A B)
 
-instance instURFunctorAuthURF {T : COFE.OFunctorPre} [URFunctor T] :
+instance instURFunctorAuthURF {T : COFE.OFunctorPreᵢ} [URFunctor T] :
     URFunctor (AuthURF T) where
   map {A A'} {B B'} _ _ _ _ f g :=
     mapC
@@ -659,21 +659,21 @@ instance instURFunctorAuthURF {T : COFE.OFunctorPre} [URFunctor T] :
     refine congrArg (View.map _ · _ _) (funext fun _ => URFunctor.map_comp f g f' g' _) |>.trans
       (congrArg (View.map _ _ · _) (funext fun _ => URFunctor.map_comp f g f' g' _))
 
-instance instRFunctorAffineURF {T : COFE.OFunctorPre} [URFunctor T] [RFunctorAffine T] :
+instance instRFunctorAffineURF {T : COFE.OFunctorPreᵢ} [URFunctor T] [RFunctorAffine T] :
     RFunctorAffine (AuthURF T) where
   affine := inferInstance
 
 @[rocq_alias authURF_contractive]
-instance instURFunctorContractiveAuthURF {T : COFE.OFunctorPre} [URFunctorContractive T] :
+instance instURFunctorContractiveAuthURF {T : COFE.OFunctorPreᵢ} [URFunctorContractive T] :
     URFunctorContractive (AuthURF T) where
   map_contractive.1 h x := by
     apply map_ne <;> apply URFunctorContractive.map_contractive.1 h
 
 @[rocq_alias authRF]
-abbrev AuthRF (T : COFE.OFunctorPre) [URFunctor T] : COFE.OFunctorPre :=
+abbrev AuthRF (T : COFE.OFunctorPreᵢ) [URFunctor T] : COFE.OFunctorPreᵢ :=
   fun A B _ _ => Auth (T A B)
 
-instance instRFunctorAuthRF {T : COFE.OFunctorPre} [URFunctor T] :
+instance instRFunctorAuthRF {T : COFE.OFunctorPreᵢ} [URFunctor T] :
     RFunctor (AuthRF T) where
   map {A A'} {B B'} _ _ _ _ f g :=
     mapC
@@ -692,12 +692,12 @@ instance instRFunctorAuthRF {T : COFE.OFunctorPre} [URFunctor T] :
     refine congrArg (View.map _ · _ _) (funext fun _ => URFunctor.map_comp f g f' g' _) |>.trans
       (congrArg (View.map _ _ · _) (funext fun _ => URFunctor.map_comp f g f' g' _))
 
-instance instRFunctorAffineRF {T : COFE.OFunctorPre} [URFunctor T] [RFunctorAffine T] :
+instance instRFunctorAffineRF {T : COFE.OFunctorPreᵢ} [URFunctor T] [RFunctorAffine T] :
     RFunctorAffine (AuthRF T) where
   affine := inferInstance
 
 @[rocq_alias authRF_contractive]
-instance instRFunctorContractiveAuthRF {T : COFE.OFunctorPre} [URFunctorContractive T] :
+instance instRFunctorContractiveAuthRF {T : COFE.OFunctorPreᵢ} [URFunctorContractive T] :
     RFunctorContractive (AuthRF T) where
   map_contractive.1 h x := by
     apply View.map_ne <;> apply URFunctorContractive.map_contractive.1 h

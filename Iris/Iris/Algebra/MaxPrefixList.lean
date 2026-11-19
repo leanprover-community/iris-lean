@@ -24,7 +24,7 @@ local stepindex Nat
 
 namespace Iris
 
-open «OFE» ORA Iris.Std
+open OFE ORA Iris.Std
 
 abbrev MaxPrefixListMap : Type _ → Type _ :=
   (Std.ExtTreeMap Nat · compare)
@@ -39,10 +39,10 @@ variable {α : Type _}
 
 section Instances
 
-variable [OFE α]
+variable [OFEᵢ α]
 
 /-- OFE instance on [MaxPrefixList], inherited from the OFE on the underlying map. -/
-instance instOFE : OFE (MaxPrefixList α) :=
+instance instOFE : OFEᵢ (MaxPrefixList α) :=
   PartialMap.instOFE (M:= MaxPrefixListMap) (V := Agree α)
 
 /-- ORA instance on [MaxPrefixList], inherited from the ORA on the underlying map. -/
@@ -58,7 +58,7 @@ instance instIsInc : IsInc (MaxPrefixList α) := inferInstanceAs (IsInc (MaxPref
 instance instCoreId (x : MaxPrefixList α) : CoreId x :=
   Heap.instCoreId (M:= MaxPrefixListMap) (V := Agree α)
 
-instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MaxPrefixList α) where
+instance instDiscrete [OFE.Discreteᵢ α] : ORA.Discrete (MaxPrefixList α) where
   discrete_0 := OFE.discrete_0 (α := MaxPrefixListMap (Agree α))
   discrete_valid := discrete_valid (α := MaxPrefixListMap (Agree α))
   discrete_ord := discrete_ord (α := MaxPrefixListMap (Agree α))
@@ -82,7 +82,7 @@ theorem get?_toMaxPrefixList {i : Nat} {l : List α} :
     get? (M := MaxPrefixListMap) (toMaxPrefixList l) i = l[i]?.map toAgree := by
   grind [get?_ofListFrom, toMaxPrefixList]
 
-variable [OFE α]
+variable [OFEᵢ α]
 
 theorem toMaxPrefixList_nil : toMaxPrefixList ([] : List α) = unit := by
   refine LawfulPartialMap.equiv_iff_eq (M := MaxPrefixListMap).mp fun i => ?_
@@ -92,7 +92,7 @@ theorem toMaxPrefixList_nil : toMaxPrefixList ([] : List α) = unit := by
 /-! ## OFE properties -/
 
 @[rocq_alias to_max_prefix_list_ne]
-instance toMaxPrefixList_ne : NonExpansive (toMaxPrefixList (α := α)) where
+instance toMaxPrefixList_ne : NonExpansiveᵢ (toMaxPrefixList (α := α)) where
   ne _ _ _ h i := by
     rw [get?_toMaxPrefixList, get?_toMaxPrefixList]
     exact Option.map_ne (fun _ _ hd => NonExpansive.ne hd) (list_dist_lookup.mp h i)
@@ -112,7 +112,7 @@ theorem toMaxPrefixList_dist_inj {n} {l1 l2 : List α}
 @[rocq_alias to_max_prefix_list_inj]
 theorem toMaxPrefixList_inj {l1 l2 : List α}
     (h : toMaxPrefixList l1 = toMaxPrefixList l2) : l1 = l2 :=
-  OFE.eq_of_dist fun _ => toMaxPrefixList_dist_inj (Dist.of_eq h)
+  OFE.eq_of_distᵢ fun _ => toMaxPrefixList_dist_inj (Dist.of_eq h)
 
 /-! ## ORA Properties -/
 
@@ -151,7 +151,7 @@ theorem toMaxPrefixList_op_right {l1 l2 : List α} (h : l1 <+: l2) :
 @[rocq_alias max_prefix_list_included_includedN]
 theorem inc_iff_forall_incN {ml1 ml2 : MaxPrefixList α} :
     ml1 ≼ ml2 ↔ ∀ n, ml1 ≼{n} ml2 := by
-  refine ⟨fun h n => incN_of_inc n h, fun h => ⟨ml2, OFE.eq_of_dist fun n => ?_⟩⟩
+  refine ⟨fun h n => incN_of_inc n h, fun h => ⟨ml2, OFE.eq_of_distᵢ fun n => ?_⟩⟩
   obtain ⟨l, hl⟩ := h n
   calc ml2 ≡{n}≡ ml1 • l := hl
     _ ≡{n}≡ (ml1 • ml1) • l := (congrArg (· • l) (op_self ml1)).symm.dist
@@ -193,7 +193,7 @@ theorem toMaxPrefixList_ordN_iff {n} {l1 l2 : List α} :
 @[rocq_alias to_max_prefix_list_included]
 theorem toMaxPrefixList_inc_iff {l1 l2 : List α} :
     toMaxPrefixList l1 ≼ toMaxPrefixList l2 ↔ l1 <+: l2 := by
-  refine ⟨fun h => ⟨_, OFE.eq_of_dist fun n =>
+  refine ⟨fun h => ⟨_, OFE.eq_of_distᵢ fun n =>
     (toMaxPrefixList_incN_aux (incN_of_inc n h)).symm⟩, ?_⟩
   grind [inc_op_left]
 
@@ -242,8 +242,8 @@ theorem toMaxPrefixList_op_valid {l1 l2 : List α} :
     ✓ (toMaxPrefixList l1 • toMaxPrefixList l2) ↔ l1 <+: l2 ∨ l2 <+: l1 := by
   refine ⟨fun h => ?_, ?_⟩
   · by_cases hlen : l1.length ≤ l2.length
-    · exact .inl ⟨_, OFE.eq_of_dist fun n => (toMaxPrefixList_op_validN_aux hlen h.validN).symm⟩
-    · exact .inr ⟨_, OFE.eq_of_dist fun n =>
+    · exact .inl ⟨_, OFE.eq_of_distᵢ fun n => (toMaxPrefixList_op_validN_aux hlen h.validN).symm⟩
+    · exact .inr ⟨_, OFE.eq_of_distᵢ fun n =>
         (toMaxPrefixList_op_validN_aux (by omega) (comm'.dist.validN.mp h.validN)).symm⟩
   · rintro (⟨l, rfl⟩ | ⟨l, rfl⟩) <;> grind [List.prefix_append]
 
@@ -261,11 +261,11 @@ end MaxPrefixList
 /-! ## Functors -/
 
 @[rocq_alias max_prefix_listURF]
-abbrev MaxPrefixListURF (F : COFE.OFunctorPre) : COFE.OFunctorPre :=
+abbrev MaxPrefixListURF (F : COFE.OFunctorPreᵢ) : COFE.OFunctorPreᵢ :=
   PartialMap.PartialMapOF MaxPrefixListMap (AgreeRF F)
 
 @[rocq_alias max_prefix_listRF]
-abbrev MaxPrefixListRF (F : COFE.OFunctorPre) : COFE.OFunctorPre := MaxPrefixListURF F
+abbrev MaxPrefixListRF (F : COFE.OFunctorPreᵢ) : COFE.OFunctorPreᵢ := MaxPrefixListURF F
 
 #rocq_ignore max_prefix_listURF_contractive "Found by typeclass inference"
 #rocq_ignore max_prefix_listRF_contractive "Found by typeclass inference"

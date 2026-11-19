@@ -12,7 +12,7 @@ public import Iris.Algebra.Updates
 local stepindex Nat
 
 namespace Iris
-open «OFE» ORA
+open OFE ORA
 
 /-!
 # Dependent Function Resources
@@ -48,23 +48,23 @@ theorem discreteFunInsert_of_ne (f : (a : ι) → β a) (x x' : ι)
 
 end insert
 
-section «OFE»
+section OFE
 
-variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, OFE (β i)]
+variable {ι : Type _} [DecidableEq ι] {β : ι → Type _} [∀ i, OFEᵢ (β i)]
 
 @[rocq_alias discrete_funO_ofe_discrete]
-instance instDiscreteFunOfeDiscrete [∀ i, OFE.Discrete (β i)] :
-    OFE.Discrete ((i : ι) → β i) where
+instance instDiscreteFunOfeDiscrete [∀ i, OFE.Discreteᵢ (β i)] :
+    OFE.Discreteᵢ ((i : ι) → β i) where
   discrete_0 h := funext fun i => discrete_0 (h i)
 
 omit [DecidableEq ι] in
 /-- Not an instance, cycle with `discreteE_apply`. -/
-theorem discreteE_pi {f : (a : ι) → β a} (hf : ∀ i, DiscreteE (f i)) : DiscreteE f where
+theorem discreteE_pi {f : (a : ι) → β a} (hf : ∀ i, DiscreteEᵢ (f i)) : DiscreteEᵢ f where
   discrete h := funext fun i => (hf i).discrete (h i)
 
 @[rocq_alias discrete_fun_insert_ne]
 instance instDiscreteFunInsertNonExpansive (x : ι) :
-    NonExpansive₂ (discreteFunInsert (β := β) x) where
+    NonExpansive₂ᵢ (discreteFunInsert (β := β) x) where
   ne {n y₁ y₂} hy {f₁ f₂} hf x' := by
     by_cases h : x = x'
     · subst h
@@ -75,8 +75,8 @@ instance instDiscreteFunInsertNonExpansive (x : ι) :
 #rocq_ignore discrete_fun_insert_proper "Use the NonExpansive instance instead."
 
 /-- Not an instance, cycle with `discreteE_pi`. -/
-theorem discreteE_apply {f : (a : ι) → β a} (hf : DiscreteE f) (x : ι) :
-    DiscreteE (f x) where
+theorem discreteE_apply {f : (a : ι) → β a} (hf : DiscreteEᵢ f) (x : ι) :
+    DiscreteEᵢ (f x) where
   discrete {y} h := by
     have hfun : f ≡{0}≡ discreteFunInsert x y f := fun x' => by
       by_cases hxx' : x = x'
@@ -87,16 +87,16 @@ theorem discreteE_apply {f : (a : ι) → β a} (hf : DiscreteE f) (x : ι) :
 
 @[rocq_alias discrete_fun_insert_discrete]
 instance instDiscreteFunInsertDiscrete (f : (a : ι) → β a) (x : ι) (y : β x)
-    [DiscreteE f] [DiscreteE y] : DiscreteE (discreteFunInsert x y f) :=
+    [DiscreteEᵢ f] [DiscreteEᵢ y] : DiscreteEᵢ (discreteFunInsert x y f) :=
   discreteE_pi fun x' => by
     by_cases h : x = x'
     · subst h
       rw [discreteFunInsert_self]
       infer_instance
     · rw [discreteFunInsert_of_ne (h := h) ..]
-      exact discreteE_apply ‹DiscreteE f› x'
+      exact discreteE_apply ‹DiscreteEᵢ f› x'
 
-end «OFE»
+end OFE
 
 section ORA
 
@@ -109,7 +109,7 @@ instance instDiscreteFunCmraDiscrete [∀ i, ORA.Discrete (β i)] : ORA.Discrete
 
 @[rocq_alias discrete_fun_singleton_ne]
 instance instDiscreteFunSingletonNonExpansive (x : ι) :
-    NonExpansive (discreteFunSingleton (β := β) x) where
+    NonExpansiveᵢ (discreteFunSingleton (β := β) x) where
   ne {_ _ _} h := instDiscreteFunInsertNonExpansive x |>.ne h .rfl
 
 #rocq_ignore discrete_fun_singleton_proper "Use NonExpansive instance instead."
@@ -125,9 +125,9 @@ theorem discreteFunSingleton_of_ne {x x' : ι} (y : β x) (h : x ≠ x') :
 
 @[rocq_alias discrete_fun_singleton_discrete]
 instance instDiscreteFunSingletonDiscrete {x : ι} (y : β x)
-    [∀ i, DiscreteE (unit : β i)] [DiscreteE y] :
-    DiscreteE (discreteFunSingleton x y) :=
-  haveI : DiscreteE fun i : ι => (unit : β i) := discreteE_pi fun _ => inferInstance
+    [∀ i, DiscreteEᵢ (unit : β i)] [DiscreteEᵢ y] :
+    DiscreteEᵢ (discreteFunSingleton x y) :=
+  haveI : DiscreteEᵢ fun i : ι => (unit : β i) := discreteE_pi fun _ => inferInstance
   instDiscreteFunInsertDiscrete (fun _ => unit) x y
 
 @[rocq_alias discrete_fun_singleton_validN]

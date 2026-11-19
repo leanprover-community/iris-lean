@@ -24,15 +24,15 @@ This file defines big operators (fold operations) at the abstract OFE level.
 These are parameterized by a monoid operation and include theorems about their properties.
 -/
 
-open «OFE» Iris.Std
+open OFE Iris.Std
 
-@[rocq_alias big_opL, expose] public def bigOpL {M : Type u} {A : Type v} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+@[rocq_alias big_opL, expose] public def bigOpL {M : Type u} {A : Type v} [OFEᵢ M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     (Φ : Nat → A → M) (l : List A) : M :=
   match l with
   | [] => unit
   | x :: xs => op (Φ 0 x) (bigOpL op (fun n => Φ (n + 1)) xs)
 
-@[rocq_alias big_opM, expose] public def bigOpM {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
+@[rocq_alias big_opM, expose] public def bigOpM {M : Type u} [OFEᵢ M] (op : M → M → M) {unit : M} [MonoidOps op unit] {K : Type _}
     {V : Type _} (Φ : K → V → M) {M' : Type _ → Type _} [LawfulFiniteMap M' K] (m : M' V) : M :=
   bigOpL op (fun _ kv => Φ kv.1 kv.2) (toList m)
 
@@ -40,7 +40,7 @@ open «OFE» Iris.Std
 #rocq_ignore big_opM_def "Not needed"
 #rocq_ignore big_opM_unseal "Not needed"
 
-@[rocq_alias big_opS, expose] public def bigOpS {M : Type u} [OFE M] (op : M → M → M) {unit : M} [MonoidOps op unit]
+@[rocq_alias big_opS, expose] public def bigOpS {M : Type u} [OFEᵢ M] (op : M → M → M) {unit : M} [MonoidOps op unit]
     {A : Type _} {S : Type _} [FiniteSet S A] (Φ : A → M) (m : S) : M :=
   bigOpL op (fun _ x => Φ x) (toList m)
 
@@ -48,7 +48,7 @@ open «OFE» Iris.Std
 #rocq_ignore big_opS_def "Not needed"
 #rocq_ignore big_opS_unseal "Not needed"
 
-@[rocq_alias big_opMS, expose] public def bigOpMS {M : Type u} [OFE M] (op : M → M → M)
+@[rocq_alias big_opMS, expose] public def bigOpMS {M : Type u} [OFEᵢ M] (op : M → M → M)
     {unit : M} [MonoidOps op unit] {A : Type _} {MS : Type _} [FiniteMultiSet MS A]
     (Φ : A → M) (X : MS) : M :=
   bigOpL op (fun _ x => Φ x) (FiniteMultiSet.toList X)
@@ -84,7 +84,7 @@ scoped macro_rules
 public section
 namespace BigOpL
 
-variable {M : Type _} {A : Type _} [OFE M] {op : M → M → M} {unit : M} [MonoidOps op unit]
+variable {M : Type _} {A : Type _} [OFEᵢ M] {op : M → M → M} {unit : M} [MonoidOps op unit]
 
 open MonoidOps
 
@@ -225,7 +225,7 @@ theorem bigOpL_gen_proper (R : M → M → Prop) {Φ Ψ : Nat → A → M} {l : 
 #rocq_ignore big_opL_ext "Merged into bigOpL_eq"
 
 @[rocq_alias big_opL_proper_2]
-theorem bigOpL_proper_2 [OFE A] {Φ Ψ : Nat → A → M} {l₁ l₂ : List A} (hlen : l₁.length = l₂.length)
+theorem bigOpL_proper_2 [OFEᵢ A] {Φ Ψ : Nat → A → M} {l₁ l₂ : List A} (hlen : l₁.length = l₂.length)
     (hf : ∀ {k y₁ y₂}, l₁[k]? = some y₁ → l₂[k]? = some y₂ → Φ k y₁ = Ψ k y₂) :
     ([^ op list] k ↦ x ∈ l₁, Φ k x) = ([^ op list] k ↦ x ∈ l₂, Ψ k x) :=
   bigOpL_gen_proper_2 (· = ·) rfl (· ▸ · ▸ rfl) hlen hf
@@ -318,9 +318,9 @@ theorem bigOpL_comm_mset {B MS : Type _} [FiniteMultiSet MS B]
 #rocq_ignore big_opL_proper' "Use bigOpL_eq"
 #rocq_ignore big_opL_permutation' "Use bigOpL_eq_of_perm"
 
-section «Hom»
+section Hom
 
-variable {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
+variable {M₁ : Type u} {M₂ : Type v} [OFEᵢ M₁] [OFEᵢ M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
 variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 variable {B : Type w} {R : M₂ → M₂ → Prop} {f : M₁ → M₂}
@@ -345,14 +345,14 @@ theorem bigOpL_hom_weak [H : WeakMonoidHomomorphism op₁ op₂ unit₁ unit₂ 
   | .cons _ (.cons y ys) =>
     H.rel_trans (H.map_op) <| H.op_proper H.rel_refl <| bigOpL_hom_weak _ (List.cons_ne_nil y ys)
 
-end «Hom»
+end Hom
 end BigOpL
 
 namespace BigOpM
 
 open scoped PartialMap
 
-variable {M : Type u} [OFE M] {op : M → M → M} {unit : M} [MonoidOps op unit]
+variable {M : Type u} [OFEᵢ M] {op : M → M → M} {unit : M} [MonoidOps op unit]
 variable {M' : Type _ → Type _} {K : Type _} {V : Type _}
 variable [LawfulFiniteMap M' K]
 
@@ -434,7 +434,7 @@ theorem bigOpM_eq {Φ Ψ : K → V → M} {m : M' V} (hf : ∀ {k x}, get? m k =
   bigOpM_gen_proper rfl (· ▸ · ▸ rfl) hf
 
 @[rocq_alias big_opM_proper_2]
-theorem bigOpM_eq_strong [OFE A] {Φ Ψ : K → A → M} {m1 m2 : M' A} (hm : ∀ k, get? m1 k = get? m2 k)
+theorem bigOpM_eq_strong [OFEᵢ A] {Φ Ψ : K → A → M} {m1 m2 : M' A} (hm : ∀ k, get? m1 k = get? m2 k)
     (hf : ∀ {k y1 y2}, get? m1 k = some y1 → get? m2 k = some y2 → y1 = y2 → Φ k y1 = Ψ k y2) :
     ([^ op map] k ↦ x ∈ m1, Φ k x) = ([^ op map] k ↦ x ∈ m2, Ψ k x) :=
   bigOpM_gen_proper_2 id equivalence_eq (· ▸ · ▸ rfl) (fun k => by rw [hm k])
@@ -662,8 +662,8 @@ theorem bigOpM_comm_mset {B MS : Type _} [FiniteMultiSet MS B]
     ([^ op mset] y ∈ X, [^ op map] k ↦ x ∈ m, Φ k x y) :=
   bigOpL_comm (fun _ (kx : K × V) _ y => Φ kx.1 kx.2 y) (toList m) (toList X)
 
-variable {M₁} [OFE M₁]
-variable {M₂} [OFE M₂]
+variable {M₁} [OFEᵢ M₁]
+variable {M₂} [OFEᵢ M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
 variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 
@@ -691,7 +691,7 @@ end BigOpM
 
 namespace BigOpS
 
-variable {M : Type _} {A : Type _} {S : Type _} [OFE M] {op : M → M → M} {unit : M}
+variable {M : Type _} {A : Type _} {S : Type _} [OFEᵢ M] {op : M → M → M} {unit : M}
   [MonoidOps op unit] [LawfulFiniteSet S A]
 
 open BigOpL MonoidOps LawfulSet FiniteSet
@@ -855,7 +855,7 @@ theorem bigOpS_comm_mset {B MS : Type _} [FiniteMultiSet MS B] (Φ : A → B →
 
 section Homomorphism
 
-variable {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
+variable {M₁ : Type u} {M₂ : Type v} [OFEᵢ M₁] [OFEᵢ M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
 variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 
@@ -885,7 +885,7 @@ end BigOpS
 
 namespace BigOpMS
 
-variable {M : Type _} {A : Type _} {MS : Type _} [OFE M] {op : M → M → M} {unit : M}
+variable {M : Type _} {A : Type _} {MS : Type _} [OFEᵢ M] {op : M → M → M} {unit : M}
   [MonoidOps op unit] [LawfulFiniteMultiSet MS A]
 
 open BigOpL MonoidOps
@@ -980,7 +980,7 @@ theorem bigOpMS_gen_proper (R : M → M → Prop) {Φ Ψ : A → M} {X : MS}
 
 section Homomorphism
 
-variable {M₁ : Type u} {M₂ : Type v} [OFE M₁] [OFE M₂]
+variable {M₁ : Type u} {M₂ : Type v} [OFEᵢ M₁] [OFEᵢ M₂]
 variable {op₁ : M₁ → M₁ → M₁} {op₂ : M₂ → M₂ → M₂} {unit₁ : M₁} {unit₂ : M₂}
 variable [MonoidOps op₁ unit₁] [MonoidOps op₂ unit₂]
 

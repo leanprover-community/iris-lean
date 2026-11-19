@@ -14,26 +14,26 @@ local stepindex Nat
 #rocq_ignore solution "Use OFE.iso + Inhabited + COFE"
 
 namespace Iris.COFE.OFunctor
-open «OFE»
+open OFE
 
 
-variable {F : ∀ α β [COFE α] [COFE β], Type u} [OFunctorContractive F]
-variable [∀ α [COFE α], IsCOFE (F α α)]
+variable {F : ∀ α β [COFEᵢ α] [COFEᵢ β], Type u} [OFunctorContractiveᵢ F]
+variable [∀ α [COFEᵢ α], IsCOFEᵢ (F α α)]
 variable [inh : Inhabited (F (ULift Unit) (ULift Unit))]
 
 namespace Fix.Impl
 
 variable (F) in
 @[rocq_alias solver.A']
-def A' : Nat → Σ α : Type u, COFE α
+def A' : Nat → Σ α : Type u, COFEᵢ α
   | 0 => ⟨ULift Unit, inferInstance⟩
   | n+1 => let ⟨A, _⟩ := A' n; ⟨F A A, inferInstance⟩
 
 variable (F) in
 @[implicit_reducible] def A (n : Nat) : Type u := (A' F n).1
 
-instance instA' (n) : COFE (A' F n).1 := (A' F n).2
-instance instA (n) : COFE (A F n) := (A' F n).2
+instance instA' (n) : COFEᵢ (A' F n).1 := (A' F n).2
+instance instA (n) : COFEᵢ (A F n) := (A' F n).2
 #rocq_ignore solver.A_cofe "Inference succeeds automatically via `instA`/`instA'`"
 
 variable (F) in
@@ -60,13 +60,13 @@ theorem down_up : ∀ {k} x, down F k (up F k x) = x
   | 0, ⟨()⟩ => rfl
   | _+1, x =>
     have h : (down F _).comp (up F _) = Hom.id := Hom.ext (funext down_up)
-    OFE.eq_of_dist fun _ => (map_comp _ _ _ _ _).dist.symm.trans <|
+    OFE.eq_of_distᵢ fun _ => (map_comp _ _ _ _ _).dist.symm.trans <|
       Dist.trans (map_ne.ne h.dist h.dist x) (map_id _).dist
 
 @[rocq_alias solver.fg]
 theorem up_down {k} (x) : up F (k+1) (down F (k+1) x) ≡{k}≡ x := by
   refine (map_comp _ _ _ _ _).dist.symm.trans <| .trans ?_ (map_id _).dist
-  open «OFunctorContractive» in exact match k with
+  open OFunctorContractive in exact match k with
   | 0 => map_contractive.zero (x := (_, _)) (y := (_, _)) _ _
   | k+1 => map_contractive.succ (x := (_, _)) (y := (_, _)) _ ⟨up_down, up_down⟩ _
 
@@ -79,7 +79,7 @@ structure Tower : Type u where
 instance : CoeFun (Tower F) (fun _ => ∀ k, A F k) := ⟨Tower.val⟩
 
 @[rocq_alias solver.T]
-instance : OFE (Tower F) where
+instance : OFEᵢ (Tower F) where
   dist n f g := ∀ k, f k ≡{n}≡ g k
   dist_eqv := {
     refl _ _ := dist_eqv.refl _
@@ -88,7 +88,7 @@ instance : OFE (Tower F) where
   }
   eq_dist' {_ _} := by
     rw [Tower.ext_iff, funext_iff]
-    exact (forall_congr' fun _ => OFE.eq_dist).trans forall_comm
+    exact (forall_congr' fun _ => OFE.eq_distᵢ).trans forall_comm
   dist_lt h1 h2 _ := dist_lt (h1 _) h2
 
 #rocq_ignore solver.tower_equiv "Included in OFE (Tower F) instance"
@@ -96,14 +96,14 @@ instance : OFE (Tower F) where
 #rocq_ignore solver.tower_ofe_mixin "Not needed"
 
 @[rocq_alias solver.tower_chain]
-def towerChain (c : Chain (Tower F)) (k : Nat) : Chain (A F k) where
+def towerChain (c : Chainᵢ (Tower F)) (k : Nat) : Chainᵢ (A F k) where
   chain i := c.1 i k
   cauchy h := c.cauchy h k
 
-instance : COFE (Tower F) where
+instance : COFEᵢ (Tower F) where
   compl c := by
     refine ⟨fun k => compl ⟨fun i => c.1 i k, fun h => c.cauchy h k⟩, ?_⟩
-    refine OFE.eq_of_dist (fun n => ?_)
+    refine OFE.eq_of_distᵢ (fun n => ?_)
     refine ((down ..).ne.1 conv_compl).trans <| .trans ?_ conv_compl.symm
     exact (c.chain n).down.dist
   conv_compl _ := conv_compl
@@ -149,7 +149,7 @@ protected theorem Tower.downN (X : Tower F) : ∀ i, downN F i (X (k+i)) = X k
   | 0 => rfl
   | _+1 => (congrArg (fun a => (downN ..) a) X.down).trans (X.downN _)
 
-instance (k : Nat) : NonExpansive (fun X : Tower F => X.val k) := ⟨fun _ _ _ => (· _)⟩
+instance (k : Nat) : NonExpansiveᵢ (fun X : Tower F => X.val k) := ⟨fun _ _ _ => (· _)⟩
 
 @[rocq_alias solver.project]
 def Tower.proj (k) : Tower F -n> A F k := ⟨(· k), inferInstance⟩
@@ -213,7 +213,7 @@ protected def Tower.embed (k) : A F k -n> Tower F := by
 @[rocq_alias solver.embed_f]
 theorem Tower.embed_up (x : A F k) :
     Tower.embed (k+1) (up F k x) = Tower.embed k x := by
-  refine OFE.eq_of_dist (fun n i => ?_)
+  refine OFE.eq_of_distᵢ (fun n i => ?_)
   dsimp [Tower.embed, embed]; split <;> rename_i h₁
   · simp [Nat.le_of_succ_le h₁]
     suffices ∀ a b (e₁ : k + 1 + a = i) (e₂ : k+b = i),
@@ -258,7 +258,7 @@ instance : Inhabited (Tower F) := ⟨Tower.embed 0 ⟨()⟩⟩
 #rocq_ignore solver.tower_inhabited "Implicit in Lean's Inhabited (Tower F) instance"
 
 @[rocq_alias solver.unfold_chain]
-def unfoldChain (X : Tower F) : Chain (F (Tower F) (Tower F)) where
+def unfoldChain (X : Tower F) : Chainᵢ (F (Tower F) (Tower F)) where
   chain n := map (Tower.proj _) (Tower.embed _) (X (n+1))
   cauchy {n i} h := by
     obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le h; clear h
@@ -269,10 +269,10 @@ def unfoldChain (X : Tower F) : Chain (F (Tower F) (Tower F)) where
         (map_comp _ _ _ _ _).dist.symm.trans <|
         (map_ne.ne (·.down.dist) (fun Y => (Tower.embed_up Y).dist) _).trans ih
 
-def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
+def Tower.isoAux : OFE.Isoᵢ (F (Tower F) (Tower F)) (Tower F) where
   hom.f X := {
     val n := (down F n).comp (map (Tower.embed _) (Tower.proj _)) X
-    down {n} := OFE.eq_of_dist fun m => (down ..).ne.1 <|
+    down {n} := OFE.eq_of_distᵢ fun m => (down ..).ne.1 <|
       (map_comp _ _ _ _ _).dist.symm.trans <|
         map_ne.ne (fun Y => (Tower.embed_up Y).dist) (fun Y => Y.down.dist) _
   }
@@ -281,7 +281,7 @@ def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
   inv.ne.1 n _ _ h := by
     refine conv_compl.trans <| .trans ?_ conv_compl.symm
     exact (map ..).ne.1 (h (n+1))
-  hom_inv {X} := OFE.eq_of_dist fun n => by
+  hom_inv {X} := OFE.eq_of_distᵢ fun n => by
     intro k
     refine ((down ..).ne.1 (.trans ?_ (X.downN n).dist)).trans X.down.dist
     refine ((map ..).ne.1 (conv_compl.trans
@@ -310,7 +310,7 @@ def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
         refine (map_comp _ _ _ _ _).dist.trans <|
           (ih (Nat.succ.inj e) _).trans (congrArg (fun a => (downN ..) a) ?_).dist
         exact (down_eqToHom _).symm
-  inv_hom := OFE.eq_of_dist fun n => by
+  inv_hom := OFE.eq_of_distᵢ fun n => by
     refine (conv_compl' n.le_succ).trans ?_
     dsimp [unfoldChain]; rw [down]
     refine ((map_comp _ _ _ _ _).trans
@@ -319,7 +319,7 @@ def Tower.isoAux : OFE.Iso (F (Tower F) (Tower F)) (Tower F) where
     · exact ((Tower.embed _).ne.1 Y.up).trans (Y.embed_self.le (by omega))
     · exact ((Tower.embed _).ne.1 Y.down.dist).trans Y.embed_self
 
-opaque Tower.iso : OFE.Iso (F (Tower F) (Tower F)) (Tower F) := Tower.isoAux
+opaque Tower.iso : OFE.Isoᵢ (F (Tower F) (Tower F)) (Tower F) := Tower.isoAux
 
 end Fix.Impl
 open Fix.Impl
@@ -330,9 +330,9 @@ variable (F) in
 def Fix : Type u := Tower F
 
 instance : Inhabited (Fix F) := inferInstanceAs (Inhabited (Tower F))
-instance : COFE (Fix F) := inferInstanceAs (COFE (Tower F))
+instance : COFEᵢ (Fix F) := inferInstanceAs (COFEᵢ (Tower F))
 
-def Fix.iso : OFE.Iso (F (Fix F) (Fix F)) (Fix F) := Tower.iso
+def Fix.iso : OFE.Isoᵢ (F (Fix F) (Fix F)) (Fix F) := Tower.iso
 
 @[rocq_alias solver.fold]
 def Fix.fold : F (Fix F) (Fix F) -n> Fix F := Fix.iso.hom
@@ -346,8 +346,8 @@ theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) = X :=
 
 attribute [irreducible] Fix Fix.fold Fix.unfold Fix.iso
 
-end «OFunctor»
+end OFunctor
 
-end «COFE»
+end COFE
 
 end Iris

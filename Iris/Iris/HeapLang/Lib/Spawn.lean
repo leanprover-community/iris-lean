@@ -57,7 +57,7 @@ def joinHandle (l : Loc) (Ψ : Val → IProp GF) : IProp GF := iprop%
 
 @[rocq_alias heap_lang.spawn_inv_ne]
 instance spawnInv_ne (γ : GName) (l : Loc) :
-    OFE.NonExpansive (spawnInv γ l : (Val → IProp GF) → _) where
+    OFE.NonExpansiveᵢ (spawnInv γ l : (Val → IProp GF) → _) where
   ne _ _ _ HΨ :=
     exists_ne fun _ =>
       sep_ne.ne .rfl <|
@@ -66,7 +66,7 @@ instance spawnInv_ne (γ : GName) (l : Loc) :
 
 @[rocq_alias heap_lang.join_handle_ne]
 instance joinHandle_ne (l : Loc) :
-    OFE.NonExpansive (joinHandle N l : (Val → IProp GF) → _) where
+    OFE.NonExpansiveᵢ (joinHandle N l : (Val → IProp GF) → _) where
   ne _ _ _ HΨ :=
     exists_ne fun γ =>
       sep_ne.ne .rfl <| (inv_ne N).ne <| (spawnInv_ne γ l).ne HΨ

@@ -17,23 +17,23 @@ public import Iris.ProofMode
 local stepindex Nat
 namespace Iris
 
-open «COFE» Iris.Std ORA
+open COFE Iris.Std ORA
 
 /-- Apply an OFunctor at a fixed type -/
-abbrev COFE.OFunctorPre.ap (F : OFunctorPre) (T : Type _) [COFE T] :=
+abbrev COFE.OFunctorPre.ap (F : OFunctorPreᵢ) (T : Type _) [COFEᵢ T] :=
   F T T
 
 /-- Apply a list of OFunctors at a fixed type and index -/
-abbrev BundledGFunctors.api (FF : BundledGFunctors) (τ : GType) (T : Type _) [COFE T] :=
+abbrev BundledGFunctors.api (FF : BundledGFunctors) (τ : GType) (T : Type _) [COFEᵢ T] :=
   FF τ |>.F |>.ap T
 
 /-- Transport an OFunctorPre application along equality of the OFunctorPre.  -/
-theorem transpAp {F1 F2 : OFunctorPre} (H : F1 = F2) {T} [COFE T] : F1.ap T = F2.ap T :=
+theorem transpAp {F1 F2 : OFunctorPreᵢ} (H : F1 = F2) {T} [COFEᵢ T] : F1.ap T = F2.ap T :=
   congrArg (OFunctorPre.ap · T) H
 
 section TranspAp
 
-variable [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂] [COFE T]
+variable [RF₁ : RFunctorContractive F₁] [RF₂ : RFunctorContractive F₂] [COFEᵢ T]
 
 theorem OFE.transpAp_eqv_mp (h_fun : F₁ = F₂) (h_inst : HEq RF₁ RF₂) {x y : F₁.ap T} (H : x ≡{n}≡ y) :
     (transpAp h_fun).mp x ≡{n}≡ (transpAp h_fun).mp y := by
@@ -73,52 +73,52 @@ section ElemG
 
 /-- `ElemG` takes functors instead of CMRAs -/
 @[rocq_alias inG]
-class ElemG (FF : BundledGFunctors) (F : OFunctorPre) [RFunctorContractive F] where
+class ElemG (FF : BundledGFunctors) (F : OFunctorPreᵢ) [RFunctorContractive F] where
   τ : GType
   [affine : RFunctorAffine F]
   transp : FF τ = ⟨F⟩
 
 #rocq_ignore subG_inG "Superseded by Lean's direct `ElemG` typeclass synthesis."
 
-open «OFE»
+open OFE
 
 variable [I : RFunctorContractive F]
 
-theorem ElemG.transpMap (E : ElemG GF F) T [OFE T] : (GF E.τ).F = F := congrArg GFunctor.F E.transp
+theorem ElemG.transpMap (E : ElemG GF F) T [OFEᵢ T] : (GF E.τ).F = F := congrArg GFunctor.F E.transp
 
-theorem ElemG.transpClass (E : ElemG GF F) T [OFE T] : (GF E.τ).contractive ≍ I := by
+theorem ElemG.transpClass (E : ElemG GF F) T [OFEᵢ T] : (GF E.τ).contractive ≍ I := by
   rw [E.transp]
 
-def ElemG.bundle (E : ElemG GF F) [COFE T] : F.ap T → GF.api E.τ T :=
+def ElemG.bundle (E : ElemG GF F) [COFEᵢ T] : F.ap T → GF.api E.τ T :=
   transpAp (E.transpMap T) |>.mpr
 
-def ElemG.unbundle (E : ElemG GF F) [COFE T] : GF.api E.τ T → F.ap T :=
+def ElemG.unbundle (E : ElemG GF F) [COFEᵢ T] : GF.api E.τ T → F.ap T :=
   transpAp (E.transpMap T) |>.mp
 
-def ElemG.bundleC (E : ElemG GF F) [COFE T] : F.ap T -C> GF.api E.τ T :=
+def ElemG.bundleC (E : ElemG GF F) [COFEᵢ T] : F.ap T -C> GF.api E.τ T :=
   OFE.transpApC (E.transpMap T).symm (E.transpClass T).symm
 
-def ElemG.unbundleC (E : ElemG GF F) [COFE T] : GF.api E.τ T -C> F.ap T :=
+def ElemG.unbundleC (E : ElemG GF F) [COFEᵢ T] : GF.api E.τ T -C> F.ap T :=
   OFE.transpApC (E.transpMap T) (E.transpClass T)
 
-theorem ElemG.bundle_unbundle (E : ElemG GF F) [COFE T] (x : GF.api E.τ T) :
+theorem ElemG.bundle_unbundle (E : ElemG GF F) [COFEᵢ T] (x : GF.api E.τ T) :
     E.bundle (E.unbundle x) = x := by simp [bundle, unbundle]
 
-theorem ElemG.unbundle_bundle (E : ElemG GF F) [COFE T] (x : F.ap T) :
+theorem ElemG.unbundle_bundle (E : ElemG GF F) [COFEᵢ T] (x : F.ap T) :
     E.unbundle (E.bundle x) = x := by simp [bundle, unbundle]
 
-instance ElemG.bundle.ne {E : ElemG GF F} [COFE T] :
-    OFE.NonExpansive (E.bundle (T := T)) where
+instance ElemG.bundle.ne {E : ElemG GF F} [COFEᵢ T] :
+    OFE.NonExpansiveᵢ (E.bundle (T := T)) where
   ne {_ _ _} := OFE.transpAp_eqv_mp (E.transpMap T).symm (E.transpClass T).symm
 
-instance ElemG.unbundle.ne {E : ElemG GF F} [COFE T] :
-    OFE.NonExpansive (E.unbundle (T := T)) where
+instance ElemG.unbundle.ne {E : ElemG GF F} [COFEᵢ T] :
+    OFE.NonExpansiveᵢ (E.unbundle (T := T)) where
   ne {_ _ _} H := OFE.transpAp_eqv_mp (E.transpMap T) (E.transpClass T) H
 
 theorem ElemG.bundle_discreteE {GF : BundledGFunctors} (E : ElemG GF F)
-    {v : F.ap (IProp GF)} [DiscreteE v] : DiscreteE (E.bundle v) where
+    {v : F.ap (IProp GF)} [DiscreteEᵢ v] : DiscreteEᵢ (E.bundle v) where
   discrete hz := (congrArg (E.bundle (T := IProp GF))
-    (OFE.DiscreteE.discrete ((E.unbundle_bundle v).dist.symm.trans
+    (OFE.DiscreteE.discreteᵢ ((E.unbundle_bundle v).dist.symm.trans
       ((ElemG.unbundle.ne (T := IProp GF)).ne hz)))).trans (E.bundle_unbundle _)
 
 theorem bundle_op {GF : BundledGFunctors} [E : ElemG GF F] (a2 ac : F.ap (IProp GF)) :
@@ -172,7 +172,7 @@ end ElemG
 section Fold
 local bi (IProp FF)
 
-open Iris «COFE» Iris.UPred
+open Iris COFE Iris.UPred
 
 variable {FF : BundledGFunctors}
 
@@ -188,7 +188,7 @@ def IProp.foldi : FF.api τ (IPre FF) -n> FF.api τ (IProp FF) :=
 
 @[rocq_alias inG_unfold_fold]
 theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) = x := by
-  refine OFE.eq_of_dist fun n => ?_
+  refine OFE.eq_of_distᵢ fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.F) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.F) x).dist
   apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold] <;>
@@ -196,7 +196,7 @@ theorem IProp.unfoldi_foldi (x : FF.api τ (IPre FF)) : unfoldi (foldi x) = x :=
 
 @[rocq_alias inG_fold_unfold]
 theorem IProp.foldi_unfoldi (x : FF.api τ (IProp FF)) : foldi (unfoldi x) = x := by
-  refine OFE.eq_of_dist fun n => ?_
+  refine OFE.eq_of_distᵢ fun n => ?_
   refine .trans (OFunctor.map_comp (F := FF τ |>.F) ..).symm.dist ?_
   refine .trans ?_ (OFunctor.map_id (F := FF τ |>.F) x).dist
   apply OFunctor.map_ne.ne <;> intro _ <;> simp [IProp.unfold, IProp.fold] <;>
@@ -210,8 +210,8 @@ theorem IProp.unfold_equivI (P Q : IProp FF) :
   rw [IProp.fold_unfold, IProp.fold_unfold] at h
   exact h
 
-theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteE v) :
-    OFE.DiscreteE (unfoldi.f v) where
+theorem IProp.unfoldi_discreteE {v : FF.api τ (IProp FF)} (hv : OFE.DiscreteEᵢ v) :
+    OFE.DiscreteEᵢ (unfoldi.f v) where
   discrete h := (congrArg unfoldi.f (hv.discrete
     ((foldi_unfoldi v).dist.symm.trans (OFE.NonExpansive.ne h)))).trans (unfoldi_foldi _)
 
@@ -262,7 +262,7 @@ end Fold
 section iSingleton
 local bi (IProp GF)
 
-open IProp «OFE» Iris.UPred GenMap
+open IProp OFE Iris.UPred GenMap
 
 @[rocq_alias iRes_singleton]
 def iSingleton {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName)
@@ -277,15 +277,15 @@ theorem iResUR_op_eval (c1 c2 : IResUR GF) : (c1 • c2) τ' γ' = (c1 τ' γ') 
   simp [op, optionOp]
 
 instance IResUR.lookup_ne {τ : GType} {γ : GName} :
-    NonExpansive (fun r : IResUR GF => (r τ).car γ) where
+    NonExpansiveᵢ (fun r : IResUR GF => (r τ).car γ) where
   ne {_ _ _} H := H τ γ
 
 instance ElemG.unbundle_foldi_ne :
-    NonExpansive (fun v : GF.api E.τ (IPre GF) => E.unbundle (foldi v)) where
+    NonExpansiveᵢ (fun v : GF.api E.τ (IPre GF) => E.unbundle (foldi v)) where
   ne {_ _ _} H := ElemG.unbundle.ne.ne (foldi.ne.ne H)
 
 @[rocq_alias iRes_singleton_ne]
-instance : OFE.NonExpansive (iSingleton F γ (GF := GF)) where
+instance : OFE.NonExpansiveᵢ (iSingleton F γ (GF := GF)) where
   ne {n x1 x2} H τ' γ' := by
     simp [iSingleton]
     split
@@ -298,7 +298,7 @@ instance : OFE.NonExpansive (iSingleton F γ (GF := GF)) where
 
 @[rocq_alias iRes_singleton_op]
 theorem iSingleton_op (x y : F.ap (IProp GF)) : (iSingleton F γ x) • iSingleton F γ y = iSingleton F γ (x • y) := by
-  refine OFE.eq_of_dist fun n => ?_
+  refine OFE.eq_of_distᵢ fun n => ?_
   intro τ' γ'
   simp only [iSingleton]
   split
@@ -351,7 +351,7 @@ theorem unfoldi_bundle_coreId {a : F.ap (IProp GF)} [CoreId a] :
 
 @[rocq_alias iRes_singleton_core_id]
 instance {a : F.ap (IProp GF)} [CoreId a] : CoreId (iSingleton F γ a) where
-  core_id := OFE.eq_of_dist fun n τ' γ' => by
+  core_id := OFE.eq_of_distᵢ fun n τ' γ' => by
     change core ((iSingleton F γ a τ').car γ') ≡{n}≡ (iSingleton F γ a τ').car γ'
     simp only [iSingleton]
     split
@@ -485,10 +485,10 @@ theorem iSingleton_op_validN_at_γ {a : F.ap (IProp GF)} (Hv : ✓{n} mf) :
     · simp; exact extract_frame_validN (Hv E.τ) h_at
 
 @[rocq_alias iRes_singleton_discrete]
-instance iSingleton_discreteE {v : F.ap (IProp GF)} [inst : OFE.DiscreteE v] :
-    OFE.DiscreteE (iSingleton F γ v) where
+instance iSingleton_discreteE {v : F.ap (IProp GF)} [inst : OFE.DiscreteEᵢ v] :
+    OFE.DiscreteEᵢ (iSingleton F γ v) where
   discrete {w} H := by
-    refine OFE.eq_of_dist fun n τ => ?_
+    refine OFE.eq_of_distᵢ fun n τ => ?_
     simp only [iSingleton] at ⊢
     split
     next h =>
@@ -558,12 +558,12 @@ def iOwn {GF F} [RFunctorContractive F] [E : ElemG GF F] (γ : GName)
 
 section iOwn
 
-open IProp «OFE» Iris.UPred BI GenMap ProofMode
+open IProp OFE Iris.UPred BI GenMap ProofMode
 
 variable {GF F} [RFunctorContractive F] [E : ElemG GF F]
 
 @[rocq_alias own_ne]
-instance iOwn_ne : NonExpansive (iOwn τ : F.ap (IProp GF) → IProp GF) where
+instance iOwn_ne : NonExpansiveᵢ (iOwn τ : F.ap (IProp GF) → IProp GF) where
   ne {n x1 x2} H := by unfold iOwn; exact NonExpansive.ne (NonExpansive.ne H)
 
 #rocq_ignore own_proper "OFE is Leibniz; use equality"
@@ -620,7 +620,7 @@ instance {a : F.ap (IProp GF)} [CoreId a] : BI.Persistent (iOwn γ a) where
     rw [core_eqv_self]
 
 @[rocq_alias own_timeless]
-instance iOwn_timeless {a : F.ap (IProp GF)} [OFE.DiscreteE a] : BI.Timeless (iOwn γ a) := by
+instance iOwn_timeless {a : F.ap (IProp GF)} [OFE.DiscreteEᵢ a] : BI.Timeless (iOwn γ a) := by
   unfold iOwn
   exact _root_.UPred.ownM_timeless (iSingleton F γ a)
 
@@ -912,7 +912,7 @@ end iOwn
 
 section big_op_instances
 
-open IProp «OFE» Iris.UPred BI GenMap ProofMode Algebra Iris.Std
+open IProp OFE Iris.UPred BI GenMap ProofMode Algebra Iris.Std
 open scoped Iris.Std.PartialMap
 
 variable {GF F} [URFunctorContractive F] [E : ElemG GF F]
@@ -991,7 +991,7 @@ end big_op_instances
 section own_forall
 local bi (IProp GF)
 
-open IProp «OFE» BI
+open IProp OFE BI
 
 @[rocq_alias iRes_project]
 def iResProject {GF} F [RFunctorContractive F] [E : ElemG GF F] (γ : GName)
@@ -1008,7 +1008,7 @@ theorem iResProject_op (x y : IResUR GF) :
   rw [foldi_op, unbundle_op]
 
 @[rocq_alias iRes_project_ne]
-instance iResProject_ne : NonExpansive (iResProject F γ (GF := GF)) where
+instance iResProject_ne : NonExpansiveᵢ (iResProject F γ (GF := GF)) where
   ne {_ _ _} H := Option.map_ne (fun _ _ h => ElemG.unbundle.ne.ne (foldi.ne.ne h)) (H E.τ γ)
 
 @[rocq_alias iRes_project_singleton]

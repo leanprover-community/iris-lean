@@ -34,14 +34,14 @@ attribute [rocq_alias dfrac_eq_dec] instDecidableEqDFrac
 #rocq_ignore DfracOwn_inj "Not needed"
 #rocq_ignore DfracBoth_inj "Not needed"
 
-@[simp] instance : COFE DFrac := COFE.ofDiscrete _
-instance : OFE.Discrete DFrac := ⟨fun h => h⟩
+@[simp] instance : COFEᵢ DFrac := COFE.ofDiscrete _
+instance : OFE.Discreteᵢ DFrac := ⟨fun h => h⟩
 #rocq_ignore dfracO "Use DFrac type with typeclass inference"
 
 namespace DFrac
 open ORA
 
-open DFrac OFE.«Discrete» IsOp
+open DFrac OFE.Discrete IsOp
 
 @[rocq_alias dfrac_inhabited]
 instance : Inhabited DFrac := ⟨discard⟩
@@ -175,9 +175,9 @@ theorem valid_own_op_discard {q : Qp} : ✓ own q • discard ↔ q.val < 1 := b
   simp [ORA.op, op, ORA.Valid, valid]
 
 @[rocq_alias dfrac_cmra_discrete]
-instance : «Discrete» DFrac where
+instance : Discrete DFrac where
   discrete_valid {x} := by simp [ORA.Valid, ORA.ValidN]
-theorem is_discrete {q : DFrac} : OFE.DiscreteE q := ⟨fun h => h⟩
+theorem is_discrete {q : DFrac} : OFE.DiscreteEᵢ q := ⟨fun h => h⟩
 
 @[rocq_alias dfrac_discarded_core_id]
 instance : CoreId (DFrac.discard) where

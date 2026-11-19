@@ -24,7 +24,7 @@ public import Iris.Algebra.Monoid
 local stepindex Nat
 
 namespace Iris.BI
-open Iris Iris.Std «OFE» Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM
+open Iris Iris.Std OFE Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM
 
 /-! ## The `Embed` operation `⎡·⎤` -/
 
@@ -57,7 +57,7 @@ intro/elim form: for any predicate `Ψ : PROP1 → Prop`, `forall_2` builds
 from pointwise `⎡P⎤ ⊢ R`. -/
 @[rocq_alias BiEmbed]
 class BiEmbed (PROP1 PROP2 : Type _) [BI PROP1] [BI PROP2] extends Embed PROP1 PROP2 where
-  [ne : OFE.NonExpansive embed]
+  [ne : OFE.NonExpansiveᵢ embed]
   mono           : ∀ {P Q : PROP1}, (P ⊢ Q) → ((⎡P⎤ : PROP2) ⊢ ⎡Q⎤)
   emp_valid_inj  : ∀ (P : PROP1), (⊢ (⎡P⎤ : PROP2)) → (⊢ P)
   emp_2          : (emp : PROP2) ⊢ ⎡(emp : PROP1)⎤
@@ -108,7 +108,7 @@ variable {PROP1 PROP2 : Type _} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
 local bi PROP2
 
 @[rocq_alias embed_ne]
-instance embed_ne : OFE.NonExpansive (embed (A := PROP1) (B := PROP2)) := BiEmbed.ne
+instance embed_ne : OFE.NonExpansiveᵢ (embed (A := PROP1) (B := PROP2)) := BiEmbed.ne
 
 @[rocq_alias embed_mono]
 theorem embed_mono {P Q : PROP1} (h : P ⊢@{PROP1} Q) : ⎡P⎤ ⊢ ⎡Q⎤ := BiEmbed.mono h
@@ -446,7 +446,7 @@ theorem embed_siPure (Pi : SiProp) :
      siPure_siEmpValid_elim⟩
 
 @[rocq_alias embed_internal_eq]
-theorem embed_internal_eq {A : Type _} [OFE A] (x y : A) :
+theorem embed_internal_eq {A : Type _} [OFEᵢ A] (x y : A) :
     embed (iprop(x ≡ y) : P1) ⊣⊢ x ≡ y :=
   embed_siPure (SiProp.internalEq x y)
 

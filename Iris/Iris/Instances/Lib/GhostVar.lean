@@ -21,7 +21,7 @@ local bi (IProp GF)
 
 /-! ## Ghost variable -/
 
-abbrev GhostVarF (A : Type) : COFE.OFunctorPre := constOF (DFracAgreeR (DiscreteO A))
+abbrev GhostVarF (A : Type) : COFE.OFunctorPreᵢ := constOFᵢ (DFracAgreeR (DiscreteO A))
 
 @[rocq_alias ghost_varG]
 class GhostVarG (GF : BundledGFunctors) (A : Type) where [elemG : ElemG GF (GhostVarF A)]

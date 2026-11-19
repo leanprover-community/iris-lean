@@ -23,14 +23,14 @@ local stepindex Nat
 
 namespace Iris
 
-open BI ORA «OFE» Iris Iris.Std LawfulSet Excl «COFE» ProofMode
+open BI ORA OFE Iris Iris.Std LawfulSet Excl COFE ProofMode
 
 local bi (IProp GF)
 
 /-! # Cancelable Invariants -/
 
-abbrev CInvF : OFunctorPre :=
-  ProdOF (constOF (Option (Excl Unit))) (constOF (Option DFrac))
+abbrev CInvF : OFunctorPreᵢ :=
+  ProdOFᵢ (constOFᵢ (Option (Excl Unit))) (constOFᵢ (Option DFrac))
 
 @[rocq_alias cinvG]
 class CInvG (GF : BundledGFunctors) where
@@ -66,14 +66,14 @@ instance instTimelessExcl (γ : GName) : Timeless (excl (GF := GF) γ) :=
 
 @[rocq_alias cinv_contractive]
 instance instContractiveCinv (N : Namespace) (γ : GName) :
-    Contractive (cinv (GF := GF) N γ) where
+    Contractiveᵢ (cinv (GF := GF) N γ) where
   distLater_dist {n x y} H := by
     unfold cinv
     refine Contractive.distLater_dist fun m hm => or_ne.ne (sep_ne.ne (H _ hm) .rfl) .rfl
 
 @[rocq_alias cinv_ne]
 instance instNonExpansiveCinv (N : Namespace) (γ : GName) :
-    NonExpansive (cinv (GF := GF) N γ) :=
+    NonExpansiveᵢ (cinv (GF := GF) N γ) :=
   ne_of_contractive _
 
 #rocq_ignore cinv_proper "Subsumed by instNonExpansiveCinv"

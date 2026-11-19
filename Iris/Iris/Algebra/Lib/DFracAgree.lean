@@ -21,23 +21,23 @@ local stepindex Nat
 
 namespace Iris
 
-open «OFE» ORA DFrac
+open OFE ORA DFrac
 
 namespace DFracAgree
 
 @[rocq_alias dfrac_agreeR]
-abbrev DFracAgreeR (A : Type _) [OFE A] := DFrac × Agree A
+abbrev DFracAgreeR (A : Type _) [OFEᵢ A] := DFrac × Agree A
 
 @[rocq_alias to_dfrac_agree]
-def mk [OFE A] (d : DFrac) (a : A) : DFracAgreeR A := (d, toAgree a)
+def mk [OFEᵢ A] (d : DFrac) (a : A) : DFracAgreeR A := (d, toAgree a)
 
-variable {A : Type _} [OFE A]
+variable {A : Type _} [OFEᵢ A]
 
 instance mk_discarded_coreId {a : A} : CoreId (mk .discard a) :=
   inferInstanceAs (CoreId (DFrac.discard, toAgree a))
 
 @[rocq_alias to_dfrac_agree_ne]
-instance mk_ne {d : DFrac} : NonExpansive (mk d : A → DFracAgreeR A) where
+instance mk_ne {d : DFrac} : NonExpansiveᵢ (mk d : A → DFracAgreeR A) where
   ne _ _ _ h := ⟨.rfl, NonExpansive.ne (f := toAgree) h⟩
 
 #rocq_ignore to_dfrac_agree_proper "Derivable from mk_ne with NonExpansive.eqv"
@@ -49,7 +49,7 @@ theorem mk_valid {d : DFrac} {a : A} : ✓ mk d a ↔ ✓ d :=
   ⟨And.left, (⟨·, Agree.toAgree_valid⟩)⟩
 
 @[rocq_alias to_dfrac_agree_discrete]
-instance mk_discrete {d : DFrac} {a : A} [DiscreteE a] : DiscreteE (mk d a) :=
+instance mk_discrete {d : DFrac} {a : A} [DiscreteEᵢ a] : DiscreteEᵢ (mk d a) :=
   ⟨fun h => Prod.ext (is_discrete.discrete h.1) (Agree.toAgree.is_discrete.discrete h.2)⟩
 
 @[rocq_alias to_dfrac_agree_injN]
@@ -132,9 +132,9 @@ theorem unpersist {a : A} :
 namespace Frac
 
 @[rocq_alias to_frac_agree]
-def mk [OFE A] (q : Qp) (a : A) : DFracAgreeR A := DFracAgree.mk (.own q) a
+def mk [OFEᵢ A] (q : Qp) (a : A) : DFracAgreeR A := DFracAgree.mk (.own q) a
 
-variable {A : Type _} [OFE A]
+variable {A : Type _} [OFEᵢ A]
 
 @[rocq_alias frac_agree_op]
 theorem mk_op {q₁ q₂ : Qp} {a : A} : mk (q₁ + q₂) a = mk q₁ a • mk q₂ a :=
@@ -177,8 +177,8 @@ end Frac
 /-! ## Functors -/
 
 @[rocq_alias dfrac_agreeRF]
-abbrev DFracAgreeRF (T : COFE.OFunctorPre) [COFE.OFunctor T] : COFE.OFunctorPre :=
-  ProdOF (constOF DFrac) (AgreeRF T)
+abbrev DFracAgreeRF (T : COFE.OFunctorPreᵢ) [COFE.OFunctorᵢ T] : COFE.OFunctorPreᵢ :=
+  ProdOFᵢ (constOFᵢ DFrac) (AgreeRF T)
 
 #rocq_ignore dfrac_agreeRF_contractive "Found by typeclass inference"
 

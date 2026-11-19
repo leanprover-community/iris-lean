@@ -15,7 +15,7 @@ public import Iris.Std.Namespaces
 
 namespace Iris.HeapLang
 
-open BI Iris ProgramLogic ORA «OFE» Auth
+open BI Iris ProgramLogic ORA OFE Auth
 
 @[expose] public section
 
@@ -101,7 +101,7 @@ end CounterProof
 
 /-! ## Monotone counter -/
 
-abbrev MCounterRF : COFE.OFunctorPre := constOF (Auth MaxNat)
+abbrev MCounterRF : COFE.OFunctorPreᵢ := constOFᵢ (Auth MaxNat)
 
 @[rocq_alias heap_lang.mcounterG]
 class MCounterG (GF : BundledGFunctors) where [elemG : ElemG GF MCounterRF]
@@ -197,7 +197,7 @@ end MonoProof
 
 /-! ## Counter with contributions -/
 
-abbrev CCounterRF : COFE.OFunctorPre := constOF (FracAuth (A := Nat))
+abbrev CCounterRF : COFE.OFunctorPreᵢ := constOFᵢ (FracAuth (A := Nat))
 
 @[rocq_alias heap_lang.ccounterG]
 class CCounterG (GF : BundledGFunctors) where [elemG : ElemG GF CCounterRF]

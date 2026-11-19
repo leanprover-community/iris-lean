@@ -32,13 +32,13 @@ namespace BUpdPlain
 
 section BupdPlainDef
 
-open «OFE»
+open OFE
 
 variable [Sbi PROP]
 local bi PROP
 
 @[rocq_alias bupd_alt_ne]
-instance BUpdPlain_ne : NonExpansive (BUpdPlain (PROP := PROP)) where
+instance BUpdPlain_ne : NonExpansiveᵢ (BUpdPlain (PROP := PROP)) where
   ne _ _ _ H := forall_ne fun _ => wand_ne.ne (wand_ne.ne H .rfl) .rfl
 
 #rocq_ignore bupd_alt_proper "OFE is Leibniz; use equality"

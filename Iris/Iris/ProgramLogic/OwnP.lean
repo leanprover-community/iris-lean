@@ -21,7 +21,7 @@ local bi (IProp GF)
 
 local stepindex Nat
 
-abbrev ownPRF (State : Type) : COFE.OFunctorPre := constOF (ExclAuthR (A := stateO State))
+abbrev ownPRF (State : Type) : COFE.OFunctorPreᵢ := constOFᵢ (ExclAuthR (A := stateO State))
 
 @[rocq_alias ownPGS]
 class OwnPGS (State : Type) (GF : BundledGFunctors) where

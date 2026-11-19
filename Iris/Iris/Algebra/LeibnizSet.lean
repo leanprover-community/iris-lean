@@ -25,7 +25,7 @@ All sets are given the discrete Leibniz OFE, and as a consequence, is not relate
 OFE/ORA on the element type.
 -/
 
-open Iris Std ORA «OFE» LawfulSet
+open Iris Std ORA OFE LawfulSet
 
 inductive DisjointLeibnizSet (S : Type _) where
   | valid : S → DisjointLeibnizSet S
@@ -41,10 +41,10 @@ inductive DisjointLeibnizSet (S : Type _) where
 #rocq_ignore set_unfold_gset_disj_valid_op
   "std++ `SetUnfold` instance for `set_solver`; use DisjointLeibnizSet.valid_op_iff_disj"
 
-instance : COFE (DisjointLeibnizSet S) := COFE.ofDiscrete _
+instance : COFEᵢ (DisjointLeibnizSet S) := COFE.ofDiscrete _
 
 instance inst_disjointLeibnizSet_DiscreteE {S : Type _} (x : DisjointLeibnizSet S) :
-    DiscreteE x := ⟨fun h => h⟩
+    DiscreteEᵢ x := ⟨fun h => h⟩
 
 instance instEmptyCollectionDisjointLeibnizSet [LawfulSet S A] :
     EmptyCollection (DisjointLeibnizSet S) where
@@ -315,7 +315,7 @@ end DisjointLeibnizSet
 inductive LeibnizSet (S : Type _) where
   | valid (s : S)
 
-instance : COFE (LeibnizSet S) := COFE.ofDiscrete _
+instance : COFEᵢ (LeibnizSet S) := COFE.ofDiscrete _
 
 namespace LeibnizSet
 

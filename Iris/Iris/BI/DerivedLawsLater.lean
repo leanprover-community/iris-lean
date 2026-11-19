@@ -260,18 +260,18 @@ theorem loeb_wand [BILoeb PROP] (P : PROP) : □ (▷ P -∗ P) ⊢ P :=
   (intuitionistically_mono (wand_mono_left intuitionistically_elim)).trans
     loeb_wand_intuitionistically
 
-open Iris BI «OFE» «Contractive» in
+open Iris BI OFE Contractive in
 @[rocq_alias bi.later_contractive_bi_löb]
 instance later_contractive_bi_loeb [BILaterContractive PROP] : BILoeb PROP where
   loeb_weak {P} HP := by
-    let Hc : Contractive (fun Q => iprop((▷ Q) → P)) := ⟨fun H => imp_ne.ne (distLater_dist H) .rfl⟩
+    let Hc : Contractiveᵢ (fun Q => iprop((▷ Q) → P)) := ⟨fun H => imp_ne.ne (distLater_dist H) .rfl⟩
     let Flöb : PROP -c> PROP := { f := fun Q => iprop((▷ Q) → P), contractive := Hc }
-    suffices HP : iprop(▷ (fixpoint Flöb) ⊢ P) by
+    suffices HP : iprop(▷ (fixpointᵢ Flöb) ⊢ P) by
       refine entails_impl_true.mp HP |>.trans ?_
       refine (fixpoint_unfold Flöb).to_bi |>.mpr |>.trans ?_
       exact later_intro.trans HP
     refine .trans ?_ ((later_mono HP).trans HP)
-    suffices Hcut : later (fixpoint Flöb) ⊢ later (later (later (fixpoint Flöb))) → later (later P) by
+    suffices Hcut : later (fixpointᵢ Flöb) ⊢ later (later (later (fixpointᵢ Flöb))) → later (later P) by
       exact and_intro (later_intro.trans later_intro) Hcut |>.trans imp_elim_right
     refine .trans (later_mono ?_) later_imp
     refine .trans ?_ later_imp
@@ -316,7 +316,7 @@ theorem loeb_alt_wand [BIAffine PROP] :
 /-! # LaterN -/
 
 @[rocq_alias bi.laterN_ne]
-instance laterN_ne (n : Nat) : OFE.NonExpansive (BIBase.laterN (PROP:=PROP) n) where
+instance laterN_ne (n : Nat) : OFE.NonExpansiveᵢ (BIBase.laterN (PROP:=PROP) n) where
   ne := by
     induction n with
     | zero => exact fun _ _ _ h => h
@@ -521,7 +521,7 @@ instance bi_laterN_sep_entails_homomorphism (n : Nat) :
 /-! # Except0 -/
 
 @[rocq_alias bi.except_0_ne]
-instance except0_ne : OFE.NonExpansive (BIBase.except0 (PROP:=PROP)) where
+instance except0_ne : OFE.NonExpansiveᵢ (BIBase.except0 (PROP:=PROP)) where
   ne _ _ _ h := or_ne.ne .rfl h
 
 @[rw_mono_rule, rocq_alias bi.except_0_mono]

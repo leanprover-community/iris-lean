@@ -38,7 +38,7 @@ local stepindex Nat
 open Iris
 
 section heapView
-open Std PartialMap Heap «OFE» ORA
+open Std PartialMap Heap OFE ORA
 
 variable (K V : Type _) (H : Type _ → Type _) [LawfulPartialMap H K] [ORA V]
 
@@ -168,7 +168,7 @@ end heapView
 
 namespace HeapView
 
-open Heap «OFE» View One DFrac ORA PartialMap Std LawfulPartialMap
+open Heap OFE View One DFrac ORA PartialMap Std LawfulPartialMap
 
 variable {K V : Type _} {H : Type _ → Type _} [LawfulPartialMap H K] [ORA V]
 
@@ -185,12 +185,12 @@ def Elem (k : K) (v : DFrac × V) : HeapView K V H := ◯V (Std.PartialMap.singl
 
 -- TODO: Do we need this?
 @[rocq_alias gmap_view_auth_ne]
-instance : NonExpansive (Auth dq : _ → HeapView K V H) := View.auth_ne
+instance : NonExpansiveᵢ (Auth dq : _ → HeapView K V H) := View.auth_ne
 
 #rocq_ignore gmap_view_auth_proper "OFE is Leibniz; use `congrArg`"
 
 @[rocq_alias gmap_view_frag_ne]
-instance : NonExpansive (Frag k dq : _ → HeapView K V H) where
+instance : NonExpansiveᵢ (Frag k dq : _ → HeapView K V H) where
   ne _ _ _ Hx := by
     refine frag_ne.ne (fun k' => ?_)
     by_cases h : k = k'
@@ -391,7 +391,7 @@ theorem auth_op_frag_one_valid_iff :
   refine forall_congr' (fun _ => auth_op_frag_one_validN_iff) |>.trans ?_
   refine ⟨fun Hv => ?_, ?_⟩
   · exact ⟨Hv 0 |>.1, valid_iff_validN.mpr (Hv · |>.2.1),
-      OFE.eq_of_dist (Hv · |>.2.2)⟩
+      OFE.eq_of_distᵢ (Hv · |>.2.2)⟩
   · exact fun ⟨Hdp, Hv, Hl⟩ n => ⟨Hdp, Hv.validN, Hl.dist⟩
 
 @[rocq_alias gmap_view_frag_core_id]
@@ -643,7 +643,7 @@ section heapViewFunctor
 
 open Iris.Std PartialMap
 
-theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
+theorem heapR_map_eq [COFEᵢ A] [COFEᵢ B] [COFEᵢ A'] [COFEᵢ B'] [RFunctor T] (f : A' -n> A) (g : B -n> B')
     (n : Nat) (m : H (T A B)) (mv : H (DFrac × T A B)) :
     HeapR K (T A B) H n m mv →
     HeapR K (T A' B') H n
@@ -667,7 +667,7 @@ theorem heapR_map_eq [COFE A] [COFE B] [COFE A'] [COFE B'] [RFunctor T] (f : A' 
     exact ⟨_, G.op _ c ▸ G.monoN_ord hc⟩
 
 @[rocq_alias gmap_viewURF]
-abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPre :=
+abbrev HeapViewURF T [RFunctor T] : COFE.OFunctorPreᵢ :=
   fun A B _ _ => HeapView K (T A B) H
 
 instance {T} [RFunctor T] :
@@ -687,7 +687,7 @@ instance {T} [RFunctor T] :
       exact fun _ => Prod.map_ne .refl (RFunctor.map_ne.ne Hx Hy)
   map_id x := by
     rw (config := { occs := .pos [2] }) [<- (View.map_id x)]
-    refine OFE.eq_of_dist (fun n => View.map_ne x (fun a => ?_) (fun b => ?_))
+    refine OFE.eq_of_distᵢ (fun n => View.map_ne x (fun a => ?_) (fun b => ?_))
     · exact (COFE.OFunctor.map_id (F := PartialMapOF H T) a).dist
     · refine OFE.Dist.trans ?_ (map_id _ b).dist
       apply PartialMap.map_ne
@@ -695,7 +695,7 @@ instance {T} [RFunctor T] :
   map_comp f g f' g' x := by
     simp [View.mapC]
     rw [<- View.map_compose']
-    refine OFE.eq_of_dist (fun n => View.map_ne x (fun a => (?_ : _ = _).dist) (fun b => (?_ : _ = _).dist))
+    refine OFE.eq_of_distᵢ (fun n => View.map_ne x (fun a => (?_ : _ = _).dist) (fun b => (?_ : _ = _).dist))
     · exact (inferInstance : URFunctor (PartialMapOF H T)).map_comp _ _ _ _ a
     · simp only [Prod.mapC, ORA.Hom.id, PartialMap.mapC]
       refine .trans ?_ (PartialMap.map_compose _ _ _ _)
@@ -724,7 +724,7 @@ end heapViewFunctor
 end HeapView
 
 section FiniteHeapView
-open Std PartialMap Heap «OFE» ORA HeapView
+open Std PartialMap Heap OFE ORA HeapView
 open One DFrac LawfulPartialMap Algebra
 
 variable {K V : Type _} {H : Type _ → Type _} [DecidableEq K] [LawfulFiniteMap H K] [ORA V]

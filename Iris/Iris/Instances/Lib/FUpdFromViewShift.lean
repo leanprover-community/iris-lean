@@ -22,7 +22,7 @@ local stepindex Nat
 
 namespace Iris
 
-open Iris «OFE» BI
+open Iris OFE BI
 
 section fupd
 
@@ -34,8 +34,8 @@ abbrev fupd_vs (E1 E2 : CoPset) (P : UPred M) : UPred M :=
   iprop(∃ R, R ∗ vs E1 E2 R P)
 
 @[rocq_alias fancy_updates_from_vs.fupd_ne]
-instance fupd_vs_ne (E1 E2 : CoPset) [vs_ne : ∀ E1 E2, NonExpansive₂ (vs E1 E2)] :
-    NonExpansive (fupd_vs vs E1 E2) where
+instance fupd_vs_ne (E1 E2 : CoPset) [vs_ne : ∀ E1 E2, NonExpansive₂ᵢ (vs E1 E2)] :
+    NonExpansiveᵢ (fupd_vs vs E1 E2) where
   ne {_ _ _} h := exists_ne fun _ => sep_ne.ne .rfl ((vs_ne E1 E2).ne .rfl h)
 
 @[rocq_alias fancy_updates_from_vs.fupd_intro]

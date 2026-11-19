@@ -88,7 +88,7 @@ def wp.pre (s : Stuckness) (wp : CoPset -> Expr -> (Val -> IProp GF) -> IProp GF
       wp E e₂ Φ ∗ [∗list] e' ∈ eₜ, wp ⊤ e' ι.forkPost)
 
 @[rocq_alias wp_pre_contractive]
-instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
+instance wp.pre.contractive s : OFE.Contractiveᵢ (wp.pre s (ι := ι)) where
   distLater_dist := by
     intros n wp wp' Hwp E e₁ Φ
     unfold pre
@@ -121,7 +121,7 @@ instance wp.pre.contractive s : OFE.Contractive (wp.pre s (ι := ι)) where
 
 @[rocq_alias wp_def]
 instance wp.def : Wp (IProp GF) (Expr) (Val) Stuckness where
-  wp s := fixpoint (wp.pre s)
+  wp s := fixpointᵢ (wp.pre s)
 
 #rocq_ignore wp_aux "We do not use Iris' custom seal/unseal visibility control"
 #rocq_ignore wp' "We do not use Iris' custom seal/unseal visibility control"
@@ -136,7 +136,7 @@ theorem wp_unfold {s E} {e : Expr} {Φ : Val → IProp GF} :
 
 @[rocq_alias wp_ne]
 instance wp_ne {s : Stuckness} {E} {e : Expr} :
-    OFE.NonExpansive (Wp.wp (PROP := IProp GF) s E e) where
+    OFE.NonExpansiveᵢ (Wp.wp (PROP := IProp GF) s E e) where
   ne {n Φ₁ Φ₂} HΦ := by
     induction n using Nat.strongRecOn generalizing e E Φ₁ Φ₂ with | ind n IH =>
     simp only [wp_unfold.to_eq]
@@ -168,7 +168,7 @@ instance wp_ne {s : Stuckness} {E} {e : Expr} :
 
 @[rocq_alias wp_contractive]
 theorem wp_contractive (s : Stuckness) E (e : Expr) (h : toVal e = none) :
-    OFE.Contractive (Wp.wp (PROP := IProp GF) s E e) where
+    OFE.Contractiveᵢ (Wp.wp (PROP := IProp GF) s E e) where
   distLater_dist {n Φ₁ Φ₂} HΦ := by
     simp only [wp_unfold.to_eq]
     simp only [wp.pre, h]

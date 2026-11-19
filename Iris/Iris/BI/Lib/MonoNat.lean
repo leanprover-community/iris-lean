@@ -19,8 +19,8 @@ local stepindex Nat
 namespace Iris
 open Auth BI MonoNat
 
-abbrev MonoNatRF : COFE.OFunctorPre :=
-  AuthURF (constOF MaxNat)
+abbrev MonoNatRF : COFE.OFunctorPreᵢ :=
+  AuthURF (constOFᵢ MaxNat)
 
 @[rocq_alias mono_natG]
 class MonoNatG (GF : BundledGFunctors) where

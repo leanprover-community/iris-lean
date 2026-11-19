@@ -50,18 +50,18 @@ def DynReservationMap.mkToken [LawfulPartialMap H Pos] (e : CoPset) :
 #rocq_ignore to_reservation_map "OFE/CMRA are built directly, not via an isomorphism"
 #rocq_ignore from_reservation_map "OFE/CMRA are built directly, not via an isomorphism"
 
-section «OFE»
+section OFE
 
-open «OFE»
+open OFE
 
-variable [LawfulPartialMap H Pos] [OFE A]
+variable [LawfulPartialMap H Pos] [OFEᵢ A]
 
 #rocq_ignore dyn_reservation_map_ofe_mixin "Not needed"
 #rocq_ignore dyn_reservation_map_equiv "Part of OFE instance"
 #rocq_ignore dyn_reservation_map_dist "Part of OFE instance"
 
 @[rocq_alias dyn_reservation_mapO]
-instance : OFE (DynReservationMap A H) where
+instance : OFEᵢ (DynReservationMap A H) where
   dist n x y := x.data ≡{n}≡ y.data ∧ x.token ≡{n}≡ y.token
   dist_eqv := {
     refl _ := ⟨.rfl, rfl⟩,
@@ -70,21 +70,21 @@ instance : OFE (DynReservationMap A H) where
   }
   eq_dist' {x y} := by
     refine ⟨fun h _ => h ▸ ⟨.rfl, .rfl⟩, fun H => ?_⟩
-    exact DynReservationMap.ext (OFE.eq_of_dist fun n => (H n).1) (OFE.eq_of_dist fun n => (H n).2)
+    exact DynReservationMap.ext (OFE.eq_of_distᵢ fun n => (H n).1) (OFE.eq_of_distᵢ fun n => (H n).2)
   dist_lt h lt := ⟨dist_lt h.left lt, dist_lt h.right lt⟩
 
 @[rocq_alias dyn_reservation_map_ofe_discrete]
-instance instDiscreteDynReservationMap [Discrete A] : Discrete (DynReservationMap A H) where
+instance instDiscreteDynReservationMap [Discreteᵢ A] : Discreteᵢ (DynReservationMap A H) where
   discrete_0 h := DynReservationMap.ext (discrete_0 h.left) (discrete_0 h.right)
 
 @[rocq_alias DynReservationMap_ne]
 instance instNonExpansive₂DynReservationMapMk :
-    NonExpansive₂ (DynReservationMap.mk (H := H) (A := A)) where
+    NonExpansive₂ᵢ (DynReservationMap.mk (H := H) (A := A)) where
   ne _ _ _ hd _ _ ht := ⟨hd, ht⟩
 
 @[rocq_alias dyn_reservation_map_data_proj_ne]
 instance instNonExpansiveDynReservationMapDataProj :
-    NonExpansive (DynReservationMap.data (H := H) (A := A)) where
+    NonExpansiveᵢ (DynReservationMap.data (H := H) (A := A)) where
   ne _ _ _ h := h.left
 
 #rocq_ignore DynReservationMap_proper "Derivable using NonExpansive.eqv"
@@ -93,29 +93,29 @@ instance instNonExpansiveDynReservationMapDataProj :
 
 @[rocq_alias dyn_reservation_map_data_ne]
 instance instNonExpansiveDynReservationMapSingleton :
-    NonExpansive (DynReservationMap.mkData (H := H) (A := A) k) where
+    NonExpansiveᵢ (DynReservationMap.mkData (H := H) (A := A) k) where
   ne _ _ _ h := ⟨singleton_dist h k, rfl⟩
 
 @[rocq_alias DynReservationMap_discrete]
-instance instDiscreteEDynReservationMapMk {a : H A} [DiscreteE a] :
-    DiscreteE (DynReservationMap.mk a b) where
-  discrete h := DynReservationMap.ext (OFE.DiscreteE.discrete h.1) (OFE.DiscreteE.discrete h.2)
+instance instDiscreteEDynReservationMapMk {a : H A} [DiscreteEᵢ a] :
+    DiscreteEᵢ (DynReservationMap.mk a b) where
+  discrete h := DynReservationMap.ext (OFE.DiscreteE.discreteᵢ h.1) (OFE.DiscreteE.discreteᵢ h.2)
 
 @[rocq_alias dyn_reservation_map_data_discrete]
-instance instDiscreteEDynReservationMapSingleton {a : A} [DiscreteE a] :
-    DiscreteE (DynReservationMap.mkData (H := H) k a) :=
+instance instDiscreteEDynReservationMapSingleton {a : A} [DiscreteEᵢ a] :
+    DiscreteEᵢ (DynReservationMap.mkData (H := H) k a) :=
   by unfold DynReservationMap.mkData; infer_instance
 
 @[rocq_alias dyn_reservation_map_token_discrete]
 instance instDiscreteEDynReservationMapToken :
-    DiscreteE (DynReservationMap.mkToken (H := H) (A := A) e) :=
+    DiscreteEᵢ (DynReservationMap.mkToken (H := H) (A := A) e) :=
   by unfold DynReservationMap.mkToken; infer_instance
 
-end «OFE»
+end OFE
 
 section ORA
 
-open «OFE» ORA DisjointLeibnizSet LawfulSet
+open OFE ORA DisjointLeibnizSet LawfulSet
 
 namespace DynReservationMap
 
@@ -338,7 +338,7 @@ instance instORADynReservationMap : ORA (DynReservationMap A H) where
   pcore_op_left | rfl => DynReservationMap.ext (core_op _) (core_op _)
   extend {n x y₁ y₂} v exy := by
     obtain ⟨z₁, z₂, xzz, zy₁, zy₂⟩ := extend (validN_data_of_validN v) exy.left
-    refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, OFE.eq_of_dist ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
+    refine ⟨mk z₁ y₁.token, mk z₂ y₂.token, OFE.eq_of_distᵢ ?_, ⟨zy₁, rfl⟩, ⟨zy₂, rfl⟩⟩
     exact fun m => ⟨xzz.dist, exy.right⟩
   toOrdered := raOrdered
   op_monoN_left_ord z h := ⟨op_monoN_left_ord z.data h.1, op_monoN_left_ord z.token h.2⟩

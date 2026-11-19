@@ -34,8 +34,8 @@ notation "●MN " n => auth (DFrac.own 1) n
 notation "●MN□ " n => auth DFrac.discard n
 notation "◯MN " n => lb n
 
-scoped instance : OFE.DiscreteE (◯MN n : MonoNat) := Auth.frag_discrete
-scoped instance : OFE.DiscreteE (●MN{dq} n : MonoNat) :=
+scoped instance : OFE.DiscreteEᵢ (◯MN n : MonoNat) := Auth.frag_discrete
+scoped instance : OFE.DiscreteEᵢ (●MN{dq} n : MonoNat) :=
   ⟨fun h => OFE.discrete h⟩
 scoped instance : IsUnit (◯MN 0 : MonoNat) where
   unit_valid := Auth.frag_valid.mpr trivial

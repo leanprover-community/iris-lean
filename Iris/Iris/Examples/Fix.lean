@@ -26,26 +26,26 @@ This should provide better support for rewriting by relying on the default Lean
 tactics for simplification/rewriting.
 -/
 section Fix
-open Iris «OFE» «COFE»
+open Iris OFE COFE
 
-variable [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err]
+variable [OFEᵢ Val] [OFEᵢ Err] [IsCOFEᵢ Val] [IsCOFEᵢ Err] [Inhabited Err]
 
-abbrev DomF : OFunctorPre :=
-  SumOF (constOF Val) (SumOF (constOF Err) (SumOF (LaterOF IdOF) (LaterOF (HomOF IdOF IdOF))))
+abbrev DomF : OFunctorPreᵢ :=
+  SumOFᵢ (constOFᵢ Val) (SumOFᵢ (constOFᵢ Err) (SumOFᵢ (LaterOF IdOFᵢ) (LaterOF (HomOFᵢ IdOFᵢ IdOFᵢ))))
 
 instance : Inhabited (DomF (Val := Val) (Err := Err) (ULift Unit) (ULift Unit)) :=
   ⟨.inr (.inr (.inr ⟨id, inferInstance⟩))⟩
 
 end Fix
 
-open Iris «OFE» «COFE» in
-abbrev Dom (Val : Type _) (Err : Type _) [OFE Val] [OFE Err] [IsCOFE Val] [IsCOFE Err] [Inhabited Err] :=
+open Iris OFE COFE in
+abbrev Dom (Val : Type _) (Err : Type _) [OFEᵢ Val] [OFEᵢ Err] [IsCOFEᵢ Val] [IsCOFEᵢ Err] [Inhabited Err] :=
   OFunctor.Fix (DomF (Val := Val) (Err := Err))
 
 namespace Dom
-open Iris «OFE» «COFE»
+open Iris OFE COFE
 
-variable [OFE V] [OFE E] [IsCOFE V] [IsCOFE E] [Inhabited E]
+variable [OFEᵢ V] [OFEᵢ E] [IsCOFEᵢ V] [IsCOFEᵢ E] [Inhabited E]
 
 def fold : V ⊕ E ⊕ Later (Dom V E) ⊕ Later (Dom V E -n> Dom V E) -n> Dom V E :=
   OFunctor.Fix.fold (F := DomF (Val := V) (Err := E))

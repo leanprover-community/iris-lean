@@ -447,9 +447,9 @@ instance wand_persistent [Plain P] [Persistent Q] [Absorbing Q] :
     _ ⊢ <pers> (P -∗ Q)   := persistently_mono (wand_mono_left plain)
 
 @[rocq_alias limit_preserving_Plain]
-theorem limitPreserving_plain {A} [COFE A] (Φ : A → PROP) [Φne : OFE.NonExpansive Φ] :
-  LimitPreserving (fun x => Plain (Φ x)) := by
-    letI _ : OFE.NonExpansive fun x => iprop(■ Φ x) := .comp inferInstance Φne
+theorem limitPreserving_plain {A} [COFEᵢ A] (Φ : A → PROP) [Φne : OFE.NonExpansiveᵢ Φ] :
+  LimitPreservingᵢ (fun x => Plain (Φ x)) := by
+    letI _ : OFE.NonExpansiveᵢ fun x => iprop(■ Φ x) := .comp inferInstance Φne
     refine ⟨fun c h => ⟨?_⟩, fun hn _ _ => absurd hn (SIdx.limit_finite _)⟩
     refine (LimitPreserving.entails _ (fun x => iprop(■ (Φ x)))).compl _ ?_
     exact (fun n => h n |>.plain)
@@ -810,10 +810,10 @@ instance plainly_timeless (P : PROP) [Timeless P] : Timeless iprop(■ P) :=
   inferInstanceAs (Timeless iprop(<si_pure> <si_emp_valid> P))
 
 @[rocq_alias plainly_internal_eq]
-theorem plainly_internalEq {A} [OFE A] {a b : A} :
+theorem plainly_internalEq {A} [OFEᵢ A] {a b : A} :
     iprop(■ (a ≡ b) ⊣⊢ a ≡ b) := by
   refine ⟨plainly_elim, ?_⟩
-  have : OFE.NonExpansive (β := PROP) (fun x ↦ iprop(■ (a ≡ x))) :=  {
+  have : OFE.NonExpansiveᵢ (β := PROP) (fun x ↦ iprop(■ (a ≡ x))) :=  {
     ne n x x' xx' := instPlainly_ne.ne ((internalEq.ne_r a).ne xx')
   }
   refine .trans ?_ (imp_elim <| internalEq.rewrite (a := a) (fun x ↦ iprop(■ a ≡ x)))
@@ -824,7 +824,7 @@ theorem plainly_internalEq {A} [OFE A] {a b : A} :
     _ ⊢ ■ (a ≡ a) := plainly_mono internalEq.refl
 
 @[rocq_alias internal_eq_plain]
-instance internalEq_plain {A} [OFE A] (a b : A) : Plain (PROP := PROP) iprop(a ≡ b) where
+instance internalEq_plain {A} [OFEᵢ A] (a b : A) : Plain (PROP := PROP) iprop(a ≡ b) where
   plain := plainly_internalEq |>.2
 
 @[rocq_alias prop_ext]
@@ -871,7 +871,7 @@ theorem plainly_true_alt (P : PROP) : ■ (True -∗ P) ⊣⊢ P ≡ iprop(True)
     refine plainly_mono ?_
     exact and_intro (wand_intro_left true_intro) (wand_intro_left wand_elim_right)
   · let Ψ P : PROP := iprop(■ (True -∗ P))
-    haveI : OFE.NonExpansive Ψ := OFE.NonExpansive.comp (inferInstance) (wand_ne.ne_right _ _)
+    haveI : OFE.NonExpansiveᵢ Ψ := OFE.NonExpansive.comp (inferInstance) (wand_ne.ne_right _ _)
     calc iprop(_ ≡ _)
       _ ⊢ _ ≡ _                        := internalEq.symm
       _ ⊢ ■ (True -∗ True) → (■ (True -∗ P)) := internalEq.rewrite Ψ

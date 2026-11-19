@@ -82,7 +82,7 @@ variable [UORA M]
 open UPred
 
 @[rocq_alias uPredO]
-instance : OFE (UPred M) where
+instance : OFEᵢ (UPred M) where
   dist n P Q := ∀ n' (x : M), n' ≤ n → (p : ✓{n'} x) → (P n' ⟨x, p⟩ ↔ Q n' ⟨x, p⟩)
   dist_eqv := {
     refl _ _ _ _ _ := .rfl
@@ -114,7 +114,7 @@ theorem uPred_holds_ne {P Q : UPred M} {n₁ n₂} {x : M}
   (HPQ _ _ .refl Hx).mpr (Q.mono HQ .rfl Hn)
 
 @[rocq_alias uPred_cofe]
-instance : IsCOFE (UPred M) where
+instance : IsCOFEᵢ (UPred M) where
   lbcompl := (·.elim)
   conv_lbcompl := (·.elim)
   lbcompl_ne := (·.elim)
@@ -131,7 +131,7 @@ instance : IsCOFE (UPred M) where
 
 #rocq_ignore uPred_compl "Inlined in the `IsCOFE` construction"
 
-abbrev UPredOF (F : COFE.OFunctorPre) [URFunctor F] : COFE.OFunctorPre :=
+abbrev UPredOF (F : COFE.OFunctorPreᵢ) [URFunctor F] : COFE.OFunctorPreᵢ :=
   fun A B _ _ => UPred (F B A)
 
 @[rocq_alias uPredO_map]
@@ -146,17 +146,17 @@ def uPred_map [UORA α] [UORA β] (f : β -C> α) : UPred α -n> UPred β := by
 #rocq_ignore uPred_map_ne "Inlined in the bundled `-n>` of `uPred_map`."
 
 @[rocq_alias uPredOF]
-instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
+instance [URFunctor F] : COFE.OFunctorᵢ (UPredOF F) where
   ofe := inferInstance
   map f g := uPred_map (URFunctor.map (F := F) g f)
   map_ne.ne _ _ _ Hx _ _ Hy _ _ z2 Hn _ := by
     simp only [uPred_map]
     exact uPred_ne <| URFunctor.map_ne.ne (Hy.le Hn) (Hx.le Hn) z2
-  map_id x := OFE.eq_of_dist <| by
+  map_id x := OFE.eq_of_distᵢ <| by
     intro _ _ z _ _
     simp only [uPred_map]
     simp only [URFunctor.map_id]
-  map_comp f g f' g' x := OFE.eq_of_dist <| by
+  map_comp f g f' g' x := OFE.eq_of_distᵢ <| by
     intro _ _ H _ _
     simp only [uPred_map]
     simp only [URFunctor.map_comp]
@@ -167,7 +167,7 @@ instance [URFunctor F] : COFE.OFunctor (UPredOF F) where
 #rocq_ignore uPred_map_ext "Inlined as the `map_ne` field of the `COFE.OFunctor (UPredOF F)` instance."
 
 @[rocq_alias uPredOF_contractive]
-instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorContractive (UPredOF F) where
+instance instUPredOFunctorContractive [URFunctorContractive F] : COFE.OFunctorContractiveᵢ (UPredOF F) where
   map_contractive.1 {n x y} HKL P m a Hmn Ha := by
     refine uPred_ne (P := P) <|
       ((URFunctorContractive.map_contractive.1 (x := (x.snd, x.fst)) (y := (y.snd, y.fst))) ?_ a).le Hmn

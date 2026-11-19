@@ -24,7 +24,7 @@ fragment's resource to its payload.
 local stepindex Nat
 
 namespace Iris
-open «OFE» ORA UORA Auth Iris.Option Iris.OFE.Option UFrac
+open OFE ORA UORA Auth Iris.Option Iris.OFE.Option UFrac
 
 /-! ## Definitions -/
 
@@ -49,13 +49,13 @@ notation "◯U{" q "} " a => frag q a
 /-! ## NonExpansive instances -/
 
 @[rocq_alias ufrac_auth_auth_ne]
-nonrec instance auth_ne {q : Qp} : NonExpansive (auth q : A → UFracAuth) where
+nonrec instance auth_ne {q : Qp} : NonExpansiveᵢ (auth q : A → UFracAuth) where
   ne _ _ _ h := auth_ne.ne ⟨.rfl, h⟩
 
 #rocq_ignore ufrac_auth_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
 
 @[rocq_alias ufrac_auth_frag_ne]
-nonrec instance frag_ne {q : Qp} : NonExpansive (frag q : A → UFracAuth) where
+nonrec instance frag_ne {q : Qp} : NonExpansiveᵢ (frag q : A → UFracAuth) where
   ne _ _ _ h := frag_ne.ne ⟨.rfl, h⟩
 
 #rocq_ignore ufrac_auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
@@ -63,12 +63,12 @@ nonrec instance frag_ne {q : Qp} : NonExpansive (frag q : A → UFracAuth) where
 /-! ## Discrete instances -/
 
 @[rocq_alias ufrac_auth_auth_discrete]
-instance auth_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (●U{q} a) :=
-  letI _ : DiscreteE (unit : Option (UFrac × A)) := none_is_discrete
+instance auth_discrete {q : Qp} {a : A} [DiscreteEᵢ a] : DiscreteEᵢ (●U{q} a) :=
+  letI _ : DiscreteEᵢ (unit : Option (UFrac × A)) := none_is_discrete
   by infer_instance
 
 @[rocq_alias ufrac_auth_frag_discrete]
-instance frag_discrete {q : Qp} {a : A} [DiscreteE a] : DiscreteE (◯U{q} a) :=
+instance frag_discrete {q : Qp} {a : A} [DiscreteEᵢ a] : DiscreteEᵢ (◯U{q} a) :=
   by infer_instance
 
 /-! ## Validity -/
@@ -94,7 +94,7 @@ theorem agreeN {n : Nat} {p : Qp} {a b : A} (h : ✓{n} (●U{p} a) • ◯U{p} 
 
 @[rocq_alias ufrac_auth_agree]
 theorem agree {p : Qp} {a b : A} (h : ✓ (●U{p} a) • ◯U{p} b) : a = b :=
-  OFE.eq_of_dist (agreeN <| valid_iff_validN.mp h ·)
+  OFE.eq_of_distᵢ (agreeN <| valid_iff_validN.mp h ·)
 
 #rocq_ignore ufrac_auth_agree_L "Use agree"
 
@@ -231,14 +231,14 @@ theorem update_surplus_cancel [OrdInc A] {p q : Qp} {a b : A} [Cancelable b] :
 /-! ## Functors -/
 
 @[rocq_alias ufrac_authURF]
-abbrev UFracAuthURF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
-  AuthURF (OptionOF (ProdOF (constOF UFrac) T))
+abbrev UFracAuthURF (T : COFE.OFunctorPreᵢ) [RFunctor T] : COFE.OFunctorPreᵢ :=
+  AuthURF (OptionOFᵢ (ProdOFᵢ (constOFᵢ UFrac) T))
 
 #rocq_ignore ufrac_authURF_contractive "Found by typeclass inference"
 
 @[rocq_alias ufrac_authRF]
-abbrev UFracAuthRF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
-  AuthRF (OptionOF (ProdOF (constOF UFrac) T))
+abbrev UFracAuthRF (T : COFE.OFunctorPreᵢ) [RFunctor T] : COFE.OFunctorPreᵢ :=
+  AuthRF (OptionOFᵢ (ProdOFᵢ (constOFᵢ UFrac) T))
 
 #rocq_ignore ufrac_authRF_contractive "Found by typeclass inference"
 

@@ -71,7 +71,7 @@ def Qp.threeQuarters : Qp := ⟨3 / 4, by grind⟩
 def Qp.divide_even (q : Qp) (n : Nat) (hn : 0 < n) : Qp :=
   ⟨q.val / n, Rat.div_pos q.2 (by exact_mod_cast hn)⟩
 
-instance instCOFEQp : COFE Qp := COFE.ofDiscrete _
+instance instCOFEQp : COFEᵢ Qp := COFE.ofDiscrete _
 
 @[instance_reducible] def Qp.cmraData : CMRAData Qp where
   pcore _ := none
@@ -161,7 +161,7 @@ theorem Frac.le_of_ord {p q : Qp} (H : p ≼ₒ q) : p ≤ q := by
 theorem Frac.le_of_inc {p q : Qp} (H : p ≼ q) : p ≤ q := le_of_ord (inc_iff_ord.mp H)
 
 @[rocq_alias frac_cmra_discrete]
-instance instDiscreteQp : «Discrete» Qp where
+instance instDiscreteQp : Discrete Qp where
   discrete_0 := fun h => h
   discrete_valid := id
 @[rocq_alias frac_full_exclusive]

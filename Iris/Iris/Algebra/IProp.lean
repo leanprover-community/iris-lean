@@ -18,7 +18,7 @@ local stepindex Nat
 
 namespace Iris
 
-open «COFE»
+open COFE
 
 abbrev GType := Nat
 
@@ -26,7 +26,7 @@ set_option linter.checkUnivs false in
 /-- A resource functor admissible in the global ghost state: contractive, with affine algebras. -/
 @[rocq_alias gFunctor]
 structure GFunctor.{u, v, w} where
-  F : OFunctorPre.{_, u, v, w}
+  F : OFunctorPreᵢ.{_, u, v, w}
   [contractive : RFunctorContractive F]
   [affine : RFunctorAffine F]
 
@@ -34,7 +34,7 @@ set_option linter.checkUnivs false in
 @[rocq_alias gFunctors]
 def BundledGFunctors := GType → GFunctor
 
-def BundledGFunctors.default : BundledGFunctors := fun _ => ⟨constOF Unit⟩
+def BundledGFunctors.default : BundledGFunctors := fun _ => ⟨constOFᵢ Unit⟩
 
 def BundledGFunctors.set (GF : BundledGFunctors) (i : Nat) (FB : GFunctor) :
     BundledGFunctors :=
@@ -51,7 +51,7 @@ abbrev GName := Nat
 #rocq_ignore gnameO "Use `LeibnizO GName`."
 
 @[rocq_alias iResF]
-abbrev IResF (GF : BundledGFunctors) : OFunctorPre := DiscreteFunOF (fun i => GenMapOF (GF i).F)
+abbrev IResF (GF : BundledGFunctors) : OFunctorPreᵢ := DiscreteFunOFᵢ (fun i => GenMapOF (GF i).F)
 
 #rocq_ignore subG "Superseded by `ElemG`."
 #rocq_ignore subG_inv "Lemma about `subG`; obsolete with `ElemG`."
@@ -72,7 +72,7 @@ variable (GF : BundledGFunctors)
 def IPre : Type _ := OFunctor.Fix (UPredOF (IResF GF))
 
 @[rocq_alias iProp_solution.iPreProp_cofe]
-instance : COFE (IPre GF) := inferInstanceAs (COFE (OFunctor.Fix _))
+instance : COFEᵢ (IPre GF) := inferInstanceAs (COFEᵢ (OFunctor.Fix _))
 
 @[rocq_alias iProp_solution.iResUR]
 def IResUR.{u} : Type u := (i : GType) → GenMap ((GF i).F (IPre GF) (IPre GF))

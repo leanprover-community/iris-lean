@@ -23,7 +23,7 @@ usual connectives of higher-order logic and prove that these satisfy the axioms 
 -/
 
 namespace Iris
-open «OFE» BI
+open OFE BI
 
 /-- Step-indexed proposition, downward closed in the step index. -/
 @[rocq_alias siProp]
@@ -113,7 +113,7 @@ def later (P : SiProp) : SiProp where
 def entails (P Q : SiProp) : Prop := ∀ n, P.holds n → Q.holds n
 
 @[rocq_alias siPropO]
-instance : OFE SiProp where
+instance : OFEᵢ SiProp where
   dist n P Q := ∀ {m}, m ≤ n → (P.holds m ↔ Q.holds m)
   dist_eqv.refl _ _ _ := Iff.rfl
   dist_eqv.symm h _ hle := (h hle).symm
@@ -133,7 +133,7 @@ instance : OFE SiProp where
 #rocq_ignore siProp_ofe_mixin "Not needed in Lean."
 
 @[rocq_alias siProp_cofe]
-instance : IsCOFE SiProp where
+instance : IsCOFEᵢ SiProp where
   lbcompl := (·.elim)
   conv_lbcompl := (·.elim)
   lbcompl_ne := (·.elim)
@@ -375,11 +375,11 @@ instance instPersistentlyExist : BIPersistentlyExist SiProp where
 /-! ## Internal equality -/
 
 @[rocq_alias siProp_internal_eq]
-def internalEq [OFE A] (a₁ a₂ : A) : SiProp where
+def internalEq [OFEᵢ A] (a₁ a₂ : A) : SiProp where
   holds n := a₁ ≡{n}≡ a₂
   closed h hle := Dist.le h hle
 
-@[simp] theorem internalEq_holds [OFE A] {a b : A} {n} :
+@[simp] theorem internalEq_holds [OFEᵢ A] {a b : A} {n} :
     (internalEq a b).holds n ↔ a ≡{n}≡ b := .rfl
 
 #rocq_ignore siProp_internal_eq_def "Not needed in Lean."
@@ -387,17 +387,17 @@ def internalEq [OFE A] (a₁ a₂ : A) : SiProp where
 #rocq_ignore siProp_internal_eq_unseal "Not needed in Lean."
 
 @[rocq_alias siProp_primitive.internal_eq_ne]
-instance instNonExpansive₂InternalEq [OFE A] : NonExpansive₂ (internalEq (A := A)) where
+instance instNonExpansive₂InternalEq [OFEᵢ A] : NonExpansive₂ᵢ (internalEq (A := A)) where
   ne _ _ _ h₁ _ _ h₂ _ hle :=
     ⟨fun heq => (Dist.le h₁ hle).symm.trans (heq.trans (Dist.le h₂ hle)),
      fun heq => (Dist.le h₁ hle).trans (heq.trans (Dist.le h₂ hle).symm)⟩
 
 @[rocq_alias siProp_primitive.internal_eq_refl]
-theorem internalEq_refl [OFE A] (P : SiProp) (a : A) : P ⊢ internalEq a a :=
+theorem internalEq_refl [OFEᵢ A] (P : SiProp) (a : A) : P ⊢ internalEq a a :=
   fun _ _ => Dist.rfl
 
 @[rocq_alias siProp_primitive.internal_eq_rewrite]
-theorem internalEq_rewrite [OFE A] (a b : A) (Ψ : A → SiProp) [HΨ : NonExpansive Ψ] :
+theorem internalEq_rewrite [OFEᵢ A] (a b : A) (Ψ : A → SiProp) [HΨ : NonExpansiveᵢ Ψ] :
     internalEq a b ⊢ Ψ a → Ψ b :=
   fun _ hab _ hle => (HΨ.ne (.le hab hle) .refl).mp
 
@@ -406,34 +406,34 @@ theorem prop_ext (P Q : SiProp) : (P → Q) ∧ (Q → P) ⊢ internalEq P Q :=
   fun _ ⟨hPQ, hQP⟩ n' hle => ⟨hPQ n' hle, hQP n' hle⟩
 
 @[rocq_alias siProp_primitive.internal_eq_entails]
-theorem internalEq_entails [OFE A] [OFE B] (a₁ a₂ : A) (b₁ b₂ : B) :
+theorem internalEq_entails [OFEᵢ A] [OFEᵢ B] (a₁ a₂ : A) (b₁ b₂ : B) :
     (internalEq a₁ a₂ ⊢ internalEq b₁ b₂) ↔ (∀ n, a₁ ≡{n}≡ a₂ → b₁ ≡{n}≡ b₂) :=
   Iff.rfl
 
 @[rocq_alias siProp_primitive.fun_extI]
-theorem fun_ext_internalEq [OFEFun (B : A → _)] (g₁ g₂ : (x : A) → B x) :
+theorem fun_ext_internalEq [OFEFunᵢ (B : A → _)] (g₁ g₂ : (x : A) → B x) :
     (∀ (i : A), internalEq (g₁ i) (g₂ i)) ⊢ internalEq g₁ g₂ :=
   fun _ h x => h _ ⟨x, rfl⟩
 
 @[rocq_alias siProp_primitive.sig_equivI_1]
-theorem sig_equiv_internalEq [OFE A] (P : A → Prop) (x y : { a : A // P a }) :
+theorem sig_equiv_internalEq [OFEᵢ A] (P : A → Prop) (x y : { a : A // P a }) :
     internalEq x.val y.val ⊢ internalEq x y :=
   fun _ => id
 
 @[rocq_alias siProp_primitive.discrete_eq_1]
-theorem discrete_eq_internalEq [OFE A] (a b : A) [Idisc : Std.TCOr (DiscreteE a) (DiscreteE b)] :
+theorem discrete_eq_internalEq [OFEᵢ A] (a b : A) [Idisc : Std.TCOr (DiscreteEᵢ a) (DiscreteEᵢ b)] :
     internalEq a b ⊢ ⌜a = b⌝ := by
   cases Idisc with
-  | l => exact fun _ hab => OFE.DiscreteE.discrete (hab.le (Nat.zero_le _))
-  | r => exact fun _ hab => (OFE.DiscreteE.discrete (hab.le (Nat.zero_le _)).symm).symm
+  | l => exact fun _ hab => OFE.DiscreteE.discreteᵢ (hab.le (Nat.zero_le _))
+  | r => exact fun _ hab => (OFE.DiscreteE.discreteᵢ (hab.le (Nat.zero_le _)).symm).symm
 
 @[rocq_alias siProp_primitive.later_equivI_1]
-theorem later_equiv_internalEq_mp [OFE A] (x y : A) :
+theorem later_equiv_internalEq_mp [OFEᵢ A] (x y : A) :
     internalEq (Later.next x) (Later.next y) ⊢ ▷ internalEq x y :=
   fun n h => match n with | .zero => trivial | .succ n => h n n.lt_succ_self
 
 @[rocq_alias siProp_primitive.later_equivI_2]
-theorem later_equiv_internalEq_mpr [OFE A] (x y : A) :
+theorem later_equiv_internalEq_mpr [OFEᵢ A] (x y : A) :
     ▷ internalEq x y ⊢ internalEq (Later.next x) (Later.next y) := by
   intro n hP m hlt
   cases n with
@@ -455,7 +455,7 @@ def cmraValid [ORA A] (a : A) : SiProp where
 #rocq_ignore siProp_cmra_valid_unseal "Not needed in Lean."
 
 @[rocq_alias siProp_primitive.cmra_valid_ne]
-instance instNonExpansiveCmraValid [ORA A] : NonExpansive (cmraValid (A := A)) where
+instance instNonExpansiveCmraValid [ORA A] : NonExpansiveᵢ (cmraValid (A := A)) where
   ne _ _ _ h _ hle := ⟨validN_ne (Dist.le h hle), validN_ne (Dist.le h hle).symm⟩
 
 @[rocq_alias siProp_primitive.cmra_valid_intro]
@@ -490,8 +490,8 @@ instance cmraValid_timeless [ORA A] [ORA.Discrete A] {a : A} : Timeless (cmraVal
 theorem pure_soundness {φ : Prop} (h : True ⊢ ⌜φ⌝) : φ := h 0 trivial
 
 @[rocq_alias siProp_primitive.internal_eq_soundness]
-theorem internalEq_soundness [OFE A] {x y : A} (h : True ⊢ internalEq x y) : x = y :=
-  OFE.eq_of_dist fun n => h n trivial
+theorem internalEq_soundness [OFEᵢ A] {x y : A} (h : True ⊢ internalEq x y) : x = y :=
+  OFE.eq_of_distᵢ fun n => h n trivial
 
 @[rocq_alias siProp_primitive.later_soundness]
 theorem later_soundness {P : SiProp} (h : True ⊢ ▷ P) : True ⊢ P := fun n _ => h (n + 1) trivial

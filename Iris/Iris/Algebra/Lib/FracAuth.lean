@@ -22,7 +22,7 @@ fraction) and `◯F{q} a` (fragment with fraction). Splitting works differently 
 
 local stepindex Nat
 
-open Iris «OFE» ORA UORA Auth Option OrdInc
+open Iris OFE ORA UORA Auth Option OrdInc
 
 /-! ## Definitions -/
 
@@ -57,13 +57,13 @@ instance frac_one_exclusive (b : A) : Exclusive (fracOne, b) where
 /-! ## NonExpansive instances -/
 
 @[rocq_alias frac_auth_auth_ne]
-instance auth_ne {dq : DFrac} : NonExpansive (auth dq : A → FracAuth) where
+instance auth_ne {dq : DFrac} : NonExpansiveᵢ (auth dq : A → FracAuth) where
   ne _ _ _ h := Auth.auth_ne.ne ⟨.rfl, h⟩
 
 #rocq_ignore frac_auth_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
 
 @[rocq_alias frac_auth_frag_ne]
-instance frag_ne {q : Qp} : NonExpansive (frag q : A → FracAuth) where
+instance frag_ne {q : Qp} : NonExpansiveᵢ (frag q : A → FracAuth) where
   ne _ _ _ h := Auth.frag_ne.ne ⟨.rfl, h⟩
 
 #rocq_ignore frac_auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
@@ -71,14 +71,14 @@ instance frag_ne {q : Qp} : NonExpansive (frag q : A → FracAuth) where
 /-! ## Discrete instances -/
 
 @[rocq_alias frac_auth_auth_discrete]
-instance auth_discrete {dq : DFrac} {a : A} [ha : DiscreteE a] : DiscreteE (●F{dq} a : FracAuth) :=
-  letI _ : DiscreteE (some ((1 : Qp), a)) := some_is_discrete
-  letI _ : DiscreteE (unit : Option (Qp × A)) := none_is_discrete
+instance auth_discrete {dq : DFrac} {a : A} [ha : DiscreteEᵢ a] : DiscreteEᵢ (●F{dq} a : FracAuth) :=
+  letI _ : DiscreteEᵢ (some ((1 : Qp), a)) := some_is_discrete
+  letI _ : DiscreteEᵢ (unit : Option (Qp × A)) := none_is_discrete
   by infer_instance
 
 @[rocq_alias frac_auth_frag_discrete]
-instance frag_discrete {q : Qp} {a : A} [ha : DiscreteE a] : DiscreteE (◯F{q} a : FracAuth) :=
-  letI _ : DiscreteE (some (q, a)) := some_is_discrete
+instance frag_discrete {q : Qp} {a : A} [ha : DiscreteEᵢ a] : DiscreteEᵢ (◯F{q} a : FracAuth) :=
+  letI _ : DiscreteEᵢ (some (q, a)) := some_is_discrete
   by infer_instance
 
 /-! ## Validity -/
@@ -111,7 +111,7 @@ theorem agreeN {dq : DFrac} {a b : A} (h : ✓{n} (●F{dq} a) • ◯F b) : a �
 
 @[rocq_alias frac_auth_agree]
 theorem agree {dq : DFrac} {a b : A} (h : ✓ (●F{dq} a) • ◯F b) : a = b :=
-  OFE.eq_of_dist fun n => agreeN (valid_iff_validN.mp h n)
+  OFE.eq_of_distᵢ fun n => agreeN (valid_iff_validN.mp h n)
 
 #rocq_ignore frac_auth_agree_L "Use agree"
 
@@ -295,14 +295,14 @@ theorem updateP_both_unpersist {q : Qp} {a b : A} :
 /-! ## Functors -/
 
 @[rocq_alias frac_authURF]
-abbrev FracAuthURF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
-  AuthURF (OptionOF (ProdOF (constOF (Qp)) T))
+abbrev FracAuthURF (T : COFE.OFunctorPreᵢ) [RFunctor T] : COFE.OFunctorPreᵢ :=
+  AuthURF (OptionOFᵢ (ProdOFᵢ (constOFᵢ (Qp)) T))
 
 #rocq_ignore frac_authURF_contractive "Found by typeclass inference"
 
 @[rocq_alias frac_authRF]
-abbrev FracAuthRF (T : COFE.OFunctorPre) [RFunctor T] : COFE.OFunctorPre :=
-  AuthRF (OptionOF (ProdOF (constOF (Qp)) T))
+abbrev FracAuthRF (T : COFE.OFunctorPreᵢ) [RFunctor T] : COFE.OFunctorPreᵢ :=
+  AuthRF (OptionOFᵢ (ProdOFᵢ (constOFᵢ (Qp)) T))
 
 #rocq_ignore frac_authRF_contractive "Found by typeclass inference"
 

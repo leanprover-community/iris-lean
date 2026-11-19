@@ -3011,24 +3011,24 @@ end timeReceipts
 section irewrite
 
 variable {PROP : Type _} [Sbi PROP]
-variable {A B : Type _} [OFE A] [OFE B]
+variable {A B : Type _} [OFEᵢ A] [OFEᵢ B]
 
 /- Tests `irewrite` rewriting in goal. -/
-example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
+example (a b : A) (P : A → PROP) [OFE.NonExpansiveᵢ P] [Absorbing (P a)] :
     b ≡ a ∗ P a ⊢ P b := by
   iintro ⟨Heq, Ha⟩
   irewrite [Heq]
   iexact Ha
 
 /- Tests `irewrite` rewriting in goal explicitly. -/
-example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
+example (a b : A) (P : A → PROP) [OFE.NonExpansiveᵢ P] [Absorbing (P a)] :
     b ≡ a ∗ P a ⊢ P b := by
   iintro ⟨Heq, Ha⟩
   irewrite [Heq] at ⊢
   iexact Ha
 
 /- Tests `irewrite` rewriting in goal in backward direction. -/
-example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P b)] :
+example (a b : A) (P : A → PROP) [OFE.NonExpansiveᵢ P] [Absorbing (P b)] :
     b ≡ a ∗ P b ⊢ P a := by
   iintro ⟨Heq, Hb⟩
   irewrite [← Heq]
@@ -3036,7 +3036,7 @@ example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P b)] :
 
 /- Tests `irewrite` rewriting in hypothesis. -/
 example (a b : A) (P Q R : A → PROP)
-    [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] [Absorbing iprop(P b ∗ Q b ∗ R b)] :
+    [OFE.NonExpansiveᵢ P] [OFE.NonExpansiveᵢ Q] [OFE.NonExpansiveᵢ R] [Absorbing iprop(P b ∗ Q b ∗ R b)] :
     a ≡ b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
   iintro ⟨Heq, H⟩
   irewrite [Heq] at H
@@ -3047,7 +3047,7 @@ example (a b : A) (P Q R : A → PROP)
   · iexact H
 
 /- Tests `irewrite` rewriting in same hypothesis. -/
-example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P b)] :
+example (a b : A) (P : A → PROP) [OFE.NonExpansiveᵢ P] [Absorbing (P b)] :
     b ≡ a ⊢@{PROP} a ≡ a := by
   iintro Heq
   irewrite [Heq] at Heq
@@ -3055,7 +3055,7 @@ example (a b : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P b)] :
   iexact Heq
 
 /- Tests `irewrite` with proof mode terms. -/
-example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [Absorbing (P a)] :
+example (a b : A) (P Q : A → PROP) [OFE.NonExpansiveᵢ P] [OFE.NonExpansiveᵢ Q] [Absorbing (P a)] :
     (∀ c, a ≡ c) ∗ P a ∗ (P b -∗ Q b) ⊢ Q b := by
   iintro ⟨Heq, Ha, Himpl⟩
   iapply Himpl
@@ -3063,14 +3063,14 @@ example (a b : A) (P Q : A → PROP) [OFE.NonExpansive P] [OFE.NonExpansive Q] [
   iexact Ha
 
 /- Tests `irewrite` with multiple rewrites. -/
-example (a b c : A) (P : A → PROP) [OFE.NonExpansive P] [Absorbing (P a)] :
+example (a b c : A) (P : A → PROP) [OFE.NonExpansiveᵢ P] [Absorbing (P a)] :
     a ≡ b ∗ b ≡ c ∗ P a ⊢ P c := by
   iintro ⟨Hab, Hbc, Ha⟩
   irewrite [←Hbc, ←Hab]
   iexact Ha
 
 /- Tests `irewrite` with manual nonexpansive proof. -/
-example (f : A → B) [OFE.NonExpansive f] (a b : A) (P : B → PROP) [OFE.NonExpansive P] [Absorbing (P (f a))] :
+example (f : A → B) [OFE.NonExpansiveᵢ f] (a b : A) (P : B → PROP) [OFE.NonExpansiveᵢ P] [Absorbing (P (f a))] :
     a ≡ b ∗ P (f a) ⊢ P (f b) := by
   iintro ⟨Heq, Ha⟩
   irewrite [←Heq]
@@ -3079,7 +3079,7 @@ example (f : A → B) [OFE.NonExpansive f] (a b : A) (P : B → PROP) [OFE.NonEx
 
 /- Tests `irewrite` under separating conjunction. -/
 example (a b : A) (P Q R : A → PROP)
-    [OFE.NonExpansive P] [OFE.NonExpansive Q] [OFE.NonExpansive R] [Absorbing (P a)] :
+    [OFE.NonExpansiveᵢ P] [OFE.NonExpansiveᵢ Q] [OFE.NonExpansiveᵢ R] [Absorbing (P a)] :
     a ≡ b ∗ (P a ∗ Q a ∗ R a) ⊢ P b ∗ Q b ∗ R b := by
   iintro ⟨Heq, H⟩
   irewrite [←Heq]
@@ -3638,17 +3638,17 @@ example {F GF} [RFunctorContractive F] [ElemG GF F] {γ}
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
     instances for `DFrac` and `Frac`. -/
-example {GF} [ElemG GF (constOF DFrac)]
-    [ElemG GF (constOF Qp)] {γ}
+example {GF} [ElemG GF (constOFᵢ DFrac)]
+    [ElemG GF (constOFᵢ Qp)] {γ}
     {a1 a2 a3 b c : Qp} [IsOp .merge b a2 a3] [IsOp .merge c a1 b] :
     ⊢@{IProp GF}
-      iOwn (F := constOF DFrac) γ (own a1) -∗
-      iOwn (F := constOF DFrac) γ (own a2) -∗
-      iOwn (F := constOF DFrac) γ (own a3) -∗
-      iOwn (F := constOF Qp) γ a1 -∗
-      iOwn (F := constOF Qp) γ a2 -∗
-      iOwn (F := constOF Qp) γ a3 -∗
-      iOwn (F := constOF DFrac) γ (own c) ∗ iOwn (F := constOF Qp) γ c := by
+      iOwn (F := constOFᵢ DFrac) γ (own a1) -∗
+      iOwn (F := constOFᵢ DFrac) γ (own a2) -∗
+      iOwn (F := constOFᵢ DFrac) γ (own a3) -∗
+      iOwn (F := constOFᵢ Qp) γ a1 -∗
+      iOwn (F := constOFᵢ Qp) γ a2 -∗
+      iOwn (F := constOFᵢ Qp) γ a3 -∗
+      iOwn (F := constOFᵢ DFrac) γ (own c) ∗ iOwn (F := constOFᵢ Qp) γ c := by
   iintro H1 H2 H3 H4 H5 H6
   icombine H1 H2 H3 as Hnew1
   icombine H4 H5 H6 as Hnew2
@@ -3658,19 +3658,19 @@ example {GF} [ElemG GF (constOF DFrac)]
 
 /-- Tests `icombine` for combining propositions involving `iOwn` and `IsOp`
     instances for the authoritative ORA. -/
-example {GF A} [UCMRA A] [ElemG GF (constOF (Auth A))] {γ}
+example {GF A} [UCMRA A] [ElemG GF (constOFᵢ (Auth A))] {γ}
     {a1 a2 a3 b c : A} {q1 q2 : Qp} {dq'' dq3 dq4 : DFrac}
     [IsOp .merge b a2 a3] [IsOp .merge c a1 b]
     [IsOp .merge dq'' dq3 dq4] :
     ⊢@{IProp GF}
-      iOwn (F := constOF (Auth A)) γ (◯ a1) -∗
-      iOwn (F := constOF (Auth A)) γ (◯ a2) -∗
-      iOwn (F := constOF (Auth A)) γ (◯ a3) -∗
-      iOwn (F := constOF (Auth A)) γ (●{own q1} a1) -∗
-      iOwn (F := constOF (Auth A)) γ (●{own q2} a1) -∗
-      iOwn (F := constOF (Auth A)) γ (●{dq3} a1) -∗
-      iOwn (F := constOF (Auth A)) γ (●{dq4} a1) -∗
-      iOwn (F := constOF (Auth A)) γ ((◯ c) • ●{(own (q1 + q2)) • dq''} a1) := by
+      iOwn (F := constOFᵢ (Auth A)) γ (◯ a1) -∗
+      iOwn (F := constOFᵢ (Auth A)) γ (◯ a2) -∗
+      iOwn (F := constOFᵢ (Auth A)) γ (◯ a3) -∗
+      iOwn (F := constOFᵢ (Auth A)) γ (●{own q1} a1) -∗
+      iOwn (F := constOFᵢ (Auth A)) γ (●{own q2} a1) -∗
+      iOwn (F := constOFᵢ (Auth A)) γ (●{dq3} a1) -∗
+      iOwn (F := constOFᵢ (Auth A)) γ (●{dq4} a1) -∗
+      iOwn (F := constOFᵢ (Auth A)) γ ((◯ c) • ●{(own (q1 + q2)) • dq''} a1) := by
   iintro H1 H2 H3 H4 H5 H6 H7
   icombine H1 H2 H3 as HNew1
   icombine H4 H5 as HNew2
@@ -3682,13 +3682,13 @@ example {GF A} [UCMRA A] [ElemG GF (constOF (Auth A))] {γ}
     merging of `a1`, `a2` and `a3` using `+` instead of `•`, as well as
     to eliminate splits (`IsHalfFraction`). -/
 example {GF}
-    [ElemG GF (constOF Qp)] {γ} {a1 a2 a3 : Qp} :
+    [ElemG GF (constOFᵢ Qp)] {γ} {a1 a2 a3 : Qp} :
     ⊢@{IProp GF}
-      iOwn (F := constOF Qp) γ a1 -∗
-      iOwn (F := constOF Qp) γ a2 -∗
-      iOwn (F := constOF Qp) γ (a3.half) -∗
-      iOwn (F := constOF Qp) γ (a3.half) -∗
-      iOwn (F := constOF Qp) γ (a1.half + (a1.half + (a2 + a3))) := by
+      iOwn (F := constOFᵢ Qp) γ a1 -∗
+      iOwn (F := constOFᵢ Qp) γ a2 -∗
+      iOwn (F := constOFᵢ Qp) γ (a3.half) -∗
+      iOwn (F := constOFᵢ Qp) γ (a3.half) -∗
+      iOwn (F := constOFᵢ Qp) γ (a1.half + (a1.half + (a2 + a3))) := by
   iintro H1 H2 H3a H3b
   icases H1 with ⟨H1a, H1b⟩
   icombine H1a H1b H2 H3a H3b as Hnew

@@ -23,7 +23,7 @@ local stepindex Nat
 
 namespace Iris
 
-open ORA Iris.Std «OFE»
+open ORA Iris.Std OFE
 
 namespace Mra
 
@@ -87,7 +87,7 @@ theorem below_toMra (a b : α) : below a (toMra (R := R) b) ↔ R a b :=
 #rocq_ignore mra_equiv_equiv "Use equality."
 
 @[rocq_alias mraO]
-instance (R : α → α → Prop) : COFE (Mra R) := COFE.ofDiscrete _
+instance (R : α → α → Prop) : COFEᵢ (Mra R) := COFE.ofDiscrete _
 
 theorem belowList_append (a : α) (xs ys : List α) :
     belowList R a (xs ++ ys) ↔ belowList R a xs ∨ belowList R a ys := by

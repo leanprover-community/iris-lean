@@ -22,11 +22,11 @@ and the authority `●E a`.
 
 namespace Iris
 
-open «OFE» ORA Auth Excl Iris.Option Iris.OFE.Option
+open OFE ORA Auth Excl Iris.Option Iris.OFE.Option
 
 namespace ExclAuth
 
-variable [OFE A]
+variable [OFEᵢ A]
 
 @[rocq_alias excl_authR]
 abbrev ExclAuthR := Auth (Option (Excl A))
@@ -44,25 +44,25 @@ scoped notation "●E " a => ExclAuth.auth a
 scoped notation "◯E " a => ExclAuth.frag a
 
 @[rocq_alias excl_auth_auth_ne]
-instance auth_ne : NonExpansive (auth (A := A)) where
+instance auth_ne : NonExpansiveᵢ (auth (A := A)) where
   ne _ _ _ h := Auth.auth_ne.ne (some_dist_some.mpr h)
 
 #rocq_ignore excl_auth_auth_proper "Derivable from auth_ne with NonExpansive.eqv"
 
 @[rocq_alias excl_auth_frag_ne]
-instance frag_ne : NonExpansive (frag (A := A)) where
+instance frag_ne : NonExpansiveᵢ (frag (A := A)) where
   ne _ _ _ h := Auth.frag_ne.ne (some_dist_some.mpr h)
 #rocq_ignore excl_auth_frag_proper "Derivable from frag_ne with NonExpansive.eqv"
 
 @[rocq_alias excl_auth_auth_discrete]
-instance auth_discrete {a : A} [DiscreteE a] : DiscreteE (●E a) :=
-  letI _ : DiscreteE (some (excl a)) := some_is_discrete
-  letI _ : DiscreteE (unit : Option (Excl A)) := none_is_discrete
+instance auth_discrete {a : A} [DiscreteEᵢ a] : DiscreteEᵢ (●E a) :=
+  letI _ : DiscreteEᵢ (some (excl a)) := some_is_discrete
+  letI _ : DiscreteEᵢ (unit : Option (Excl A)) := none_is_discrete
   by infer_instance
 
 @[rocq_alias excl_auth_frag_discrete]
-instance frag_discrete {a : A} [DiscreteE a] : DiscreteE (◯E a) :=
-  letI _ : DiscreteE (some (excl a)) := some_is_discrete
+instance frag_discrete {a : A} [DiscreteEᵢ a] : DiscreteEᵢ (◯E a) :=
+  letI _ : DiscreteEᵢ (some (excl a)) := some_is_discrete
   by infer_instance
 
 @[rocq_alias excl_auth_validN]
@@ -79,7 +79,7 @@ theorem agreeN {a b : A} (h : ✓{n} (●E a) • ◯E b) : a ≡{n}≡ b :=
 
 @[rocq_alias excl_auth_agree]
 theorem agree {a b : A} (h : ✓ (●E a) • ◯E b) : a = b :=
-  OFE.eq_of_dist fun _ => agreeN (Valid.validN h)
+  OFE.eq_of_distᵢ fun _ => agreeN (Valid.validN h)
 
 #rocq_ignore excl_auth_agree_L "Use agree"
 
@@ -108,14 +108,14 @@ theorem update {a b a' : A} : ((●E a) • ◯E b) ~~> ((●E a') • ◯E a') 
 /-! ## Functors -/
 
 @[rocq_alias excl_authURF]
-abbrev ExclAuthURF (T : COFE.OFunctorPre) [COFE.OFunctor T] : COFE.OFunctorPre :=
-  AuthURF (OptionOF (ExclOF T))
+abbrev ExclAuthURF (T : COFE.OFunctorPreᵢ) [COFE.OFunctorᵢ T] : COFE.OFunctorPreᵢ :=
+  AuthURF (OptionOFᵢ (ExclOF T))
 
 #rocq_ignore excl_authURF_contractive "Found by typeclass inference"
 
 @[rocq_alias excl_authRF]
-abbrev ExclAuthRF (T : COFE.OFunctorPre) [COFE.OFunctor T] : COFE.OFunctorPre :=
-  AuthRF (OptionOF (ExclOF T))
+abbrev ExclAuthRF (T : COFE.OFunctorPreᵢ) [COFE.OFunctorᵢ T] : COFE.OFunctorPreᵢ :=
+  AuthRF (OptionOFᵢ (ExclOF T))
 
 #rocq_ignore excl_authRF_contractive "Found by typeclass inference"
 

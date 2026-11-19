@@ -44,7 +44,7 @@ instance heapPropPreorder : Std.IsPreorder (HeapProp Val) where
     apply h_xy σ
     exact h_x
 
-instance : COFE (HeapProp Val) := COFE.ofDiscrete _
+instance : COFEᵢ (HeapProp Val) := COFE.ofDiscrete _
 
 instance : BI (HeapProp Val) where
   entails_refl := heapPropPreorder.le_refl _

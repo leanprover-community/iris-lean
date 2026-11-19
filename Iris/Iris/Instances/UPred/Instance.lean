@@ -88,7 +88,7 @@ protected def sExists (Ψ : UPred M → Prop) : UPred M where
 #rocq_ignore uPred_exist_def "`UPred.sExists` is defined directly without `seal`/`unseal`."
 #rocq_ignore uPred_exist_aux "`UPred.sExists` is defined directly without `seal`/`unseal`."
 
-protected def eq [OFE O] (o1 o2 : O) : UPred M where
+protected def eq [OFEᵢ O] (o1 o2 : O) : UPred M where
   holds n _ := o1 ≡{n}≡ o2
   mono H1 _ H2 := H1.le H2
 
@@ -175,11 +175,11 @@ protected def emp : UPred M := ownM unit
 end bidefs
 
 @[rocq_alias uPred_primitive.persistently_ne]
-instance persistently_ne : OFE.NonExpansive UPred.persistently (α := UPred M) where
+instance persistently_ne : OFE.NonExpansiveᵢ UPred.persistently (α := UPred M) where
   ne _ _ _ H _ _ Hn Hx := H _ _ Hn (validN_core Hx)
 
 @[rocq_alias uPred_primitive.later_contractive]
-instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
+instance later_contractive : OFE.Contractiveᵢ UPred.later (α := UPred M) where
   distLater_dist {n x y} Hl :=
     match n with
     | 0 => by
@@ -190,14 +190,14 @@ instance later_contractive : OFE.Contractive UPred.later (α := UPred M) where
       | n' + 1 => fun _ Hn' Hx' => Hl _ Hn' _ _ .refl (validN_succ Hx')
 
 @[rocq_alias uPred_primitive.ownM_ne, rocq_alias uPred.ownM_ne]
-instance ownM_ne : OFE.NonExpansive (ownM : M → UPred M) where
+instance ownM_ne : OFE.NonExpansiveᵢ (ownM : M → UPred M) where
   ne _ _ _ H _ _ Hn _ := OFE.Dist.ordN (OFE.Dist.le H Hn) .rfl
 
-instance {A} [ORA A] : OFE.NonExpansive (cmraValid : A → UPred M) where
+instance {A} [ORA A] : OFE.NonExpansiveᵢ (cmraValid : A → UPred M) where
   ne _ _ _ H _ _ Hn _ := (H.le Hn).validN
 
 @[rocq_alias uPred_primitive.bupd_ne]
-instance bupd_ne : OFE.NonExpansive (bupd : UPred M → UPred M) where
+instance bupd_ne : OFE.NonExpansiveᵢ (bupd : UPred M → UPred M) where
   ne _ _ _ Hx _ _ Hm _ := by
     constructor
     · intro H k yf Hk Hyf
@@ -250,7 +250,7 @@ instance uPred_entails_preorder : Std.IsPreorder (UPred M) where
   le_trans _ _ _ H1 H2 _ _ Hv := H2 _ _ <| H1 _ _ Hv
 
 @[rocq_alias uPred_primitive.entails_lim]
-theorem uPred_entails_lim {cP cQ : Chain (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
+theorem uPred_entails_lim {cP cQ : Chainᵢ (UPred M)} (H : ∀ n, cP n ⊢ cQ n) :
     IsCOFE.compl cP ⊢ IsCOFE.compl cQ := by
   intros n Hv HP
   refine uPred_holds_ne IsCOFE.conv_compl n.le_refl _ Hv.property ?_
@@ -262,7 +262,7 @@ instance : BI (UPred M) where
   entails_refl := uPred_entails_preorder.le_refl _
   entails_trans := uPred_entails_preorder.le_trans _ _ _
   equiv_iff {_ _} := by
-    rw [OFE.eq_dist]
+    rw [OFE.eq_distᵢ]
     constructor <;> intro HE
     · exact ⟨fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mp H,
              fun n ⟨x, Hv⟩ H => (HE n n x .refl Hv).mpr H⟩
@@ -307,7 +307,7 @@ instance : BI (UPred M) where
       refine HE _ _ Hn Hv ?_
       exact (H _ _ (Nat.le_trans Hn Hn') (validN_op_right Hv)).mp H''
   persistently_ne := persistently_ne
-  later_ne := inferInstanceAs (OFE.NonExpansive UPred.later)
+  later_ne := inferInstanceAs (OFE.NonExpansiveᵢ UPred.later)
   sForall_ne := fun ⟨HR1, HR2⟩ n' _ Hn' Hx' => by
     constructor
     · intro H p Hp
@@ -504,11 +504,11 @@ protected def uPredSiEmpValid (P : UPred M) : SiProp where
 #rocq_ignore uPred_si_emp_valid_def "`UPred.uPredSiEmpValid` is defined directly without `seal`/`unseal`."
 
 @[rocq_alias si_pure_ne, rocq_alias uPred_primitive.si_pure_ne]
-instance uPredSiPure_ne : OFE.NonExpansive (UPred.uPredSiPure : SiProp → UPred M) where
+instance uPredSiPure_ne : OFE.NonExpansiveᵢ (UPred.uPredSiPure : SiProp → UPred M) where
   ne _ _ _ hp _ _ hn _ := hp hn
 
 @[rocq_alias si_emp_valid_ne, rocq_alias uPred_primitive.si_emp_valid_ne]
-instance uPredSiEmpValid_ne : OFE.NonExpansive (UPred.uPredSiEmpValid : UPred M → SiProp) where
+instance uPredSiEmpValid_ne : OFE.NonExpansiveᵢ (UPred.uPredSiEmpValid : UPred M → SiProp) where
   ne _ _ _ h m hm := h m unit hm unit_validN
 
 instance : SiPure (UPred M) := ⟨UPred.uPredSiPure⟩
@@ -612,7 +612,7 @@ theorem internalCmraValid_eq_uPred_cmraValid [ORA A] (a : A) :
 
 instance : BUpd (UPred M) := ⟨bupd⟩
 
-instance : OFE.NonExpansive (BUpd.bupd (PROP := UPred M)) := bupd_ne
+instance : OFE.NonExpansiveᵢ (BUpd.bupd (PROP := UPred M)) := bupd_ne
 
 @[rocq_alias uPred_bi_bupd]
 instance : BIUpdate (UPred M) where
@@ -745,12 +745,12 @@ theorem bupd_ownM_update {x y : M} (hupd : x ~~> y) : ownM x ⊢ |==> ownM y := 
   exact BIUpdate.mono (exists_elim fun z => pure_elim_left fun hyz => hyz ▸ .rfl)
 
 @[rocq_alias uPred.ownM_timeless]
-instance ownM_timeless (a : M) [OFE.DiscreteE a] : BI.Timeless (ownM a) where
+instance ownM_timeless (a : M) [OFE.DiscreteEᵢ a] : BI.Timeless (ownM a) where
   timeless
     | 0, _, _ => .inl trivial
     | n+1, x, hx =>
       let ⟨_, hb, hab⟩ := ordN_extend (validN_succ x.property) hx
-      .inr (OFE.DiscreteE.discrete (hab.symm.le n.zero_le) ▸ hb)
+      .inr (OFE.DiscreteE.discreteᵢ (hab.symm.le n.zero_le) ▸ hb)
 
 @[rocq_alias uPred.ownM_persistent]
 instance ownM_persistent (a : M) [CoreId a] : Persistent (ownM a) where
@@ -844,11 +844,11 @@ theorem intuitionistically_valid [IncOrd M] {A} [ORA A] (a : A) :
   · exact intuitionistically_elim
   · exact (persistently_valid_mpr a).trans intuitionistically_iff_persistently.mpr
 
-theorem discrete_valid [ORA A] [«Discrete» A] (a : A) :
+theorem discrete_valid [ORA A] [Discrete A] (a : A) :
     internalCmraValid a ⊣⊢ ⌜✓ a⌝ :=
   ⟨fun n _ hv => (valid_iff_validN' n).mpr hv, fun _ _ hv => hv.validN⟩
 
-instance valid_timeless [ORA A] [«Discrete» A] {a : A} :
+instance valid_timeless [ORA A] [Discrete A] {a : A} :
     Timeless (internalCmraValid a : UPred M) where
   timeless := by
     refine (later_mono (discrete_valid a).mp).trans ?_

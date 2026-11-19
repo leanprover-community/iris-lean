@@ -14,7 +14,7 @@ local stepindex Nat
 
 namespace Iris
 
-open BI ORA Excl «OFE» Iris.UPred IProp Iris.Std ProofMode
+open BI ORA Excl OFE Iris.UPred IProp Iris.Std ProofMode
 
 local bi (IProp GF)
 
@@ -25,7 +25,7 @@ The `token γ` assertion provides ownership of the token named `γ`,
 and the key lemma `token_exclusive` proves only one token exists.
 -/
 
-abbrev TokenF : COFE.OFunctorPre := constOF (Excl Unit)
+abbrev TokenF : COFE.OFunctorPreᵢ := constOFᵢ (Excl Unit)
 
 @[rocq_alias tokenG]
 class TokenG (GF : BundledGFunctors) where [elemG : ElemG GF TokenF]

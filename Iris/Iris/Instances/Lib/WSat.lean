@@ -24,7 +24,7 @@ This file defines the world satisfaction (wsat) predicate for Iris.
 
 namespace Iris
 
-open Iris Iris.Std «OFE» «COFE» BI HeapView PartialMap DisjointLeibnizSet DFrac LawfulPartialMap BigSepM
+open Iris Iris.Std OFE COFE BI HeapView PartialMap DisjointLeibnizSet DFrac LawfulPartialMap BigSepM
   HeapView FiniteMap LawfulFiniteMap
 
 local bi (IProp GF)
@@ -35,14 +35,14 @@ abbrev PosSet := Std.ExtTreeSet Pos compare
 
 abbrev InvMap (x : Type _) := Std.ExtTreeMap Pos x compare
 
-abbrev InvMapF := HeapViewURF (H := InvMap) (AgreeRF (LaterOF IdOF))
+abbrev InvMapF := HeapViewURF (H := InvMap) (AgreeRF (LaterOF IdOFᵢ))
 
 /-- Wsat inclusion typeclass (`GF` contains the necessary functors for wsat) -/
 @[rocq_alias wsatGS.wsatGpreS]
 class WsatGpreS (GF : BundledGFunctors) where
   inv : ElemG GF InvMapF
-  enabled : ElemG GF (constOF CoPsetDisjL)
-  disabled : ElemG GF (constOF (DisjointLeibnizSet PosSet))
+  enabled : ElemG GF (constOFᵢ CoPsetDisjL)
+  disabled : ElemG GF (constOFᵢ (DisjointLeibnizSet PosSet))
 
 attribute [reducible, instance] WsatGpreS.inv
 attribute [reducible, instance] WsatGpreS.enabled
@@ -93,7 +93,7 @@ def wsat : IProp GF := iprop(
 #rocq_ignore invariant_unfold_contractive "Only needed for ownI_contractive which is proved directly"
 
 @[rocq_alias ownI_contractive]
-instance (i : Pos) : Contractive (ownI (W := W) i) where
+instance (i : Pos) : Contractiveᵢ (ownI (W := W) i) where
   distLater_dist h := by
     unfold ownI
     refine NonExpansive.ne ?_

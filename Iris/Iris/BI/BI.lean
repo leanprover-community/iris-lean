@@ -13,7 +13,7 @@ public import Iris.BI.BIBase
 local stepindex Nat
 
 namespace Iris
-open Iris.Std «OFE»
+open Iris.Std OFE
 open Lean
 
 def liftRel (R : α → β → Prop) (A : α → Prop) (B : β → Prop) : Prop :=
@@ -25,19 +25,19 @@ theorem liftRel_eq : liftRel (@Eq α) A B ↔ A = B := by
 /-- Require that a separation logic with carrier type `PROP` fulfills all necessary axioms. -/
 @[rocq_alias bi, rocq_alias BiMixin,
   rocq_alias BiPersistentlyMixin, rocq_alias BiLaterMixin]
-class BI (PROP : Type _) extends COFE PROP, BI.BIBase PROP where
+class BI (PROP : Type _) extends COFEᵢ PROP, BI.BIBase PROP where
   entails_refl {P : PROP} : P ⊢ P
   entails_trans {P Q R : PROP} : (P ⊢ Q) → (Q ⊢ R) → P ⊢ R
-  equiv_iff {P Q : PROP} : (P = Q) ↔ P ⊣⊢ Q := by rw [OFE.«eq_dist»]; simp
-  and_ne : OFE.NonExpansive₂ and
-  or_ne : OFE.NonExpansive₂ or
-  imp_ne : OFE.NonExpansive₂ imp
+  equiv_iff {P Q : PROP} : (P = Q) ↔ P ⊣⊢ Q := by rw [OFE.eq_dist]; simp
+  and_ne : OFE.NonExpansive₂ᵢ and
+  or_ne : OFE.NonExpansive₂ᵢ or
+  imp_ne : OFE.NonExpansive₂ᵢ imp
   sForall_ne {P₁ P₂} : liftRel (· ≡{n}≡ ·) P₁ P₂ → sForall P₁ ≡{n}≡ sForall P₂
   sExists_ne {P₁ P₂} : liftRel (· ≡{n}≡ ·) P₁ P₂ → sExists P₁ ≡{n}≡ sExists P₂
-  sep_ne : OFE.NonExpansive₂ sep
-  wand_ne : OFE.NonExpansive₂ wand
-  persistently_ne : OFE.NonExpansive persistently
-  later_ne : OFE.NonExpansive later
+  sep_ne : OFE.NonExpansive₂ᵢ sep
+  wand_ne : OFE.NonExpansive₂ᵢ wand
+  persistently_ne : OFE.NonExpansiveᵢ persistently
+  later_ne : OFE.NonExpansiveᵢ later
 
   pure_intro {φ : Prop} {P : PROP} : φ → P ⊢ ⌜φ⌝
   pure_elim' {φ : Prop} {P : PROP} : (φ → True ⊢ P) → ⌜φ⌝ ⊢ P
@@ -189,7 +189,7 @@ attribute [rocq_alias bi_cofe] BI.toCOFE
 
 section PersistentlyDiscrete
 
-variable {PROP : Type _} [BIBase PROP] [COFE PROP]
+variable {PROP : Type _} [BIBase PROP] [COFEᵢ PROP]
   (entails_refl : ∀ {P : PROP}, P ⊢ P)
   (entails_trans : ∀ {P Q R : PROP}, (P ⊢ Q) → (Q ⊢ R) → P ⊢ R)
   (equiv_iff : ∀ {P Q : PROP}, (P = Q) ↔ P ⊣⊢ Q)

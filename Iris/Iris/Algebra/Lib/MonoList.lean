@@ -18,20 +18,20 @@ local stepindex Nat
 
 namespace Iris
 
-open «OFE» ORA UORA
+open OFE ORA UORA
 
-variable {α : Type _} [OFE α]
+variable {α : Type _} [OFEᵢ α]
 
 @[rocq_alias mono_listR, rocq_alias mono_listUR, implicit_reducible]
-def MonoList (α : Type _) [OFE α] := Auth (MaxPrefixList α)
+def MonoList (α : Type _) [OFEᵢ α] := Auth (MaxPrefixList α)
 
-instance : OFE (MonoList α) := Auth.instOFENat
+instance : OFEᵢ (MonoList α) := Auth.instOFENat
 instance : ORA (MonoList α) := Auth.instORA
 instance : UORA (MonoList α) := Auth.instUORA
 
 instance instIsIncMonoList : IsInc (MonoList α) := inferInstanceAs (IsInc (Auth (MaxPrefixList α)))
 
-instance instDiscrete [OFE.Discrete α] : ORA.Discrete (MonoList α) :=
+instance instDiscrete [OFE.Discreteᵢ α] : ORA.Discrete (MonoList α) :=
   inferInstanceAs (ORA.Discrete (Auth (MaxPrefixList α)))
 
 namespace MonoList
@@ -57,12 +57,12 @@ theorem op_op_op_comm (x y z w : MonoList α) : (x • y) • (z • w) = (x •
 /-! ## Setoid properties -/
 
 @[rocq_alias mono_list_auth_ne]
-instance auth_ne {dq : DFrac} : NonExpansive (auth dq : List α → MonoList α) where
+instance auth_ne {dq : DFrac} : NonExpansiveᵢ (auth dq : List α → MonoList α) where
   ne _ _ _ h :=
     (Auth.auth_ne.ne (toMaxPrefixList_ne.ne h)).op (Auth.frag_ne.ne (toMaxPrefixList_ne.ne h))
 
 @[rocq_alias mono_list_lb_ne]
-instance lb_ne : NonExpansive (lb : List α → MonoList α) where
+instance lb_ne : NonExpansiveᵢ (lb : List α → MonoList α) where
   ne _ _ _ h := Auth.frag_ne.ne (toMaxPrefixList_ne.ne h)
 
 #rocq_ignore mono_list_auth_proper "OFE is Leibniz; use equality"
@@ -263,13 +263,13 @@ end MonoList
 /-! ## Functors -/
 
 @[rocq_alias mono_listURF]
-abbrev MonoListURF (F : COFE.OFunctorPre) [COFE.OFunctor F] : COFE.OFunctorPre :=
+abbrev MonoListURF (F : COFE.OFunctorPreᵢ) [COFE.OFunctorᵢ F] : COFE.OFunctorPreᵢ :=
   Auth.AuthURF (MaxPrefixListURF F)
 
 #rocq_ignore mono_listURF_contractive "Found by typeclass inference"
 
 @[rocq_alias mono_listRF]
-abbrev MonoListRF (F : COFE.OFunctorPre) [COFE.OFunctor F] : COFE.OFunctorPre :=
+abbrev MonoListRF (F : COFE.OFunctorPreᵢ) [COFE.OFunctorᵢ F] : COFE.OFunctorPreᵢ :=
   Auth.AuthRF (MaxPrefixListURF F)
 
 #rocq_ignore mono_listRF_contractive "Found by typeclass inference"

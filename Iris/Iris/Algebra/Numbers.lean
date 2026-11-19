@@ -51,7 +51,7 @@ namespace CommMonoidLike
 
 open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity ORA
 
-variable [OFE α] [OFE.Discrete α]
+variable [OFEᵢ α] [OFE.Discreteᵢ α]
 variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (· + ·)]
 variable [Zero α] [LawfulLeftIdentity (α := α) (· + ·) zero]
 variable {x y x' y' : α}
@@ -130,7 +130,7 @@ theorem leftCancelAdd_local_update [LeftCancelAdd α] (h : add x y' = add x' y) 
     _ = add y' (add z y) := by rw [comm (op := add) z]
     _ = add (add y' z) y := by rw [assoc (op := add)]
 
-scoped instance instDiscreteE {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
+scoped instance instDiscreteE {a : α} : DiscreteEᵢ a := ⟨fun H => discrete H⟩
 
 scoped instance instCoreIdZero : CoreId (α := α) 0 where
   core_id := rfl
@@ -147,7 +147,7 @@ namespace OrdCommMonoidLike
 
 open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity ORA IdempotentOp
 
-variable [OFE α] [OFE.Discrete α]
+variable [OFEᵢ α] [OFE.Discreteᵢ α]
 variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (· + ·)]
 variable [IdempotentOp (α := α) (· + ·)]
 variable [Zero α]
@@ -240,7 +240,7 @@ omit [Zero α] in
 theorem idem_local_update {x y x' : α} (h : x ≼ x') : (x, y) ~l~> (x', x') :=
   idem_local_update_ord (inc_iff_ord.mp h)
 
-scoped instance instDiscreteE {a : α} : DiscreteE a := ⟨fun H => discrete H⟩
+scoped instance instDiscreteE {a : α} : DiscreteEᵢ a := ⟨fun H => discrete H⟩
 
 end OrdCommMonoidLike
 
@@ -249,7 +249,7 @@ namespace PosCommMonoidLike
 
 open Iris Iris.OFE Add Zero One Associative Commutative LawfulLeftIdentity ORA
 
-variable [OFE α] [OFE.Discrete α]
+variable [OFEᵢ α] [OFE.Discreteᵢ α]
 variable [Add α] [Associative (α := α) (· + ·)] [Commutative (α := α) (· + ·)]
 
 variable {x y x' y' : α}
@@ -354,8 +354,8 @@ scoped instance : Associative (α := MaxNat) (· + ·) where assoc := by grind
 scoped instance : Commutative (α := MaxNat) (· + ·) where comm := by grind
 scoped instance : LawfulLeftIdentity (α := MaxNat) (· + ·) (0 : MaxNat) where left_id a := by grind
 scoped instance : Std.IdempotentOp (α := MaxNat) (· + ·) where idempotent x := by grind
-scoped instance : COFE MaxNat := COFE.ofDiscrete _
-scoped instance : OFE.Discrete MaxNat := ⟨fun h => h⟩
+scoped instance : COFEᵢ MaxNat := COFE.ofDiscrete _
+scoped instance : OFE.Discreteᵢ MaxNat := ⟨fun h => h⟩
 scoped instance : UCMRA MaxNat := OrdCommMonoidLike.instUCMRA
 scoped instance : ORA.Discrete MaxNat := OrdCommMonoidLike.instDiscrete
 scoped instance : CoreId (a : MaxNat) := OrdCommMonoidLike.instCoreId _
@@ -413,8 +413,8 @@ theorem MaxInt.eq_toInt (a b : MaxInt) : a = b ↔ a.toInt = b.toInt := by
 scoped instance : Associative (α := MaxInt) (· + ·) where assoc := by grind
 scoped instance : Commutative (α := MaxInt) (· + ·) where comm := by grind
 scoped instance : IdempotentOp (α := MaxInt) (· + ·) where idempotent x := by grind
-scoped instance : COFE MaxInt := COFE.ofDiscrete _
-scoped instance : OFE.Discrete MaxInt := ⟨fun h => h⟩
+scoped instance : COFEᵢ MaxInt := COFE.ofDiscrete _
+scoped instance : OFE.Discreteᵢ MaxInt := ⟨fun h => h⟩
 scoped instance : CMRA MaxInt := OrdCommMonoidLike.instCMRA
 scoped instance : ORA.Discrete MaxInt := OrdCommMonoidLike.instDiscrete
 scoped instance : IsTotal MaxInt := OrdCommMonoidLike.instIsTotal
@@ -474,8 +474,8 @@ theorem MinNat.eq_toNat (a b : MinNat) : a = b ↔ a.toNat = b.toNat := by
 scoped instance : Associative (α := MinNat) (· + ·) where assoc := by grind
 scoped instance : Commutative (α := MinNat) (· + ·) where comm := by grind
 scoped instance : IdempotentOp (α := MinNat) (· + ·) where idempotent _ := by grind
-scoped instance : COFE MinNat := COFE.ofDiscrete _
-scoped instance : OFE.Discrete MinNat := ⟨fun h => h⟩
+scoped instance : COFEᵢ MinNat := COFE.ofDiscrete _
+scoped instance : OFE.Discreteᵢ MinNat := ⟨fun h => h⟩
 scoped instance : CMRA MinNat := OrdCommMonoidLike.instCMRA
 scoped instance : ORA.Discrete MinNat := OrdCommMonoidLike.instDiscrete
 scoped instance : IsTotal MinNat := OrdCommMonoidLike.instIsTotal

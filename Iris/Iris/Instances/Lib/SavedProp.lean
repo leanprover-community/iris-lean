@@ -18,14 +18,14 @@ local stepindex Nat
 
 namespace Iris
 
-open BI ORA Agree «OFE» Iris.UPred IProp Iris.Std ProofMode «COFE»
+open BI ORA Agree OFE Iris.UPred IProp Iris.Std ProofMode COFE
 
 local bi (IProp GF)
 
 /-! ## Saved anything -/
 
 @[rocq_alias savedAnythingG]
-class SavedAnythingG (GF : BundledGFunctors) (F : OFunctorPre) [OFunctorContractive F] where
+class SavedAnythingG (GF : BundledGFunctors) (F : OFunctorPreᵢ) [OFunctorContractiveᵢ F] where
   [elemG : ElemG GF (DFracAgree.DFracAgreeRF F)]
 
 attribute [reducible, instance] SavedAnythingG.elemG
@@ -34,13 +34,13 @@ attribute [reducible, instance] SavedAnythingG.elemG
 #rocq_ignore «subG_savedAnythingΣ» "Subsumed by BundledGFunctors typeclass synthesis"
 
 @[rocq_alias saved_anything_own]
-def saved_anything_own {GF : BundledGFunctors} {F : OFunctorPre} [OFunctorContractive F]
+def saved_anything_own {GF : BundledGFunctors} {F : OFunctorPreᵢ} [OFunctorContractiveᵢ F]
     [SavedAnythingG GF F] (γ : GName) (dq : DFrac) (x : F.ap (IProp GF)) : IProp GF :=
   iOwn (F := DFracAgree.DFracAgreeRF F) γ (DFracAgree.mk dq x)
 
 section saved_anything
 
-variable {GF : BundledGFunctors} {F : OFunctorPre} [OFunctorContractive F] [SavedAnythingG GF F]
+variable {GF : BundledGFunctors} {F : OFunctorPreᵢ} [OFunctorContractiveᵢ F] [SavedAnythingG GF F]
 
 @[rocq_alias saved_anything_discarded_persistent]
 instance saved_anything_discarded_persistent (γ : GName) (x : F.ap (IProp GF)) :
@@ -50,7 +50,7 @@ instance saved_anything_discarded_persistent (γ : GName) (x : F.ap (IProp GF)) 
 
 @[rocq_alias saved_anything_ne]
 instance saved_anything_ne (γ : GName) (dq : DFrac) :
-    NonExpansive (saved_anything_own (GF := GF) (F := F) γ dq) where
+    NonExpansiveᵢ (saved_anything_own (GF := GF) (F := F) γ dq) where
   ne _ _ _ H := iOwn_ne.ne (DFracAgree.mk_ne.ne H)
 
 #rocq_ignore «saved_anything_proper» "Not needed in the setoid-free setting."
@@ -179,12 +179,12 @@ end saved_anything
 
 /-! ## Saved propositions -/
 
-abbrev SavedPropG (GF : BundledGFunctors) := SavedAnythingG GF (LaterOF IdOF)
+abbrev SavedPropG (GF : BundledGFunctors) := SavedAnythingG GF (LaterOF IdOFᵢ)
 
 @[rocq_alias saved_prop_own]
 def saved_prop_own {GF : BundledGFunctors} [SavedPropG GF] (γ : GName) (dq : DFrac) (P : IProp GF) :
     IProp GF :=
-  saved_anything_own (F := LaterOF IdOF) γ dq (Later.next P)
+  saved_anything_own (F := LaterOF IdOFᵢ) γ dq (Later.next P)
 
 section saved_prop
 
@@ -192,7 +192,7 @@ variable {GF : BundledGFunctors} [SavedPropG GF]
 
 @[rocq_alias saved_prop_own_contractive]
 instance saved_prop_own_contractive (γ : GName) (dq : DFrac) :
-    Contractive (saved_prop_own (GF := GF) γ dq) :=
+    Contractiveᵢ (saved_prop_own (GF := GF) γ dq) :=
   ⟨fun {_ _ _} h => saved_anything_ne γ dq |>.ne (NextContractive.distLater_dist h)⟩
 
 @[rocq_alias saved_prop_discarded_persistent]
@@ -238,7 +238,7 @@ theorem saved_prop_valid (γ : GName) (dq : DFrac) (P : IProp GF) :
 theorem saved_prop_valid_2 (γ : GName) (dq1 dq2 : DFrac) (P Q : IProp GF) :
     saved_prop_own γ dq1 P ∗ saved_prop_own γ dq2 Q ⊢
       ⌜✓ (dq1 • dq2)⌝ ∧ ▷ internalEq P Q :=
-  (saved_anything_valid_2 (F := LaterOF IdOF) γ dq1 dq2 (Later.next P) (Later.next Q)).trans
+  (saved_anything_valid_2 (F := LaterOF IdOFᵢ) γ dq1 dq2 (Later.next P) (Later.next Q)).trans
     (and_mono_right (later_equivI P Q).mp)
 
 @[rocq_alias saved_prop_agree]
@@ -280,12 +280,12 @@ end saved_prop
 /-! ## Saved predicates -/
 
 abbrev SavedPredG (GF : BundledGFunctors) (A : Type _) :=
-  SavedAnythingG GF (DiscreteFunOF (fun _ : A => LaterOF IdOF))
+  SavedAnythingG GF (DiscreteFunOFᵢ (fun _ : A => LaterOF IdOFᵢ))
 
 @[rocq_alias saved_pred_own]
 def saved_pred_own {GF : BundledGFunctors} {A : Type _} [SavedPredG GF A]
     (γ : GName) (dq : DFrac) (Φ : A → IProp GF) : IProp GF :=
-  saved_anything_own (F := DiscreteFunOF (fun _ : A => LaterOF IdOF)) γ dq
+  saved_anything_own (F := DiscreteFunOFᵢ (fun _ : A => LaterOF IdOFᵢ)) γ dq
     (fun a => Later.next (Φ a))
 
 section saved_pred
@@ -294,7 +294,7 @@ variable {GF : BundledGFunctors} {A : Type _} [SavedPredG GF A]
 
 @[rocq_alias saved_pred_own_contractive]
 instance saved_pred_own_contractive (γ : GName) (dq : DFrac) :
-    Contractive (saved_pred_own (GF := GF) (A := A) γ dq) :=
+    Contractiveᵢ (saved_pred_own (GF := GF) (A := A) γ dq) :=
   ⟨fun {_ _ _} h => saved_anything_ne γ dq |>.ne
     (fun a => NextContractive.distLater_dist (fun m hm => h m hm a))⟩
 
@@ -342,7 +342,7 @@ theorem saved_pred_valid_2 (γ : GName) (dq1 dq2 : DFrac) (Φ Ψ : A → IProp G
     saved_pred_own γ dq1 Φ ∗ saved_pred_own γ dq2 Ψ ⊢
       ⌜✓ (dq1 • dq2)⌝ ∧ ▷ internalEq (Φ x) (Ψ x) := by
   unfold saved_pred_own
-  refine (saved_anything_valid_2 (F := DiscreteFunOF (fun _ : A => LaterOF IdOF))
+  refine (saved_anything_valid_2 (F := DiscreteFunOFᵢ (fun _ : A => LaterOF IdOFᵢ))
     γ dq1 dq2 _ _).trans (and_mono_right ?_)
   exact ((discreteFun_equivI _ _).mp.trans (forall_elim x)).trans (later_equivI (Φ x) (Ψ x)).mp
 
