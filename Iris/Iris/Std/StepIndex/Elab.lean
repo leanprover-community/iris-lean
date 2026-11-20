@@ -120,7 +120,7 @@ meta def isSectionSI (n : Name) (si : Expr) : MetaM Bool := do
 
 open PrettyPrinter Delaborator SubExpr in
 /-- Prints `C (SI := T) args` when the step index `T` of an `@[indexed]` `C` is not the section's. -/
-@[scoped delab app] public meta def delabIndexedApp : Delab := whenPPOption getPPNotation do
+@[scoped delab app] public meta def delabIndexedApp : Delab := do
   let e ← getExpr
   let some c := e.getAppFn.constName? | failure
   let some i := (indexedExt.getState (← getEnv)).find? c | failure
@@ -130,12 +130,11 @@ open PrettyPrinter Delaborator SubExpr in
   let si ← instantiateMVars (e.getArg! i.argIdx)
   guard !si.hasMVar
   if ← isSectionSI n si then failure
-  let siStx ← withNaryArg i.argIdx delab
-  let stx ← delabApp
-  match stx with
-  | `($f:ident $args*) => `($f:ident ($(mkIdent i.name) := $siStx) $args*)
-  | `($f:ident) => `($f:ident ($(mkIdent i.name) := $siStx))
-  | _ => return stx
+  -- print the step index as a named argument
+  let pos := (← getPos).pushNaryArg e.getAppNumArgs i.argIdx
+  withReader (fun ctx => { ctx with
+      optionsPerPos := ctx.optionsPerPos.insert pos
+        ((ctx.optionsPerPos.getD pos {}).setBool `pp.analysis.namedArg true) }) delabApp
 
 end Iris.StepIndex
 

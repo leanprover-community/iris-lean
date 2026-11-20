@@ -31,6 +31,9 @@ end B
 
 notation "bar% " α => Bar α
 
+/-- An `@[indexed SI]` function whose step index comes after an explicit argument. -/
+@[indexed SI] def SIFn (_ : Nat) {SI : Type} [SIdx SI] : Type := SI
+
 /-- An `@[indexed SI]` class. -/
 @[indexed SI] class Qux {SI : Type _} [SIdx SI] (α : Type _) where
   qux : α → SI → Prop
@@ -77,7 +80,54 @@ example : Baz true := trivial
 /-- info: fun α [Qux (SI := Nat) α] => 0 : (α : Type) → [Qux (SI := Nat) α] → Nat -/
 #guard_msgs in
 #check fun (α : Type) [Qux (SI := Nat) α] => 0
+
+-- the index of a bare constant, a nested application, and an imported class
+/-- info: Qux (SI := Nat) : Type → Type -/
+#guard_msgs in
+#check (Qux (SI := Nat) : Type → Type)
+/-- info: fun α [Qux (SI := Nat) (List α)] => 0 : (α : Type) → [Qux (SI := Nat) (List α)] → Nat -/
+#guard_msgs in
+#check fun (α : Type) [Qux (SI := Nat) (List α)] => 0
+/-- info: fun α [OFE (SI := Nat) α] [OFE α] => 0 : (α : Type) → [OFE (SI := Nat) α] → [OFE α] → Nat -/
+#guard_msgs in
+#check fun (α : Type) [OFE (SI := Nat) α] [OFE α] => 0
+
+-- the step index comes after an explicit argument
+/-- info: fun n => SIFn n : Nat → Type -/
+#guard_msgs in
+#check fun (n : Nat) => SIFn n
+/-- info: fun n => SIFn n (SI := Nat) : Nat → Type -/
+#guard_msgs in
+#check fun (n : Nat) => SIFn (SI := Nat) n
+
+-- `pp.explicit` prints every argument
+set_option pp.explicit true in
+/--
+info: fun α [@Qux Nat natSIdx α] [@Qux SI inst✝ α] =>
+  @OfNat.ofNat Nat (nat_lit 0) (instOfNatNat (nat_lit 0)) : (α : Type) → [@Qux Nat natSIdx α] → [@Qux SI inst✝ α] → Nat
+-/
+#guard_msgs in
+#check fun (α : Type) [Qux (SI := Nat) α] [Qux α] => 0
+
+-- the index is shown under other printing options
+set_option pp.notation false in
+/-- info: fun α [Qux (SI := Nat) α] => 0 : (α : Type) → [Qux (SI := Nat) α] → Nat -/
+#guard_msgs in
+#check fun (α : Type) [Qux (SI := Nat) α] => 0
+set_option pp.analyze true in
+/-- info: fun α [Qux (SI := Nat) α] => 0 : (α : Type) → [Qux (SI := Nat) α] → Nat -/
+#guard_msgs in
+#check fun (α : Type) [Qux (SI := Nat) α] => 0
+set_option pp.universes true in
+/-- info: fun α [Qux.{0, 0} (SI := Nat) α] => 0 : (α : Type) → [Qux.{0, 0} (SI := Nat) α] → Nat -/
+#guard_msgs in
+#check fun (α : Type) [Qux (SI := Nat) α] => 0
 end
+
+-- outside a `local stepindex` section, the printer does nothing
+/-- info: fun α [Qux α] => 0 : (α : Type) → [Qux α] → Nat -/
+#guard_msgs in
+#check fun (α : Type) [Qux (SI := Nat) α] => 0
 
 section
 local stepindex Nat
