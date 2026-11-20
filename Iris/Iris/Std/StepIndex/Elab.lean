@@ -25,7 +25,9 @@ open Lean Elab Term Meta
 
 meta def examinedKey : Name := `_iris_stepindex_examined
 
+/-- Fill all placeholders that were marked as step index types with the default step index type. -/
 meta def fillStepIndex : TermElabM Unit := do
+  -- Only run when there are pending mvars, the term is unexamined, and there is a default index.
   let pending := (← get).pendingMVars
   let some head := pending.head? | return
   let examined? := (← getMCtx).userNames.find? examinedKey
@@ -34,6 +36,7 @@ meta def fillStepIndex : TermElabM Unit := do
   if n.isAnonymous then return
   modifyMCtx fun mctx => { mctx with userNames := mctx.userNames.insert examinedKey head }
   let decls := indexedExt.getState (← getEnv)
+  -- Collect entries to be filled
   let mut new := #[]
   let mut indices := #[]
   for m in pending do
@@ -42,7 +45,6 @@ meta def fillStepIndex : TermElabM Unit := do
     unless s.kind matches .typeClass .. do continue
     let type ← instantiateMVars (← m.getDecl).type
     new := new.push (m, type)
-    -- the step index slot, seeing through binders and reducible aliases such as `HasDistᵢ SI α`
     let a? ← m.withContext <| withReducible <| forallTelescopeReducing type fun _ body => do
       let body ← whnfR body
       let .const c _ := body.getAppFn | return none
@@ -51,10 +53,12 @@ meta def fillStepIndex : TermElabM Unit := do
       return if i < body.getAppNumArgs then some (body.getArg! i) else none
     if let some a := a? then
       if a.isMVar then indices := indices.push a
+  -- Stop if there is nothing to do. Otherwise, fill all entries with `SI`
   if indices.isEmpty then return
   let si ← elabTerm (mkIdent n) none
   for a in indices do
     if (← instantiateMVars a).isMVar then discard <| isDefEq a si
+  -- Eagerly allow typeclass synthesis to proceed
   for (m, type) in new.reverse do
     if (← instantiateMVars type) != type then
       try
@@ -70,31 +74,39 @@ meta def withStepIndex (k : TermElab) : TermElab := fun stx expectedType? => do
   fillStepIndex
   return e
 
--- The elaborators below have no docstrings: hovering any identifier would show them.
+section TermElab
 
--- `f args`.
-@[scoped term_elab app] public meta def elabIndexedApp : TermElab := withStepIndex elabApp
+/- ## Step Index Elaborators
 
--- `c`, `x.f`.
-@[scoped term_elab ident] public meta def elabIndexedIdent : TermElab := withStepIndex elabIdent
+This section registers general-purpose term elaborators which walk through all expressions,
+and specialize any step index arguments to be the section default.
 
--- `c.{u, …}`.
+IMPORTANT: The elaborators are scoped. It is possible to disable them completely by closing the
+`Iris.StepIndex` scope. A `local stepindex` command opens this scope automatically.
+-/
+
+@[scoped term_elab app]
+public meta def elabIndexedApp : TermElab := withStepIndex elabApp
+
+@[scoped term_elab ident]
+public meta def elabIndexedIdent : TermElab := withStepIndex elabIdent
+
 @[scoped term_elab explicitUniv]
 public meta def elabIndexedExplicitUniv : TermElab := withStepIndex elabExplicitUniv
 
--- `(e).f`, `e.1`.
-@[scoped term_elab proj] public meta def elabIndexedProj : TermElab := withStepIndex elabProj
+@[scoped term_elab proj]
+public meta def elabIndexedProj : TermElab := withStepIndex elabProj
 
--- `e |>.f args`.
 @[scoped term_elab pipeProj]
 public meta def elabIndexedPipeProj : TermElab := withStepIndex elabPipeProj
 
--- `.f`.
 @[scoped term_elab dotIdent]
 public meta def elabIndexedDotIdent : TermElab := withStepIndex elabDotIdent
 
--- An overloaded notation.
-@[scoped term_elab choice] public meta def elabIndexedChoice : TermElab := withStepIndex elabChoice
+@[scoped term_elab choice]
+public meta def elabIndexedChoice : TermElab := withStepIndex elabChoice
+
+end TermElab
 
 /-- Whether `si` is the section's step index `n`, compared as terms. -/
 meta def isSectionSI (n : Name) (si : Expr) : MetaM Bool := do
