@@ -173,4 +173,27 @@ example (α : Type) [OFE α] (x : α) : x ≡{(3 : Nat)}≡ x := OFE.Dist.rfl
 end Inner
 end
 
+-- `@[indexed]` rejects binders it cannot fill
+/--
+error: `@[indexed]`: the step index `SI` of `IrisTest.StepIndexElab.NotType` must be a type, but it has type
+  Nat
+-/
+#guard_msgs in
+@[indexed SI] class NotType {SI : Nat} (α : Type) where
+  x : α
+
+/--
+error: `@[indexed]`: the step index `SI` of `IrisTest.StepIndexElab.InstBinder` must be implicit, a `local stepindex` section can only fill in an implicit argument
+-/
+#guard_msgs in
+@[indexed SI] class InstBinder [SI : Inhabited Nat] (α : Type) where
+  x : α
+
+-- a declaration takes one step index
+@[indexed SI] class Twice {SI : Type} [SIdx SI] {SJ : Type} [SIdx SJ] (α : Type) where
+  x : α → SI × SJ
+/-- error: `@[indexed]`: `IrisTest.StepIndexElab.Twice` already has the step index `SI` -/
+#guard_msgs in
+attribute [indexed SJ] Twice
+
 end IrisTest.StepIndexElab

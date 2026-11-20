@@ -92,19 +92,24 @@ meta initialize registerBuiltinAttribute {
     let some si ← Attribute.Builtin.getIdent? stx
       | throwError "`@[indexed]` expects the name of the step index binder, e.g. `@[indexed SI]`"
     let n := si.getId
+    if let some i := (indexedExt.getState (← getEnv)).find? decl then
+      throwError "`@[indexed]`: `{decl}` already has the step index `{i.name}`"
     let info ← getConstInfo decl
     -- Find the argument whose name matches the supplied name and record its argument index.
     let r ← MetaM.run' <| forallTelescope info.type fun xs _ => do
       for i in [:xs.size] do
         let d ← xs[i]!.fvarId!.getDecl
         if d.userName == n then
-          return some ({ name := n, argIdx := i }, d.binderInfo)
+          return some ({ name := n, argIdx := i }, d.binderInfo, d.type)
       return none
-    -- Check that the binder exists, and is not explicit.
-    let some (i, binderInfo) := r
+    -- Check that the binder exists, is implicit, and is a type.
+    let some (i, binderInfo, type) := r
       | throwError "`@[indexed]`: `{decl}` has no binder named `{n}`"
-    if binderInfo.isExplicit then
+    unless binderInfo.isImplicit || binderInfo.isStrictImplicit do
       throwError "`@[indexed]`: the step index `{i.name}` of `{decl}` must be implicit, \
-        a `local stepindex` section cannot fill in an explicit argument"
+        a `local stepindex` section can only fill in an implicit argument"
+    unless type.isSort do
+      throwError "`@[indexed]`: the step index `{i.name}` of `{decl}` must be a type, \
+        but it has type{indentExpr type}"
     modifyEnv (indexedExt.addEntry · (decl, i))
 }
