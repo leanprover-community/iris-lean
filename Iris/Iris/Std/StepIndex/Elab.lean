@@ -25,38 +25,46 @@ open Lean Elab Term Meta
 
 meta def examinedKey : Name := addMacroScope `Iris.StepIndex `examined 1
 
-/-- Fill all placeholders that were marked as step index types with the default step index type. -/
-meta def fillStepIndex : TermElabM Unit := do
-  -- Only run when there are pending mvars, the term is unexamined, and there is a default index.
-  let pending := (← get).pendingMVars
-  let some head := pending.head? | return
-  let examined? := (← getMCtx).userNames.find? examinedKey
-  if examined? == some head then return
+/-- The step index argument of `e`, when `e` is `SIdx SI` or an `@[indexed]` constant applied to
+its step index. -/
+meta def indexArg? (e : Expr) : CoreM (Option Expr) := do
+  let .const c _ := e.getAppFn | return none
+  let decls := indexedExt.getState (← getEnv)
+  let some i := if c == `Iris.SIdx then some 0 else (decls.find? c).map (·.argIdx) | return none
+  return if i < e.getAppNumArgs then some (e.getArg! i) else none
+
+/-- Fills the unknown step indices of the term `e` just elaborated with the section's step index.
+They are found in two places:
+* `e` itself, when it is an `@[indexed]` constant, e.g. `@HasDist ?SI α`;
+* the instance arguments created while elaborating `e`, e.g. `?i : SIdx ?SI` in
+  `@OFE.eq_dist ?SI ?i α ?o x y`. These are the instance problems added to `pendingMVars` since the
+  last call. -/
+meta def fillStepIndex (e : Expr) : TermElabM Unit := do
   let n := siExt.getState (← getEnv)
   if n.isAnonymous then return
-  modifyMCtx fun mctx => { mctx with userNames := mctx.userNames.insert examinedKey head }
-  let decls := indexedExt.getState (← getEnv)
-  -- Collect entries to be filled
+  let mut indices := (← indexArg? e).toArray
+  -- The new instance problems: those in front of the last examined one.
+  let pending := (← get).pendingMVars
+  let examined? := (← getMCtx).userNames.find? examinedKey
   let mut new := #[]
-  let mut indices := #[]
-  for m in pending do
-    if some m == examined? then break
-    let some s ← getSyntheticMVarDecl? m | continue
-    unless s.kind matches .typeClass .. do continue
-    let type ← instantiateMVars (← m.getDecl).type
-    new := new.push (m, type)
-    let a? ← m.withContext <| withReducible <| forallTelescopeReducing type fun _ body => do
-      let body ← whnfR body
-      let .const c _ := body.getAppFn | return none
-      let some i := if c == `Iris.SIdx then some 0 else (decls.find? c).map (·.argIdx)
-        | return none
-      return if i < body.getAppNumArgs then some (body.getArg! i) else none
-    if let some a := a? then
-      if a.isMVar then indices := indices.push a
-  -- Stop if there is nothing to do. Otherwise, fill all entries with `SI`
-  if indices.isEmpty then return
+  if let some head := pending.head? then
+    if examined? != some head then
+      modifyMCtx fun mctx => { mctx with userNames := mctx.userNames.insert examinedKey head }
+      for m in pending do
+        if some m == examined? then break
+        let some s ← getSyntheticMVarDecl? m | continue
+        unless s.kind matches .typeClass .. do continue
+        let type ← instantiateMVars (← m.getDecl).type
+        new := new.push (m, type)
+        -- the step index, seeing through binders and reducible aliases such as `HasDistᵢ SI α`
+        let a? ← m.withContext <| withReducible <| forallTelescopeReducing type fun _ body => do
+          indexArg? (← whnfR body)
+        indices := indices ++ a?.toArray
+  -- Fill the unknown ones with the section's step index
+  let unknown ← indices.filterM fun a => return (← instantiateMVars a).isMVar
+  if unknown.isEmpty then return
   let si ← elabSectionSI n
-  for a in indices do
+  for a in unknown do
     if (← instantiateMVars a).isMVar then discard <| isDefEq a si
   -- Eagerly allow typeclass synthesis to proceed
   for (m, type) in new.reverse do
@@ -71,7 +79,7 @@ meta def fillStepIndex : TermElabM Unit := do
 /-- Runs the elaborator, then fills in the step indices that it left unresolved. -/
 meta def withStepIndex (k : TermElab) : TermElab := fun stx expectedType? => do
   let e ← k stx expectedType?
-  fillStepIndex
+  fillStepIndex e
   return e
 
 section TermElab

@@ -34,6 +34,9 @@ notation "bar% " α => Bar α
 /-- An `@[indexed SI]` function whose step index comes after an explicit argument. -/
 @[indexed SI] def SIFn (_ : Nat) {SI : Type} [SIdx SI] : Type := SI
 
+/-- An `@[indexed SI]` def without an `SIdx` argument. -/
+@[indexed SI] def Plain {SI : Type} (α : Type) : Type := α → SI
+
 /-- An `@[indexed SI]` class. -/
 @[indexed SI] class Qux {SI : Type _} [SIdx SI] (α : Type _) where
   qux : α → SI → Prop
@@ -149,6 +152,10 @@ local stepindex SI
 
 -- a local binder named `SI` does not capture the section's step index
 def shadow := fun (SI : Nat) (α : Type) [OFE α] => SI
+
+-- an `@[indexed]` constant without an `SIdx` argument
+example (α : Type) [HasDist α] (x : α) (n : SI) : HasDist.dist n x x = HasDist.dist n x x := rfl
+example (α : Type) : Plain α = (α → SI) := rfl
 
 -- the marker of `fillStepIndex` is not a user-visible hole
 /-- info: fun α => (Foo SI α, ?_iris_stepindex_examined) : Type → Type × Nat -/
