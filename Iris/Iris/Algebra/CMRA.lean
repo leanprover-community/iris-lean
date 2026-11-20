@@ -1290,7 +1290,7 @@ section cancelableElements
 
 @[rocq_alias cancelable]
 theorem cancelable {x y z : α} [Cancelable x] (v : ✓ (x • y)) (e : x • y = x • z) : y = z :=
-  OFE.eq_of_dist fun _ => cancelableN v.validN e.dist
+  OFE.eq_dist.mpr fun _ => cancelableN v.validN e.dist
 
 @[rocq_alias discrete_cancelable]
 theorem discrete_cancelable {x : α} [Discrete α]

@@ -5,7 +5,7 @@ Authors: Markus de Medeiros
 -/
 module
 
-public import Iris.Algebra.StepIndex
+public import Iris.Algebra.StepIndexFinite
 public meta import Iris.Std.StepIndex.Elab
 
 @[expose] public section
@@ -13,15 +13,15 @@ public meta import Iris.Std.StepIndex.Elab
 namespace IrisTest.StepIndexElab
 open Iris
 
-/-- An explicit step index. -/
-@[indexed] class Foo (SI : stepindex (Type _)) [SIdx SI] (α : Type _) where
+/-- A class over a step index. -/
+class Foo (SI : stepindex (Type _)) [SIdx SI] (α : Type _) where
   foo : α → SI → Prop
 
 /-- An implicit step index that nothing else determines. -/
-@[indexed] def Bar {SI : stepindex (Type _)} [SIdx SI] (α : Type _) : Type _ := α → SI
+def Bar {SI : stepindex (Type _)} [SIdx SI] (α : Type _) : Type _ := α → SI
 
 namespace A
-@[indexed] def Baz {SI : stepindex (Type _)} [SIdx SI] (_ : SI) : Prop := True
+def Baz {SI : stepindex (Type _)} [SIdx SI] (_ : SI) : Prop := True
 end A
 
 namespace B
@@ -29,6 +29,10 @@ def Baz (_ : Bool) : Prop := True
 end B
 
 notation "bar% " α => Bar α
+
+/-- An `@[indexed]` class. -/
+@[indexed] class Qux {SI : stepindex (Type _)} [SIdx SI] (α : Type _) where
+  qux : α → SI → Prop
 
 section
 variable {SI : stepindex Type} [SIdx SI]
@@ -38,20 +42,20 @@ local stepindex SI
 #guard_msgs in
 #stepindex?
 
-/-- info: fun α [Foo α] => 0 : (α : Type) → [Foo α] → Nat -/
+/-- info: fun α [Foo SI α] => 0 : (α : Type) → [Foo SI α] → Nat -/
 #guard_msgs in
-#check fun (α : Type) [Foo α] => 0
+#check fun (α : Type) [Foo _ α] => 0
 
 -- the step index given by name, or with `@`
-/-- info: fun α [Foo α] => 0 : (α : Type) → [Foo α] → Nat -/
+/-- info: fun α [Foo SI α] => 0 : (α : Type) → [Foo SI α] → Nat -/
 #guard_msgs in
 #check fun (α : Type) [Foo (SI := SI) α] => 0
-/-- info: fun α [Foo α] => 0 : (α : Type) → [Foo α] → Nat -/
+/-- info: fun α [Foo SI α] => 0 : (α : Type) → [Foo SI α] → Nat -/
 #guard_msgs in
 #check fun (α : Type) [@Foo SI _ α] => 0
 
 -- a partial application, and a bare constant
-example : (Foo : Type → Type) = @Foo SI _ := rfl
+example : (Foo SI : Type → Type) = @Foo SI _ := rfl
 
 -- an implicit step index
 example (α : Type) : Bar α = (α → SI) := rfl
@@ -64,9 +68,27 @@ open A B in
 example (n : SI) : Baz n := trivial
 open A B in
 example : Baz true := trivial
+
+-- the section's step index is filled in and hidden; any other one is shown
+/-- info: fun α [Qux α] => 0 : (α : Type) → [Qux α] → Nat -/
+#guard_msgs in
+#check fun (α : Type) [Qux α] => 0
+/-- info: fun α [Qux (SI := Nat) α] => 0 : (α : Type) → [Qux (SI := Nat) α] → Nat -/
+#guard_msgs in
+#check fun (α : Type) [Qux (SI := Nat) α] => 0
+end
+
+section
+local stepindex Nat
+local notation "ℕ" => Nat
+
+-- the step index is compared as a term, not by how it prints
+/-- info: fun α [Qux α] => 0 : (α : Type) → [Qux α] → ℕ -/
+#guard_msgs in
+#check fun (α : Type) [Qux α] => 0
 end
 
 -- outside a `local stepindex` section, the step index is written as usual
-example {SI : Type} [SIdx SI] (α : Type) [Foo SI α] : Bar (SI := SI) α = (α → SI) := rfl
+example {SI : Type} [SIdx SI] (α : Type) [Foo (SI := SI) α] : Bar (SI := SI) α = (α → SI) := rfl
 
 end IrisTest.StepIndexElab

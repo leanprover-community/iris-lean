@@ -14,85 +14,113 @@ public import Iris.Std.StepIndex.Registry
 /-!
 # `local stepindex` and its elaborator
 
-The `stepindex` command, and the scoped elaborator and delaborator that fill in and hide the step
-index of `@[indexed]` declarations (see `Iris.Algebra.StepIndex`). The elaborator runs on every
-application and identifier of a sugared section. 
+The `stepindex` command, and the scoped elaborators that fill in step indices (see
+`Iris.Algebra.StepIndex`). Applications and identifiers of a sugared section are elaborated as
+usual; a step index that this leaves undetermined, with an instance problem waiting for it, is then
+unified with the section's.
 -/
 
 namespace Iris.StepIndex
 
-open Lean Elab Term
+open Lean Elab Term Meta
 
-/-- The constants that `f` names, with their `@[indexed]` data. -/
-meta def indexedHeads (f : Ident) : TermElabM (List (Name × Option IndexedInfo)) := do
-  let table := indexedExt.getState (← getEnv)
-  -- fast path
-  let .str _ last := f.getId.eraseMacroScopes | return []
-  unless table.lasts.contains (.mkSimple last) do return []
-  if (← isLocalIdent? f).isSome then return []
-  -- from a notation or macro: pre-resolved
-  if let .ident _ _ _ pre := f.raw then
-    let ns := pre.filterMap fun | .decl n [] => some n | _ => none
-    unless ns.isEmpty do return ns.map fun n => (n, table.decls.find? n)
-  return (← resolveGlobalName f.getId).filterMap fun (n, fields) =>
-    if fields.isEmpty then some (n, table.decls.find? n) else none
+meta def examinedKey : Name := `_iris_stepindex_examined
 
-/-- The identifier of a head `C` or `C.{u, …}`. -/
-meta def headIdent? (f : Syntax) : Option Ident :=
-  if f.isIdent then some ⟨f⟩
-  else if f.isOfKind ``Parser.Term.explicitUniv && f[0].isIdent then some ⟨f[0]⟩
-  else none
-
-/-- Elaborates `C args` as `C (SI := stepindex%) args` for an `@[indexed]` `C`, unless `args` already
-name `SI`. An overloaded `C` becomes a choice node. -/
-meta def elabIndexed (stx : Syntax) (head : Syntax) (args : Array Syntax)
-    (expectedType? : Option Expr) : TermElabM Expr := do
-  let some f := headIdent? head | throwUnsupportedSyntax
-  let heads ← indexedHeads f
-  unless heads.any (·.2.isSome) do throwUnsupportedSyntax
-  let headFor (n : Name) : Syntax :=
-    let c := mkCIdentFrom f n
-    if head.isIdent then c else head.setArg 0 c
-  let mut alts : Array Syntax := #[]
-  for (n, i?) in heads do
-    let h := if heads.length == 1 then head else headFor n
-    let args ← match i? with
-      | some i =>
-        if args.any fun a => a.isOfKind ``Parser.Term.namedArgument &&
-            a[1].getId.eraseMacroScopes == i.name then
-          throwUnsupportedSyntax
-        pure (#[(← `(Parser.Term.namedArgument| ($(mkIdent i.name) := stepindex%))).raw] ++ args)
-      | none => pure args
-    alts := alts.push (Syntax.mkApp ⟨h⟩ (args.map (⟨·⟩)))
-  let stx' := if h : alts.size = 1 then alts[0] else mkNode choiceKind alts
-  withMacroExpansion stx stx' <| elabTerm stx' expectedType?
-
-/-- `C args` for an `@[indexed]` `C`. -/
-@[scoped term_elab app] public meta def elabIndexedApp : TermElab := fun stx expectedType? =>
-  elabIndexed stx stx[0] stx[1].getArgs expectedType?
-
-/-- A bare `C` or `C.{u, …}` for an `@[indexed]` `C`. -/
-@[scoped term_elab ident, scoped term_elab explicitUniv]
-public meta def elabIndexedIdent : TermElab := fun stx expectedType? =>
-  elabIndexed stx stx #[] expectedType?
-
-/-- Whether `si` is the section's step index. -/
-public meta def isSectionSI (si : Term) : CoreM Bool := do
+meta def fillStepIndex : TermElabM Unit := do
+  let pending := (← get).pendingMVars
+  let some head := pending.head? | return
+  let examined? := (← getMCtx).userNames.find? examinedKey
+  if examined? == some head then return
   let n := siExt.getState (← getEnv)
-  return !n.isAnonymous && si.raw.isIdent && si.raw.getId == n
+  if n.isAnonymous then return
+  modifyMCtx fun mctx => { mctx with userNames := mctx.userNames.insert examinedKey head }
+  let decls := indexedExt.getState (← getEnv)
+  let mut new := #[]
+  let mut indices := #[]
+  for m in pending do
+    if some m == examined? then break
+    let some s ← getSyntheticMVarDecl? m | continue
+    unless s.kind matches .typeClass .. do continue
+    let type ← instantiateMVars (← m.getDecl).type
+    new := new.push (m, type)
+    let body := type.getForallBody
+    let .const c _ := body.getAppFn | continue
+    let some i := if c == `Iris.SIdx then some 0 else (decls.find? c).map (·.argIdx) | continue
+    if i < body.getAppNumArgs then
+      let a := body.getArg! i
+      if a.isMVar then indices := indices.push a
+  if indices.isEmpty then return
+  let si ← elabTerm (mkIdent n) none
+  for a in indices do
+    if (← instantiateMVars a).isMVar then discard <| isDefEq a si
+  for (m, type) in new.reverse do
+    if (← instantiateMVars type) != type then
+      try
+        if ← m.withContext <| synthesizeInstMVarCore m then
+          modify fun s => { s with syntheticMVars := s.syntheticMVars.erase m }
+      catch
+        | .error .. => pure ()
+        | ex => throw ex
+
+/-- Runs the elaborator, then fills in the step indices that it left unresolved. -/
+meta def withStepIndex (k : TermElab) : TermElab := fun stx expectedType? => do
+  let e ← k stx expectedType?
+  fillStepIndex
+  return e
+
+-- The elaborators below have no docstrings: hovering any identifier would show them.
+
+-- `f args`.
+@[scoped term_elab app] public meta def elabIndexedApp : TermElab := withStepIndex elabApp
+
+-- `c`, `x.f`.
+@[scoped term_elab ident] public meta def elabIndexedIdent : TermElab := withStepIndex elabIdent
+
+-- `c.{u, …}`.
+@[scoped term_elab explicitUniv]
+public meta def elabIndexedExplicitUniv : TermElab := withStepIndex elabExplicitUniv
+
+-- `(e).f`, `e.1`.
+@[scoped term_elab proj] public meta def elabIndexedProj : TermElab := withStepIndex elabProj
+
+-- `e |>.f args`.
+@[scoped term_elab pipeProj]
+public meta def elabIndexedPipeProj : TermElab := withStepIndex elabPipeProj
+
+-- `.f`.
+@[scoped term_elab dotIdent]
+public meta def elabIndexedDotIdent : TermElab := withStepIndex elabDotIdent
+
+-- An overloaded notation.
+@[scoped term_elab choice] public meta def elabIndexedChoice : TermElab := withStepIndex elabChoice
+
+/-- Whether `si` is the section's step index `n`, compared as terms. -/
+meta def isSectionSI (n : Name) (si : Expr) : MetaM Bool := do
+  let ref ← match (← getLCtx).findFromUserName? n with
+    | some d => pure d.toExpr
+    | none =>
+      let some c := (← resolveGlobalName n).find? (·.2.isEmpty) | return false
+      mkConstWithLevelParams c.1
+  withNewMCtxDepth <| withReducible <| isDefEq si ref
 
 open PrettyPrinter Delaborator SubExpr in
-/-- Prints `C SI args` as `C args` when `SI` is the section's step index. -/
+/-- Prints `C (SI := T) args` when the step index `T` of an `@[indexed]` `C` is not the section's. -/
 @[scoped delab app] public meta def delabIndexedApp : Delab := whenPPOption getPPNotation do
   let e ← getExpr
   let some c := e.getAppFn.constName? | failure
-  let some i := (indexedExt.getState (← getEnv)).decls.find? c | failure
-  let some p := i.explicitPos | failure
+  let some i := (indexedExt.getState (← getEnv)).find? c | failure
   guard (e.getAppNumArgs > i.argIdx)
-  unless ← isSectionSI (← withNaryArg i.argIdx delab) do failure
-  let stx : Term ← Lean.PrettyPrinter.Delaborator.delabApp
-  let `($f $args*) := stx | return stx
-  return Syntax.mkApp f (args.eraseIdxIfInBounds p)
+  let n := siExt.getState (← getEnv)
+  guard !n.isAnonymous
+  let si ← instantiateMVars (e.getArg! i.argIdx)
+  guard !si.hasMVar
+  if ← isSectionSI n si then failure
+  let siStx ← withNaryArg i.argIdx delab
+  let stx ← delabApp
+  match stx with
+  | `($f:ident $args*) => `($f:ident ($(mkIdent i.name) := $siStx) $args*)
+  | `($f:ident) => `($f:ident ($(mkIdent i.name) := $siStx))
+  | _ => return stx
 
 end Iris.StepIndex
 
@@ -100,12 +128,12 @@ namespace Iris
 
 public section
 open Lean Parser in
-/-- `local stepindex T` makes `T` the section's step index: `@[indexed]` declarations take it when
-theirs is not given, and print without it.
+/-- `local stepindex T` makes `T` the section's step index: a step index that is not determined
+otherwise is taken to be `T`.
 
 ```
 local stepindex Nat
-variable [CMRA α]          -- CMRA Nat α
+variable [CMRA α]          -- CMRA (SI := Nat) α
 example (x : α) : ✓ x → ✓ x := id
 ```
 -/

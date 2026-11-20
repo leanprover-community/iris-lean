@@ -55,40 +55,28 @@ public meta def isStepIndexBinder : Expr → Bool
   | .mdata m _ => m.getBool `iris.stepindex
   | _ => false
 
-/-- Where an `@[indexed]` declaration takes its step index: the binder whose type is
+/-- Where an `@[indexed]` declaration takes its step index: the implicit binder whose type is
 `stepindex (Type _)`. -/
 public structure IndexedInfo where
   /-- The binder name of the step index. -/
   name : Name
   /-- Its position among all arguments. -/
   argIdx : Nat
-  /-- Its position among the explicit arguments, or `none` when it is not explicit. -/
-  explicitPos : Option Nat
   deriving Inhabited, Repr
-
-/-- The `@[indexed]` declarations, and the last components of their names (a fast check that an
-identifier cannot name one). -/
-public meta structure IndexedTable where
-  decls : NameMap IndexedInfo := {}
-  lasts : NameSet := {}
-  deriving Inhabited
-
-/-- Add an `@[indexed]` declaration to the table. -/
-public meta def IndexedTable.insert (t : IndexedTable) (n : Name) (i : IndexedInfo) : IndexedTable :=
-  { decls := t.decls.insert n i, lasts := t.lasts.insert (.mkSimple n.getString!) }
 
 /-- The `@[indexed]` declarations. -/
 public meta initialize indexedExt :
-    SimplePersistentEnvExtension (Name × IndexedInfo) IndexedTable ←
+    SimplePersistentEnvExtension (Name × IndexedInfo) (NameMap IndexedInfo) ←
   registerSimplePersistentEnvExtension {
     addEntryFn := fun t (n, i) => t.insert n i
     addImportedFn := fun as => as.foldl (fun t a => a.foldl (fun t (n, i) => t.insert n i) t) {}
   }
 
 /--
-`@[indexed]` marks a declaration whose step index (the binder of type `stepindex (Type _)`, explicit
-or implicit, possibly a section variable) is filled in by `local stepindex T` sections: there `C a`
-elaborates as `C T a` (or `C (SI := T) a` for an implicit step index) and prints back as `C a`.
+`@[indexed]` marks a declaration over a step index (the implicit binder of type
+`stepindex (Type _)`, possibly a section variable). `local stepindex T` sections consult it for
+classes: there an instance problem of an `@[indexed]` class whose step index nothing else determines
+takes `T`, so that `[C a]` elaborates as `[C (SI := T) a]`.
 -/
 meta initialize registerBuiltinAttribute {
   name := `indexed
@@ -98,16 +86,15 @@ meta initialize registerBuiltinAttribute {
     unless kind == .global do throwError "`@[indexed]` must be global"
     let info ← getConstInfo decl
     let r ← Meta.MetaM.run' <| Meta.forallTelescope info.type fun xs _ => do
-      let mut expl := 0
-      let mut r : Option IndexedInfo := none
       for i in [:xs.size] do
         let d ← xs[i]!.fvarId!.getDecl
-        if r.isNone && isStepIndexBinder d.type then
-          r := some { name := d.userName, argIdx := i,
-                      explicitPos := if d.binderInfo.isExplicit then some expl else none }
-        if d.binderInfo.isExplicit then expl := expl + 1
-      return r
-    let some i := r
+        if isStepIndexBinder d.type then
+          return some (({ name := d.userName, argIdx := i } : IndexedInfo), d.binderInfo)
+      return none
+    let some (i, binderInfo) := r
       | throwError "`@[indexed]`: `{decl}` has no step index binder of type `stepindex (Type _)`"
+    if binderInfo.isExplicit then
+      throwError "`@[indexed]`: the step index `{i.name}` of `{decl}` must be implicit, \
+        a `local stepindex` section cannot fill in an explicit argument"
     modifyEnv (indexedExt.addEntry · (decl, i))
 }
