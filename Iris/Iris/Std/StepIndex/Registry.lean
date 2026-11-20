@@ -59,7 +59,15 @@ public meta initialize indexedExt :
 `@[indexed SI]` marks a declaration generic over the type of step indices, ie. the type `SI` should
 be specialized to the type `T` in any section where `local stepindex T` is set.
 
-For simplicity, we require all step index binder types to me implicit.
+Step index types must be declared as implicit binders. If you want explicitly bound index types that
+also use the `indexed` attribute, you should define the explicit version as an abbreviation for
+the implicit one. For example:
+```lean
+@[indexed SI, rocq_alias Dist]
+class HasDist {SI : Type _} (α : Type _) where
+  dist : SI → α → α → Prop
+abbrev HasDistᵢ (SI : Type _) (α : Type _) := HasDist (SI := SI) α
+```
 -/
 meta initialize registerBuiltinAttribute {
   name := `indexed

@@ -14,10 +14,9 @@ public import Iris.Std.StepIndex.Registry
 /-!
 # `local stepindex` and its elaborator
 
-The `stepindex` command, and the scoped elaborators that fill in step indices (see
-`Iris.Algebra.StepIndex`). Applications and identifiers of a sugared section are elaborated as
-usual; a step index that this leaves undetermined, with an instance problem waiting for it, is then
-unified with the section's.
+The `local stepindex` command is used to configure a default type of step indices in a section.
+Step index types to be filled in with section default are configured with the `@[indexed SI]`
+attribute.
 -/
 
 namespace Iris.StepIndex
