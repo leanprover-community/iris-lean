@@ -140,7 +140,7 @@ example (x : α) : ✓ x → ✓ x := id
 syntax (name := stepindexCmd) Term.attrKind &"stepindex " term : command
 end
 
-open Lean Elab Command in
+open Lean Elab Meta Command in
 @[command_elab stepindexCmd]
 public meta def elabStepindex : CommandElab := fun stx => do
   let `(command| $k:attrKind stepindex $T:term) := stx | throwUnsupportedSyntax
@@ -151,7 +151,7 @@ public meta def elabStepindex : CommandElab := fun stx => do
       Introduce an abbreviation first, e.g. `abbrev MySI := ...` then `local stepindex MySI`."
   runTermElabM fun _ => do
     let Te ← Term.elabType T
-    unless (← Meta.trySynthInstance (← Meta.mkAppM `Iris.SIdx #[Te])) matches .some _ do
+    unless (← trySynthInstance (← mkAppM `Iris.SIdx #[Te])) matches .some _ do
       throwError "`stepindex` requires a `SIdx` instance for{indentExpr Te}"
   siExt.add T.raw.getId .local
   elabCommand (← `(command| open scoped Iris.StepIndex))
