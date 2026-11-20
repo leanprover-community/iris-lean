@@ -18,14 +18,18 @@ namespace Iris
 class HasDist {SI : Type _} (α : Type _) where
   dist : SI → α → α → Prop
 
+abbrev HasDistᵢ (SI : Type _) (α : Type _) := HasDist (SI := SI) α
+
 /-- Ordered family of equivalences -/
 @[indexed SI, rocq_alias ofe]
-class OFE {SI : Type _} [SIdx SI] (α : Type _) extends HasDist (SI := SI) α where
+class OFE {SI : Type _} [SIdx SI] (α : Type _) extends HasDistᵢ SI α where
   dist_eqv : Equivalence (dist n)
   eq_dist' : x = y ↔ ∀ n, dist n x y
   dist_lt : dist n x y → m < n → dist m x y
 
-abbrev OFE.Dist {SI : Type _} {α : Type _} [HasDist (SI := SI) α] :
+abbrev OFEᵢ (SI : Type _) [SIdx SI] (α : Type _) := OFE (SI := SI) α
+
+abbrev OFE.Dist {SI : Type _} {α : Type _} [HasDistᵢ SI α] :
     SI → α → α → Prop :=
   HasDist.dist
 
@@ -77,6 +81,9 @@ instance [OFE α] {n} : Trans (OFE.Dist n) (OFE.Dist n) (OFE.Dist n : α → α 
 class NonExpansive [OFE α] [OFE β] (f : α → β) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → f x₁ ≡{n}≡ f x₂
 
+variable (SI) in
+abbrev NonExpansiveᵢ [OFE α] [OFE β] (f : α → β) := NonExpansive f
+
 instance id_ne [OFE α] : NonExpansive (@id α) := ⟨fun _ _ _ h => h⟩
 
 instance const_ne [OFE α] [OFE β] {x : α} : NonExpansive (Function.const β x) := ⟨fun _ _ _ _ => .rfl⟩
@@ -92,6 +99,9 @@ theorem NonExpansive.comp [OFE α] [OFE β] [OFE γ] {g : β → γ} {f : α →
 @[indexed SI]
 class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → f x₁ y₁ ≡{n}≡ f x₂ y₂
+
+variable (SI) in
+abbrev NonExpansive₂ᵢ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) := NonExpansive₂ f
 
 #rocq_ignore ne_proper_2 "OFE is Leibniz; use equality"
 
@@ -112,12 +122,20 @@ class NonExpansive₃ [OFE α] [OFE β] [OFE γ] [OFE δ] (f : α → β → γ 
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → ∀ ⦃z₁ z₂⦄, z₁ ≡{n}≡ z₂ →
     f x₁ y₁ z₁ ≡{n}≡ f x₂ y₂ z₂
 
+variable (SI) in
+abbrev NonExpansive₃ᵢ [OFE α] [OFE β] [OFE γ] [OFE δ] (f : α → β → γ → δ) :=
+    NonExpansive₃ f
+
 /-- A function `f : α → β → γ → δ → ε` is non-expansive if it preserves `n`-equivalence in each
 argument. -/
 @[indexed SI]
 class NonExpansive₄ [OFE α] [OFE β] [OFE γ] [OFE δ] [OFE ε] (f : α → β → γ → δ → ε) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → ∀ ⦃z₁ z₂⦄, z₁ ≡{n}≡ z₂ →
     ∀ ⦃w₁ w₂⦄, w₁ ≡{n}≡ w₂ → f x₁ y₁ z₁ w₁ ≡{n}≡ f x₂ y₂ z₂ w₂
+
+variable (SI) in
+abbrev NonExpansive₄ᵢ [OFE α] [OFE β] [OFE γ] [OFE δ] [OFE ε] (f : α → β → γ → δ → ε) :=
+    NonExpansive₄ f
 
 /-- `DistLater n x y` means that `x` and `y` are `m`-equivalent for all `m < n`. -/
 @[rocq_alias dist_later]
@@ -164,6 +182,9 @@ theorem distLater_soundness [OFE α] {x y : α} (H : ∀ n, DistLater n x y → 
 @[indexed SI]
 class Contractive [OFE α] [OFE β] (f : α → β) where
   distLater_dist : DistLater n x y → f x ≡{n}≡ f y
+
+variable (SI) in
+abbrev Contractiveᵢ [OFE α] [OFE β] (f : α → β) := Contractive f
 
 @[simp, rocq_alias contractive_0] theorem Contractive.zero [OFE α] [OFE β] (f : α → β)
     [Contractive f] {x y} : f x ≡{0}≡ f y :=
@@ -212,11 +233,17 @@ def ofDiscrete (α : Type _) : OFE α where
 class DiscreteE {α : Type _} [OFE α] (x : α) : Prop where
   discrete : x ≡{0}≡ y → x = y
 
+variable (SI) in
+abbrev DiscreteEᵢ {α : Type _} [OFE α] (x : α) := DiscreteE x
+
 /-- A discrete OFE is one where equality is implied by `0`-equivalence. -/
 @[indexed SI, rocq_alias OfeDiscrete]
 class Discrete (α : Type _) [OFE α] where
   discrete_0 {x y : α} : x ≡{0}≡ y → x = y
 export OFE.Discrete (discrete_0)
+
+variable (SI) in
+abbrev Discreteᵢ (α : Type _) [OFE α] := Discrete α
 
 @[rocq_alias Discrete_proper]
 theorem discreteE_eq [OFE α] {x y : α} (h : x = y) : DiscreteE x ↔ DiscreteE y := h ▸ Iff.rfl
@@ -1194,9 +1221,15 @@ class IsCOFE {SI : Type _} (α : Type _) [SIdx SI] [OFE α] where
     (∀ p (Hp : p < n), c1.bchain p Hp ≡{m}≡ c2.bchain p Hp) →
     lbcompl hn c1 ≡{m}≡ lbcompl hn c2
 
+variable (SI) in
+abbrev IsCOFEᵢ (α : Type _) [OFE α] := IsCOFE α
+
 /-- Complete ordered family of equivalences -/
 @[indexed SI]
 class abbrev COFE (α : Type _) := OFE α, IsCOFE α
+
+variable (SI) in
+abbrev COFEᵢ (α : Type _) := COFE α
 
 namespace COFE
 export IsCOFE (compl conv_compl)
@@ -1455,10 +1488,16 @@ class OFunctor (F : OFunctorPre) where
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
 
+variable (SI) in
+abbrev OFunctorᵢ (F : OFunctorPre) := OFunctor F
+
 @[indexed SI, rocq_alias oFunctorContractive]
 class OFunctorContractive (F : OFunctorPre) extends OFunctor F where
   map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
+
+variable (SI) in
+abbrev OFunctorContractiveᵢ (F : OFunctorPre) := OFunctorContractive F
 
 attribute [reducible, instance] OFunctor.ofe
 
@@ -1931,6 +1970,9 @@ class LimitPreserving [COFE α] (P : α → Prop) : Prop where
   compl (c : Chain α) : (∀ n, P (c n)) → P (COFE.compl c)
   lbcompl {n} (hn : SIdx.Limit n) (c : BChain α n) :
     (∀ m (hm : m < n), P (c.bchain m hm)) → P (IsCOFE.lbcompl hn c)
+
+variable (SI) in
+abbrev LimitPreservingᵢ [COFE α] (P : α → Prop) := LimitPreserving P
 
 @[rocq_alias limit_preserving_const]
 theorem LimitPreserving.const [COFE α] {P : Prop} : LimitPreserving fun (_ : α) => P where

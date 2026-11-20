@@ -43,11 +43,14 @@ meta def fillStepIndex : TermElabM Unit := do
     unless s.kind matches .typeClass .. do continue
     let type ← instantiateMVars (← m.getDecl).type
     new := new.push (m, type)
-    let body := type.getForallBody
-    let .const c _ := body.getAppFn | continue
-    let some i := if c == `Iris.SIdx then some 0 else (decls.find? c).map (·.argIdx) | continue
-    if i < body.getAppNumArgs then
-      let a := body.getArg! i
+    -- the step index slot, seeing through binders and reducible aliases such as `HasDistᵢ SI α`
+    let a? ← m.withContext <| withReducible <| forallTelescopeReducing type fun _ body => do
+      let body ← whnfR body
+      let .const c _ := body.getAppFn | return none
+      let some i := if c == `Iris.SIdx then some 0 else (decls.find? c).map (·.argIdx)
+        | return none
+      return if i < body.getAppNumArgs then some (body.getArg! i) else none
+    if let some a := a? then
       if a.isMVar then indices := indices.push a
   if indices.isEmpty then return
   let si ← elabTerm (mkIdent n) none
