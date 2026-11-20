@@ -150,6 +150,11 @@ local stepindex SI
 -- a local binder named `SI` does not capture the section's step index
 def shadow := fun (SI : Nat) (α : Type) [OFE α] => SI
 
+-- the marker of `fillStepIndex` is not a user-visible hole
+/-- info: fun α => (Foo SI α, ?_iris_stepindex_examined) : Type → Type × Nat -/
+#guard_msgs in
+#check fun (α : Type) => (Foo _ α, (?_iris_stepindex_examined : Nat))
+
 -- a theorem whose statement doesn't mention `SI` gets a clear error in its proof
 /--
 error: the section step index `SI` is not in scope here; mention it in the statement or `include SI`

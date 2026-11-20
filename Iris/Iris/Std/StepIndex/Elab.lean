@@ -23,7 +23,7 @@ namespace Iris.StepIndex
 
 open Lean Elab Term Meta
 
-meta def examinedKey : Name := `_iris_stepindex_examined
+meta def examinedKey : Name := addMacroScope `Iris.StepIndex `examined 1
 
 /-- Fill all placeholders that were marked as step index types with the default step index type. -/
 meta def fillStepIndex : TermElabM Unit := do
