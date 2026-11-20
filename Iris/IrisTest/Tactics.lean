@@ -22,8 +22,6 @@ public import Iris.ProgramLogic.WeakestPre
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace IrisTest
 open Iris BI ORA DFrac CancelableInvariant NonAtomicInvariant ProgramLogic
 

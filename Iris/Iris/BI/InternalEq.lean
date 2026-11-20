@@ -11,8 +11,6 @@ public import Iris.Algebra.Excl
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 open BI OFE Iris.Std
 

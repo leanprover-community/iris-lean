@@ -14,8 +14,6 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 
 open OFE ORA UORA

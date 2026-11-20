@@ -33,8 +33,6 @@ It provides authoritative and fragmental ownership over heap elements with fract
 
 @[expose] public section
 
-local stepindex Nat
-
 open Iris
 
 section heapView

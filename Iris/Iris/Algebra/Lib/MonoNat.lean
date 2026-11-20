@@ -11,8 +11,6 @@ public import Iris.Algebra.Numbers
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 
 @[rocq_alias mono_nat]

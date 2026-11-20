@@ -13,8 +13,6 @@ public import Iris.BI.SIProp
 
 @[expose] public section
 
-local stepindex Nat
-
 
 /-!
 # Step-indexed BI (SBI)

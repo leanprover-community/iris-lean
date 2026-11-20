@@ -10,8 +10,6 @@ public import Iris.Std.Vector
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 
 open OFE COFE

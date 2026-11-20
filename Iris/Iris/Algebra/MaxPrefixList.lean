@@ -20,8 +20,6 @@ the List type itself. However, there is an embedding of Lists in to this data st
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 
 open OFE ORA Iris.Std

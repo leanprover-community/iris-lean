@@ -18,8 +18,6 @@ namespace Iris
 
 @[expose] public section
 
-local stepindex Nat
-
 open Iris.Std PartialMap
 
 universe u v

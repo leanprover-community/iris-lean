@@ -11,7 +11,6 @@ public import Iris.ProofMode.Tactics.HaveCore
 namespace Iris.ProofMode
 
 public section
-
 open BI
 
 @[rocq_alias tac_apply]

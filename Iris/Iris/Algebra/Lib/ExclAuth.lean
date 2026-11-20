@@ -10,8 +10,6 @@ public import Iris.Algebra.Excl
 
 public section
 
-local stepindex Nat
-
 /-!
 # Exclusive Authoritative ORA
 

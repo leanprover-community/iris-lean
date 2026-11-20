@@ -18,8 +18,6 @@ public import Iris.Std.Positives
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 open BI
 

@@ -14,8 +14,6 @@ public import Init.Data.Vector
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 
 open COFE

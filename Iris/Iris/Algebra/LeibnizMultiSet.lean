@@ -13,8 +13,6 @@ public import Iris.Std.GenMultiSets
 
 @[expose] public section
 
-local stepindex Nat
-
 /-! ## The multiset union ORA -/
 
 open Iris Std ORA OFE

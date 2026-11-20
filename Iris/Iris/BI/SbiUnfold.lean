@@ -9,8 +9,6 @@ public import Iris.BI.Cmra
 
 @[expose] public section
 
-local stepindex Nat
-
 /-!
 # `sbi_unfold`
 

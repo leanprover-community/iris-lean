@@ -32,7 +32,6 @@ public import Iris.Std.Relation
 public import Iris.Std.Rewrite
 public import Iris.Std.RocqPorting
 public import Iris.Std.Set
-public import Iris.Std.StepIndex
 public import Iris.Std.Tactic
 public import Iris.Std.TC
 public import Iris.Std.Telescopes

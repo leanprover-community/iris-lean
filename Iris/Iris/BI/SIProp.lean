@@ -13,8 +13,6 @@ public import Iris.Algebra.CMRA
 
 @[expose] public section
 
-local stepindex Nat
-
 /-!
 # Step-Indexed Propositions (siProp)
 

@@ -16,8 +16,6 @@ public import Iris.Instances.IProp
 
 @[expose] public section
 
-local stepindex Nat
-
 /-! ## Later credits -/
 
 namespace Iris

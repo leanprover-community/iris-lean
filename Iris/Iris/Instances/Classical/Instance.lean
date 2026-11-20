@@ -11,8 +11,6 @@ public import Iris.Std.Equivalence
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris.Instances.Classical
 open Iris.BI Iris.Instances.Data Iris.Std
 

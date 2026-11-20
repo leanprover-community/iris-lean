@@ -9,8 +9,6 @@ public import Iris.Algebra.StepIndexFinite
 
 public section
 
-local stepindex Nat
-
 namespace Iris.Algebra
 
 /-! # Monoids for Big Operators

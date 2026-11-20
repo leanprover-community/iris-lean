@@ -9,8 +9,6 @@ public import Iris.BI
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 open Iris.Std BI BI.BIBase OFE
 

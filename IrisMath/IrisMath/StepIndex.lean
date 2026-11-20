@@ -14,7 +14,10 @@ noncomputable section
 
 open Iris
 
-instance ordinalSIdx : SIdx Ordinal where
+/-- Ordinals as step indices. Not an instance, since `natSIdx` is the default: enable it with
+`attribute [-instance] natSIdx` and `attribute [local instance] ordinalSIdx`. -/
+@[reducible]
+def ordinalSIdx : SIdx Ordinal where
   toLT := inferInstance
   toLE := inferInstance
   toZero := inferInstance
@@ -73,6 +76,10 @@ def ordinalToTypeSIdx (κ : Ordinal) (hκ : Order.IsSuccLimit κ) : SIdx κ.ToTy
           exact h ⟨m, he.symm⟩
   }
 
+section
+attribute [-instance] natSIdx
+attribute [local instance] ordinalSIdx
+
 theorem limit_iff_isSuccLimit {o : Ordinal} : SIdx.Limit o ↔ Order.IsSuccLimit o := by
   constructor
   · intro h
@@ -85,3 +92,5 @@ theorem limit_iff_isSuccLimit {o : Ordinal} : SIdx.Limit o ↔ Order.IsSuccLimit
     · intro _ hm
       exact h.succ_lt hm
     · exact h.pos.ne'
+
+end

@@ -22,8 +22,6 @@ local bi (IProp GF)
 
 @[expose] public section
 
-local stepindex Nat
-
 /-!
 TODO: AddModal, ElimAcc instances
 -/

@@ -16,8 +16,6 @@ public import Iris.Algebra.LocalUpdates
 
 @[expose] public section
 
-local stepindex Nat
-
 open Iris
 
 abbrev ViewRel (A B : Type _) := Nat → A → B → Prop

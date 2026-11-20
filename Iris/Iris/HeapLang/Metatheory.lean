@@ -12,7 +12,6 @@ meta import Iris.Std.RocqPorting
 /-! # Metatheory of HeapLang -/
 
 @[expose] public section
-
 namespace Iris.HeapLang
 
 open Iris.Std

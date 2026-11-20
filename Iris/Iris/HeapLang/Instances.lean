@@ -15,7 +15,6 @@ public import Iris.Std.FromMathlib
 public import Iris.Std.GenSetsInstances
 
 @[expose] public section
-
 namespace Iris.HeapLang
 
 open ProgramLogic ProgramLogic.Language FromMathlib EctxItemLanguage EctxLanguage

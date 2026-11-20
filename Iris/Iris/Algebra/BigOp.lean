@@ -16,8 +16,6 @@ public import Iris.Std.Equivalence
 
 namespace Iris.Algebra
 
-local stepindex Nat
-
 /-! # Big Operators
 
 This file defines big operators (fold operations) at the abstract OFE level.

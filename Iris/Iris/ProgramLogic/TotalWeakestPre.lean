@@ -17,8 +17,6 @@ local bi (IProp GF)
 
 @[expose] public section
 
-local stepindex Nat
-
 /-!
 # Total weakest preconditions
 

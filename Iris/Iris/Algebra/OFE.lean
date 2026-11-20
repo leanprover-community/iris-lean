@@ -14,18 +14,18 @@ public import Iris.Std.Option
 namespace Iris
 
 /-- An indexed family of distances, on a type -/
-@[indexed, rocq_alias Dist]
-class HasDist {SI : stepindex (Type _)} (α : Type _) where
+@[rocq_alias Dist]
+class HasDist {SI : semiOutParam (Type _)} [SIdx SI] (α : Type _) where
   dist : SI → α → α → Prop
 
 /-- Ordered family of equivalences -/
-@[indexed, rocq_alias ofe]
-class OFE {SI : stepindex (Type _)} [SIdx SI] (α : Type _) extends HasDist (SI := SI) α where
+@[rocq_alias ofe]
+class OFE {SI : semiOutParam (Type _)} [SIdx SI] (α : Type _) extends HasDist (SI := SI) α where
   dist_eqv : Equivalence (dist n)
   eq_dist' : x = y ↔ ∀ n, dist n x y
   dist_lt : dist n x y → m < n → dist m x y
 
-abbrev OFE.Dist {SI : stepindex (Type _)} {α : Type _} [HasDist (SI := SI) α] :
+abbrev OFE.Dist {SI : Type _} [SIdx SI] {α : Type _} [HasDist (SI := SI) α] :
     SI → α → α → Prop :=
   HasDist.dist
 
@@ -40,8 +40,7 @@ open OFE
 
 scoped notation:40 x " ≡{" n "}≡ " y:41 => OFE.Dist n x y
 
-variable {SI : stepindex (Type _)} [SIdx SI]
-local stepindex SI
+variable {SI : Type _} [SIdx SI]
 
 @[rocq_alias equiv_dist]
 theorem OFE.eq_dist [OFE α] {x y : α} : x = y ↔ ∀ n, x ≡{n}≡ y := OFE.eq_dist'
@@ -73,7 +72,6 @@ instance [OFE α] {n} : Trans (OFE.Dist n) (OFE.Dist n) (OFE.Dist n : α → α 
   trans := Dist.trans
 
 /-- A function `f : α → β` is non-expansive if it preserves `n`-equivalence. -/
-@[indexed]
 class NonExpansive [OFE α] [OFE β] (f : α → β) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → f x₁ ≡{n}≡ f x₂
 
@@ -89,7 +87,6 @@ theorem NonExpansive.comp [OFE α] [OFE β] [OFE γ] {g : β → γ} {f : α →
 #rocq_ignore ne_proper "OFE is Leibniz; use equality"
 
 /-- A function `f : α → β → γ` is non-expansive if it preserves `n`-equivalence in each argument. -/
-@[indexed]
 class NonExpansive₂ [OFE α] [OFE β] [OFE γ] (f : α → β → γ) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → f x₁ y₁ ≡{n}≡ f x₂ y₂
 
@@ -107,14 +104,12 @@ theorem NonExpansive₂.ne_left [OFE α] [OFE β] [OFE γ] (f : α → β → γ
 
 /-- A function `f : α → β → γ → δ` is non-expansive if it preserves `n`-equivalence in each
 argument. -/
-@[indexed]
 class NonExpansive₃ [OFE α] [OFE β] [OFE γ] [OFE δ] (f : α → β → γ → δ) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → ∀ ⦃z₁ z₂⦄, z₁ ≡{n}≡ z₂ →
     f x₁ y₁ z₁ ≡{n}≡ f x₂ y₂ z₂
 
 /-- A function `f : α → β → γ → δ → ε` is non-expansive if it preserves `n`-equivalence in each
 argument. -/
-@[indexed]
 class NonExpansive₄ [OFE α] [OFE β] [OFE γ] [OFE δ] [OFE ε] (f : α → β → γ → δ → ε) where
   ne : ∀ ⦃n x₁ x₂⦄, x₁ ≡{n}≡ x₂ → ∀ ⦃y₁ y₂⦄, y₁ ≡{n}≡ y₂ → ∀ ⦃z₁ z₂⦄, z₁ ≡{n}≡ z₂ →
     ∀ ⦃w₁ w₂⦄, w₁ ≡{n}≡ w₂ → f x₁ y₁ z₁ w₁ ≡{n}≡ f x₂ y₂ z₂ w₂
@@ -161,7 +156,6 @@ theorem distLater_soundness [OFE α] {x y : α} (H : ∀ n, DistLater n x y → 
 
 /-- A function `f : α → β` is contractive if it sends `DistLater n`-equivalent inputs to
 `n`-equivalent outputs. -/
-@[indexed]
 class Contractive [OFE α] [OFE β] (f : α → β) where
   distLater_dist : DistLater n x y → f x ≡{n}≡ f y
 
@@ -208,13 +202,13 @@ def ofDiscrete (α : Type _) : OFE α where
   dist_lt h _ := h
 
 /-- A discrete element in an OFE -/
-@[indexed, rocq_alias Discrete]
-class DiscreteE {α : Type _} [OFE α] (x : α) : Prop where
+@[rocq_alias Discrete]
+class DiscreteE {SI : semiOutParam (Type _)} [SIdx SI] {α : Type _} [OFE α] (x : α) : Prop where
   discrete : x ≡{0}≡ y → x = y
 
 /-- A discrete OFE is one where equality is implied by `0`-equivalence. -/
-@[indexed, rocq_alias OfeDiscrete]
-class Discrete (α : Type _) [OFE α] where
+@[rocq_alias OfeDiscrete]
+class Discrete {SI : semiOutParam (Type _)} [SIdx SI] (α : Type _) [OFE α] where
   discrete_0 {x y : α} : x ≡{0}≡ y → x = y
 export OFE.Discrete (discrete_0)
 
@@ -1183,8 +1177,8 @@ def le {n} (c : BChain α n) {m} (hm : m ≤ n) : BChain α m where
 end BChain
 
 /-- Complete ordered family of equivalences -/
-@[indexed, rocq_alias Cofe]
-class IsCOFE {SI : stepindex (Type _)} (α : Type _) [SIdx SI] [OFE α] where
+@[rocq_alias Cofe]
+class IsCOFE {SI : semiOutParam (Type _)} (α : Type _) [SIdx SI] [OFE α] where
   compl : Chain α → α
   conv_compl {c : Chain α} : compl c ≡{n}≡ c n
   lbcompl {n} : SIdx.Limit n → BChain α n → α
@@ -1195,7 +1189,6 @@ class IsCOFE {SI : stepindex (Type _)} (α : Type _) [SIdx SI] [OFE α] where
     lbcompl hn c1 ≡{m}≡ lbcompl hn c2
 
 /-- Complete ordered family of equivalences -/
-@[indexed]
 class abbrev COFE (α : Type _) := OFE α, IsCOFE α
 
 namespace COFE
@@ -1443,7 +1436,7 @@ set_option linter.checkUnivs false in
 abbrev OFunctorPre := ∀ α β [COFE α] [COFE β], Type _
 #rocq_ignore oFunctor_apply "Definition for application of an `oFunctor`; subsumed by `OFunctorPre` in Lean."
 
-@[indexed, rocq_alias oFunctor]
+@[rocq_alias oFunctor]
 class OFunctor (F : OFunctorPre) where
   ofe [COFE α] [COFE β] : OFE (F α β)
   map [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
@@ -1455,7 +1448,7 @@ class OFunctor (F : OFunctorPre) where
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
 
-@[indexed, rocq_alias oFunctorContractive]
+@[rocq_alias oFunctorContractive]
 class OFunctorContractive (F : OFunctorPre) extends OFunctor F where
   map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
     Contractive (Function.uncurry (@map α₁ α₂ β₁ β₂ _ _ _ _))
@@ -1926,7 +1919,7 @@ end HomOF
 
 section Fixpoint
 
-@[indexed, rocq_alias LimitPreserving]
+@[rocq_alias LimitPreserving]
 class LimitPreserving [COFE α] (P : α → Prop) : Prop where
   compl (c : Chain α) : (∀ n, P (c n)) → P (COFE.compl c)
   lbcompl {n} (hn : SIdx.Limit n) (c : BChain α n) :

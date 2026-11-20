@@ -26,8 +26,6 @@ end
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris.ProofMode
 open Qq Iris.BI Iris.Std
 

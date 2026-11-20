@@ -13,8 +13,6 @@ public import Iris.Std.HeapInstances
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris.Examples
 open Iris.BI COFE
 

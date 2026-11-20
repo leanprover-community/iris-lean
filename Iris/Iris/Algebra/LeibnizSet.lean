@@ -16,8 +16,6 @@ public import Iris.Std.CoPset
 
 @[expose] public section
 
-local stepindex Nat
-
 /-! ## Leibniz Set algebras
 This file defines generic set algebras.
 This generic construction specializes to both the union and disjoint-union set CMRAs.

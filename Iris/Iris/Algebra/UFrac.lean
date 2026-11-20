@@ -18,8 +18,6 @@ A variant of the Frac ORA with unbounded validity (>1).
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 
 @[rocq_alias ufrac]

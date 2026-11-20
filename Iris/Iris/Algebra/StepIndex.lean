@@ -12,7 +12,7 @@ public import Iris.Std.Classes
 namespace Iris
 
 @[rocq_alias sidx, rocq_alias SIdxMixin]
-class SIdx (I : Type u) extends LT I, LE I, Zero I where
+class SIdx (I : outParam (Type u)) extends LT I, LE I, Zero I where
   succ : I → I
   lt_trans : ∀ {n m p : I}, n < m → m < p → n < p
   lt_wf : WellFounded ((· < ·) : I → I → Prop)
@@ -283,7 +283,7 @@ instance (priority := low) (n m : I) : Decidable (n ≤ m) :=
     exact lt_irrefl m <| lt_le_trans h h'
 
 @[rocq_alias SIdx.limit]
-structure Limit (n : I) [SIdx I] where
+structure Limit (n : I) where
   succ_lt : ∀ m, m < n → succᵢ m < n
   ne_zero : n ≠ 0
 

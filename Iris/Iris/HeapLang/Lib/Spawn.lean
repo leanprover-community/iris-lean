@@ -17,8 +17,6 @@ open BI Iris ProgramLogic
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Spawn
 
 @[rocq_alias heap_lang.spawn]

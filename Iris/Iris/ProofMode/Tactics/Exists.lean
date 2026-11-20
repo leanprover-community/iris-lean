@@ -12,7 +12,6 @@ public import Iris.ProofMode.ProofModeM
 namespace Iris.ProofMode
 
 public section
-
 open BI
 
 @[rocq_alias tac_exist]

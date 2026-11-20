@@ -11,8 +11,6 @@ public import Iris.Algebra.LocalUpdates
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 
 @[rocq_alias csum]

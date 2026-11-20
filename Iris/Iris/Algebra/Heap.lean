@@ -19,8 +19,6 @@ meta import Iris.Std.RocqPorting
 
 @[expose] public section
 
-local stepindex Nat
-
 open Iris Std
 
 section OFE
@@ -293,7 +291,7 @@ instance instDiscreteEGet? [LawfulPartialMap M K] [OFE V] {m : M V} [DiscreteE m
     · revert h
       cases get? m i <;> simp_all [HasDist.dist, OFE.Dist, Option.Forall₂]
     · refine (congrArg (get? · i)
-        (DiscreteE.discrete (y := insert m i v) fun k => ?_)).trans (get?_insert_eq rfl)
+        (DiscreteE.discrete (SI := Nat) (y := insert m i v) fun k => ?_)).trans (get?_insert_eq rfl)
       by_cases hk : i = k
       · subst hk
         rw [get?_insert_eq rfl]

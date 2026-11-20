@@ -20,7 +20,6 @@ public meta import Iris.ProofMode.Tactics.Specialize
 namespace Iris.ProofMode
 
 public section
-
 open BI
 
 @[rocq_alias tac_pose_proof]

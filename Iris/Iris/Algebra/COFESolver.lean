@@ -9,8 +9,6 @@ public import Iris.Algebra.StepIndexFinite
 
 @[expose] public section
 
-local stepindex Nat
-
 #rocq_ignore solution "Use OFE.iso + Inhabited + COFE"
 
 namespace Iris.COFE.OFunctor

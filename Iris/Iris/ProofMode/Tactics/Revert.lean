@@ -11,7 +11,6 @@ public meta import Iris.ProofMode.Patterns.SelPattern
 namespace Iris.ProofMode
 
 public section
-
 open BI Iris.Std
 
 /- Syntax for `iinduction` and `iloeb` -/

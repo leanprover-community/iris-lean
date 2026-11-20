@@ -9,8 +9,6 @@ public import Iris.Algebra.Updates
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 open OFE ORA
 

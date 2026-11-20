@@ -18,8 +18,6 @@ The authoritative camera has 2 types of elements:
 
 @[expose] public section
 
-local stepindex Nat
-
 open Iris
 
 open OFE ORA UORA View

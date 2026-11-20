@@ -10,8 +10,6 @@ public import Iris.BI.BIBase
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 open Iris.Std OFE
 open Lean

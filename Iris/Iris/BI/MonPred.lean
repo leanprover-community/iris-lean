@@ -24,8 +24,6 @@ public import Iris.BI.BigOp.BigSepSet
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris.BI
 open Iris Iris.Std OFE
 

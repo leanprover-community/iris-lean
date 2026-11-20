@@ -19,8 +19,6 @@ local bi (IProp GF)
 
 @[expose] public section
 
-local stepindex Nat
-
 abbrev ownPRF (State : Type) : COFE.OFunctorPre := constOF (ExclAuthR (A := stateO State))
 
 @[rocq_alias ownPGS]

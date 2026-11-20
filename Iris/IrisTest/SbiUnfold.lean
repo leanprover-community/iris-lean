@@ -8,8 +8,6 @@ public import Iris.BI.SbiUnfold
 
 @[expose] public section
 
-local stepindex Nat
-
 /-!
 # Tests for `sbi_unfold`
 

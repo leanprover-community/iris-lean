@@ -16,8 +16,6 @@ public import Iris.Std.CoPset
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 open Iris.Std BI
 

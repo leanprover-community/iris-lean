@@ -10,7 +10,6 @@ public import Iris.ProofMode.Tactics.Basic
 namespace Iris.ProofMode
 
 public section
-
 open BI
 
 @[rocq_alias tac_ex_falso]

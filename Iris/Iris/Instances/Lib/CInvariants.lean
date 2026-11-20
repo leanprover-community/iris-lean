@@ -19,8 +19,6 @@ public import Iris.Std.List
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 
 open BI ORA OFE Iris Iris.Std LawfulSet Excl COFE ProofMode

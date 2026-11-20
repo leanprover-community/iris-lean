@@ -10,8 +10,6 @@ public import Iris.Algebra.Monoid
 
 @[expose] public section
 
-local stepindex Nat
-
 namespace Iris
 open OFE
 
