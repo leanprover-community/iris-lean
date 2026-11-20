@@ -55,7 +55,7 @@ meta def fillStepIndex : TermElabM Unit := do
       if a.isMVar then indices := indices.push a
   -- Stop if there is nothing to do. Otherwise, fill all entries with `SI`
   if indices.isEmpty then return
-  let si ← elabTerm (mkIdent n) none
+  let si ← elabSectionSI n
   for a in indices do
     if (← instantiateMVars a).isMVar then discard <| isDefEq a si
   -- Eagerly allow typeclass synthesis to proceed
@@ -110,11 +110,12 @@ end TermElab
 
 /-- Whether `si` is the section's step index `n`, compared as terms. -/
 meta def isSectionSI (n : Name) (si : Expr) : MetaM Bool := do
-  let ref ← match (← getLCtx).findFromUserName? n with
-    | some d => pure d.toExpr
-    | none =>
-      let some c := (← resolveGlobalName n).find? (·.2.isEmpty) | return false
-      mkConstWithLevelParams c.1
+  let ref ← if n.getRoot == `_root_ then
+      mkConstWithLevelParams (n.replacePrefix `_root_ .anonymous)
+    else match (← getLCtx).findDeclRev? fun d =>
+        if d.userName == n && d.type.isSort then some d else none with
+      | some d => pure d.toExpr
+      | none => return false
   withNewMCtxDepth <| withReducible <| isDefEq si ref
 
 open PrettyPrinter Delaborator SubExpr in
@@ -163,11 +164,16 @@ public meta def elabStepindex : CommandElab := fun stx => do
   unless T.raw.isIdent do
     throwError "`stepindex` expects an identifier, but got{indentD T}\n\n\
       Introduce an abbreviation first, e.g. `abbrev MySI := ...` then `local stepindex MySI`."
-  runTermElabM fun _ => do
+  let n ← runTermElabM fun _ => do
     let Te ← Term.elabType T
     unless (← trySynthInstance (← mkAppM `Iris.SIdx #[Te])) matches .some _ do
       throwError "`stepindex` requires a `SIdx` instance for{indentExpr Te}"
-  siExt.add T.raw.getId .local
+    -- a section variable is stored by name, a constant by its full name
+    let n := T.raw.getId
+    if Te.isFVar then return n
+    let .const c _ := Te.getAppFn | throwError "`stepindex` expects a section variable or a constant"
+    return `_root_ ++ c
+  siExt.add n .local
   elabCommand (← `(command| open scoped Iris.StepIndex))
 
 end Iris

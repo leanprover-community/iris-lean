@@ -1,11 +1,12 @@
 /-
-Copyright (c) 2026 Markus de Medeiros. All rights reserved.
+Copyright (c) The Iris-Lean Contributors
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Markus de Medeiros
 -/
 module
 
 public import Iris.Algebra.StepIndexFinite
+public import Iris.Algebra.OFE
 public meta import Iris.Std.StepIndex.Elab
 
 @[expose] public section
@@ -90,5 +91,36 @@ end
 
 -- outside a `local stepindex` section, the step index is written as usual
 example {SI : Type} [SIdx SI] (α : Type) [Foo (SI := SI) α] : Bar (SI := SI) α = (α → SI) := rfl
+
+-- the step index is resolved once, by `local stepindex`, and is not captured by later names
+section
+variable {SI : Type} [SIdx SI]
+local stepindex SI
+
+-- a local binder named `SI` does not capture the section's step index
+def shadow := fun (SI : Nat) (α : Type) [OFE α] => SI
+
+-- a theorem whose statement doesn't mention `SI` gets a clear error in its proof
+/--
+error: the section step index `SI` is not in scope here; mention it in the statement or `include SI`
+-/
+#guard_msgs in
+theorem noSI : True := by
+  have : ∀ (α : Type) [OFE α], True := fun _ _ => trivial
+  trivial
+end
+
+abbrev MySI := Nat
+namespace Inner
+abbrev MySI := Bool
+end Inner
+
+section
+local stepindex MySI
+namespace Inner
+-- a namespace constant named `MySI` does not capture the section's step index
+example (α : Type) [OFE α] (x : α) : x ≡{(3 : Nat)}≡ x := OFE.Dist.rfl
+end Inner
+end
 
 end IrisTest.StepIndexElab

@@ -18,18 +18,29 @@ read it through `stepindex%`. See also `Elab.lean` for how local step indices ar
 
 open Lean Elab Command Tactic Term Meta
 
-/-- The step index type of the current scope. `Name.anonymous` when none is set. -/
+/-- The step index type of the current scope: the name of a section variable, or a global constant
+written `_root_.C`. `Name.anonymous` when none is set. -/
 public meta initialize siExt : SimpleScopedEnvExtension Name Name ←
   registerSimpleScopedEnvExtension {
     addEntry _ n := n
     initial := .anonymous
   }
 
+/-- Elaborates the step index `n` stored in `siExt`. A section variable is the innermost local of
+that name whose type is a universe: a binder `{SI : Type _}` rebinds it, but `(SI : Nat)` does not. -/
+public meta def elabSectionSI (n : Name) : TermElabM Expr := do
+  if n.getRoot == `_root_ then return ← elabTerm (mkIdent n) none
+  let some d := (← getLCtx).findDeclRev? fun d =>
+      if d.userName == n && d.type.isSort then some d else none
+    | throwError "the section step index `{n}` is not in scope here; \
+        mention it in the statement or `include {n}`"
+  return d.toExpr
+
 /-- Display the step index type of the current scope. -/
 @[expose] elab "#stepindex?" : command => do
   match siExt.getState (← getEnv) with
   | .anonymous => logInfo m!"No step index declared."
-  | si => logInfo m!"{si}"
+  | si => logInfo m!"{si.replacePrefix `_root_ .anonymous}"
 
 /--
 `stepindex%` elaborates to the step index type of the current scope. Elaborates to `T` in a section
@@ -38,7 +49,10 @@ where `local stepindex T` is set, and to a hole otherwise.
 @[expose] elab "stepindex%" : term <= expectedType? => do
   match siExt.getState (← getEnv) with
   | .anonymous => elabTerm (← `(_)) expectedType?
-  | n => elabTerm (mkIdent n) expectedType?
+  | n => do
+    let si ← elabSectionSI n
+    discard <| isDefEq (← inferType si) expectedType?
+    return si
 
 /-- Where an `@[indexed SI]` declaration takes its step index: the implicit binder `SI`. -/
 public structure IndexedInfo where
