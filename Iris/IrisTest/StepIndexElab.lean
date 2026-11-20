@@ -14,14 +14,14 @@ namespace IrisTest.StepIndexElab
 open Iris
 
 /-- A class over a step index. -/
-class Foo (SI : stepindex (Type _)) [SIdx SI] (α : Type _) where
+class Foo (SI : Type _) [SIdx SI] (α : Type _) where
   foo : α → SI → Prop
 
 /-- An implicit step index that nothing else determines. -/
-def Bar {SI : stepindex (Type _)} [SIdx SI] (α : Type _) : Type _ := α → SI
+def Bar {SI : Type _} [SIdx SI] (α : Type _) : Type _ := α → SI
 
 namespace A
-def Baz {SI : stepindex (Type _)} [SIdx SI] (_ : SI) : Prop := True
+def Baz {SI : Type _} [SIdx SI] (_ : SI) : Prop := True
 end A
 
 namespace B
@@ -30,12 +30,12 @@ end B
 
 notation "bar% " α => Bar α
 
-/-- An `@[indexed]` class. -/
-@[indexed] class Qux {SI : stepindex (Type _)} [SIdx SI] (α : Type _) where
+/-- An `@[indexed SI]` class. -/
+@[indexed SI] class Qux {SI : Type _} [SIdx SI] (α : Type _) where
   qux : α → SI → Prop
 
 section
-variable {SI : stepindex Type} [SIdx SI]
+variable {SI : Type} [SIdx SI]
 local stepindex SI
 
 /-- info: SI -/

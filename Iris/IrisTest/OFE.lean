@@ -12,7 +12,7 @@ public import Iris.Algebra.OFE
 namespace IrisTest
 open Iris OFE
 
-variable {SI : stepindex (Type _)} [SIdx SI]
+variable {SI : Type _} [SIdx SI]
 local stepindex SI
 
 /-! Tests for `OFE.ne_of_discrete`: every function out of a discrete OFE is non-expansive. -/
