@@ -6,7 +6,7 @@ Authors: Markus de Medeiros, Mario Carneiro
 module
 
 public import Iris.Algebra.CMRA
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.Algebra.Frac
 public import Iris.Algebra.Updates
 public import Iris.Algebra.LocalUpdates

@@ -5,7 +5,7 @@ Authors: Zongyuan Liu
 -/
 module
 
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 
 public section
 

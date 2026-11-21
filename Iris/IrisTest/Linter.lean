@@ -5,8 +5,10 @@ Authors: Alvin Tang
 -/
 module
 
+public import Iris.Algebra.StepIndexFinite
 meta import Iris.Std.Linter.Style
 meta import Iris.Std.Linter.DupNamespace
+meta import Iris.Std.Linter.StepIndex
 meta import Iris.Std.Linter.Whitespace
 
 @[expose] public section
@@ -168,5 +170,87 @@ beginning of the line.
 #guard_msgs (whitespace := lax, substring := true) in
 set_option linter.iris.style.whitespace true in
   example : True := trivial
+
+section
+open Iris
+
+/-- warning: Two step indices in scope, `SIdx SI₁` and `SIdx SI₂`: `OFE α` uses the last one. -/
+#guard_msgs (whitespace := lax, substring := true) in
+example {SI₁ SI₂ : Type} [SIdx SI₁] [SIdx SI₂] : True := trivial
+
+/-- warning: Two step indices in scope, `SIdx Nat` and `SIdx Nat`: `OFE α` uses the last one. -/
+#guard_msgs (whitespace := lax, substring := true) in
+example [SIdx Nat] [SIdx Nat] : True := trivial
+
+/-- warning: Two step indices in scope, `SIdx SI₁` and `SIdx SI₂`: `OFE α` uses the last one. -/
+#guard_msgs (whitespace := lax, substring := true) in
+variable {SI₁ SI₂ : Type} [SIdx SI₁] [SIdx SI₂]
+
+end
+
+section
+open Iris
+variable {SI : Type} [SIdx SI]
+
+/-- warning: Two step indices in scope, `SIdx SI` and `SIdx Nat`: `OFE α` uses the last one. -/
+#guard_msgs (whitespace := lax, substring := true) in
+example (n : SI) : n = n := by
+  haveI : SIdx Nat := natSIdx
+  rfl
+
+/-- warning: Two step indices in scope, `SIdx SI` and `SIdx Nat`: `OFE α` uses the last one. -/
+#guard_msgs (whitespace := lax, substring := true) in
+example (n : SI) : n = n := by
+  haveI := natSIdx
+  rfl
+
+#guard_msgs in
+example {SI : Type} [SIdx SI] (n : SI) : n = n := rfl
+
+/-- warning: Two step indices in scope, `SIdx SI` and `SIdx SI`: `OFE α` uses the last one. -/
+#guard_msgs (whitespace := lax, substring := true) in
+example [SIdx SI] (n : SI) : n = n := rfl
+
+/-- warning: Two step indices in scope, `SIdx SI✝` and `SIdx Nat`: `OFE α` uses the last one. -/
+#guard_msgs (whitespace := lax, substring := true) in
+example (SI : Type) [SIdx Nat] (_ : SI) : True := trivial
+
+end
+
+section
+open Iris
+local notation "S" => SIdx
+
+/-- warning: Two step indices in scope, `S SI₁` and `S SI₂`: `OFE α` uses the last one. -/
+#guard_msgs (whitespace := lax, substring := true) in
+example {SI₁ SI₂ : Type} [S SI₁] [S SI₂] : True := trivial
+
+end
+
+def MyIdx := Nat
+
+@[reducible] def myIdx : Iris.SIdx MyIdx := Iris.natSIdx
+
+section
+/-- warning: Several global step indices -/
+#guard_msgs (whitespace := lax, substring := true) in
+attribute [local instance] myIdx
+end
+
+section
+attribute [-instance] Iris.natSIdx
+#guard_msgs in
+attribute [local instance] myIdx
+end
+
+/-- warning: Several global step indices -/
+#guard_msgs (whitespace := lax, substring := true) in
+attribute [local instance] myIdx in
+example : True := trivial
+
+class SubIdx (I : Type) extends Iris.SIdx I
+
+#guard_msgs in
+example : True := trivial
 
 end IrisTest

@@ -7,5 +7,6 @@ module
 public import Iris.Std.Linter.DeclarationNames
 public import Iris.Std.Linter.DocPrime
 public import Iris.Std.Linter.DupNamespace
+public import Iris.Std.Linter.StepIndex
 public import Iris.Std.Linter.Style
 public import Iris.Std.Linter.Whitespace

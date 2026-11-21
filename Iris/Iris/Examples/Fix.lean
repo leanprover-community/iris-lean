@@ -5,7 +5,7 @@ Authors: Sergei Stepanenko
 -/
 module
 
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.Algebra.COFESolver
 
 @[expose] public section

@@ -12,6 +12,8 @@ public import Iris.Algebra.OFE
 namespace IrisTest
 open Iris OFE
 
+variable {SI : Type _} [SIdx SI]
+
 /-! Tests for `OFE.ne_of_discrete`: every function out of a discrete OFE is non-expansive. -/
 
 section ne_of_discrete
@@ -36,11 +38,21 @@ example (f : α ⊕ γ → β) : NonExpansive f := inferInstance
 
 example (P : α → Prop) (f : Subtype P → β) : NonExpansive f := inferInstance
 
-example (f : α → β) {n : Nat} {x y : α} (h : x ≡{n}≡ y) : f x ≡{n}≡ f y :=
+example (f : α → β) {n : SI} {x y : α} (h : x ≡{n}≡ y) : f x ≡{n}≡ f y :=
   NonExpansive.ne h
 
 example (f : α → β) : α -n> β := ⟨f, inferInstance⟩
 
 end ne_of_discrete
+
+section dist_notation
+
+variable {α : Type _} [OFE α] (x y : α) (n : SI)
+
+/-- info: x ≡{n}≡ y : Prop -/
+#guard_msgs in
+#check x ≡{n}≡ y
+
+end dist_notation
 
 end IrisTest

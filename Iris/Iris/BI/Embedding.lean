@@ -16,7 +16,7 @@ public import Iris.BI.Plainly
 public import Iris.BI.Sbi
 public import Iris.BI.InternalEq
 public import Iris.BI.BigOp
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.Algebra.Monoid
 
 @[expose] public section

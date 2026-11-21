@@ -7,7 +7,7 @@ module
 
 public import Iris.Algebra.BigOp
 public import Iris.Algebra.CMRA
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.Algebra.LocalUpdates
 public import Iris.Algebra.Updates
 public import Iris.Std.GenSets
