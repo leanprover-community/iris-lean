@@ -170,14 +170,14 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
     simp only [wp.pre, coe_of_toVal_eq_some He', Hnv]
     itrivial
   · dsimp only
-    iintro %σ %n %κ %κs %n₂ Hσ
+    iintro %σ %n %κ %n₂ Hσ
     imod Hwp $$ Hσ with ⟨%Hred, Hc⟩
     imodintro
     have aux := Context.reducible_fill K Hred
     iframe %aux; clear aux
-    iintro %e₂ %σ₂ %efs %H Hlc
+    iintro %e₂ %σ₂ %efs %κ %κs' %Hsplit %H Hlc
     obtain ⟨e₂, rfl, Hprim⟩ := Context.primStep_fill_inv (toVal_none_of_reducible Hred) H
-    ispecialize Hc $$ %e₂ %σ₂ %efs %Hprim Hlc
+    ispecialize Hc $$ %e₂ %σ₂ %efs %κ %κs' %Hsplit %Hprim Hlc
     iapply step_fupdN_mono $$ Hc
     iintro Hc
     imod Hc with ⟨Hst, Hwp, $⟩
@@ -185,8 +185,7 @@ theorem wp_inv_open_maybe_of_not_val {e : Expr} {E₁ E₂ : CoPset} {Φ : Val �
     icases wp_unfold $$ Hwp with Hwp
     unfold wp.pre
     rcases He₂' : toVal e₂ with (_|v₂) <;> dsimp only
-    · imod Hwp $$ %_ %_ %κs %.nil [Hst] with ⟨%Hredu, H⟩
-      · rw [List.append_nil κs]; iframe
+    · imod Hwp $$ %_ %_ %κs' Hst with ⟨%Hredu, H⟩
       grind
     · imod Hwp with >Hwp
       rw [coe_of_toVal_eq_some He₂']

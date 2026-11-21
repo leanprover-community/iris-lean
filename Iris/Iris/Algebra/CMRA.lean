@@ -1640,6 +1640,8 @@ class RFunctor (F : COFE.OFunctorPre) where
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
 
+#rocq_ignore rFunctor_map_proper "Not needed."
+
 @[rocq_alias rFunctorContractive]
 class RFunctorContractive (F : COFE.OFunctorPre) extends (RFunctor F) where
   map_contractive [COFE α₁] [COFE α₂] [COFE β₁] [COFE β₂] :
@@ -1678,6 +1680,8 @@ class URFunctor (F : COFE.OFunctorPre) where
   map_comp [COFE α₁] [COFE α₂] [COFE α₃] [COFE β₁] [COFE β₂] [COFE β₃]
     (f : α₂ -n> α₁) (g : α₃ -n> α₂) (f' : β₁ -n> β₂) (g' : β₂ -n> β₃) (x : F α₁ β₁) :
     map (f.comp g) (g'.comp f') x = map g g' (map f f' x)
+
+#rocq_ignore urFunctor_map_proper "Not needed."
 
 @[rocq_alias urFunctorContractive]
 class URFunctorContractive (F : COFE.OFunctorPre) extends URFunctor F where

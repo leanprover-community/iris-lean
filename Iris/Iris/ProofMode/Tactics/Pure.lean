@@ -159,10 +159,11 @@ elab "ipureintro" : tactic => do
     mvar.assign pf
 
 -- TODO: what is the best lean automation tactic to call here?
--- `assumption` is necessary if the goal contains mvars
+-- Fall back to `assumption` if simplification leaves metavariables unresolved.
 macro_rules
   | `(tactic| itrivial) =>
-    `(tactic| (first | ipureintro | exfalso) <;> (first | simp [*] | assumption) <;> done)
+    `(tactic| (first | ipureintro | exfalso) <;>
+      (first | (simp [*] <;> done) | assumption) <;> done)
 
 end
 

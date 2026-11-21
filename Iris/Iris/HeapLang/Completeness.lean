@@ -112,8 +112,8 @@ theorem wp_base_atomic {e₁ : Exp} {v₂ : Val} (l : Loc) (vlive : Val) (vnew :
   icases (BigSepM.bigSepM_insert_acc (M := HeapF) (Φ := cellInv) hcell) $$ Hmap
     with ⟨⟨Hpt, Hmeta⟩, Hclose⟩
   iapply wp_lift_atomic_step (EctxLanguage.val_stuck (hbase σ hcell))
-  iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-  icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+  iintro %σ₁ %ns %obs %nt Hσ !>
+  icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
   ihave %hcell1 : ⌜get? (M := HeapF) σ₁.heap l = some (some vlive)⌝ $$ [Hσ Hpt]
   · icases genHeap_valid $$ [$Hσ $Hpt] with >%hh
     itrivial
@@ -122,16 +122,16 @@ theorem wp_base_atomic {e₁ : Exp} {v₂ : Val} (l : Loc) (vlive : Val) (vnew :
     simp only [Stuckness.MaybeReducible]
     exact EctxLanguage.primStep_reducible_of_baseStep_reducible
       ⟨[], _, _, [], hbase σ₁ hcell1⟩
-  iintro !> %e₂ %σ₂ %eₜ %Hprim -
+  iintro !> %e₂ %σ₂ %eₜ %ob %obs' %Hsplit %Hprim -
   obtain ⟨rfl, rfl, rfl, rfl⟩ :=
     hdet hcell1 (EctxLanguage.baseStep_of_primStep_of_baseStep_reducible
       ⟨[], _, _, [], hbase σ₁ hcell1⟩ Hprim)
+  obtain rfl : obs' = obs := by simpa using Hsplit.symm
   imod genHeap_update (v₂ := vnew) $$ [$Hσ $Hpt] with ⟨Hσ, Hpt⟩
   imod Hstep $$ [] with ⟨Hpost, _⟩
   · ipureintro
     exact EctxLanguage.primStep_of_baseStep (hbase σ hcell)
   imodintro
-  ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
   have hl0 : l + (0 : Int) = l := by
     cases l
     simp only [HAdd.hAdd, Loc.mk.injEq]
@@ -306,8 +306,8 @@ theorem wp_baseCompletenessGoal (e₁ : Exp) (σ : State) (E : CoPset)
       iframe %hatom
       iintro %Φ Hstep
       iapply wp_lift_atomic_step (EctxLanguage.val_stuck (BaseStep.allocNS n v σ l hn hfresh))
-      iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-      icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+      iintro %σ₁ %ns %obs %nt Hσ !>
+      icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
       obtain ⟨lf, hlf⟩ := exists_fresh_block σ₁.heap n
       have Hred₁ : BaseStep.Reducible (Exp.allocN (.val (.lit (.int n))) (.val v), σ₁) :=
         ⟨[], _, _, [], BaseStep.allocNS n v σ₁ lf hn hlf⟩
@@ -315,10 +315,10 @@ theorem wp_baseCompletenessGoal (e₁ : Exp) (σ : State) (E : CoPset)
       · ipureintro
         simp only [Stuckness.MaybeReducible]
         exact EctxLanguage.primStep_reducible_of_baseStep_reducible Hred₁
-      iintro !> %e₂ %σ₂ %eₜ %Hprim -
+      iintro !> %e₂ %σ₂ %eₜ %ob %obs' %Hsplit %Hprim -
       rcases EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred₁ Hprim
+      obtain rfl : obs' = obs := by simpa using Hsplit.symm
       rename_i l' Hpo Hi
-      ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
       icases Hinv with ⟨Hmap, Hproph_inv⟩
       imod (genHeap_alloc_big (allocCells l' n.toNat (some v)) σ₁.heap (allocCells_disjoint Hi))
         $$ Hσ with ⟨Hσ', Hnewpts, Hnewmeta⟩
@@ -362,8 +362,8 @@ theorem wp_baseCompletenessGoal (e₁ : Exp) (σ : State) (E : CoPset)
         exact base_step_to_val_atomic Atomicity.StronglyAtomic (BaseStep.newProphS σ p hp)
       iintro %Φ Hstep
       iapply wp_lift_atomic_step (EctxLanguage.val_stuck (BaseStep.newProphS σ p hp))
-      iintro %σ₁ %ns %obs %obs' %nt Hσ !>
-      icases (stateInterp_split σ₁ ns (obs ++ obs') nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
+      iintro %σ₁ %ns %obs %nt Hσ !>
+      icases (stateInterp_split σ₁ ns obs nt).mp $$ Hσ with ⟨Hσ, Hproph⟩
       obtain ⟨pf, Hpf⟩ := Std.List.fresh σ₁.usedProphId.toList
       have Hpf_contains : ¬ σ₁.usedProphId.contains pf := by
         intro hc; exact Hpf (Std.ExtTreeSet.mem_toList.mpr hc)
@@ -373,10 +373,10 @@ theorem wp_baseCompletenessGoal (e₁ : Exp) (σ : State) (E : CoPset)
       · ipureintro
         simp only [Stuckness.MaybeReducible]
         exact EctxLanguage.primStep_reducible_of_baseStep_reducible Hred₁
-      iintro !> %e₂ %σ₂ %eₜ %Hprim -
+      iintro !> %e₂ %σ₂ %eₜ %ob %obs' %Hsplit %Hprim -
       cases EctxLanguage.baseStep_of_primStep_of_baseStep_reducible Hred₁ Hprim
+      obtain rfl : obs' = obs := by simpa using Hsplit.symm
       rename_i p' Hp'
-      ihave Hproph := (prophMapInterp_nil_append obs' σ₁.usedProphId).mp $$ Hproph
       have Hp'_mem : p' ∉ σ₁.usedProphId :=
         fun hmem => Hp' (Std.ExtTreeSet.mem_iff_contains.symm.mp hmem)
       imod (ProphMap.new_proph p' σ₁.usedProphId obs' Hp'_mem) $$ Hproph
@@ -511,7 +511,7 @@ theorem wp_base_completeness {n C e₁ σ K E} :
     iapply H
     iintro !> %κ %v₂ %σ' %efs %Hprim
     iapply Hx $$ [] Htok Htp
-    ipureintro; exact Hprim
+    itrivial
   · -- Non-atomic redex.
     imodintro
     iright
@@ -525,8 +525,7 @@ theorem wp_base_completeness {n C e₁ σ K E} :
     imodintro
     iexists κ, σ₁'
     iframe Htok Htp Hhp
-    ipureintro
-    exact Hprims
+    itrivial
 
 instance heap_lang_completeness :
     AbstractEctxLangCompletenessGen (Expr := Exp) (Ectx := List ECtxItem)

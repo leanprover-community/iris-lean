@@ -300,7 +300,7 @@ theorem sortAndCheck_spec [HeapLangGS hlc GF] (l : List Int) :
 /-- Full application of adequacy: sortAndCheck is safe in any state and only ever return true. -/
 theorem sortAndCheckAdequate (l : List Int) (σ : State) :
     adequate .NotStuck (sortAndCheck l) σ (fun v _ => v = hl_val(#true)) := by
-  apply heap_adequacy (GF := HeapLangS); intro _
+  apply heap_adequacy_gen HasLC.hasLC HeapLangS; intro _
   iintro _
   iapply sortAndCheck_spec <;> itrivial
 

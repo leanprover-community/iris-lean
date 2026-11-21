@@ -64,7 +64,7 @@ instance pre_mono_inst : BIMonoPred (pre (ι := ι)) where
     iintro #HXY %t₁ Hpre
     unfold pre
     iintro %t₂ %σ₁ %ns %κ %κs %σ₂ %nt %Hstep Hσ
-    imod Hpre $$ %_ %_ %_ %_ %_ %_ %_ %Hstep Hσ with ⟨%nt', %hκ, Hσ, HX⟩
+    imod Hpre $$ [//] Hσ with ⟨%nt', %hκ, Hσ, HX⟩
     iframe %hκ Hσ
     iapply HXY $$ HX
   mono_pred_ne.ne {X} _ _ ht := ht ▸ .rfl
@@ -104,7 +104,7 @@ theorem permutation {t₁ t₁' : List Expr} (Hp : t₁.Perm t₁') :
   simp only [(twptp.unfold t').to_eq, pre]
   iintro %t₂ %σ₁ %ns %κ %κs %σ₂ %nt %Hstep Hσ
   obtain ⟨t₂', H₂perm, Hstep'⟩ := Language.perm_of_step Htt'.symm Hstep
-  imod Hpre $$ %_ %_ %_ %_ %_ %_ %_ %Hstep' Hσ with ⟨%nt', %hκ, Hσ, ⟨HIH, -⟩⟩
+  imod Hpre $$ [//] Hσ with ⟨%nt', %hκ, Hσ, ⟨HIH, -⟩⟩
   iframe %hκ Hσ
   iapply HIH $$ %t₂ %H₂perm.symm
 
@@ -122,7 +122,7 @@ theorem app (t₁ t₂ : List Expr) :
   simp only [(twptp.unfold (ι := ι) (r₁ ++ r₂)).to_eq, pre]
   iintro %t' %σ₁ %ns %κ %κs %σ₂ %nt %Hstep Hσ
   rcases step_append_inv r₁ r₂ Hstep with (⟨r₁', Hstep₁, Hperm⟩ | ⟨r₂', Hstep₂, Hperm⟩)
-  · imod Hr₁ $$ %_ %_ %_ %_ %_ %_ %_ %Hstep₁ Hσ with ⟨%nt', %hκ, Hσ, ⟨IH₁, -⟩⟩
+  · imod Hr₁ $$ [//] Hσ with ⟨%nt', %hκ, Hσ, ⟨IH₁, -⟩⟩
     imodintro
     iframe %hκ Hσ
     iapply permutation Hperm.symm
@@ -132,7 +132,7 @@ theorem app (t₁ t₂ : List Expr) :
     iintro !> %u ⟨-, $⟩
     unfold pre
     iassumption
-  · imod Hr₂ $$ %_ %_ %_ %_ %_ %_ %_ %Hstep₂ Hσ with ⟨%nt', %hκ, Hσ, ⟨IH₂, -⟩⟩
+  · imod Hr₂ $$ [//] Hσ with ⟨%nt', %hκ, Hσ, ⟨IH₂, -⟩⟩
     iframe %hκ Hσ
     iunfold Ψ₂, pre at IH₂
     iapply permutation Hperm.symm $$ (IH₂ $$ %r₁ Hr₁)
@@ -192,7 +192,7 @@ theorem twptp_total (t : List Expr) (σ : State) (ns nt : Nat) :
   iapply fupd_finally_mono (pure_mono (Acc.intro _))
   iintro %⟨t₂, σ₂⟩ %⟨κ, Hstep⟩
   unfold twptp.pre
-  imod IH $$ %_ %_ %_ %_ %_ %_ %_ %Hstep Hσ with ⟨%nt', %hκ, Hσ, ⟨IH, -⟩⟩
+  imod IH $$ [//] Hσ with ⟨%nt', %hκ, Hσ, ⟨IH, -⟩⟩
   iapply IH $$ %σ₂ %(ns + 1) %nt' Hσ
 
 end ThreadPool

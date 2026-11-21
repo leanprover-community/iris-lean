@@ -394,8 +394,7 @@ example {Val : Type} {φ : Prop} [BI PROP] (P : Val → Val → PROP) (Q : Val �
     ⊢@{PROP} ∀ x y, P x y -∗ ∀ z, (⌜φ⌝ → Q z -∗ P x y ∗ Q z ∗ ⌜φ⌝) := by
   iintro **
   iframe
-  ipureintro
-  assumption
+  itrivial
 
 /-- Tests `iintro` with the pattern for introducing a pure goal and exiting the proof mode (`!%`). -/
 example [BI PROP] (n : Nat) (P Q : PROP) : ⊢ □ P -∗ □ Q -∗ ⌜n = n⌝ := by
@@ -1201,8 +1200,7 @@ example [BI PROP] (P Q : PROP) : □ P ⊢ False -∗ Q := by
 example [BI PROP] (P : PROP) (HF : False) : ⊢ P := by
   istart
   iexfalso
-  ipureintro
-  exact HF
+  itrivial
 
 end iexfalso
 

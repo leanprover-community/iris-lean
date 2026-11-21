@@ -135,14 +135,14 @@ theorem ownP_lift_step :
   iintro H
   cases hv : toVal e₁
   · iapply wp_lift_step hv
-    iintro %σ₁ %ns %obs %obs' %nt Hσ
+    iintro %σ₁ %ns %obs %nt Hσ
     imod H with ⟨%σ₁', %Hsafe, >Hσf, Hcont⟩
     icases ownP_eq $$ Hσ Hσf with %Heq
     subst Heq
     imodintro
     isplit
     · ipureintro; cases s <;> grind
-    iintro !> %e₂ %σ₂ %eₜ %Hstep Hcred
+    iintro !> %e₂ %σ₂ %eₜ %ob %obs' %Hsplit %Hstep Hcred
     unfold ownP
     imod iOwn_update_op (update (a' := ⟨σ₂⟩)) $$ [$Hσ $Hσf] with ⟨Hσ, Hσf⟩
     iframe Hσ
@@ -174,13 +174,14 @@ theorem ownP_lift_pure_step [Inhabited State] (Hsafe : ∀ σ₁, ReducibleOrNot
     ⊢ WP e₁ @ s; E {{ Φ }} := by
   iintro H
   iapply wp_lift_step (by have := Hsafe default; cases s <;> grind)
-  iintro %σ₁ %ns %obs %obs' %nt Hσ
+  iintro %σ₁ %ns %obs %nt Hσ
   iapply fupd_mask_intro empty_subset
   iintro Hclose
   isplit
   · ipureintro; cases s <;> grind
-  iintro !> %e₂ %σ₂ %eₜ %Hstep Hcred
+  iintro !> %e₂ %σ₂ %eₜ %ob %obs' %Hsplit %Hstep Hcred
   obtain ⟨rfl, rfl⟩ := Hpure Hstep
+  obtain rfl : obs = obs' := by simpa using Hsplit
   imod Hclose
   imodintro
   iframe Hσ

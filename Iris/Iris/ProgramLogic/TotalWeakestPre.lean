@@ -329,17 +329,17 @@ theorem to_wp {s : Stuckness} {E} {e : Expr} {Φ : Val → IProp GF} :
   cases hval : toVal e
   case some v => itrivial
   case none =>
-    iintro %σ %ns %κ %κs %nt Hσ
+    iintro %σ %ns %κ %nt Hσ
     imod H $$ Hσ with ⟨%Hred, H⟩
     imodintro
     isplitr
     · ipureintro
       grind
-    iintro %e₂ %σ₂ %eₜ %Hstep _
+    iintro %e₂ %σ₂ %eₜ %ob %obs' %Hsplit %Hstep _
     iapply step_fupdN_intro Std.LawfulSet.empty_subset
     iintro !>
-    imod H $$ %κ %e₂ %σ₂ %eₜ %Hstep with ⟨%⟨⟩, Hσ, He₂, Hefs⟩
-    simp only [List.nil_append]
+    imod H $$ %ob %e₂ %σ₂ %eₜ %Hstep with ⟨%⟨⟩, Hσ, He₂, Hefs⟩
+    obtain rfl : obs' = κ := by simpa using Hsplit.symm
     iframe Hσ
     isplitl [He₂]
     · iapply IH $$ He₂
@@ -369,7 +369,7 @@ theorem to_wp_fupdN_strong {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : 
     iapply HΦ $$ Hp
   | n+1 =>
     simp only [(wp_unfold (e := e)).to_eq, (unfold (e := e)).to_eq, wp.pre, pre, toVal_e]
-    iintro H %σ₁ %ns %obs %obs' %nt Hσ₁
+    iintro H %σ₁ %ns %obs %nt Hσ₁
     by_cases Hn : n ≤ ι.numLatersPerStep ns
     · icases H with ⟨-, >Hp, Hwp⟩
       imod Hwp $$ Hσ₁ with ⟨%Hred, Hwp⟩
@@ -377,8 +377,8 @@ theorem to_wp_fupdN_strong {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : 
       isplitr
       · ipureintro
         grind
-      iintro %e₂ %σ₂ %eₜ %Hstep Hcred
-      ispecialize Hwp $$ %obs %e₂ %σ₂ %eₜ %Hstep
+      iintro %e₂ %σ₂ %eₜ %ob %obs' %Hsplit %Hstep Hcred
+      ispecialize Hwp $$ %ob %e₂ %σ₂ %eₜ %Hstep
       dsimp only [step_fupdN]
       imod Hp $$ [Hcred] with Hp
       · iapply lc_weaken (n + 1) (Nat.succ_le_succ Hn) $$ Hcred
@@ -391,7 +391,7 @@ theorem to_wp_fupdN_strong {s : Stuckness} {E₁ E₂ : CoPset} {e : Expr} {P : 
       imod Hwp with ⟨%⟨⟩, Hσ₂, Hwp, Hefs⟩
       imod Hp
       imodintro
-      dsimp only [List.nil_append]
+      obtain rfl : obs = obs' := by simpa using Hsplit
       iframe Hσ₂
       isplitl [Hwp Hp]
       · iapply to_wp

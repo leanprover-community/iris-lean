@@ -53,6 +53,7 @@ instance instUORA : UORA (MaxPrefixList α) :=
 
 instance instIsInc : IsInc (MaxPrefixList α) := inferInstanceAs (IsInc (MaxPrefixListMap (Agree α)))
 
+@[rocq_alias max_prefix_list.mono_list_lb_core_id]
 instance instCoreId (x : MaxPrefixList α) : CoreId x :=
   Heap.instCoreId (M:= MaxPrefixListMap) (V := Agree α)
 
