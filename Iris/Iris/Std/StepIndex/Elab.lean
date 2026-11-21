@@ -47,6 +47,7 @@ meta def fillStepIndex (e : Expr) : TermElabM Unit := do
   let pending := (← get).pendingMVars
   let examined? := (← getMCtx).userNames.find? examinedKey
   let mut new := #[]
+  let mut probs := #[]
   if let some head := pending.head? then
     if examined? != some head then
       modifyMCtx fun mctx => { mctx with userNames := mctx.userNames.insert examinedKey head }
@@ -59,11 +60,18 @@ meta def fillStepIndex (e : Expr) : TermElabM Unit := do
         -- the step index, seeing through binders and reducible aliases such as `HasDistᵢ SI α`
         let a? ← m.withContext <| withReducible <| forallTelescopeReducing type fun _ body => do
           indexArg? (← whnfR body)
-        indices := indices ++ a?.toArray
+        if let some a := a? then
+          indices := indices.push a
+          probs := probs.push (m, a, s)
   -- Fill the unknown ones with the section's step index
   let unknown ← indices.filterM fun a => return (← instantiateMVars a).isMVar
   if unknown.isEmpty then return
-  let si ← elabSectionSI n
+  let some si ← sectionSI? n | do
+    -- not in scope: leave them to unification, and explain the ones that stay unknown
+    for (m, a, s) in probs do
+      if (← instantiateMVars a).isMVar then
+        let s := { s with kind := .typeClass (some (notInScope n)) }
+        modify fun st => { st with syntheticMVars := st.syntheticMVars.insert m s }
   for a in unknown do
     if (← instantiateMVars a).isMVar then discard <| isDefEq a si
   -- Eagerly allow typeclass synthesis to proceed
@@ -76,7 +84,8 @@ meta def fillStepIndex (e : Expr) : TermElabM Unit := do
         | .error .. => pure ()
         | ex => throw ex
 
-/-- Runs the elaborator, then fills in the step indices that it left unresolved. -/
+/-- Runs the core elaborator `k`, then fills in the step indices that it left unresolved. Another
+`term_elab` for the same syntax kind does not run in a `local stepindex` section. -/
 meta def withStepIndex (k : TermElab) : TermElab := fun stx expectedType? => do
   let e ← k stx expectedType?
   fillStepIndex e
@@ -85,9 +94,6 @@ meta def withStepIndex (k : TermElab) : TermElab := fun stx expectedType? => do
 section TermElab
 
 /- ## Step Index Elaborators
-
-This section registers general-purpose term elaborators which walk through all expressions,
-and specialize any step index arguments to be the section default.
 
 IMPORTANT: The elaborators are scoped. It is possible to disable them completely by closing the
 `Iris.StepIndex` scope. A `local stepindex` command opens this scope automatically.
@@ -116,15 +122,11 @@ public meta def elabIndexedChoice : TermElab := withStepIndex elabChoice
 
 end TermElab
 
-/-- Whether `si` is the section's step index `n`, compared as terms. -/
-meta def isSectionSI (n : Name) (si : Expr) : MetaM Bool := do
-  let ref ← if n.getRoot == `_root_ then
-      mkConstWithLevelParams (n.replacePrefix `_root_ .anonymous)
-    else match (← getLCtx).findDeclRev? fun d =>
-        if d.userName == n && d.type.isSort then some d else none with
-      | some d => pure d.toExpr
-      | none => return false
-  withNewMCtxDepth <| withReducible <| isDefEq si ref
+/-- Whether `si` is the section's step index `n`, compared as terms at any universe levels. -/
+meta def isSectionSI (n : Name) (si : Expr) : MetaM Bool :=
+  withNewMCtxDepth (allowLevelAssignments := true) do
+    let some ref ← sectionSI? n | return false
+    withReducible <| isDefEq si ref
 
 open PrettyPrinter Delaborator SubExpr in
 /-- Prints `C (SI := T) args` when the step index `T` of an `@[indexed]` `C` is not the section's. -/

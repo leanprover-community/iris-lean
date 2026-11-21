@@ -18,6 +18,8 @@ read it through `stepindex%`. See also `Elab.lean` for how local step indices ar
 
 open Lean Elab Command Tactic Term Meta
 
+namespace Iris
+
 /-- The step index type of the current scope: the name of a section variable, or a global constant
 written `_root_.C`. `Name.anonymous` when none is set. -/
 public meta initialize siExt : SimpleScopedEnvExtension Name Name ←
@@ -26,15 +28,17 @@ public meta initialize siExt : SimpleScopedEnvExtension Name Name ←
     initial := .anonymous
   }
 
-/-- Elaborates the step index `n` stored in `siExt`. A section variable is the innermost local of
-that name whose type is a universe: a binder `{SI : Type _}` rebinds it, but `(SI : Nat)` does not. -/
-public meta def elabSectionSI (n : Name) : TermElabM Expr := do
-  if n.getRoot == `_root_ then return ← elabTerm (mkIdent n) none
-  let some d := (← getLCtx).findDeclRev? fun d =>
-      if d.userName == n && d.type.isSort then some d else none
-    | throwError "the section step index `{n}` is not in scope here; \
-        mention it in the statement or `include {n}`"
-  return d.toExpr
+/-- The step index `n` stored in `siExt`, if it is in scope. A section variable is the innermost
+local of that name whose type is a universe: a binder `{SI : Type _}` rebinds it, but `(SI : Nat)`
+does not. -/
+public meta def sectionSI? (n : Name) : MetaM (Option Expr) := do
+  if n.getRoot == `_root_ then
+    return some (← mkConstWithFreshMVarLevels (n.replacePrefix `_root_ .anonymous))
+  return (← getLCtx).findDeclRev? fun d =>
+    if d.userName == n && d.type.isSort then some d.toExpr else none
+
+public meta def notInScope (n : Name) : MessageData :=
+  m!"the section step index `{n}` is not in scope here; mention it in the statement or `include {n}`"
 
 /-- Display the step index type of the current scope. -/
 @[expose] elab "#stepindex?" : command => do
@@ -50,7 +54,7 @@ where `local stepindex T` is set, and to a hole otherwise.
   match siExt.getState (← getEnv) with
   | .anonymous => elabTerm (← `(_)) expectedType?
   | n => do
-    let si ← elabSectionSI n
+    let some si ← sectionSI? n | throwError notInScope n
     discard <| isDefEq (← inferType si) expectedType?
     return si
 
@@ -113,3 +117,5 @@ meta initialize registerBuiltinAttribute {
         but it has type{indentExpr type}"
     modifyEnv (indexedExt.addEntry · (decl, i))
 }
+
+end Iris

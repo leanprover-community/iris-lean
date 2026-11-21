@@ -162,14 +162,36 @@ example (α : Type) : Plain α = (α → SI) := rfl
 #guard_msgs in
 #check fun (α : Type) => (Foo _ α, (?_iris_stepindex_examined : Nat))
 
--- a theorem whose statement doesn't mention `SI` gets a clear error in its proof
-/--
-error: the section step index `SI` is not in scope here; mention it in the statement or `include SI`
--/
-#guard_msgs in
+#guard_msgs (substring := true) in
 theorem noSI : True := by
   have : ∀ (α : Type) [OFE α], True := fun _ _ => trivial
   trivial
+
+theorem natSI {α : Type} [OFE (SI := Nat) α] (x y : α) (h : x ≡{(3 : Nat)}≡ y) :
+    x ≡{(3 : Nat)}≡ y := (OFE.Dist.rfl).trans h
+
+/-- info: fun n => n : SI → SI -/
+#guard_msgs in
+#check fun (n : stepindex%) => n
+
+/-- error: the section step index `SI` is not in scope here; mention it in the statement or `include SI` -/
+#guard_msgs in
+theorem noSI' : True := by
+  have _ : Type := stepindex%
+  trivial
+end
+
+example : (fun (n : stepindex%) => n) true = true := rfl
+
+universe u
+def PIdx : Type := (fun (_ : Sort u) => Nat) PUnit.{u}
+instance : SIdx PIdx.{u} := inferInstanceAs (SIdx Nat)
+
+section
+local stepindex PIdx
+/-- info: fun α [Qux α] => 0 : (α : Type) → [Qux α] → Nat -/
+#guard_msgs in
+#check fun (α : Type) [Qux α] => 0
 end
 
 abbrev MySI := Nat
