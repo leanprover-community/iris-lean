@@ -33,7 +33,9 @@ jobs:
           build: true
       - name: Upload Iris build
         working-directory: Iris
-        run: lake upload "$TAG"
+        run: |
+          lake build Iris:shared
+          lake upload "$TAG"
         shell: bash
       - uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1.7.0
         with:
