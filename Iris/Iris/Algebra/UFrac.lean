@@ -6,7 +6,7 @@ Authors: Markus de Medeiros
 module
 
 public import Iris.Algebra.CMRA
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.Algebra.Frac
 public import Iris.Algebra.IsOp
 
@@ -17,6 +17,8 @@ A variant of the Frac ORA with unbounded validity (>1).
 -/
 
 @[expose] public section
+
+local stepindex Nat
 
 namespace Iris
 

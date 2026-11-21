@@ -23,6 +23,8 @@ This file provides introduction rules (BI entailments) for (some) ORA operations
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 section prod

@@ -12,6 +12,8 @@ public import Iris.BI.Notation
 
 namespace Iris.BI
 
+local stepindex Nat
+
 public section List
 open Iris.Algebra Iris.Std OFE BIBase
 

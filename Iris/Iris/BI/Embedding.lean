@@ -16,10 +16,12 @@ public import Iris.BI.Plainly
 public import Iris.BI.Sbi
 public import Iris.BI.InternalEq
 public import Iris.BI.BigOp
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.Algebra.Monoid
 
 @[expose] public section
+
+local stepindex Nat
 
 namespace Iris.BI
 open Iris Iris.Std OFE Iris.Algebra Iris.Algebra.BigOpL Iris.Algebra.BigOpM

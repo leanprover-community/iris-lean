@@ -10,6 +10,8 @@ public import Iris.ProofMode
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 open Iris.Std BI OFE
 

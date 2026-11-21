@@ -11,6 +11,8 @@ public import Iris.ProofMode.NatCancel
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 open Iris.BI Iris.Std
 

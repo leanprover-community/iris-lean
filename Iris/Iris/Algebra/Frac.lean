@@ -6,7 +6,7 @@ Authors: Markus de Medeiros, Shreyas Srinivas, Mario Carneiro
 module
 
 public import Iris.Algebra.CMRA
-public import Iris.Algebra.OFE
+public import Iris.Algebra.StepIndexFinite
 public import Iris.Algebra.IsOp
 public import Iris.Std.Positives
 
@@ -18,6 +18,8 @@ This version follows Iris Rocq in fixing the underlying type of fractions to be 
 -/
 
 @[expose] public section
+
+local stepindex Nat
 
 namespace Rat
 
