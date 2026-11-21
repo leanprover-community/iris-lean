@@ -445,7 +445,7 @@ def Hyps.removeCore : ∀ {e}, Hyps bi e → m (RemoveHypCore bi e α)
         return .main a ⟨_, hyps', out, out', p, h, q(remove_left $pf)⟩
       | .none => pure .none
 
-def Hyps.removeG [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q(Prop)}
+def Hyps.removeG [Monad m] {prop : Q(Type u)} {bi : Q(BI $prop)} {e : Q($prop)}
     (rp : Bool) (hyps : Hyps bi e)
     (check : Name → IVarId → Q(Bool) → Q($prop) → m (Option α)) :
     m (Option (α × RemoveHyp bi e)) := do
