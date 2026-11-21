@@ -4,6 +4,8 @@ keywords = ["math"]
 defaultTargets = ["IrisMath"]
 testDriver = "IrisMathTest"
 builtinLint = true
+preferReleaseBuild = true
+releaseRepo = "https://github.com/leanprover-community/iris-lean"
 
 [leanOptions]
 pp.unicode.fun = true 
