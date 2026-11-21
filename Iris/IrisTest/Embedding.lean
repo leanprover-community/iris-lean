@@ -214,8 +214,8 @@ section Frame
 variable {PROP1 PROP2 : Type u} [BI PROP1] [BI PROP2] [BiEmbed PROP1 PROP2]
 
 /-
-  The instance `frame_here` has a higher priority than `frame_embed` so that
-  it gives `emp` rather than `⎡emp⎤`.
+  `frame_here` (applied by the tactic `frameHere`) is tried before the instance `frame_embed`
+  so that it gives `emp` rather than `⎡emp⎤`.
 -/
 /-- info:
   solution: Frame false ⎡P⎤ ⎡P⎤ iprop(emp),
