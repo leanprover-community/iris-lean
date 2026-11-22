@@ -18,7 +18,7 @@ open OFE
 variable {SI : Type w} [SIdx SI]
 local stepindex SI
 
-structure Site (SI : Type w) [SIdx SI] where
+structure Site where
   mem : SI → Prop
   down : ∀ {a b : SI}, a ≤ b → mem b → mem a
   dec : ∀ m, Decidable (mem m)
@@ -27,11 +27,11 @@ attribute [instance] Site.dec
 
 namespace Site
 
-variable {P : Site SI}
+variable {P : Site}
 
-def univ : Site SI := ⟨fun _ => True, fun _ _ => trivial, fun _ => inferInstance⟩
+def univ : Site := ⟨fun _ => True, fun _ _ => trivial, fun _ => inferInstance⟩
 
-abbrev below (α : SI) : Site SI :=
+abbrev below (α : SI) : Site :=
   ⟨fun m => m < α, fun h h' => SIdx.le_lt_trans h h', fun _ => inferInstance⟩
 
 theorem lt_of_not_mem {m n : SI} (hm : ¬ P.mem m) (hn : P.mem n) : n < m := by
@@ -40,7 +40,7 @@ theorem lt_of_not_mem {m n : SI} (hm : ¬ P.mem m) (hn : P.mem n) : n < m := by
   · exact absurd hn hm
   · exact h
 
-instance : LE (Site SI) := ⟨fun P Q => ∀ m, P.mem m → Q.mem m⟩
+instance : LE Site := ⟨fun P Q => ∀ m, P.mem m → Q.mem m⟩
 
 theorem below_le_of_mem {γ : SI} (h : P.mem γ) : below γ ≤ P :=
   fun _ hm => P.down (SIdx.lt_le_incl hm) h
@@ -48,32 +48,11 @@ theorem below_le_of_mem {γ : SI} (h : P.mem γ) : below γ ≤ P :=
 theorem below_le_below {γ δ : SI} (h : γ ≤ δ) : below γ ≤ below δ :=
   fun _ hm => SIdx.lt_le_trans hm h
 
-structure Chain (A : Type v) [OFE A] (P : Site SI) where
+structure Chain (A : Type v) [OFE A] (P : Site) where
   val : ∀ β, P.mem β → A
   cauchy : ∀ {m p} (hm : P.mem m) (hp : P.mem p), m ≤ p → val p hp ≡{m}≡ val m hm
 
-class HasCompl (P : Site SI) where
-  compl : ∀ {A : Type v} [COFE A] [Inhabited A], Site.Chain A P → A
-  conv_compl : ∀ {A : Type v} [COFE A] [Inhabited A] (c : Site.Chain A P) {n : SI}
-    (hn : P.mem n), compl c ≡{n}≡ c.val n hn
-
-instance (α : SI) : HasCompl.{v, _} (below α) where
-  compl c :=
-    match SIdx.case α with
-    | .inl _ => default
-    | .inr (.inl ⟨β, h⟩) => c.val β (SIdx.lt_succ_diag_r' h)
-    | .inr (.inr hl) => IsCOFE.lbcompl hl ⟨c.val, c.cauchy⟩
-  conv_compl c n hn :=
-    match SIdx.case α with
-    | .inl h => absurd (h ▸ hn) (SIdx.not_lt_zero n)
-    | .inr (.inl ⟨_, h⟩) => c.cauchy hn _ (SIdx.lt_succ_r.mp (h ▸ hn))
-    | .inr (.inr hl) => IsCOFE.conv_lbcompl hl _ hn
-
-instance : HasCompl.{v, _} (univ : Site SI) where
-  compl c := COFE.compl ⟨fun n => c.val n trivial, fun h => c.cauchy _ _ h⟩
-  conv_compl _ _ _ := COFE.conv_compl
-
-def IsLimit (P : Site SI) : Prop := P.mem 0 ∧ ∀ {n}, P.mem n → ∃ m, n < m ∧ P.mem m
+def IsLimit (P : Site) : Prop := P.mem 0 ∧ ∀ {n}, P.mem n → ∃ m, n < m ∧ P.mem m
 
 theorem IsLimit.succ_mem (hP : P.IsLimit) {k : SI} (hk : P.mem k) : P.mem (succᵢ k) := by
   obtain ⟨m, h1, h2⟩ := hP.2 hk
@@ -82,14 +61,15 @@ theorem IsLimit.succ_mem (hP : P.IsLimit) {k : SI} (hk : P.mem k) : P.mem (succ�
 theorem below_isLimit {t : SI} (hl : SIdx.Limit t) : (below t).IsLimit :=
   ⟨hl.limit_lt_0, fun {n} h => ⟨succᵢ n, SIdx.lt_succ_self n, hl.succ_lt _ h⟩⟩
 
-theorem univ_isLimit : (univ : Site SI).IsLimit :=
+theorem univ_isLimit : univ.IsLimit :=
   ⟨trivial, fun {n} _ => ⟨succᵢ n, SIdx.lt_succ_self n, trivial⟩⟩
 
 end Site
 
-class EnrichedCat (SI : outParam (Type w)) [SIdx SI] (Obj : Type u) where
+@[indexed SI]
+class EnrichedCat (Obj : Type u) where
   Hom : Obj → Obj → Type v
-  [cofe : ∀ a b, COFE (SI := SI) (Hom a b)]
+  [cofe : ∀ a b, COFE (Hom a b)]
   id : ∀ a, Hom a a
   comp : ∀ {a b c : Obj}, Hom b c → Hom a b → Hom a c
   comp_ne : ∀ {a b c : Obj} {n : SI} {g g' : Hom b c} {f f' : Hom a b},
@@ -106,35 +86,44 @@ export EnrichedCat (Hom)
 
 infixr:80 " ⊚ " => EnrichedCat.comp
 
+scoped notation:30 a:31 " ⟶ " b:31 => EnrichedCat.Hom stepindex% a b
+
+open Lean PrettyPrinter in
+@[scoped app_unexpander EnrichedCat.Hom]
+meta def unexpandHom : Unexpander
+  | `($_ $_ $a $b) => `($a ⟶ $b)
+  | _ => throw ()
+
 section EnrichedCat
 
-variable {Obj : Type u} [EnrichedCat SI Obj] {a b c : Obj}
+variable {Obj : Type u} [EnrichedCat Obj] {a b c : Obj}
 
-theorem comp_dist_l {n : SI} {g g' : Hom b c} (h : g ≡{n}≡ g') (f : Hom a b) :
+theorem comp_dist_l {n : SI} {g g' : b ⟶ c} (h : g ≡{n}≡ g') (f : a ⟶ b) :
     g ⊚ f ≡{n}≡ g' ⊚ f :=
   EnrichedCat.comp_ne h .rfl
 
-theorem comp_dist_r {n : SI} (g : Hom b c) {f f' : Hom a b} (h : f ≡{n}≡ f') :
+theorem comp_dist_r {n : SI} (g : b ⟶ c) {f f' : a ⟶ b} (h : f ≡{n}≡ f') :
     g ⊚ f ≡{n}≡ g ⊚ f' :=
   EnrichedCat.comp_ne .rfl h
 
 end EnrichedCat
 
-class EFunctor (SI : outParam (Type w)) [SIdx SI] {Obj : Type u} [EnrichedCat SI Obj]
+@[indexed SI]
+class EFunctor {Obj : Type u} [EnrichedCat Obj]
     (F : Obj → Obj → Obj) where
-  map : ∀ {a a' b b' : Obj}, Hom a' a → Hom b b' → Hom (F a b) (F a' b')
-  map_contractive : ∀ {a a' b b' : Obj} {n : SI} {f f' : Hom a' a} {g g' : Hom b b'},
+  map : ∀ {a a' b b' : Obj}, a' ⟶ a → b ⟶ b' → F a b ⟶ F a' b'
+  map_contractive : ∀ {a a' b b' : Obj} {n : SI} {f f' : a' ⟶ a} {g g' : b ⟶ b'},
     OFE.DistLater n (f, g) (f', g') → OFE.Dist n (map f g) (map f' g')
   map_id : ∀ a b, map (EnrichedCat.id a) (EnrichedCat.id b) = EnrichedCat.id (F a b)
-  map_comp : ∀ {a₁ a₂ a₃ b₁ b₂ b₃ : Obj} (f : Hom a₂ a₁) (g : Hom a₃ a₂) (f' : Hom b₁ b₂)
-    (g' : Hom b₂ b₃), map (f ⊚ g) (g' ⊚ f') = map g g' ⊚ map f f'
+  map_comp : ∀ {a₁ a₂ a₃ b₁ b₂ b₃ : Obj} (f : a₂ ⟶ a₁) (g : a₃ ⟶ a₂) (f' : b₁ ⟶ b₂)
+    (g' : b₂ ⟶ b₃), map (f ⊚ g) (g' ⊚ f') = map g g' ⊚ map f f'
 
-theorem map_dist {Obj : Type u} [EnrichedCat SI Obj] (F : Obj → Obj → Obj) [EFunctor SI F]
-    {a a' b b' : Obj} {n : SI} {f f' : Hom a' a} {g g' : Hom b b'} (hf : f ≡{n}≡ f')
+theorem map_dist {Obj : Type u} [EnrichedCat Obj] (F : Obj → Obj → Obj) [EFunctor F]
+    {a a' b b' : Obj} {n : SI} {f f' : a' ⟶ a} {g g' : b ⟶ b'} (hf : f ≡{n}≡ f')
     (hg : g ≡{n}≡ g') : EFunctor.map (F := F) f g ≡{n}≡ EFunctor.map f' g' :=
   EFunctor.map_contractive fun _ hm => ⟨hf.lt hm, hg.lt hm⟩
 
-structure LimitCut (SI : Type w) [SIdx SI] where
+structure LimitCut where
   mem : SI → Prop
   zero : mem 0
   unbounded : ∀ {n}, mem n → ∃ m, n < m ∧ mem m
@@ -142,9 +131,9 @@ structure LimitCut (SI : Type w) [SIdx SI] where
 
 namespace LimitCut
 
-def dist (K : LimitCut SI) {A : Type _} [OFE A] (x y : A) : Prop := ∀ m, K.mem m → x ≡{m}≡ y
+def dist (K : LimitCut) {A : Type _} [OFE A] (x y : A) : Prop := ∀ m, K.mem m → x ≡{m}≡ y
 
-theorem mem_of_finite [SIdxFinite SI] (K : LimitCut SI) (n : SI) : K.mem n := by
+theorem mem_of_finite [SIdxFinite SI] (K : LimitCut) (n : SI) : K.mem n := by
   induction n using (SIdx.lt_wf (I := SI)).induction with
   | _ n ih =>
     rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
@@ -154,9 +143,7 @@ theorem mem_of_finite [SIdxFinite SI] (K : LimitCut SI) (n : SI) : K.mem n := by
 
 end LimitCut
 
-def Site.cut (P : Site SI) (hP : P.IsLimit) : LimitCut SI := ⟨P.mem, hP.1, hP.2, P.down⟩
-
-def seg (c : SI) : LimitCut SI where
+def seg (c : SI) : LimitCut where
   mem n := ¬ ∃ l, SIdx.Limit l ∧ c < l ∧ l ≤ n
   zero := fun ⟨l, hl, _, h⟩ => SIdx.limit_0 (SIdx.le_0_r.mp h ▸ hl)
   unbounded {n} h := ⟨succᵢ n, SIdx.lt_succ_self n, fun ⟨l, hl, h1, h2⟩ => by
@@ -171,7 +158,13 @@ theorem mem_seg_of_le {c m : SI} (h : m ≤ c) : (seg c).mem m :=
 theorem mem_seg_mono {a b m : SI} (hab : a ≤ b) (h : (seg a).mem m) : (seg b).mem m :=
   fun ⟨l, hl, h1, h2⟩ => h ⟨l, hl, SIdx.le_lt_trans hab h1, h2⟩
 
-theorem LimitCut.mem_of_mem_seg (K : LimitCut SI) {c : SI} (hc : K.mem c) :
+theorem lt_of_mem_seg {n a m : SI} (hl : SIdx.Limit n) (ha : a < n) (hm : (seg a).mem m) :
+    m < n := by
+  rcases SIdx.lt_ge_cases n m with h | h
+  · exact h
+  · exact absurd ⟨n, hl, ha, h⟩ hm
+
+theorem LimitCut.mem_of_mem_seg (K : LimitCut) {c : SI} (hc : K.mem c) :
     ∀ m, (seg c).mem m → K.mem m := by
   intro m
   induction m using (SIdx.lt_wf (I := SI)).induction with
@@ -193,12 +186,12 @@ theorem LimitCut.mem_of_mem_seg (K : LimitCut SI) {c : SI} (hc : K.mem c) :
 
 section Determined
 
-variable {Obj : Type u} [EnrichedCat SI Obj]
+variable {Obj : Type u} [EnrichedCat Obj]
 
-abbrev Determined (K : LimitCut SI) (Y : Obj) : Prop :=
-  ∀ {Z : Obj} (g g' : Hom Z Y), K.dist g g' → g = g'
+abbrev Determined (K : LimitCut) (Y : Obj) : Prop :=
+  ∀ {Z : Obj} (g g' : Z ⟶ Y), K.dist g g' → g = g'
 
-theorem Determined.mono {K K' : LimitCut SI} (h : ∀ m, K.mem m → K'.mem m) {Y : Obj}
+theorem Determined.mono {K K' : LimitCut} (h : ∀ m, K.mem m → K'.mem m) {Y : Obj}
     (hY : Determined K Y) : Determined K' Y :=
   fun g g' hg => hY g g' fun m hm => hg m (h m hm)
 
@@ -206,340 +199,333 @@ end Determined
 
 section
 
-variable {Obj : Type u} [EnrichedCat SI Obj]
+variable {Obj : Type u} [EnrichedCat Obj]
 
 variable (Obj) in
-structure Tower (P : Site SI) where
-  X : ∀ β, P.mem β → Obj
-  emb : ∀ β δ (hβ : P.mem β) (hδ : P.mem δ), β < δ → Hom (X β hβ) (X δ hδ)
-  proj : ∀ β δ (hβ : P.mem β) (hδ : P.mem δ), β < δ → Hom (X δ hδ) (X β hβ)
+structure Tower (P : Site) where
+  X {β} : P.mem β → Obj
+  emb {β δ} (hβ : P.mem β) (hδ : P.mem δ) : β < δ → X hβ ⟶ X hδ
+  proj {β δ} (hβ : P.mem β) (hδ : P.mem δ) : β < δ → X hδ ⟶ X hβ
 
-structure Tower.Lawful {P : Site SI} (T : Tower Obj P) : Prop where
-  proj_comp_emb : ∀ β δ hβ hδ (h : β < δ),
-    T.proj β δ hβ hδ h ⊚ T.emb β δ hβ hδ h = EnrichedCat.id _
-  emb_comp_proj : ∀ β δ hβ hδ (h : β < δ) m, m < β →
-    T.emb β δ hβ hδ h ⊚ T.proj β δ hβ hδ h ≡{m}≡ EnrichedCat.id _
-  emb_comp_emb : ∀ β η δ hβ hη hδ (h1 : β < η) (h2 : η < δ) (h3 : β < δ),
-    T.emb η δ hη hδ h2 ⊚ T.emb β η hβ hη h1 = T.emb β δ hβ hδ h3
-  proj_comp_proj : ∀ β η δ hβ hη hδ (h1 : β < η) (h2 : η < δ) (h3 : β < δ),
-    T.proj β η hβ hη h1 ⊚ T.proj η δ hη hδ h2 = T.proj β δ hβ hδ h3
-  determined : ∀ β hβ, Determined (seg β) (T.X β hβ)
+structure Tower.Lawful {P : Site} (T : Tower Obj P) : Prop where
+  proj_comp_emb {β δ} {hβ : P.mem β} {hδ : P.mem δ} (h : β < δ) :
+    T.proj hβ hδ h ⊚ T.emb hβ hδ h = EnrichedCat.id _
+  emb_comp_proj {β δ} {hβ : P.mem β} {hδ : P.mem δ} (h : β < δ) {m} (hm : m < β) :
+    T.emb hβ hδ h ⊚ T.proj hβ hδ h ≡{m}≡ EnrichedCat.id _
+  emb_comp_emb {β η δ} {hβ : P.mem β} {hη : P.mem η} {hδ : P.mem δ} (h1 : β < η) (h2 : η < δ) :
+    T.emb hη hδ h2 ⊚ T.emb hβ hη h1 = T.emb hβ hδ (SIdx.lt_trans h1 h2)
+  proj_comp_proj {β η δ} {hβ : P.mem β} {hη : P.mem η} {hδ : P.mem δ} (h1 : β < η)
+    (h2 : η < δ) : T.proj hβ hη h1 ⊚ T.proj hη hδ h2 = T.proj hβ hδ (SIdx.lt_trans h1 h2)
+  determined {β} (hβ : P.mem β) : Determined (seg β) (T.X hβ)
 
 namespace Tower
 
-variable {P : Site SI} (T : Tower Obj P)
+variable {P : Site} (T : Tower Obj P)
 
-def hom (β n : SI) (hβ : P.mem β) (hn : P.mem n) : Hom (T.X n hn) (T.X β hβ) :=
+def hom {β n : SI} (hβ : P.mem β) (hn : P.mem n) : T.X hn ⟶ T.X hβ :=
   match SIdx.lt_trichotomyT β n with
-  | .inl h => T.proj β n hβ hn h
+  | .inl h => T.proj hβ hn h
   | .inr (.inl h) => h ▸ EnrichedCat.id _
-  | .inr (.inr h) => T.emb n β hn hβ h
+  | .inr (.inr h) => T.emb hn hβ h
 
-theorem hom_lt {β n : SI} (hβ : P.mem β) (hn : P.mem n) (h : β < n) :
-    T.hom β n hβ hn = T.proj β n hβ hn h := by
+theorem hom_lt {β n : SI} {hβ : P.mem β} {hn : P.mem n} (h : β < n) :
+    T.hom hβ hn = T.proj hβ hn h := by
   unfold hom
   exact match SIdx.lt_trichotomyT β n with
   | .inl _ => rfl
   | .inr (.inl h') => absurd (h' ▸ h) (SIdx.lt_irrefl _)
   | .inr (.inr h') => absurd (SIdx.lt_trans h h') (SIdx.lt_irrefl _)
 
-theorem hom_self {β : SI} (hβ hβ' : P.mem β) : T.hom β β hβ hβ' = EnrichedCat.id _ := by
+theorem hom_self {β : SI} {hβ hβ' : P.mem β} : T.hom hβ hβ' = EnrichedCat.id _ := by
   unfold hom
   exact match SIdx.lt_trichotomyT β β with
   | .inl h => absurd h (SIdx.lt_irrefl _)
   | .inr (.inl _) => rfl
   | .inr (.inr h) => absurd h (SIdx.lt_irrefl _)
 
-theorem hom_gt {β n : SI} (hβ : P.mem β) (hn : P.mem n) (h : n < β) :
-    T.hom β n hβ hn = T.emb n β hn hβ h := by
+theorem hom_gt {β n : SI} {hβ : P.mem β} {hn : P.mem n} (h : n < β) :
+    T.hom hβ hn = T.emb hn hβ h := by
   unfold hom
   exact match SIdx.lt_trichotomyT β n with
   | .inl h' => absurd (SIdx.lt_trans h h') (SIdx.lt_irrefl _)
   | .inr (.inl h') => absurd (h' ▸ h) (SIdx.lt_irrefl _)
   | .inr (.inr _) => rfl
 
-theorem proj_comp_hom {T : Tower Obj P} (hT : T.Lawful) (n : SI) (hn : P.mem n) (β δ : SI)
-    (hβ : P.mem β) (hδ : P.mem δ) (hlt : β < δ) :
-    T.proj β δ hβ hδ hlt ⊚ T.hom δ n hδ hn = T.hom β n hβ hn := by
+theorem proj_comp_hom {T : Tower Obj P} (hT : T.Lawful) {β δ n : SI} {hβ : P.mem β}
+    {hδ : P.mem δ} {hn : P.mem n} (hlt : β < δ) :
+    T.proj hβ hδ hlt ⊚ T.hom hδ hn = T.hom hβ hn := by
   rcases SIdx.lt_trichotomyT δ n with h1 | rfl | h1
-  · rw [T.hom_lt hδ hn h1, T.hom_lt hβ hn (SIdx.lt_trans hlt h1), hT.proj_comp_proj]
-  · rw [T.hom_self, T.hom_lt hβ hn hlt, EnrichedCat.comp_id]
-  · rw [T.hom_gt hδ hn h1]
+  · rw [T.hom_lt h1, T.hom_lt (SIdx.lt_trans hlt h1), hT.proj_comp_proj]
+  · rw [T.hom_self, T.hom_lt hlt, EnrichedCat.comp_id]
+  · rw [T.hom_gt h1]
     rcases SIdx.lt_trichotomyT β n with h0 | rfl | h0
-    · rw [T.hom_lt hβ hn h0, ← hT.proj_comp_proj β n δ hβ hn hδ h0 h1 hlt, EnrichedCat.assoc,
+    · rw [T.hom_lt h0, ← hT.proj_comp_proj (hη := hn) h0 h1, EnrichedCat.assoc,
         hT.proj_comp_emb, EnrichedCat.comp_id]
     · rw [T.hom_self, hT.proj_comp_emb]
-    · rw [T.hom_gt hβ hn h0, ← hT.emb_comp_emb n β δ hn hβ hδ h0 hlt h1, ← EnrichedCat.assoc,
+    · rw [T.hom_gt h0, ← hT.emb_comp_emb (hη := hβ) h0 hlt, ← EnrichedCat.assoc,
         hT.proj_comp_emb, EnrichedCat.id_comp]
 
 end Tower
 
 end
 
-variable (SI) in
-class HasTowerLimits (Obj : Type u) [EnrichedCat SI Obj] where
-  lim : ∀ {P : Site SI} (T : Tower Obj P), T.Lawful → Obj
-  π : ∀ {P} (T : Tower Obj P) (hT : T.Lawful) β hβ, Hom (lim T hT) (T.X β hβ)
-  proj_comp_π : ∀ {P} (T : Tower Obj P) (hT : T.Lawful) β δ hβ hδ (h : β < δ),
-    T.proj β δ hβ hδ h ⊚ π T hT δ hδ = π T hT β hβ
-  lift : ∀ {P} (T : Tower Obj P) (hT : T.Lawful) {Y : Obj} (g : ∀ β hβ, Hom Y (T.X β hβ)),
-    (∀ β δ hβ hδ (h : β < δ), T.proj β δ hβ hδ h ⊚ g δ hδ = g β hβ) → Hom Y (lim T hT)
-  π_comp_lift : ∀ {P} (T : Tower Obj P) (hT : T.Lawful) {Y : Obj}
-    (g : ∀ β hβ, Hom Y (T.X β hβ)) hg β hβ, π T hT β hβ ⊚ lift T hT g hg = g β hβ
-  ext_dist : ∀ {P} (T : Tower Obj P) (hT : T.Lawful) {Y : Obj} {n : SI}
-    (f f' : Hom Y (lim T hT)), (∀ β hβ, π T hT β hβ ⊚ f ≡{n}≡ π T hT β hβ ⊚ f') → f ≡{n}≡ f'
+@[indexed SI]
+class HasTowerLimits (Obj : Type u) [EnrichedCat Obj] where
+  lim {P : Site} {T : Tower Obj P} : T.Lawful → Obj
+  π {P : Site} {T : Tower Obj P} (hT : T.Lawful) {β} (hβ : P.mem β) : lim hT ⟶ T.X hβ
+  proj_comp_π {P : Site} {T : Tower Obj P} (hT : T.Lawful) {β δ} {hβ : P.mem β} {hδ : P.mem δ}
+    (h : β < δ) : T.proj hβ hδ h ⊚ π hT hδ = π hT hβ
+  lift {P : Site} {T : Tower Obj P} (hT : T.Lawful) {Y : Obj}
+    (g : ∀ {β} (hβ : P.mem β), Y ⟶ T.X hβ)
+    (hg : ∀ {β δ} {hβ : P.mem β} {hδ : P.mem δ} (h : β < δ), T.proj hβ hδ h ⊚ g hδ = g hβ) :
+    Y ⟶ lim hT
+  π_comp_lift {P : Site} {T : Tower Obj P} (hT : T.Lawful) {Y : Obj}
+    (g : ∀ {β} (hβ : P.mem β), Y ⟶ T.X hβ) hg {β} {hβ : P.mem β} :
+    π hT hβ ⊚ lift hT g hg = g hβ
+  ext_dist {P : Site} {T : Tower Obj P} (hT : T.Lawful) {Y : Obj} {n : SI}
+    {f f' : Y ⟶ lim hT} :
+    (∀ {β} (hβ : P.mem β), π hT hβ ⊚ f ≡{n}≡ π hT hβ ⊚ f') → f ≡{n}≡ f'
 
 namespace InvLim
 
 open HasTowerLimits
 
-variable {Obj : Type u} [EnrichedCat SI Obj] [HasTowerLimits SI Obj] {P : Site SI}
+variable {Obj : Type u} [EnrichedCat Obj] [HasTowerLimits Obj] {P : Site}
   {T : Tower Obj P} (hT : T.Lawful)
 
-def emb (n : SI) (hn : P.mem n) : Hom (T.X n hn) (lim T hT) :=
-  lift T hT (fun β hβ => T.hom β n hβ hn) fun β δ hβ hδ hlt =>
-    Tower.proj_comp_hom hT n hn β δ hβ hδ hlt
+def emb {n : SI} (hn : P.mem n) : T.X hn ⟶ lim hT :=
+  lift hT (fun hβ => T.hom hβ hn) fun h => Tower.proj_comp_hom hT h
 
-theorem π_comp_emb (n : SI) (hn : P.mem n) β hβ : π T hT β hβ ⊚ emb hT n hn = T.hom β n hβ hn :=
-  π_comp_lift T hT _ _ β hβ
+theorem π_comp_emb {β n : SI} {hβ : P.mem β} {hn : P.mem n} :
+    π hT hβ ⊚ emb hT hn = T.hom hβ hn :=
+  π_comp_lift hT _ _
 
-theorem π_comp_emb_self (n : SI) (hn : P.mem n) : π T hT n hn ⊚ emb hT n hn = EnrichedCat.id _ := by
+theorem π_comp_emb_self {n : SI} {hn : P.mem n} : π hT hn ⊚ emb hT hn = EnrichedCat.id _ := by
   rw [π_comp_emb, T.hom_self]
 
-theorem ext {Y : Obj} (g g' : Hom Y (lim T hT)) (h : ∀ β hβ, π T hT β hβ ⊚ g = π T hT β hβ ⊚ g') :
-    g = g' :=
-  OFE.eq_dist.mpr fun _ => ext_dist T hT g g' fun β hβ => .of_eq (h β hβ)
+theorem ext {Y : Obj} {g g' : Y ⟶ lim hT}
+    (h : ∀ {β} (hβ : P.mem β), π hT hβ ⊚ g = π hT hβ ⊚ g') : g = g' :=
+  OFE.eq_dist.mpr fun _ => ext_dist hT fun hβ => .of_eq (h hβ)
 
-theorem emb_comp_π (n : SI) (hn : P.mem n) m (hm : m < n) :
-    emb hT n hn ⊚ π T hT n hn ≡{m}≡ EnrichedCat.id _ := by
-  refine ext_dist T hT _ _ fun β hβ => ?_
+theorem emb_comp_π {n : SI} {hn : P.mem n} {m} (hm : m < n) :
+    emb hT hn ⊚ π hT hn ≡{m}≡ EnrichedCat.id _ := by
+  refine ext_dist hT fun {β} hβ => ?_
   rw [← EnrichedCat.assoc, π_comp_emb, EnrichedCat.comp_id]
   rcases SIdx.lt_trichotomyT β n with h | rfl | h
-  · rw [T.hom_lt hβ hn h, proj_comp_π]
+  · rw [T.hom_lt h, proj_comp_π]
   · rw [T.hom_self, EnrichedCat.id_comp]
-  · rw [T.hom_gt hβ hn h, ← proj_comp_π T hT n β hn hβ h, ← EnrichedCat.assoc]
-    exact (comp_dist_l (hT.emb_comp_proj n β hn hβ h m hm) _).trans
-      (.of_eq (EnrichedCat.id_comp _))
+  · rw [T.hom_gt h, ← proj_comp_π hT (hδ := hβ) h, ← EnrichedCat.assoc]
+    exact (comp_dist_l (hT.emb_comp_proj h hm) _).trans (.of_eq (EnrichedCat.id_comp _))
 
-theorem emb_comp_emb (β δ : SI) (hβ : P.mem β) (hδ : P.mem δ) (hlt : β < δ) :
-    emb hT δ hδ ⊚ T.emb β δ hβ hδ hlt = emb hT β hβ := by
-  refine ext hT _ _ fun η hη => ?_
+theorem emb_comp_emb {β δ : SI} {hβ : P.mem β} {hδ : P.mem δ} (hlt : β < δ) :
+    emb hT hδ ⊚ T.emb hβ hδ hlt = emb hT hβ := by
+  refine ext hT fun {η} hη => ?_
   rw [← EnrichedCat.assoc, π_comp_emb, π_comp_emb]
   rcases SIdx.lt_trichotomyT η β with h | rfl | h
-  · rw [T.hom_lt hη hβ h, T.hom_lt hη hδ (SIdx.lt_trans h hlt),
-      ← hT.proj_comp_proj η β δ hη hβ hδ h hlt, EnrichedCat.assoc, hT.proj_comp_emb,
-      EnrichedCat.comp_id]
-  · rw [T.hom_self, T.hom_lt hη hδ hlt, hT.proj_comp_emb]
+  · rw [T.hom_lt h, T.hom_lt (SIdx.lt_trans h hlt), ← hT.proj_comp_proj (hη := hβ) h hlt,
+      EnrichedCat.assoc, hT.proj_comp_emb, EnrichedCat.comp_id]
+  · rw [T.hom_self, T.hom_lt hlt, hT.proj_comp_emb]
   · rcases SIdx.lt_trichotomyT η δ with h' | rfl | h'
-    · rw [T.hom_gt hη hβ h, T.hom_lt hη hδ h', ← hT.emb_comp_emb β η δ hβ hη hδ h h' hlt,
-        ← EnrichedCat.assoc, hT.proj_comp_emb, EnrichedCat.id_comp]
-    · rw [T.hom_gt hη hβ h, T.hom_self, EnrichedCat.id_comp]
-    · rw [T.hom_gt hη hβ h, T.hom_gt hη hδ h', hT.emb_comp_emb β δ η hβ hδ hη hlt h' h]
+    · rw [T.hom_gt h, T.hom_lt h', ← hT.emb_comp_emb (hη := hη) h h', ← EnrichedCat.assoc,
+        hT.proj_comp_emb, EnrichedCat.id_comp]
+    · rw [T.hom_gt h, T.hom_self, EnrichedCat.id_comp]
+    · rw [T.hom_gt h, T.hom_gt h', hT.emb_comp_emb hlt h']
 
 end InvLim
 
-variable (SI) in
-class HasTerminal (Obj : Type u) [EnrichedCat SI Obj] where
+@[indexed SI]
+class HasTerminal (Obj : Type u) [EnrichedCat Obj] where
   one : Obj
-  toOne : ∀ a, Hom a one
-  toOne_unique : ∀ {a} (f : Hom a one), f = toOne a
+  toOne : ∀ a, a ⟶ one
+  toOne_unique : ∀ {a} (f : a ⟶ one), f = toOne a
 
-variable (SI) in
-class HasSeed {Obj : Type u} [EnrichedCat SI Obj] [HasTerminal SI Obj] (F : Obj → Obj → Obj) where
-  seed : Hom (HasTerminal.one SI) (F (HasTerminal.one SI) (HasTerminal.one SI))
+@[indexed SI]
+class HasSeed {Obj : Type u} [EnrichedCat Obj] [HasTerminal Obj] (F : Obj → Obj → Obj) where
+  seed : HasTerminal.one SI ⟶ F (HasTerminal.one SI) (HasTerminal.one SI)
 
-variable (SI) in
-class Truncatable {Obj : Type u} [EnrichedCat SI Obj] (F : Obj → Obj → Obj) where
-  trunc : ∀ (K : LimitCut SI) (A : Obj), Determined K A → Obj
-  proj : ∀ K A hA, Hom (F A A) (trunc K A hA)
-  rep : ∀ K A hA, Hom (trunc K A hA) (F A A)
-  proj_rep : ∀ K A hA, proj K A hA ⊚ rep K A hA = EnrichedCat.id _
-  rep_proj : ∀ K A hA m, K.mem m → rep K A hA ⊚ proj K A hA ≡{m}≡ EnrichedCat.id _
-  determined : ∀ K A hA, Determined K (trunc K A hA)
+@[indexed SI]
+class Truncatable {Obj : Type u} [EnrichedCat Obj] (F : Obj → Obj → Obj) where
+  trunc {K : LimitCut} {A : Obj} : Determined K A → Obj
+  proj {K A} (hA : Determined K A) : F A A ⟶ trunc hA
+  rep {K A} (hA : Determined K A) : trunc hA ⟶ F A A
+  proj_rep {K A} (hA : Determined K A) : proj hA ⊚ rep hA = EnrichedCat.id _
+  rep_proj {K A} (hA : Determined K A) {m} : K.mem m → rep hA ⊚ proj hA ≡{m}≡ EnrichedCat.id _
+  determined {K A} (hA : Determined K A) : Determined K (trunc hA)
 
-instance finiteTruncatable [SIdxFinite SI] {Obj : Type u} [EnrichedCat SI Obj]
-    (F : Obj → Obj → Obj) : Truncatable SI F where
-  trunc _ A _ := F A A
-  proj _ _ _ := EnrichedCat.id _
-  rep _ _ _ := EnrichedCat.id _
-  proj_rep _ _ _ := EnrichedCat.id_comp _
-  rep_proj _ _ _ _ _ := .of_eq (EnrichedCat.id_comp _)
-  determined K _ _ := fun _ _ hg => OFE.eq_dist.mpr fun n => hg n (K.mem_of_finite n)
+instance finiteTruncatable [SIdxFinite SI] {Obj : Type u} [EnrichedCat Obj]
+    (F : Obj → Obj → Obj) : Truncatable F where
+  trunc {_ A} _ := F A A
+  proj _ := EnrichedCat.id _
+  rep _ := EnrichedCat.id _
+  proj_rep _ := EnrichedCat.id_comp _
+  rep_proj _ := fun _ => .of_eq (EnrichedCat.id_comp _)
+  determined {K} _ _ := fun _ _ hg => OFE.eq_dist.mpr fun n => hg n (K.mem_of_finite n)
 
 section Solver
 
-variable {Obj : Type u} [EnrichedCat SI Obj]
-variable {F : Obj → Obj → Obj} [EFunctor SI F]
+variable {Obj : Type u} [EnrichedCat Obj]
+variable {F : Obj → Obj → Obj} [EFunctor F]
 
 variable (F) in
-structure PartialSol (P : Site SI) extends Tower Obj P where
-  fold : ∀ β (hβ : P.mem β), Hom (F (X β hβ) (X β hβ)) (X β hβ)
-  unfold : ∀ β (hβ : P.mem β), Hom (X β hβ) (F (X β hβ) (X β hβ))
+structure PartialSol (P : Site) extends Tower Obj P where
+  fold {β} (hβ : P.mem β) : F (X hβ) (X hβ) ⟶ X hβ
+  unfold {β} (hβ : P.mem β) : X hβ ⟶ F (X hβ) (X hβ)
 
-def PartialSol.restrict {P Q : Site SI} (f : PartialSol F P) (h : Q ≤ P) : PartialSol F Q where
-  X β hβ := f.X β (h β hβ)
-  emb β δ _ _ hlt := f.emb β δ _ _ hlt
-  proj β δ _ _ hlt := f.proj β δ _ _ hlt
-  fold β _ := f.fold β _
-  unfold β _ := f.unfold β _
+def PartialSol.restrict {P Q : Site} (f : PartialSol F P) (h : Q ≤ P) : PartialSol F Q where
+  X hβ := f.X (h _ hβ)
+  emb _ _ hlt := f.emb _ _ hlt
+  proj _ _ hlt := f.proj _ _ hlt
+  fold _ := f.fold _
+  unfold _ := f.unfold _
 
 structure Extension {γ : SI} (f : PartialSol F (Site.below γ)) where
   X : Obj
-  emb : ∀ β (h : β < γ), Hom (f.X β h) X
-  proj : ∀ β (h : β < γ), Hom X (f.X β h)
-  fold : Hom (F X X) X
-  unfold : Hom X (F X X)
+  emb {β} (h : β < γ) : f.X h ⟶ X
+  proj {β} (h : β < γ) : X ⟶ f.X h
+  fold : F X X ⟶ X
+  unfold : X ⟶ F X X
 
 structure Extension.Lawful {γ : SI} {f : PartialSol F (Site.below γ)} (S : Extension f) :
     Prop where
-  proj_comp_emb : ∀ β (hβ : β < γ), S.proj β hβ ⊚ S.emb β hβ = EnrichedCat.id _
-  emb_comp_proj : ∀ β (hβ : β < γ) m, m < β →
-    S.emb β hβ ⊚ S.proj β hβ ≡{m}≡ EnrichedCat.id _
-  emb_comp_emb : ∀ β η (h1 : β < η) (h2 : η < γ),
-    S.emb η h2 ⊚ f.emb β η (SIdx.lt_trans h1 h2) h2 h1 = S.emb β (SIdx.lt_trans h1 h2)
-  proj_comp_proj : ∀ β η (h1 : β < η) (h2 : η < γ),
-    f.proj β η (SIdx.lt_trans h1 h2) h2 h1 ⊚ S.proj η h2 = S.proj β (SIdx.lt_trans h1 h2)
+  proj_comp_emb {β} (h : β < γ) : S.proj h ⊚ S.emb h = EnrichedCat.id _
+  emb_comp_proj {β} (h : β < γ) {m} (hm : m < β) : S.emb h ⊚ S.proj h ≡{m}≡ EnrichedCat.id _
+  emb_comp_emb {β η} (h1 : β < η) (h2 : η < γ) :
+    S.emb h2 ⊚ f.emb (SIdx.lt_trans h1 h2) h2 h1 = S.emb (SIdx.lt_trans h1 h2)
+  proj_comp_proj {β η} (h1 : β < η) (h2 : η < γ) :
+    f.proj (SIdx.lt_trans h1 h2) h2 h1 ⊚ S.proj h2 = S.proj (SIdx.lt_trans h1 h2)
   fold_comp_unfold : S.fold ⊚ S.unfold = EnrichedCat.id _
-  unfold_comp_fold : ∀ m, m < γ → S.unfold ⊚ S.fold ≡{m}≡ EnrichedCat.id _
-  proj_comp_fold : ∀ β (hβ : β < γ),
-    S.proj β hβ ⊚ S.fold = f.fold β hβ ⊚ EFunctor.map (S.emb β hβ) (S.proj β hβ)
+  unfold_comp_fold {m} (hm : m < γ) : S.unfold ⊚ S.fold ≡{m}≡ EnrichedCat.id _
+  proj_comp_fold {β} (h : β < γ) :
+    S.proj h ⊚ S.fold = f.fold h ⊚ EFunctor.map (S.emb h) (S.proj h)
   determined : Determined (seg γ) S.X
 
 namespace PartialSol
 
-variable {P : Site SI} (f : PartialSol F P)
+variable {P : Site} (f : PartialSol F P)
 
-def topAt (δ : SI) (hδ : P.mem δ) : Extension (f.restrict (Site.below_le_of_mem hδ)) where
-  X := f.X δ hδ
-  emb β h := f.emb β δ _ hδ h
-  proj β h := f.proj β δ _ hδ h
-  fold := f.fold δ hδ
-  unfold := f.unfold δ hδ
+def topAt {δ : SI} (hδ : P.mem δ) : Extension (f.restrict (Site.below_le_of_mem hδ)) where
+  X := f.X hδ
+  emb h := f.emb _ hδ h
+  proj h := f.proj _ hδ h
+  fold := f.fold hδ
+  unfold := f.unfold hδ
 
-def Lawful : Prop := ∀ δ (hδ : P.mem δ), (f.topAt δ hδ).Lawful
+structure Lawful : Prop extends tower : f.toTower.Lawful where
+  fold_comp_unfold {β} {hβ : P.mem β} : f.fold hβ ⊚ f.unfold hβ = EnrichedCat.id _
+  unfold_comp_fold {β} {hβ : P.mem β} {m} (hm : m < β) :
+    f.unfold hβ ⊚ f.fold hβ ≡{m}≡ EnrichedCat.id _
+  proj_comp_fold {β δ} {hβ : P.mem β} {hδ : P.mem δ} (h : β < δ) :
+    f.proj hβ hδ h ⊚ f.fold hδ = f.fold hβ ⊚ EFunctor.map (f.emb hβ hδ h) (f.proj hβ hδ h)
 
 end PartialSol
 
 namespace PartialSol.Lawful
 
-variable {P : Site SI} {f : PartialSol F P} (hf : f.Lawful)
+variable {P : Site} {f : PartialSol F P}
+
+theorem of_topAt (H : ∀ {δ} (hδ : P.mem δ), (f.topAt hδ).Lawful) : f.Lawful where
+  proj_comp_emb {_ _ _ hδ} h := (H hδ).proj_comp_emb h
+  emb_comp_proj {_ _ _ hδ} h _ hm := (H hδ).emb_comp_proj h hm
+  emb_comp_emb {_ _ _ _ _ hδ} h1 h2 := (H hδ).emb_comp_emb h1 h2
+  proj_comp_proj {_ _ _ _ _ hδ} h1 h2 := (H hδ).proj_comp_proj h1 h2
+  determined hβ := (H hβ).determined
+  fold_comp_unfold {_ hβ} := (H hβ).fold_comp_unfold
+  unfold_comp_fold {_ hβ} _ hm := (H hβ).unfold_comp_fold hm
+  proj_comp_fold {_ _ _ hδ} h := (H hδ).proj_comp_fold h
+
+variable (hf : f.Lawful)
 include hf
 
-theorem proj_comp_emb β δ hβ hδ hlt :
-    f.proj β δ hβ hδ hlt ⊚ f.emb β δ hβ hδ hlt = EnrichedCat.id _ :=
-  (hf δ hδ).proj_comp_emb β hlt
+theorem topAt {δ : SI} (hδ : P.mem δ) : (f.topAt hδ).Lawful where
+  proj_comp_emb h := hf.proj_comp_emb h
+  emb_comp_proj h _ hm := hf.emb_comp_proj h hm
+  emb_comp_emb h1 h2 := hf.emb_comp_emb h1 h2
+  proj_comp_proj h1 h2 := hf.proj_comp_proj h1 h2
+  fold_comp_unfold := hf.fold_comp_unfold
+  unfold_comp_fold hm := hf.unfold_comp_fold hm
+  proj_comp_fold h := hf.proj_comp_fold h
+  determined := hf.determined hδ
 
-theorem emb_comp_proj β δ hβ hδ hlt m (hm : m < β) :
-    f.emb β δ hβ hδ hlt ⊚ f.proj β δ hβ hδ hlt ≡{m}≡ EnrichedCat.id _ :=
-  (hf δ hδ).emb_comp_proj β hlt m hm
+theorem restrict {Q : Site} (h : Q ≤ P) : (f.restrict h).Lawful :=
+  of_topAt fun hδ => hf.topAt (h _ hδ)
 
-theorem emb_comp_emb β η δ hβ hη hδ h1 h2 h3 :
-    f.emb η δ hη hδ h2 ⊚ f.emb β η hβ hη h1 = f.emb β δ hβ hδ h3 :=
-  (hf δ hδ).emb_comp_emb β η h1 h2
-
-theorem proj_comp_proj β η δ hβ hη hδ h1 h2 h3 :
-    f.proj β η hβ hη h1 ⊚ f.proj η δ hη hδ h2 = f.proj β δ hβ hδ h3 :=
-  (hf δ hδ).proj_comp_proj β η h1 h2
-
-theorem fold_comp_unfold β hβ : f.fold β hβ ⊚ f.unfold β hβ = EnrichedCat.id _ :=
-  (hf β hβ).fold_comp_unfold
-
-theorem unfold_comp_fold β hβ m (hm : m < β) :
-    f.unfold β hβ ⊚ f.fold β hβ ≡{m}≡ EnrichedCat.id _ :=
-  (hf β hβ).unfold_comp_fold m hm
-
-theorem proj_comp_fold β δ hβ hδ hlt : f.proj β δ hβ hδ hlt ⊚ f.fold δ hδ =
-    f.fold β hβ ⊚ EFunctor.map (f.emb β δ hβ hδ hlt) (f.proj β δ hβ hδ hlt) :=
-  (hf δ hδ).proj_comp_fold β hlt
-
-theorem determined β hβ : Determined (seg β) (f.X β hβ) := (hf β hβ).determined
-
-theorem restrict {Q : Site SI} (h : Q ≤ P) : (f.restrict h).Lawful :=
-  fun δ hδ => hf δ (h δ hδ)
-
-theorem tower : f.toTower.Lawful where
-  proj_comp_emb := hf.proj_comp_emb
-  emb_comp_proj := hf.emb_comp_proj
-  emb_comp_emb := hf.emb_comp_emb
-  proj_comp_proj := hf.proj_comp_proj
-  determined := hf.determined
-
-theorem hom_comp_hom {a b c : SI} (ha : P.mem a) (hb : P.mem b) (hc : P.mem c) (hab : a ≤ b)
-    (hbc : b ≤ c) : f.hom a b ha hb ⊚ f.hom b c hb hc = f.hom a c ha hc := by
+theorem hom_comp_hom {a b c : SI} {ha : P.mem a} {hb : P.mem b} {hc : P.mem c} (hab : a ≤ b)
+    (hbc : b ≤ c) : f.hom ha hb ⊚ f.hom hb hc = f.hom ha hc := by
   rcases SIdx.le_lteq.mp hab with hab | rfl
   · rcases SIdx.le_lteq.mp hbc with hbc | rfl
-    · rw [f.hom_lt _ _ hab, f.hom_lt _ _ hbc, f.hom_lt _ _ (SIdx.lt_trans hab hbc)]
-      exact hf.proj_comp_proj a b c ha hb hc hab hbc _
+    · rw [f.hom_lt hab, f.hom_lt hbc, f.hom_lt (SIdx.lt_trans hab hbc)]
+      exact hf.proj_comp_proj hab hbc
     · rw [f.hom_self, EnrichedCat.comp_id]
   · rw [f.hom_self, EnrichedCat.id_comp]
 
-theorem hom_comp_hom_of_le {a c : SI} (ha : P.mem a) (hc : P.mem c) (hac : a ≤ c) :
-    f.hom a c ha hc ⊚ f.hom c a hc ha = EnrichedCat.id _ := by
+theorem hom_comp_hom_of_le {a c : SI} {ha : P.mem a} {hc : P.mem c} (hac : a ≤ c) :
+    f.hom ha hc ⊚ f.hom hc ha = EnrichedCat.id _ := by
   rcases SIdx.le_lteq.mp hac with h | rfl
-  · rw [f.hom_lt _ _ h, f.hom_gt _ _ h]; exact hf.proj_comp_emb a c ha hc h
+  · rw [f.hom_lt h, f.hom_gt h]; exact hf.proj_comp_emb h
   · rw [f.hom_self, EnrichedCat.id_comp]
 
-theorem hom_comp_hom_dist {a c : SI} (ha : P.mem a) (hc : P.mem c) (hac : a ≤ c) m
-    (hm : m < a) : f.hom c a hc ha ⊚ f.hom a c ha hc ≡{m}≡ EnrichedCat.id _ := by
+theorem hom_comp_hom_dist {a c : SI} {ha : P.mem a} {hc : P.mem c} (hac : a ≤ c) {m}
+    (hm : m < a) : f.hom hc ha ⊚ f.hom ha hc ≡{m}≡ EnrichedCat.id _ := by
   rcases SIdx.le_lteq.mp hac with h | rfl
-  · rw [f.hom_lt _ _ h, f.hom_gt _ _ h]; exact hf.emb_comp_proj a c ha hc h m hm
+  · rw [f.hom_lt h, f.hom_gt h]; exact hf.emb_comp_proj h hm
   · rw [f.hom_self, EnrichedCat.id_comp]
 
-theorem hom_comp_emb {a b c : SI} (ha : P.mem a) (hb : P.mem b) (hc : P.mem c) (hab : a < b)
-    (hbc : b ≤ c) : f.hom c b hc hb ⊚ f.emb a b ha hb hab = f.hom c a hc ha := by
+theorem hom_comp_emb {a b c : SI} {ha : P.mem a} {hb : P.mem b} {hc : P.mem c} (hab : a < b)
+    (hbc : b ≤ c) : f.hom hc hb ⊚ f.emb ha hb hab = f.hom hc ha := by
   rcases SIdx.le_lteq.mp hbc with h | rfl
-  · rw [f.hom_gt _ _ h, f.hom_gt _ _ (SIdx.lt_trans hab h)]
-    exact hf.emb_comp_emb a b c ha hb hc hab h _
-  · rw [f.hom_self, EnrichedCat.id_comp, f.hom_gt _ _ hab]
+  · rw [f.hom_gt h, f.hom_gt (SIdx.lt_trans hab h)]
+    exact hf.emb_comp_emb hab h
+  · rw [f.hom_self, EnrichedCat.id_comp, f.hom_gt hab]
 
-theorem hom_comp_fold {a c : SI} (ha : P.mem a) (hc : P.mem c) (hac : a ≤ c) :
-    f.hom a c ha hc ⊚ f.fold c hc = f.fold a ha ⊚ EFunctor.map (f.hom c a hc ha) (f.hom a c ha hc) := by
+theorem hom_comp_fold {a c : SI} {ha : P.mem a} {hc : P.mem c} (hac : a ≤ c) :
+    f.hom ha hc ⊚ f.fold hc = f.fold ha ⊚ EFunctor.map (f.hom hc ha) (f.hom ha hc) := by
   rcases SIdx.le_lteq.mp hac with h | rfl
-  · rw [f.hom_lt _ _ h, f.hom_gt _ _ h]; exact hf.proj_comp_fold a c ha hc h
+  · rw [f.hom_lt h, f.hom_gt h]; exact hf.proj_comp_fold h
   · simp only [f.hom_self, EFunctor.map_id, EnrichedCat.id_comp, EnrichedCat.comp_id]
 
-theorem map_comp_unfold {a c : SI} (ha : P.mem a) (hc : P.mem c) (hac : a ≤ c) m (hm : m < a) :
-    EFunctor.map (f.hom c a hc ha) (f.hom a c ha hc) ⊚ f.unfold c hc ≡{m}≡
-      f.unfold a ha ⊚ f.hom a c ha hc :=
+theorem map_comp_unfold {a c : SI} {ha : P.mem a} {hc : P.mem c} (hac : a ≤ c) {m}
+    (hm : m < a) :
+    EFunctor.map (f.hom hc ha) (f.hom ha hc) ⊚ f.unfold hc ≡{m}≡ f.unfold ha ⊚ f.hom ha hc :=
   calc
-    _ = EnrichedCat.id _ ⊚ (EFunctor.map (f.hom c a hc ha) (f.hom a c ha hc) ⊚ f.unfold c hc) :=
+    _ = EnrichedCat.id _ ⊚ (EFunctor.map (f.hom hc ha) (f.hom ha hc) ⊚ f.unfold hc) :=
       (EnrichedCat.id_comp _).symm
-    _ ≡{m}≡ (f.unfold a ha ⊚ f.fold a ha) ⊚ (EFunctor.map (f.hom c a hc ha) (f.hom a c ha hc) ⊚
-        f.unfold c hc) := comp_dist_l (hf.unfold_comp_fold a ha m hm).symm _
-    _ = f.unfold a ha ⊚ f.hom a c ha hc := by
-      rw [EnrichedCat.assoc, ← EnrichedCat.assoc (f.fold a ha), ← hf.hom_comp_fold ha hc hac,
+    _ ≡{m}≡ (f.unfold ha ⊚ f.fold ha) ⊚
+        (EFunctor.map (f.hom hc ha) (f.hom ha hc) ⊚ f.unfold hc) :=
+      comp_dist_l (hf.unfold_comp_fold hm).symm _
+    _ = f.unfold ha ⊚ f.hom ha hc := by
+      rw [EnrichedCat.assoc, ← EnrichedCat.assoc (f.fold ha), ← hf.hom_comp_fold hac,
         EnrichedCat.assoc, hf.fold_comp_unfold, EnrichedCat.comp_id]
 
 end PartialSol.Lawful
 
 section Zero
 
-variable [HasTerminal SI Obj] [HasSeed SI F]
+variable [HasTerminal Obj] [HasSeed F]
 
 open HasTerminal in
 def zeroTop {γ : SI} (h0 : γ = 0) (f : PartialSol F (Site.below γ)) : Extension f where
   X := one SI
-  emb β h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
-  proj β h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
+  emb {β} h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
+  proj {β} h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
   fold := toOne _
   unfold := HasSeed.seed (F := F)
 
 theorem zeroTop_lawful {γ : SI} (h0 : γ = 0) (f : PartialSol F (Site.below γ)) :
     (zeroTop h0 f).Lawful where
-  proj_comp_emb β h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
-  emb_comp_proj β h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
-  emb_comp_emb _ η _ h2 := absurd (h0 ▸ h2) (SIdx.not_lt_zero η)
-  proj_comp_proj _ η _ h2 := absurd (h0 ▸ h2) (SIdx.not_lt_zero η)
+  proj_comp_emb {β} h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
+  emb_comp_proj {β} h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
+  emb_comp_emb {_ η} _ h2 := absurd (h0 ▸ h2) (SIdx.not_lt_zero η)
+  proj_comp_proj {_ η} _ h2 := absurd (h0 ▸ h2) (SIdx.not_lt_zero η)
   fold_comp_unfold := (HasTerminal.toOne_unique _).trans (HasTerminal.toOne_unique _).symm
-  unfold_comp_fold m hm := absurd (h0 ▸ hm) (SIdx.not_lt_zero m)
-  proj_comp_fold β h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
+  unfold_comp_fold {m} hm := absurd (h0 ▸ hm) (SIdx.not_lt_zero m)
+  proj_comp_fold {β} h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
   determined g g' _ := (HasTerminal.toOne_unique g).trans (HasTerminal.toOne_unique g').symm
 
 end Zero
 
 section Succ
 
-variable [Truncatable SI F]
+variable [Truncatable F]
 open Truncatable
 
 variable {γ m : SI} (hm : γ = succᵢ m)
@@ -552,214 +538,206 @@ theorem lt_of_eq_succ : m < γ := hm ▸ SIdx.lt_succ_self m
 
 variable {f : PartialSol F (Site.below γ)} (hf : f.Lawful)
 
-abbrev succStage : Obj :=
-  trunc (F := F) (seg m) (f.X m (lt_of_eq_succ hm)) (hf.determined m _)
+abbrev succStage : Obj := trunc (F := F) (hf.determined (lt_of_eq_succ hm))
 
-def succEmb : Hom (f.X m (lt_of_eq_succ hm)) (succStage hm hf) :=
-  proj (F := F) (seg m) _ _ ⊚ f.unfold m (lt_of_eq_succ hm)
+def succEmb : f.X (lt_of_eq_succ hm) ⟶ succStage hm hf :=
+  proj (F := F) (hf.determined _) ⊚ f.unfold (lt_of_eq_succ hm)
 
-def succProj : Hom (succStage hm hf) (f.X m (lt_of_eq_succ hm)) :=
-  f.fold m (lt_of_eq_succ hm) ⊚ rep (F := F) (seg m) _ _
+def succProj : succStage hm hf ⟶ f.X (lt_of_eq_succ hm) :=
+  f.fold (lt_of_eq_succ hm) ⊚ rep (F := F) (hf.determined _)
 
 def succTop : Extension f where
   X := succStage hm hf
-  emb β h := succEmb hm hf ⊚ f.hom m β (lt_of_eq_succ hm) h
-  proj β h := f.hom β m h (lt_of_eq_succ hm) ⊚ succProj hm hf
-  fold := proj (F := F) (seg m) _ _ ⊚ EFunctor.map (succEmb hm hf) (succProj hm hf)
-  unfold := EFunctor.map (succProj hm hf) (succEmb hm hf) ⊚ rep (F := F) (seg m) _ _
+  emb h := succEmb hm hf ⊚ f.hom (lt_of_eq_succ hm) h
+  proj h := f.hom h (lt_of_eq_succ hm) ⊚ succProj hm hf
+  fold := proj (F := F) (hf.determined _) ⊚ EFunctor.map (succEmb hm hf) (succProj hm hf)
+  unfold := EFunctor.map (succProj hm hf) (succEmb hm hf) ⊚ rep (F := F) (hf.determined _)
 
 theorem succProj_comp_proj {n : SI} (hn : (seg m).mem n) :
-    succProj hm hf ⊚ proj (F := F) (seg m) _ _ ≡{n}≡ f.fold m (lt_of_eq_succ hm) := by
+    succProj hm hf ⊚ proj (F := F) (hf.determined _) ≡{n}≡ f.fold (lt_of_eq_succ hm) := by
   rw [succProj, EnrichedCat.assoc]
-  exact (comp_dist_r _ (rep_proj (F := F) _ _ _ n hn)).trans (.of_eq (EnrichedCat.comp_id _))
+  exact (comp_dist_r _ (rep_proj (F := F) (hf.determined _) hn)).trans
+    (.of_eq (EnrichedCat.comp_id _))
 
 theorem succProj_comp_succEmb : succProj hm hf ⊚ succEmb hm hf = EnrichedCat.id _ :=
-  hf.determined m (lt_of_eq_succ hm) _ _ fun n hn => by
+  hf.determined (lt_of_eq_succ hm) _ _ fun n hn => by
     rw [succEmb, ← EnrichedCat.assoc]
-    exact (comp_dist_l (succProj_comp_proj hm hf hn) _).trans (.of_eq (hf.fold_comp_unfold m _))
+    exact (comp_dist_l (succProj_comp_proj hm hf hn) _).trans (.of_eq hf.fold_comp_unfold)
 
-theorem succEmb_comp_succProj k (hk : k < m) :
+theorem succEmb_comp_succProj {k} (hk : k < m) :
     succEmb hm hf ⊚ succProj hm hf ≡{k}≡ EnrichedCat.id _ := by
-  rw [succEmb, succProj, EnrichedCat.assoc, ← EnrichedCat.assoc (f.unfold m _)]
-  refine (comp_dist_r _ (comp_dist_l (hf.unfold_comp_fold m _ k hk) _)).trans (.of_eq ?_)
-  rw [EnrichedCat.id_comp, proj_rep (F := F)]
+  rw [succEmb, succProj, EnrichedCat.assoc, ← EnrichedCat.assoc (f.unfold _)]
+  refine (comp_dist_r _ (comp_dist_l (hf.unfold_comp_fold hk) _)).trans (.of_eq ?_)
+  rw [EnrichedCat.id_comp, proj_rep (F := F) (hf.determined _)]
 
 theorem succTop_lawful : (succTop hm hf).Lawful where
-  proj_comp_emb β h := by
+  proj_comp_emb h := by
     simp only [succTop, EnrichedCat.assoc]
     rw [← EnrichedCat.assoc (succProj hm hf), succProj_comp_succEmb hm hf, EnrichedCat.id_comp]
-    exact hf.hom_comp_hom_of_le h _ (le_of_below_succ hm h)
-  emb_comp_proj β h k hk := by
+    exact hf.hom_comp_hom_of_le (le_of_below_succ hm h)
+  emb_comp_proj h _ hk := by
     simp only [succTop, EnrichedCat.assoc]
-    rw [← EnrichedCat.assoc (f.hom m β _ _)]
+    rw [← EnrichedCat.assoc (f.hom (lt_of_eq_succ hm) h)]
     refine (comp_dist_r _ (comp_dist_l
-      (hf.hom_comp_hom_dist h _ (le_of_below_succ hm h) k hk) _)).trans ?_
+      (hf.hom_comp_hom_dist (le_of_below_succ hm h) hk) _)).trans ?_
     rw [EnrichedCat.id_comp]
-    exact succEmb_comp_succProj hm hf k (SIdx.lt_le_trans hk (le_of_below_succ hm h))
-  emb_comp_emb β η h1 h2 := by
+    exact succEmb_comp_succProj hm hf (SIdx.lt_le_trans hk (le_of_below_succ hm h))
+  emb_comp_emb h1 h2 := by
     simp only [succTop, EnrichedCat.assoc]
-    rw [hf.hom_comp_emb _ h2 _ h1 (le_of_below_succ hm h2)]
-  proj_comp_proj β η h1 h2 := by
+    rw [hf.hom_comp_emb h1 (le_of_below_succ hm h2)]
+  proj_comp_proj h1 h2 := by
     simp only [succTop]
-    rw [← EnrichedCat.assoc, ← f.hom_lt _ h2 h1,
-      hf.hom_comp_hom _ h2 _ (SIdx.lt_le_incl h1) (le_of_below_succ hm h2)]
+    rw [← EnrichedCat.assoc, ← f.hom_lt h1,
+      hf.hom_comp_hom (SIdx.lt_le_incl h1) (le_of_below_succ hm h2)]
   fold_comp_unfold := by
     simp only [succTop, EnrichedCat.assoc]
     rw [← EnrichedCat.assoc (EFunctor.map _ _), ← EFunctor.map_comp, succProj_comp_succEmb hm hf,
-      EFunctor.map_id, EnrichedCat.id_comp, proj_rep (F := F)]
-  unfold_comp_fold k hk := by
+      EFunctor.map_id, EnrichedCat.id_comp, proj_rep (F := F) (hf.determined _)]
+  unfold_comp_fold hk := by
     simp only [succTop, EnrichedCat.assoc]
-    rw [← EnrichedCat.assoc (rep (F := F) _ _ _)]
+    rw [← EnrichedCat.assoc (rep (F := F) (hf.determined _))]
     refine (comp_dist_r _ (comp_dist_l
-      (rep_proj (F := F) _ _ _ k (mem_seg_of_le (le_of_below_succ hm hk))) _)).trans ?_
+      (rep_proj (F := F) (hf.determined _) (mem_seg_of_le (le_of_below_succ hm hk))) _)).trans ?_
     rw [EnrichedCat.id_comp, ← EFunctor.map_comp, ← EFunctor.map_id]
     exact EFunctor.map_contractive fun j hj =>
       have hj' := SIdx.lt_le_trans hj (le_of_below_succ hm hk)
-      ⟨succEmb_comp_succProj hm hf j hj', succEmb_comp_succProj hm hf j hj'⟩
-  proj_comp_fold β h := hf.determined β h _ _ fun n hn => by
+      ⟨succEmb_comp_succProj hm hf hj', succEmb_comp_succProj hm hf hj'⟩
+  proj_comp_fold h := hf.determined h _ _ fun n hn => by
     simp only [succTop, EnrichedCat.assoc]
     rw [← EnrichedCat.assoc (succProj hm hf)]
     refine (comp_dist_r _ (comp_dist_l
       (succProj_comp_proj hm hf (mem_seg_mono (le_of_below_succ hm h) hn)) _)).trans (.of_eq ?_)
-    rw [← EnrichedCat.assoc, hf.hom_comp_fold h _ (le_of_below_succ hm h), EnrichedCat.assoc,
+    rw [← EnrichedCat.assoc, hf.hom_comp_fold (le_of_below_succ hm h), EnrichedCat.assoc,
       ← EFunctor.map_comp]
   determined := Determined.mono (fun _ hn => mem_seg_mono (SIdx.lt_le_incl (lt_of_eq_succ hm)) hn)
-    (determined (F := F) (seg m) _ _)
+    (determined (F := F) (hf.determined _))
 
 end Succ
 
 section Limit
 
-variable [HasTowerLimits SI Obj]
+variable [HasTowerLimits Obj]
 open HasTowerLimits
 
-variable {P : Site SI} (hP : P.IsLimit) (f : PartialSol F P) (hf : f.Lawful)
+variable {P : Site} (hP : P.IsLimit) (f : PartialSol F P) (hf : f.Lawful)
 
-abbrev limObj : Obj := lim f.toTower hf.tower
+abbrev limObj : Obj := lim hf.tower
 
-include hf in
-theorem hom_comp_π {c c' : SI} (hc : P.mem c) (hc' : P.mem c') (h : c ≤ c') :
-    f.hom c c' hc hc' ⊚ π _ hf.tower c' hc' = π _ hf.tower c hc := by
+theorem hom_comp_π {c c' : SI} {hc : P.mem c} {hc' : P.mem c'} (h : c ≤ c') :
+    f.hom hc hc' ⊚ π hf.tower hc' = π hf.tower hc := by
   rcases SIdx.le_lteq.mp h with h | rfl
-  · rw [f.hom_lt _ _ h]; exact proj_comp_π _ hf.tower c c' hc hc' h
+  · rw [f.hom_lt h]; exact proj_comp_π hf.tower h
   · rw [f.hom_self, EnrichedCat.id_comp]
 
-include hf in
-theorem emb_comp_hom {c c' : SI} (hc : P.mem c) (hc' : P.mem c') (h : c ≤ c') :
-    InvLim.emb hf.tower c' hc' ⊚ f.hom c' c hc' hc = InvLim.emb hf.tower c hc := by
+theorem emb_comp_hom {c c' : SI} {hc : P.mem c} {hc' : P.mem c'} (h : c ≤ c') :
+    InvLim.emb hf.tower hc' ⊚ f.hom hc' hc = InvLim.emb hf.tower hc := by
   rcases SIdx.le_lteq.mp h with h | rfl
-  · rw [f.hom_gt _ _ h]; exact InvLim.emb_comp_emb hf.tower c c' hc hc' h
+  · rw [f.hom_gt h]; exact InvLim.emb_comp_emb hf.tower h
   · rw [f.hom_self, EnrichedCat.comp_id]
 
-theorem limFold_compatible β δ hβ hδ (h : β < δ) :
-    f.proj β δ hβ hδ h ⊚ (f.fold δ hδ ⊚ EFunctor.map (InvLim.emb hf.tower δ hδ) (π _ hf.tower δ hδ)) =
-      f.fold β hβ ⊚ EFunctor.map (InvLim.emb hf.tower β hβ) (π _ hf.tower β hβ) := by
+theorem limFold_compatible {β δ} {hβ : P.mem β} {hδ : P.mem δ} (h : β < δ) :
+    f.proj hβ hδ h ⊚ (f.fold hδ ⊚ EFunctor.map (InvLim.emb hf.tower hδ) (π hf.tower hδ)) =
+      f.fold hβ ⊚ EFunctor.map (InvLim.emb hf.tower hβ) (π hf.tower hβ) := by
   rw [← EnrichedCat.assoc, hf.proj_comp_fold, EnrichedCat.assoc, ← EFunctor.map_comp,
     InvLim.emb_comp_emb, proj_comp_π]
 
-def limFold : Hom (F (limObj f hf) (limObj f hf)) (limObj f hf) :=
-  lift _ hf.tower
-    (fun c hc => f.fold c hc ⊚ EFunctor.map (InvLim.emb hf.tower c hc) (π _ hf.tower c hc))
+def limFold : F (limObj f hf) (limObj f hf) ⟶ limObj f hf :=
+  lift hf.tower (fun hc => f.fold hc ⊚ EFunctor.map (InvLim.emb hf.tower hc) (π hf.tower hc))
     (limFold_compatible f hf)
 
-theorem π_comp_limFold c hc : π _ hf.tower c hc ⊚ limFold f hf =
-    f.fold c hc ⊚ EFunctor.map (InvLim.emb hf.tower c hc) (π _ hf.tower c hc) :=
-  π_comp_lift _ hf.tower _ _ c hc
+theorem π_comp_limFold {c : SI} {hc : P.mem c} : π hf.tower hc ⊚ limFold f hf =
+    f.fold hc ⊚ EFunctor.map (InvLim.emb hf.tower hc) (π hf.tower hc) :=
+  π_comp_lift hf.tower _ _
 
-def chainAt (c : SI) (hc : P.mem c) : Hom (limObj f hf) (F (limObj f hf) (limObj f hf)) :=
-  EFunctor.map (π _ hf.tower c hc) (InvLim.emb hf.tower c hc) ⊚ f.unfold c hc ⊚ π _ hf.tower c hc
+def chainAt {c : SI} (hc : P.mem c) : limObj f hf ⟶ F (limObj f hf) (limObj f hf) :=
+  EFunctor.map (π hf.tower hc) (InvLim.emb hf.tower hc) ⊚ f.unfold hc ⊚ π hf.tower hc
 
-theorem chainAt_dist {c c' : SI} (hc : P.mem c) (hc' : P.mem c') (h : c ≤ c') m (hm : m < c) :
-    chainAt f hf c' hc' ≡{m}≡ chainAt f hf c hc := by
-  calc chainAt f hf c' hc'
-      ≡{m}≡ EFunctor.map (π _ hf.tower c' hc') (InvLim.emb hf.tower c' hc') ⊚
-        (EFunctor.map (f.hom c c' hc hc') (f.hom c' c hc' hc) ⊚ (f.unfold c hc ⊚ f.hom c c' hc hc')) ⊚
-          π _ hf.tower c' hc' := comp_dist_r _ (comp_dist_l ?_ _)
-    _ = chainAt f hf c hc := by
-      rw [chainAt, ← hom_comp_π f hf hc hc' h, ← emb_comp_hom f hf hc hc' h, EFunctor.map_comp]
+theorem chainAt_dist {c c' : SI} {hc : P.mem c} {hc' : P.mem c'} (h : c ≤ c') {m} (hm : m < c) :
+    chainAt f hf hc' ≡{m}≡ chainAt f hf hc := by
+  calc chainAt f hf hc'
+      ≡{m}≡ EFunctor.map (π hf.tower hc') (InvLim.emb hf.tower hc') ⊚
+        (EFunctor.map (f.hom hc hc') (f.hom hc' hc) ⊚ (f.unfold hc ⊚ f.hom hc hc')) ⊚
+          π hf.tower hc' := comp_dist_r _ (comp_dist_l ?_ _)
+    _ = chainAt f hf hc := by
+      rw [chainAt, ← hom_comp_π f hf (hc' := hc') h, ← emb_comp_hom f hf (hc' := hc') h,
+        EFunctor.map_comp]
       simp only [EnrichedCat.assoc]
-  refine .symm ((comp_dist_r _ (hf.map_comp_unfold hc hc' h m hm).symm).trans ?_)
+  refine .symm ((comp_dist_r _ (hf.map_comp_unfold h hm).symm).trans ?_)
   rw [← EnrichedCat.assoc, ← EFunctor.map_comp]
-  refine (comp_dist_l (map_dist F (hf.hom_comp_hom_dist hc hc' h m hm)
-    (hf.hom_comp_hom_dist hc hc' h m hm)) _).trans ?_
+  refine (comp_dist_l (map_dist F (hf.hom_comp_hom_dist h hm) (hf.hom_comp_hom_dist h hm))
+    _).trans ?_
   rw [EFunctor.map_id, EnrichedCat.id_comp]
 
-theorem π_comp_limFold_comp_chainAt {c c' : SI} (hc : P.mem c) (hc' : P.mem c') (h : c ≤ c') :
-    π _ hf.tower c hc ⊚ limFold f hf ⊚ chainAt f hf c' hc' = π _ hf.tower c hc := by
+theorem π_comp_limFold_comp_chainAt {c c' : SI} {hc : P.mem c} {hc' : P.mem c'} (h : c ≤ c') :
+    π hf.tower hc ⊚ limFold f hf ⊚ chainAt f hf hc' = π hf.tower hc := by
   rw [← EnrichedCat.assoc, π_comp_limFold]
   simp only [chainAt, EnrichedCat.assoc]
-  rw [← EnrichedCat.assoc (EFunctor.map _ _) (EFunctor.map _ _), ← EFunctor.map_comp, InvLim.π_comp_emb,
-    InvLim.π_comp_emb, ← EnrichedCat.assoc, ← hf.hom_comp_fold hc hc' h, EnrichedCat.assoc,
-    ← EnrichedCat.assoc (f.fold c' hc'), hf.fold_comp_unfold, EnrichedCat.id_comp,
-    hom_comp_π f hf hc hc' h]
+  rw [← EnrichedCat.assoc (EFunctor.map _ _) (EFunctor.map _ _), ← EFunctor.map_comp,
+    InvLim.π_comp_emb, InvLim.π_comp_emb, ← EnrichedCat.assoc, ← hf.hom_comp_fold h,
+    EnrichedCat.assoc, ← EnrichedCat.assoc (f.fold hc'), hf.fold_comp_unfold, EnrichedCat.id_comp,
+    hom_comp_π f hf h]
 
-theorem chainAt_comp_limFold (c : SI) (hc : P.mem c) m (hm : m < c) :
-    chainAt f hf c hc ⊚ limFold f hf ≡{m}≡ EnrichedCat.id _ := by
+theorem chainAt_comp_limFold {c : SI} {hc : P.mem c} {m} (hm : m < c) :
+    chainAt f hf hc ⊚ limFold f hf ≡{m}≡ EnrichedCat.id _ := by
   simp only [chainAt, EnrichedCat.assoc]
-  rw [π_comp_limFold, ← EnrichedCat.assoc (f.unfold c hc)]
-  refine (comp_dist_r _ (comp_dist_l (hf.unfold_comp_fold c hc m hm) _)).trans ?_
+  rw [π_comp_limFold, ← EnrichedCat.assoc (f.unfold hc)]
+  refine (comp_dist_r _ (comp_dist_l (hf.unfold_comp_fold hm) _)).trans ?_
   rw [EnrichedCat.id_comp, ← EFunctor.map_comp, ← EFunctor.map_id]
   exact EFunctor.map_contractive fun j hj =>
-    ⟨InvLim.emb_comp_π hf.tower c hc j (SIdx.lt_trans hj hm),
-      InvLim.emb_comp_π hf.tower c hc j (SIdx.lt_trans hj hm)⟩
+    ⟨InvLim.emb_comp_π hf.tower (SIdx.lt_trans hj hm),
+      InvLim.emb_comp_π hf.tower (SIdx.lt_trans hj hm)⟩
 
-theorem lim_determined {K : LimitCut SI} (hK : ∀ c, P.mem c → ∀ n, (seg c).mem n → K.mem n) :
-    Determined K (limObj f hf) := fun g g' h =>
-  InvLim.ext hf.tower g g' fun c hc =>
-    hf.determined c hc _ _ fun n hn => comp_dist_r _ (h n (hK c hc n hn))
+theorem lim_determined {K : LimitCut} (hK : ∀ c, P.mem c → ∀ n, (seg c).mem n → K.mem n) :
+    Determined K (limObj f hf) := fun _ _ h =>
+  InvLim.ext hf.tower fun hc =>
+    hf.determined hc _ _ fun n hn => comp_dist_r _ (h n (hK _ hc n hn))
 
-def limChain : Site.Chain (Hom (limObj f hf) (F (limObj f hf) (limObj f hf))) P where
-  val k hk := chainAt f hf (succᵢ k) (hP.succ_mem hk)
-  cauchy {m _} _ _ h := chainAt_dist f hf _ _ (SIdx.succ_le_mono.mp h) m (SIdx.lt_succ_self m)
+def limChain : Site.Chain (limObj f hf ⟶ F (limObj f hf) (limObj f hf)) P where
+  val _ hk := chainAt f hf (hP.succ_mem hk)
+  cauchy {m _} _ _ h := chainAt_dist f hf (SIdx.succ_le_mono.mp h) (SIdx.lt_succ_self m)
 
-variable [Site.HasCompl.{v, w} P]
+variable {u : limObj f hf ⟶ F (limObj f hf) (limObj f hf)}
+  (hu : ∀ {k} (hk : P.mem k), u ≡{k}≡ chainAt f hf (hP.succ_mem hk))
+include hu
 
-def limUnfold : Hom (limObj f hf) (F (limObj f hf) (limObj f hf)) :=
-  @Site.HasCompl.compl _ _ P _ _ _ ⟨chainAt f hf _ (hP.succ_mem hP.1)⟩ (limChain hP f hf)
-
-theorem limUnfold_dist {k : SI} (hk : P.mem k) :
-    limUnfold hP f hf ≡{k}≡ chainAt f hf (succᵢ k) (hP.succ_mem hk) :=
-  @Site.HasCompl.conv_compl _ _ P _ _ _ ⟨chainAt f hf _ (hP.succ_mem hP.1)⟩ _ _ hk
-
-theorem limFold_comp_limUnfold : limFold f hf ⊚ limUnfold hP f hf = EnrichedCat.id _ :=
-  InvLim.ext hf.tower _ _ fun c hc => hf.determined c hc _ _ fun n hn => by
+theorem limFold_comp_unfold : limFold f hf ⊚ u = EnrichedCat.id _ :=
+  InvLim.ext hf.tower fun {c} hc => hf.determined hc _ _ fun n hn => by
     rw [EnrichedCat.comp_id, ← EnrichedCat.assoc]
     rcases SIdx.le_total (n := n) (m := c) with hnc | hcn
-    · refine (comp_dist_r _ ((limUnfold_dist hP f hf hc).le hnc)).trans (.of_eq ?_)
+    · refine (comp_dist_r _ ((hu hc).le hnc)).trans (.of_eq ?_)
       rw [EnrichedCat.assoc]
-      exact π_comp_limFold_comp_chainAt f hf hc _ SIdx.le_succ_diag_r
-    · refine (comp_dist_r _ (limUnfold_dist hP f hf ((P.cut hP).mem_of_mem_seg hc n hn))).trans
-        (.of_eq ?_)
+      exact π_comp_limFold_comp_chainAt f hf SIdx.le_succ_diag_r
+    · have hn' := LimitCut.mem_of_mem_seg ⟨P.mem, hP.1, hP.2, P.down⟩ hc n hn
+      refine (comp_dist_r _ (hu hn')).trans (.of_eq ?_)
       rw [EnrichedCat.assoc]
-      exact π_comp_limFold_comp_chainAt f hf hc _ (SIdx.le_trans hcn SIdx.le_succ_diag_r)
+      exact π_comp_limFold_comp_chainAt f hf (SIdx.le_trans hcn SIdx.le_succ_diag_r)
 
-theorem limUnfold_comp_limFold {m : SI} (hm : P.mem m) :
-    limUnfold hP f hf ⊚ limFold f hf ≡{m}≡ EnrichedCat.id _ :=
-  (comp_dist_l (limUnfold_dist hP f hf hm) _).trans
-    (chainAt_comp_limFold f hf _ _ m (SIdx.lt_succ_self m))
+theorem unfold_comp_limFold {m : SI} (hm : P.mem m) :
+    u ⊚ limFold f hf ≡{m}≡ EnrichedCat.id _ :=
+  (comp_dist_l (hu hm) _).trans (chainAt_comp_limFold f hf (SIdx.lt_succ_self m))
 
 end Limit
 
 section LimitTop
 
-variable [HasTowerLimits SI Obj]
+variable [HasTowerLimits Obj]
 variable {γ : SI} (hl : SIdx.Limit γ) (f : PartialSol F (Site.below γ)) (hf : f.Lawful)
 
 def limitTop : Extension f where
   X := limObj f hf
-  emb β h := InvLim.emb hf.tower β h
-  proj β h := HasTowerLimits.π _ hf.tower β h
+  emb h := InvLim.emb hf.tower h
+  proj h := HasTowerLimits.π hf.tower h
   fold := limFold f hf
-  unfold := limUnfold (Site.below_isLimit hl) f hf
+  unfold := let c := limChain (Site.below_isLimit hl) f hf; IsCOFE.lbcompl hl ⟨c.val, c.cauchy⟩
 
 theorem limitTop_lawful : (limitTop hl f hf).Lawful where
-  proj_comp_emb β h := InvLim.π_comp_emb_self hf.tower β h
-  emb_comp_proj β h k hk := InvLim.emb_comp_π hf.tower β h k hk
-  emb_comp_emb β η h1 h2 := InvLim.emb_comp_emb hf.tower β η _ h2 h1
-  proj_comp_proj β η h1 h2 := HasTowerLimits.proj_comp_π _ hf.tower β η _ h2 h1
-  fold_comp_unfold := limFold_comp_limUnfold _ f hf
-  unfold_comp_fold m hm := limUnfold_comp_limFold _ f hf (m := m) hm
-  proj_comp_fold β h := π_comp_limFold f hf β h
+  proj_comp_emb _ := InvLim.π_comp_emb_self hf.tower
+  emb_comp_proj _ _ hk := InvLim.emb_comp_π hf.tower hk
+  emb_comp_emb h1 _ := InvLim.emb_comp_emb hf.tower h1
+  proj_comp_proj h1 _ := HasTowerLimits.proj_comp_π hf.tower h1
+  fold_comp_unfold := limFold_comp_unfold (Site.below_isLimit hl) f hf (IsCOFE.conv_lbcompl hl _)
+  unfold_comp_fold := unfold_comp_limFold (Site.below_isLimit hl) f hf (IsCOFE.conv_lbcompl hl _)
+  proj_comp_fold _ := π_comp_limFold f hf
   determined := lim_determined f hf fun _ hc _ hn => mem_seg_mono (SIdx.lt_le_incl hc) hn
 
 end LimitTop
@@ -777,29 +755,31 @@ variable {γ : SI}
 
 def restrict {β : SI} (h : β < γ) (t : ClosedSol F γ) : ClosedSol F β where
   below := t.below.restrict (Site.below_le_below (SIdx.lt_le_incl h))
-  top := t.below.topAt β h
+  top := t.below.topAt h
   below_lawful := t.below_lawful.restrict _
-  top_lawful := t.below_lawful β h
+  top_lawful := t.below_lawful.topAt h
 
-def castDom {t t' : ClosedSol F γ} (h : t = t') {Z : Obj} (g : Hom t.top.X Z) : Hom t'.top.X Z :=
+def castDom {t t' : ClosedSol F γ} (h : t = t') {Z : Obj} (g : t.top.X ⟶ Z) :
+    t'.top.X ⟶ Z :=
   h ▸ g
 
-def castCod {t t' : ClosedSol F γ} (h : t = t') {Z : Obj} (g : Hom Z t.top.X) : Hom Z t'.top.X :=
+def castCod {t t' : ClosedSol F γ} (h : t = t') {Z : Obj} (g : Z ⟶ t.top.X) :
+    Z ⟶ t'.top.X :=
   h ▸ g
 
 end ClosedSol
 
-def Coherent {P : Site SI} (fam : ∀ γ, P.mem γ → ClosedSol F γ) : Prop :=
+def Coherent {P : Site} (fam : ∀ γ, P.mem γ → ClosedSol F γ) : Prop :=
   ∀ {γ δ} (hγδ : γ < δ) (hδ : P.mem δ),
     (fam δ hδ).restrict hγδ = fam γ (P.down (SIdx.lt_le_incl hγδ) hδ)
 
-def glue {P : Site SI} (fam : ∀ γ, P.mem γ → ClosedSol F γ) (hcoh : Coherent fam) :
+def glue {P : Site} (fam : ∀ γ, P.mem γ → ClosedSol F γ) (hcoh : Coherent fam) :
     PartialSol F P where
-  X β hβ := (fam β hβ).top.X
-  emb β δ _ hδ hlt := ClosedSol.castDom (hcoh hlt hδ) ((fam δ hδ).top.emb β hlt)
-  proj β δ _ hδ hlt := ClosedSol.castCod (hcoh hlt hδ) ((fam δ hδ).top.proj β hlt)
-  fold β hβ := (fam β hβ).top.fold
-  unfold β hβ := (fam β hβ).top.unfold
+  X hβ := (fam _ hβ).top.X
+  emb _ hδ hlt := ClosedSol.castDom (hcoh hlt hδ) ((fam _ hδ).top.emb hlt)
+  proj _ hδ hlt := ClosedSol.castCod (hcoh hlt hδ) ((fam _ hδ).top.proj hlt)
+  fold hβ := (fam _ hβ).top.fold
+  unfold hβ := (fam _ hβ).top.unfold
 
 section Glued
 
@@ -812,8 +792,8 @@ theorem coherent_of_restrict : Coherent (P := Site.below γ) IH := fun {β β'} 
 
 def gluedTop : Extension (glue (P := Site.below γ) IH (coherent_of_restrict IH T hT)) where
   X := T.top.X
-  emb β h := ClosedSol.castDom (hT β h) (T.top.emb β h)
-  proj β h := ClosedSol.castCod (hT β h) (T.top.proj β h)
+  emb h := ClosedSol.castDom (hT _ h) (T.top.emb h)
+  proj h := ClosedSol.castCod (hT _ h) (T.top.proj h)
   fold := T.top.fold
   unfold := T.top.unfold
 
@@ -834,16 +814,16 @@ theorem glued_congr {γ : SI} {IH IH' : ∀ β, β < γ → ClosedSol F β} (hIH
         ht'⟩ := by
   subst hIH; rfl
 
-theorem glue_lawful {P : Site SI} (fam : ∀ γ, P.mem γ → ClosedSol F γ) (hcoh : Coherent fam) :
-    (glue fam hcoh).Lawful := fun δ hδ =>
-  gluedTop_lawful (IH := fun _ h => (fam δ hδ).restrict h)
+theorem glue_lawful {P : Site} (fam : ∀ γ, P.mem γ → ClosedSol F γ) (hcoh : Coherent fam) :
+    (glue fam hcoh).Lawful :=
+  .of_topAt fun hδ => gluedTop_lawful (IH := fun _ h => (fam _ hδ).restrict h)
     (IH' := fun β h => fam β (P.down (SIdx.lt_le_incl h) hδ))
-    (funext fun _ => funext fun h => hcoh h hδ) (fam δ hδ) (hT := fun _ _ => rfl)
-    (hT' := fun _ h => hcoh h hδ) (fam δ hδ).top_lawful
+    (funext fun _ => funext fun h => hcoh h hδ) (fam _ hδ) (hT := fun _ _ => rfl)
+    (hT' := fun _ h => hcoh h hδ) (fam _ hδ).top_lawful
 
 section Recursion
 
-variable [HasTerminal SI Obj] [HasSeed SI F] [Truncatable SI F] [HasTowerLimits SI Obj]
+variable [HasTerminal Obj] [HasSeed F] [Truncatable F] [HasTowerLimits Obj]
 
 def closeTop (α : SI) (f : PartialSol F (Site.below α)) (hf : f.Lawful) : Extension f :=
   match SIdx.case α with
@@ -860,7 +840,7 @@ theorem closeTop_lawful (α : SI) (f : PartialSol F (Site.below α)) (hf : f.Law
   | .inr (.inr hl) => limitTop_lawful hl f hf
 
 def zeroPoint (f : PartialSol F (Site.below (0 : SI))) (hf : f.Lawful) :
-    Hom (HasTerminal.one SI) (closeTop 0 f hf).X := by
+    HasTerminal.one SI ⟶ (closeTop 0 f hf).X := by
   unfold closeTop
   exact match SIdx.case (0 : SI) with
   | .inl _ => EnrichedCat.id _
@@ -935,90 +915,27 @@ theorem globalSol_lawful : (globalSol F).Lawful :=
   glue_lawful (fun γ _ => (ClosedSol.canonical F γ).1) fun hγδ _ =>
     ClosedSol.graph_restrict hγδ (ClosedSol.canonical F _).2 (ClosedSol.canonical F _).2
 
-def Fix : Obj := limObj (globalSol F) (globalSol_lawful F)
+abbrev Fix : Obj := limObj (globalSol F) (globalSol_lawful F)
 
-def Fix.fold : Hom (F (Fix F) (Fix F)) (Fix F) := limFold (globalSol F) (globalSol_lawful F)
+def Fix.fold : F (Fix F) (Fix F) ⟶ Fix F := limFold (globalSol F) (globalSol_lawful F)
 
-def Fix.unfold : Hom (Fix F) (F (Fix F) (Fix F)) :=
-  limUnfold Site.univ_isLimit (globalSol F) (globalSol_lawful F)
+def Fix.unfold : Fix F ⟶ F (Fix F) (Fix F) :=
+  let c := limChain Site.univ_isLimit (globalSol F) (globalSol_lawful F)
+  IsCOFE.compl ⟨fun n => c.val n trivial, fun h => c.cauchy _ _ h⟩
 
 theorem Fix.fold_comp_unfold : Fix.fold F ⊚ Fix.unfold F = EnrichedCat.id _ :=
-  limFold_comp_limUnfold _ _ _
+  limFold_comp_unfold Site.univ_isLimit _ _ fun _ => IsCOFE.conv_compl
 
 theorem Fix.unfold_comp_fold : Fix.unfold F ⊚ Fix.fold F = EnrichedCat.id _ :=
-  OFE.eq_dist.mpr fun _ => limUnfold_comp_limFold _ _ _ trivial
+  OFE.eq_dist.mpr fun _ =>
+    unfold_comp_limFold Site.univ_isLimit _ _ (fun _ => IsCOFE.conv_compl) trivial
 
-def Fix.point : Hom (HasTerminal.one SI) (Fix F) :=
-  InvLim.emb (globalSol_lawful F).tower 0 trivial ⊚
-    (ClosedSol.canonical_eq F 0 ▸ zeroPoint _ _ : Hom _ (ClosedSol.canonical F 0).1.top.X)
+def Fix.point : HasTerminal.one SI ⟶ Fix F :=
+  InvLim.emb (globalSol_lawful F).tower (n := 0) trivial ⊚
+    (ClosedSol.canonical_eq F 0 ▸ zeroPoint _ _ : _ ⟶ (ClosedSol.canonical F 0).1.top.X)
 
 end Recursion
 
 end Solver
-
-section Bifree
-
-variable {Obj : Type u} [EnrichedCat SI Obj] {F : Obj → Obj → Obj} [EFunctor SI F]
-
-def Bifree {A B : Obj} (i : Hom (F A A) A) (j : Hom A (F A A)) (f : Hom (F B B) B)
-    (g : Hom B (F B B)) (k : Hom B A) (h : Hom A B) : Prop :=
-  j ⊚ k = EFunctor.map h k ⊚ g ∧ h ⊚ i = f ⊚ EFunctor.map k h
-
-variable {A B : Obj} (i : Hom (F A A) A) (j : Hom A (F A A)) (f : Hom (F B B) B)
-  (g : Hom B (F B B))
-
-def bifreeStep : (Hom B A × Hom A B) -c> (Hom B A × Hom A B) where
-  f kh := (i ⊚ EFunctor.map kh.2 kh.1 ⊚ g, f ⊚ EFunctor.map kh.1 kh.2 ⊚ j)
-  contractive := ⟨fun h => ⟨comp_dist_r i (comp_dist_l (EFunctor.map_contractive fun m hm =>
-    ⟨(h m hm).2, (h m hm).1⟩) g), comp_dist_r f (comp_dist_l (EFunctor.map_contractive h) j)⟩⟩
-
-variable {i j} (hij : i ⊚ j = EnrichedCat.id _) (hji : j ⊚ i = EnrichedCat.id _)
-include hij hji
-
-theorem bifree_iff {k : Hom B A} {h : Hom A B} :
-    Bifree i j f g k h ↔ (k, h) = bifreeStep i j f g (k, h) := by
-  refine ⟨fun ⟨hk, hh⟩ => Prod.ext ?_ ?_, fun e => ⟨?_, ?_⟩⟩
-  · change k = i ⊚ EFunctor.map h k ⊚ g
-    rw [← hk, ← EnrichedCat.assoc, hij, EnrichedCat.id_comp]
-  · change h = f ⊚ EFunctor.map k h ⊚ j
-    rw [← EnrichedCat.assoc, ← hh, EnrichedCat.assoc, hij, EnrichedCat.comp_id]
-  · calc j ⊚ k = j ⊚ (i ⊚ EFunctor.map h k ⊚ g) := congrArg (j ⊚ ·) (congrArg Prod.fst e)
-      _ = EFunctor.map h k ⊚ g := by rw [← EnrichedCat.assoc, hji, EnrichedCat.id_comp]
-  · calc h ⊚ i = (f ⊚ EFunctor.map k h ⊚ j) ⊚ i := congrArg (· ⊚ i) (congrArg Prod.snd e)
-      _ = f ⊚ EFunctor.map k h := by rw [EnrichedCat.assoc, EnrichedCat.assoc, hji, EnrichedCat.comp_id]
-
-theorem bifree_unique [Inhabited (Hom B A)] [Inhabited (Hom A B)] {k k' : Hom B A}
-    {h h' : Hom A B} (h₁ : Bifree i j f g k h) (h₂ : Bifree i j f g k' h') : k = k' ∧ h = h' :=
-  Prod.ext_iff.mp ((fixpoint_unique ((bifree_iff f g hij hji).mp h₁)).trans
-    (fixpoint_unique ((bifree_iff f g hij hji).mp h₂)).symm)
-
-theorem bifree_exists [Inhabited (Hom B A)] [Inhabited (Hom A B)] :
-    Bifree i j f g (fixpoint (bifreeStep i j f g)).1 (fixpoint (bifreeStep i j f g)).2 :=
-  (bifree_iff f g hij hji).mpr (fixpoint_unfold (bifreeStep i j f g))
-
-omit hij hji in
-theorem bifree_id : Bifree i j i j (EnrichedCat.id A) (EnrichedCat.id A) := by
-  constructor <;> simp [EFunctor.map_id]
-
-omit hij hji in
-theorem bifree_comp {i' : Hom (F B B) B} {j' : Hom B (F B B)} {k : Hom B A} {h : Hom A B}
-    {k' : Hom A B} {h' : Hom B A} (e : Bifree i j i' j' k h) (e' : Bifree i' j' i j k' h') :
-    Bifree i j i j (k ⊚ k') (h' ⊚ h) := by
-  constructor
-  · rw [← EnrichedCat.assoc, e.1, EnrichedCat.assoc, e'.1, ← EnrichedCat.assoc, ← EFunctor.map_comp]
-  · rw [EnrichedCat.assoc, e.2, ← EnrichedCat.assoc, e'.2, EnrichedCat.assoc, ← EFunctor.map_comp]
-
-omit f g in
-theorem solution_unique {i' : Hom (F B B) B} {j' : Hom B (F B B)}
-    (hij' : i' ⊚ j' = EnrichedCat.id _) (hji' : j' ⊚ i' = EnrichedCat.id _) [Inhabited (Hom B A)]
-    [Inhabited (Hom A B)] :
-    ∃ (u : Hom A B) (v : Hom B A), u ⊚ v = EnrichedCat.id _ ∧ v ⊚ u = EnrichedCat.id _ := by
-  haveI : ∀ C : Obj, Inhabited (Hom C C) := fun C => ⟨EnrichedCat.id C⟩
-  exact ⟨_, _, (bifree_unique i' j' hij' hji'
-      (bifree_comp (bifree_exists i j hij' hji') (bifree_exists i' j' hij hji)) bifree_id).1,
-    (bifree_unique i j hij hji
-      (bifree_comp (bifree_exists i' j' hij hji) (bifree_exists i j hij' hji')) bifree_id).1⟩
-
-end Bifree
 
 end Iris.Enriched
