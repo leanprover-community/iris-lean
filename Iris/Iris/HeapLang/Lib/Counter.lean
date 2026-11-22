@@ -19,6 +19,8 @@ open BI Iris ProgramLogic ORA OFE Auth
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Counter
 
 @[rocq_alias heap_lang.newcounter]

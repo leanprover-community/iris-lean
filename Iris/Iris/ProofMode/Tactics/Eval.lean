@@ -10,6 +10,7 @@ public meta import Iris.ProofMode.Patterns.SelPattern
 namespace Iris.ProofMode
 
 public section
+
 open BI
 
 theorem hyps_replace_ieval [BI PROP] {P Q R : PROP}

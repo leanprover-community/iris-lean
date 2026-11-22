@@ -12,6 +12,7 @@ public meta import Iris.ProofMode.Tactics.Basic
 namespace Iris.ProofMode
 
 public section
+
 open Qq BI Iris.Std
 
 /-- Reified version of ModalityAction -/
