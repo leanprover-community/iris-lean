@@ -7,6 +7,83 @@ module
 
 public import Iris.Algebra.OFE
 
+/-!
+# Transfinite solver for recursive domain equations
+
+## What breaks with transfinite COFEs
+Consider solving a domain equation over (ω + ω)-COFEs.
+When we construct it, we have a problem at stage ω.
+Naturally, we would ask for a categorical limit of the tower constructed before.
+However, (ω + ω)-COFEs (and COFEs with step-indexing above ω in general) don't have general limits.
+E.g., if we consider f, g : X → Y, and consider a set-like equalizer
+E = { x : X | f x = g x } with an obvious embedding e : E → X,
+we cannot show that it's a COFE, because there is no guarantee that E has limits of bounded chains,
+as non-expansive maps preserve only limits of full chains.
+
+There are two solutions to this problem:
+- Consider a subcategory of COFEs with "continuous" maps (that preserve bounded limits);
+- Put additional conditions on tower diagrams, for which we can construct categorical limits.
+
+We go with the latter.
+
+## What we do to restore it
+A tower over a limit ordinal λ is a family of COFEs Xᵢ for i < λ with embeddings e : Xᵢ → Xⱼ and
+projections p : Xⱼ → Xᵢ for i < j, closed under composition, such that p ∘ e = id and
+e ∘ p ≡{m}≡ id for m < i.
+
+We say that a (C)OFE is determined at a limit ordinal λ if x ≡{m}≡ y for all m < λ implies x = y.
+This is stronger than ≡{m}≡ coinciding with = for m ≥ λ, since ≡{λ}≡ need not be
+the intersection of ≡{m}≡ for m < λ.
+
+We make the following observations:
+- For a tower over a limit ordinal λ with all stages determined at λ,
+  COFEs have its limit, and the limit is determined at λ as well.
+- To keep stages determined, it is enough to truncate successor stages at the next limit ordinal.
+  For n : SI, we define b(n) to be the least limit ordinal ≥ n.
+  The truncation Tₙ(A) is a retract of A that agrees with A below b(n) and is determined at b(n):
+  there are q : A → Tₙ(A) and r : Tₙ(A) → A with q ∘ r = id and r ∘ q ≡{m}≡ id for m < b(n).
+  For COFEs, Tₙ(A) picks a representative of each class of A modulo agreement below b(n).
+
+The invariant of the construction is that every stage Xᵢ is determined at b(i + 1),
+the first limit above i. It implies that the stages below a limit λ are determined at λ.
+Limit stages preserve it (the limit over λ is determined at λ, hence at b(λ + 1)).
+
+The full solver then builds the solution as:
+```
+X₀ = 1
+Xₙ₊₁ = Tₙ₊₁(F(Xₙ, Xₙ))
+Xₖ = lim Xᵢ            (where k is a limit ordinal, and i ranges over [0..k))
+```
+
+Each stage also carries fold : F(Xᵢ, Xᵢ) → Xᵢ and unfold : Xᵢ → F(Xᵢ, Xᵢ) with fold ∘ unfold = id
+and unfold ∘ fold ≡{m}≡ id for m < i, which are compatible with the projections.
+We call a tower with these maps a partial solution.
+So, morally, we gradually solve the equation over ω-COFEs, (ω + ω)-COFEs, and so on.
+The final solution is lim Xᵢ, where the diagram ranges over all SI.
+
+## Technicalities
+- Instead of indexing constructions by SI, we index them by down-sets of SI
+  (which morally live in the successor of SI, when considered as a limit ordinal),
+  which allows us to unify intermediate limit constructions with the final one.
+- Both Rocq and Lean lack inductive-recursive types, which would allow us to define the stages
+  by recursion while proving them coherent (the construction at step j, restricted to indices
+  ≤ i, must be exactly the construction at step i, which is a statement about the function
+  being defined).
+  Instead, we define the canonical extension of a partial solution below i (building Xᵢ with
+  its embeddings, projections, fold, and unfold by the cases above), call a stage canonical
+  if it extends canonical earlier stages, show that canonical stages are unique and coherent,
+  and glue them into the full solution.
+- Assuming classical axioms, one can provide truncation for any COFE over any SI,
+  so the assumptions are exactly as for the America-Rutten solver:
+  F(1,1) is inhabited, F is locally contractive.
+- Over SI = ℕ, the only truncation is identity, so the construction can be shown equal
+  to the America-Rutten solver of standard Iris.
+- Without assuming classical axioms, it is possible to provide truncation for many functors
+  (e.g., polynomial ones, exponential, UPred).
+- We first solve the equation in the enriched setting (enrichment is in COFE), and
+  then show that COFEs are self-enriched in COFESolver.lean.
+-/
+
 @[expose] public section
 
 universe u v w
