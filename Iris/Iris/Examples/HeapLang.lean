@@ -8,6 +8,7 @@ module
 public import Iris.HeapLang
 
 @[expose] public section
+
 namespace Iris.Examples.HeapLang
 
 open Iris.HeapLang

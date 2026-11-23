@@ -11,6 +11,7 @@ public import Iris.ProofMode.ClassesMake
 namespace Iris.ProofMode
 
 public section
+
 open BI Iris.Std
 
 /-- Auxiliary lemma for combining two hypotheses using `CombineSepAs` -/

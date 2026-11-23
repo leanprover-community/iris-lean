@@ -10,6 +10,7 @@ public import Iris.ProofMode.Tactics.RevertIntro
 namespace Iris.ProofMode
 
 public section
+
 open BI
 
 /--

@@ -12,6 +12,7 @@ public meta import Iris.ProofMode.Patterns.SelPattern
 namespace Iris.ProofMode
 
 public section
+
 open BI
 
 theorem frame_init [BI PROP] {e goal : PROP} :

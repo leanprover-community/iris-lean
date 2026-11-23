@@ -11,6 +11,8 @@ public import Iris.ProofMode.ModalityInstances
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris.ProofMode
 open BI
 

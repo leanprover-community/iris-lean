@@ -7,6 +7,7 @@ module
 public import Iris.HeapLang.Instances
 
 @[expose] public section
+
 namespace IrisTest.HeapLang.Semantics
 
 open Iris.HeapLang

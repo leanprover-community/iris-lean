@@ -15,6 +15,8 @@ public import Iris.Std.CoPset
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 open BI ORA OFE Iris Iris.Std LawfulSet DisjointLeibnizSet COFE ProofMode
@@ -133,7 +135,7 @@ theorem own_union {p : NaInvPoolName} {E1 E2 : CoPset} (Hdisj : E1 ## E2) :
     own (GF := GF) p (E1 ∪ E2) ⊣⊢ own p E1 ∗ own p E2 := by
   refine .trans ?_ iOwn_op
   refine (congrArg (iOwn (E := W.inv) p) ?_).to_bi
-  refine .symm (OFE.equiv_prod_ext (disj_op_union Hdisj) ?_)
+  refine .symm (Prod.ext (disj_op_union Hdisj) ?_)
   exact (disj_op_union disjoint_empty_left).trans (by simp)
 
 @[rocq_alias na_own_acc]

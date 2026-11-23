@@ -21,6 +21,8 @@ open BI Iris.Std ORA Excl DisjointLeibnizSet LawfulSet
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace TicketLock
 
 @[rocq_alias heap_lang.wait_loop]

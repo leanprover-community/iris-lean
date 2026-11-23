@@ -1,0 +1,49 @@
+name: Upload release builds
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build and upload"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  upload:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      TAG: ${{ inputs.tag || github.event.release.tag_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ env.TAG }}
+      - uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1.7.0
+        with:
+          lake-package-directory: Iris
+          auto-config: false
+          build: true
+      - name: Upload Iris build
+        working-directory: Iris
+        run: |
+          lake build Iris:shared
+          lake upload "$TAG"
+        shell: bash
+      - uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1.7.0
+        with:
+          lake-package-directory: IrisMath
+          auto-config: false
+          use-mathlib-cache: true
+          build: true
+      - name: Upload IrisMath build
+        working-directory: IrisMath
+        run: lake upload "$TAG"
+        shell: bash

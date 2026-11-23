@@ -15,6 +15,7 @@ public import Iris.ProofMode.Tactics.Frame
 namespace Iris.ProofMode
 
 public section
+
 open BI Iris.Std
 
 @[rocq_alias tac_false_destruct]

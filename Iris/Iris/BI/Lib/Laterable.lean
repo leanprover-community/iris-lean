@@ -12,6 +12,8 @@ public import Iris.Std.TC
 
 @[expose] public section
 
+local stepindex Nat
+
 namespace Iris
 
 section Laterable

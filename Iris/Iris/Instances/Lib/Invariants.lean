@@ -16,6 +16,8 @@ import Iris.Instances.Lib.WSat
 
 @[expose] public section
 
+local stepindex Nat
+
 /-! ## Invariants -/
 
 namespace Iris
