@@ -98,18 +98,15 @@ local stepindex SI
 structure Site where
   mem : SI → Prop
   down : ∀ {a b : SI}, a ≤ b → mem b → mem a
-  dec : ∀ m, Decidable (mem m)
-
-attribute [instance] Site.dec
+  [dec : ∀ m, Decidable (mem m)]
 
 namespace Site
 
 variable {P : Site}
 
-def univ : Site := ⟨fun _ => True, fun _ _ => trivial, fun _ => inferInstance⟩
+def univ : Site := ⟨fun _ => True, fun _ _ => trivial⟩
 
-abbrev below (α : SI) : Site :=
-  ⟨fun m => m < α, fun h h' => SIdx.le_lt_trans h h', fun _ => inferInstance⟩
+abbrev below (α : SI) : Site := ⟨fun m => m < α, fun h h' => SIdx.le_lt_trans h h'⟩
 
 theorem lt_of_not_mem {m n : SI} (hm : ¬ P.mem m) (hn : P.mem n) : n < m := by
   rcases SIdx.lt_trichotomyT m n with h | rfl | h
@@ -186,8 +183,7 @@ theorem comp_dist_r {n : SI} (g : b ⟶ c) {f f' : a ⟶ b} (h : f ≡{n}≡ f')
 end EnrichedCat
 
 @[indexed SI]
-class EFunctor {Obj : Type u} [EnrichedCat Obj]
-    (F : Obj → Obj → Obj) where
+class EFunctor {Obj : Type u} [EnrichedCat Obj] (F : Obj → Obj → Obj) where
   map : ∀ {a a' b b' : Obj}, a' ⟶ a → b ⟶ b' → F a b ⟶ F a' b'
   map_contractive : ∀ {a a' b b' : Obj} {n : SI} {f f' : a' ⟶ a} {g g' : b ⟶ b'},
     OFE.DistLater n (f, g) (f', g') → OFE.Dist n (map f g) (map f' g')
@@ -236,15 +232,13 @@ theorem mem_seg_mono {a b m : SI} (hab : a ≤ b) (h : (seg a).mem m) : (seg b).
   fun ⟨l, hl, h1, h2⟩ => h ⟨l, hl, SIdx.le_lt_trans hab h1, h2⟩
 
 theorem lt_of_mem_seg {n a m : SI} (hl : SIdx.Limit n) (ha : a < n) (hm : (seg a).mem m) :
-    m < n := by
-  rcases SIdx.lt_ge_cases n m with h | h
-  · exact h
-  · exact absurd ⟨n, hl, ha, h⟩ hm
+    m < n :=
+  (SIdx.lt_ge_cases n m).resolve_right fun h => hm ⟨n, hl, ha, h⟩
 
 theorem LimitCut.mem_of_mem_seg (K : LimitCut) {c : SI} (hc : K.mem c) :
     ∀ m, (seg c).mem m → K.mem m := by
   intro m
-  induction m using (SIdx.lt_wf (I := SI)).induction with
+  induction m using SIdx.lt_wf.induction with
   | _ m ih =>
     intro hm
     rcases SIdx.le_total (n := m) (m := c) with h | h
@@ -359,8 +353,7 @@ class HasTowerLimits (Obj : Type u) [EnrichedCat Obj] where
   π_comp_lift {P : Site} {T : Tower Obj P} (hT : T.Lawful) {Y : Obj}
     (g : ∀ {β} (hβ : P.mem β), Y ⟶ T.X hβ) hg {β} {hβ : P.mem β} :
     π hT hβ ⊚ lift hT g hg = g hβ
-  ext_dist {P : Site} {T : Tower Obj P} (hT : T.Lawful) {Y : Obj} {n : SI}
-    {f f' : Y ⟶ lim hT} :
+  ext_dist {P : Site} {T : Tower Obj P} (hT : T.Lawful) {Y : Obj} {n : SI} {f f' : Y ⟶ lim hT} :
     (∀ {β} (hβ : P.mem β), π hT hβ ⊚ f ≡{n}≡ π hT hβ ⊚ f') → f ≡{n}≡ f'
 
 namespace InvLim
@@ -775,8 +768,8 @@ def limChain : Site.Chain (limObj f hf ⟶ F (limObj f hf) (limObj f hf)) P wher
 
 variable {u : limObj f hf ⟶ F (limObj f hf) (limObj f hf)}
   (hu : ∀ {k} (hk : P.mem k), u ≡{k}≡ chainAt f hf (hP.succ_mem hk))
-include hu
 
+include hu in
 theorem limFold_comp_unfold : limFold f hf ⊚ u = EnrichedCat.id _ :=
   InvLim.ext hf.tower fun {c} hc => hf.determined hc _ _ fun n hn => by
     rw [EnrichedCat.comp_id, ← EnrichedCat.assoc]
@@ -789,6 +782,7 @@ theorem limFold_comp_unfold : limFold f hf ⊚ u = EnrichedCat.id _ :=
       rw [EnrichedCat.assoc]
       exact π_comp_limFold_comp_chainAt f hf (SIdx.le_trans hcn SIdx.le_succ_diag_r)
 
+include hu in
 theorem unfold_comp_limFold {m : SI} (hm : P.mem m) :
     u ⊚ limFold f hf ≡{m}≡ EnrichedCat.id _ :=
   (comp_dist_l (hu hm) _).trans (chainAt_comp_limFold f hf (SIdx.lt_succ_self m))
@@ -836,14 +830,6 @@ def restrict {β : SI} (h : β < γ) (t : ClosedSol F γ) : ClosedSol F β where
   below_lawful := t.below_lawful.restrict _
   top_lawful := t.below_lawful.topAt h
 
-def castDom {t t' : ClosedSol F γ} (h : t = t') {Z : Obj} (g : t.top.X ⟶ Z) :
-    t'.top.X ⟶ Z :=
-  h ▸ g
-
-def castCod {t t' : ClosedSol F γ} (h : t = t') {Z : Obj} (g : Z ⟶ t.top.X) :
-    Z ⟶ t'.top.X :=
-  h ▸ g
-
 end ClosedSol
 
 def Coherent {P : Site} (fam : ∀ γ, P.mem γ → ClosedSol F γ) : Prop :=
@@ -853,8 +839,8 @@ def Coherent {P : Site} (fam : ∀ γ, P.mem γ → ClosedSol F γ) : Prop :=
 def glue {P : Site} (fam : ∀ γ, P.mem γ → ClosedSol F γ) (hcoh : Coherent fam) :
     PartialSol F P where
   X hβ := (fam _ hβ).top.X
-  emb _ hδ hlt := ClosedSol.castDom (hcoh hlt hδ) ((fam _ hδ).top.emb hlt)
-  proj _ hδ hlt := ClosedSol.castCod (hcoh hlt hδ) ((fam _ hδ).top.proj hlt)
+  emb _ hδ hlt := hcoh hlt hδ ▸ (fam _ hδ).top.emb hlt
+  proj _ hδ hlt := hcoh hlt hδ ▸ (fam _ hδ).top.proj hlt
   fold hβ := (fam _ hβ).top.fold
   unfold hβ := (fam _ hβ).top.unfold
 
@@ -869,8 +855,8 @@ theorem coherent_of_restrict : Coherent (P := Site.below γ) IH := fun {β β'} 
 
 def gluedTop : Extension (glue (P := Site.below γ) IH (coherent_of_restrict IH T hT)) where
   X := T.top.X
-  emb h := ClosedSol.castDom (hT _ h) (T.top.emb h)
-  proj h := ClosedSol.castCod (hT _ h) (T.top.proj h)
+  emb h := (hT _ h ▸ T.top.emb h : (IH _ h).top.X ⟶ _)
+  proj h := (hT _ h ▸ T.top.proj h : _ ⟶ (IH _ h).top.X)
   fold := T.top.fold
   unfold := T.top.unfold
 
@@ -941,10 +927,11 @@ theorem extend_restrict {α : SI} (fam : ∀ γ, γ < α → ClosedSol F γ)
 
 variable (F) in
 def graph (α : SI) : ClosedSol F α → Prop :=
-  (SIdx.lt_wf (I := SI)).fix (C := fun α => ClosedSol F α → Prop) (fun α below t =>
-    ∃ (fam : ∀ γ, γ < α → ClosedSol F γ) (_ : ∀ γ hγ, below γ hγ (fam γ hγ))
-      (hcoh : Coherent (P := Site.below α) fam),
-      t = extend F α fam hcoh) α
+  SIdx.lt_wf.fix
+    (C := fun α => ClosedSol F α → Prop)
+    (fun α below t => ∃ (fam : ∀ γ, γ < α → ClosedSol F γ) (_ : ∀ γ hγ, below γ hγ (fam γ hγ))
+      (hcoh : Coherent (P := Site.below α) fam), t = extend F α fam hcoh)
+    α
 
 theorem graph_iff {α : SI} {t : ClosedSol F α} :
     graph F α t ↔ ∃ (fam : ∀ γ, γ < α → ClosedSol F γ) (_ : ∀ γ hγ, graph F γ (fam γ hγ))
@@ -970,13 +957,17 @@ theorem graph_restrict {γ δ : SI} (hγδ : γ < δ) {t : ClosedSol F δ} {s : 
 
 variable (F) in
 def canonical : ∀ α, {t : ClosedSol F α // graph F α t} :=
-  (SIdx.lt_wf (I := SI)).fix fun α ih =>
+  SIdx.lt_wf.fix fun α ih =>
     ⟨extend F α (fun γ hγ => (ih γ hγ).1) fun hγδ hδ => graph_restrict hγδ (ih _ hδ).2 (ih _ _).2,
-      graph_iff.mpr ⟨_, fun γ hγ => (ih γ hγ).2, _, rfl⟩⟩
+     graph_iff.mpr ⟨_, fun γ hγ => (ih γ hγ).2, _, rfl⟩⟩
 
 variable (F) in
-theorem canonical_eq (α : SI) : (canonical F α).1 = extend F α (fun γ _ => (canonical F γ).1)
-    fun hγδ _ => graph_restrict hγδ (canonical F _).2 (canonical F _).2 := by
+theorem canonical_coherent {P : Site} : Coherent (P := P) fun γ _ => (canonical F γ).1 :=
+  fun hγδ _ => graph_restrict hγδ (canonical F _).2 (canonical F _).2
+
+variable (F) in
+theorem canonical_eq (α : SI) :
+    (canonical F α).1 = extend F α (fun γ _ => (canonical F γ).1) (canonical_coherent F) := by
   unfold canonical
   rw [WellFounded.fix_eq]
 
@@ -985,12 +976,10 @@ end ClosedSol
 variable (F)
 
 def globalSol : PartialSol F Site.univ :=
-  glue (fun γ _ => (ClosedSol.canonical F γ).1) fun hγδ _ =>
-    ClosedSol.graph_restrict hγδ (ClosedSol.canonical F _).2 (ClosedSol.canonical F _).2
+  glue (fun γ _ => (ClosedSol.canonical F γ).1) (ClosedSol.canonical_coherent F)
 
 theorem globalSol_lawful : (globalSol F).Lawful :=
-  glue_lawful (fun γ _ => (ClosedSol.canonical F γ).1) fun hγδ _ =>
-    ClosedSol.graph_restrict hγδ (ClosedSol.canonical F _).2 (ClosedSol.canonical F _).2
+  glue_lawful (fun γ _ => (ClosedSol.canonical F γ).1) (ClosedSol.canonical_coherent F)
 
 abbrev Fix : Obj := limObj (globalSol F) (globalSol_lawful F)
 
