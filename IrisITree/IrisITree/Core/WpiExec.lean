@@ -12,6 +12,8 @@ public import Iris.Instances.Lib.FUpd
 
 public section
 
+local stepindex Nat
+
 namespace IrisITree
 
 open Iris BI ITree Std

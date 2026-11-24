@@ -12,6 +12,8 @@ public import IrisITree.Core.BIMono
 
 public section
 
+local stepindex Nat
+
 namespace IrisITree
 
 open Iris BI Std OFE

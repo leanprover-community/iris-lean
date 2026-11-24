@@ -13,6 +13,8 @@ public import ITree.Exec
 
 public section
 
+local stepindex Nat
+
 namespace IrisITree
 
 open Iris BI ITree

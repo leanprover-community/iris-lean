@@ -11,6 +11,8 @@ public import IrisITree.Core.Handler
 
 public section
 
+local stepindex Nat
+
 namespace IrisITree
 
 open Iris Iris.BI ITree
@@ -78,7 +80,8 @@ def wpi {E R} (H : IHandler PROP E) (Ms Me : CoPset) (t : ITree E R) (Φ : R →
 
 instance {R Ms Me} {t : ITree E R} : OFE.NonExpansive (wpi H Ms Me t) := by
   constructor; intro n Φ₁ Φ₂ HΦ
-  exact OFE.NonExpansive.ne (f := bi_least_fixpoint (wpiF' H Me)) ⟨rfl, rfl, HΦ⟩
+  apply OFE.NonExpansive.ne (f := bi_least_fixpoint (wpiF' H Me))
+  exact ⟨rfl, rfl, HΦ⟩
 
 end wp_itree_def
 
