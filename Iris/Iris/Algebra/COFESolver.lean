@@ -171,7 +171,7 @@ instance instHasTowerLimits : HasTowerLimits CofeObj.{v, w} where
   lim hT := TowerLimit.cofeObj _ hT
   π hT _ hβ := TowerLimit.proj _ hT hβ
   proj_comp_π hT := fun h => OFE.Hom.ext (funext fun (x : TowerLimit _ hT) => x.proj_π h)
-  lift hT := fun g hg => TowerLimit.lift _ hT g hg
+  lift hT := TowerLimit.lift _ hT
   π_comp_lift _ := fun _ _ => rfl
   ext_dist _ := fun h y _ hβ => h hβ y
 
@@ -234,10 +234,8 @@ noncomputable def classicalTruncation : Truncation K A where
   truncate := ⟨classicalRep K, ⟨fun m x y h => by
     by_cases hm : K.mem m
     · exact (classicalRep_spec K x m hm).symm.trans (h.trans (classicalRep_spec K y m hm))
-    · refine .of_eq (classicalRep_congr K fun n hn => h.le ?_)
-      rcases SIdx.le_total (n := n) (m := m) with h' | h'
-      · exact h'
-      · exact absurd (K.down h' hn) hm⟩⟩
+    · exact .of_eq (classicalRep_congr K fun n hn =>
+        h.le ((SIdx.le_total (n := n) (m := m)).resolve_right fun h' => hm (K.down h' hn)))⟩⟩
   conv x m hm := (classicalRep_spec K x m hm).symm
   truncated _ _ h := classicalRep_congr K h
 
