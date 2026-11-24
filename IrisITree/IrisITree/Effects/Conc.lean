@@ -76,79 +76,63 @@ end wpi_rules
 
 section exec
 
-open ITree.Exec
+open ITree.Exec Iris.Std
 
 variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] [BIAffine PROP]
 
-private theorem filterMap_set_perm {T U : Type _} (f : T → U)
-    (xs : List (Option T)) (i : Nat) (old new : Option T)
-    (hi : i < xs.length) (hx : xs[i] = old) :
-    ((old.map f).toList ++ (xs.set i new).filterMap (Option.map f)).Perm
-      ((new.map f).toList ++ xs.filterMap (Option.map f)) := by
-  induction xs generalizing i with
-  | nil => simp at hi
-  | cons a xs ih => cases i with
-    | zero =>
-      simp at hx; subst a
-      cases old <;> cases new <;> simp
-      exact .swap _ _ _
-    | succ i =>
-      simp at hi hx ⊢; have hp := ih i hi hx
-      cases a with
-      | none => exact hp
-      | some y =>
-        cases old <;> cases new <;> simp at hp ⊢
-        · exact hp
-        · exact (List.Perm.cons (f y) hp).trans (List.Perm.swap _ _ _)
-        · exact (List.Perm.swap _ _ _).trans (List.Perm.cons (f y) hp)
-        · exact (List.Perm.swap _ _ _).trans ((List.Perm.cons (f y) hp).trans (List.Perm.swap _ _ _))
-
 instance concEH_adequate {GE GR} :
     EHandlerAdequate (PROP:=PROP) concH (concEH (GE:=GE) (GR:=GR)) where
-  inv s Ms := iprop(<affine> ⌜Ms = s.pool.filterMap fun t =>
-      (fun t P => iprop(|={⊤, ∅}=> P t)) <$> t⌝)
+  inv s Ms := iprop% <affine> ⌜Ms = ListPerm.ofList (s.pool.filterMap fun t =>
+      (fun t P => iprop% |={⊤, ∅}=> P t) <$> t)⌝
   adequate := by
     intro G i s Ms C k Hhandle
-    simp [concH, concEH] at Hhandle ⊢
-    cases i <;> simp at Hhandle ⊢
+    let f (t : ITree GE GR) (P : ITree GE GR → PROP) := iprop(|={⊤, ∅}=> P t)
+    let pending (s : ConcState (ITree GE GR)) := ListPerm.ofList (s.pool.filterMap (Option.map f))
+    have pool_set_perm (xs : List (Option (ITree GE GR))) (i : Nat) (old new : Option (ITree GE GR))
+        (hi : i < xs.length) (hx : xs[i] = old) :
+        ((old :: xs.set i new).filterMap (Option.map f)).Perm
+          ((new :: xs).filterMap (Option.map f)) := by
+      suffices h : List.Perm (xs[i] :: xs.set i new) (new :: xs) from hx ▸ h.filterMap _
+      exact List.set_set_perm («as» := new :: xs) (i := 0) (j := i + 1) (by grind) (by grind)
+    cases i <;> simp [concEH, concH] at Hhandle ⊢
     · -- Fork case
       iintro ⟨_, _⟩ %h !>
-      iexists _, _, fun P => P (k .parent), Ms ++ [(fun P => iprop(|={⊤, ∅}=> P (k .child)))],
-        [fun P => P (k .parent), fun P => iprop(|={⊤, ∅}=> P (k .child))]
-      isplitr; itrivial
-      isplitr; itrivial
-      simp; iframe; isplitr
-      · ipureintro; simp [h, ConcState.add]
+      iexists _, _, fun P => P (k .parent), Ms ⊎ {f (k .child)},
+        {fun P => P (k .parent)} ⊎ {f (k .child)}
+      isplit; itrivial
+      isplit; ipureintro; grind
+      simp only [BigSepMS.bigSepMS_disjUnion.to_eq, BigSepMS.bigSepMS_singleton.to_eq]
+      iframe
+      isplitr
+      · ipureintro
+        simp [h, f, ConcState.add, ListPerm.singleton_eq, ListPerm.disjUnion_ofList]
       · iintro %_ $
     · -- Kill case
-      iintro Ht %h; rcases Hhandle with ⟨i, t', hi, Hget, HC⟩; imodintro
-      let f := fun t (P: (ITree GE GR → PROP)) => iprop(|={⊤, ∅}=> P t)
-      iexists t', ConcState.yield s.pool i hi, f t',
-        (ConcState.yield s.pool i hi).pool.filterMap (Option.map f), []
-      isplitr; ipureintro; exact HC
-      isplitr; ipureintro
-      simpa [f, ConcState.yield, h] using
-        filterMap_set_perm f s.pool i (some t') none hi Hget
-      isplitr; simp; exact .rfl
-      isplitr; ipureintro; congr
-      simp [f]; imod Ht; iintro %P $
+      iintro Ht %rfl
+      rcases Hhandle with ⟨i, t', hi, Hget, HC⟩
+      imodintro
+      iexists t', .yield s.pool i hi, f t', pending (.yield s.pool i hi), ∅
+      simp only [BigSepMS.bigSepMS_empty.to_eq, emp_sep.to_eq]
+      iframe %HC
+      isplit; ipureintro; rw [disjUnion_empty_left]
+      exact Quotient.sound (pool_set_perm s.pool i (some t') none hi Hget)
+      isplit; ipureintro; rfl
+      imod Ht; iintro %P $
     · -- Yield case
-      iintro >Ht %h; rcases Hhandle with ⟨i, t', hi, Hget, HC⟩
-      iapply fupd_mask_intro (by simp); iintro Hemp
-      let f := fun t (P : ITree GE GR → PROP) => iprop(|={⊤, ∅}=> P t)
+      iintro >Ht %rfl
+      rcases Hhandle with ⟨i, t', hi, Hget, HC⟩
+      iapply fupd_mask_intro (by simp)
+      iintro Hemp
       let tp' := s.pool.set s.curr (some (k ⟨⟩))
-      have hi' : i < tp'.length := by simpa [tp'] using hi
-      iexists t', ConcState.yield tp' i hi', f t',
-        (ConcState.yield tp' i hi').pool.filterMap (Option.map f), [f (k ⟨⟩)]
-      isplitr; ipureintro; exact HC
-      isplitr; ipureintro
-      simpa [f, ConcState.yield, tp', h] using
-        (filterMap_set_perm f tp' i (some t') none hi' Hget).trans
-          (filterMap_set_perm f s.pool s.curr none (some (k ⟨⟩))
-            s.curr_in_pool s.curr_is_none)
-      isplitl [Ht]; simp [f]; iframe
-      isplitr; ipureintro; congr
-      simp [f]; imod Hemp; iintro %x $
+      let hi' : i < tp'.length := by grind
+      iexists t', .yield tp' i hi', f t', pending (.yield tp' i hi'), {f (k ⟨⟩)}
+      rw [BigSepMS.bigSepMS_singleton.to_eq]
+      iframe %HC ∗
+      isplit; ipureintro
+      exact Quotient.sound ((pool_set_perm tp' i (some t') none hi' Hget).trans
+        (pool_set_perm s.pool s.curr none (some (k ⟨⟩)) s.curr_in_pool s.curr_is_none))
+      isplit; ipureintro; rfl
+      imod Hemp; iintro %x $
 
 end exec
 

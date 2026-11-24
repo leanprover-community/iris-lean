@@ -37,10 +37,8 @@ section wp_itree_const
 
 variable {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PROP]
 
-instance (H : IHandler PROP E) (Φ : R → PROP) :
-    OFE.NonExpansive (wpiConstF H Φ) where
-  ne {_ wp1 wp2} Hwp := by
-    intro t
+instance (H : IHandler PROP E) (Φ : R → PROP) : OFE.NonExpansive (wpiConstF H Φ) where
+  ne {_ wp1 wp2} Hwp t:= by
     cases t <;> simp [wpiConstF]
     case tau t' => exact BIFUpdate.ne.ne <| Hwp t'
     case vis i k =>
@@ -49,8 +47,7 @@ instance (H : IHandler PROP E) (Φ : R → PROP) :
       · intro a; apply Hwp (k a)
       · intro a; apply Hwp (k a)
 
-theorem wpiConstF_mono (H : IHandler PROP E) (Φ : R → PROP)
-    (wp1 wp2 : ITree E R → PROP) :
+theorem wpiConstF_mono (H : IHandler PROP E) (Φ : R → PROP) (wp1 wp2 : ITree E R → PROP) :
     □ (∀ t, wp1 t -∗ wp2 t) -∗
     ∀ t, wpiConstF H Φ wp1 t -∗ wpiConstF H Φ wp2 t := by
   iintro #Hwand %t Hwp
@@ -101,9 +98,9 @@ theorem wpi_const_iter (H : IHandler PROP E) (Φ : R → PROP)
 end wp_itree_const
 
 /-- The thread-pool weakest precondition, built from `wpiConstF` and `lfp_tp`. -/
-def wpi_tp {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PROP]
+noncomputable def wpi_tp {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PROP]
     (H : IHandler PROP E)
-    (Ms : List (((ITree E R → PROP) → PROP)))
+    (Ms : ListPerm ((ITree E R → PROP) → PROP))
     (Φ : R → PROP) : PROP :=
   lfp_tp (wpiConstF H Φ) Ms
 
@@ -123,7 +120,7 @@ variable {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PROP]
 
 theorem wpi_tp_intro (t : ITree E R) (H : IHandler PROP E) (Φ : R → PROP) :
     WPi t @> H; ∅ {{ Φ }} -∗
-    WPi_tp [fun P => P t] @> H {{ Φ }} := by
+    WPi_tp {fun P => P t} @> H {{ Φ }} := by
   let G := fun t (Ψ: R → PROP) => iprop%
     □ (∀ r, Ψ r -∗ Φ r) -∗ bi_least_fixpoint (wpiConstF H Φ) t
   letI : ∀ t, OFE.NonExpansive (G t) := fun _ => ⟨fun _ _ _ HΨ => wand_ne.ne
@@ -146,7 +143,7 @@ theorem wpi_tp_intro (t : ITree E R) (H : IHandler PROP E) (Φ : R → PROP) :
         iapply Hconst; iintro !> %r ⟨⟩
   · iintro !> %r $
 
-theorem wpi_tp_fupd (Ms : List ((ITree E R → PROP) → PROP)) H Φ :
+theorem wpi_tp_fupd (Ms : ListPerm ((ITree E R → PROP) → PROP)) H Φ :
     WPi_tp Ms @> H {{ v, |={∅}=> Φ v }} -∗
     WPi_tp Ms @> H {{ Φ }} := by
   iintro Hwp; unfold wpi_tp
@@ -160,7 +157,7 @@ theorem wpi_tp_fupd (Ms : List ((ITree E R → PROP) → PROP)) H Φ :
     iintro !> %Ns ⟨Hlfp, -⟩ //
   · iexact Hwp
 
-theorem wpi_tp_wand (Ms : List ((ITree E R → PROP) → PROP)) H Φ Ψ :
+theorem wpi_tp_wand (Ms : ListPerm ((ITree E R → PROP) → PROP)) H Φ Ψ :
     □ (∀ r, Φ r -∗ Ψ r) -∗
     WPi_tp Ms @> H {{ Φ }} -∗
     WPi_tp Ms @> H {{ Ψ }} := by
@@ -175,20 +172,19 @@ theorem wpi_tp_wand (Ms : List ((ITree E R → PROP) → PROP)) H Φ Ψ :
       iintro !> %Ns ⟨Hlfp, -⟩ //
   · iexact Hwp
 
-/-- If thread `i` of the pool has finished with value `r`, the postcondition holds for `r`.
-  The <absorb> is necessary to absorb the ownership of the other threads. -/
-theorem wpi_tp_elim' (i : Nat) H (Ms : List ((ITree E R → PROP) → PROP)) M Φ
+/-- The returned value of the selected thread satisfies the pool postcondition.
+    The <absorb> is necessary to absorb the ownership of the other threads. -/
+theorem wpi_tp_elim' H (Ms : ListPerm ((ITree E R → PROP) → PROP)) M Φ
     (t : ITree E R) (r : R) :
-    Ms[i]? = some M →
     t = pure r →
     (∀ P, M P ={∅}=∗ P t) -∗
-    WPi_tp Ms @> H {{ Φ }} -∗
+    WPi_tp ({M} ⊎ Ms) @> H {{ Φ }} -∗
     |={∅}=> <absorb> Φ r := by
-  iintro %Hlook %rfl HM Htp
+  iintro %rfl HM Htp
   unfold wpi_tp
-  ihave Htp := lfp_tp_unfold (wpiConstF H Φ) Ms $$ Htp
+  ihave Htp := lfp_tp_unfold (wpiConstF H Φ) ({M} ⊎ Ms) $$ Htp
   simp only [lfp_tpF]
-  ispecialize Htp $$ %i %M %Hlook
+  ispecialize Htp $$ %M %Ms %rfl
   ihave Htp := bi_mono0_mono_l $$ Htp [HM]
   · iframe
   imod bi_mono0_elim $$ Htp [] with ⟨%G, Hwpi, -⟩
@@ -196,13 +192,12 @@ theorem wpi_tp_elim' (i : Nat) H (Ms : List ((ITree E R → PROP) → PROP)) M �
   simp [wpiConstF]
   imod Hwpi with $
 
-/-- If thread `i` of the pool is `pure r`, the postcondition holds for `r`. -/
-theorem wpi_tp_elim (i : Nat) H (Ms : List ((ITree E R → PROP) → PROP)) M Φ (r : R) :
-    Ms[i]? = some M →
+/-- If the selected thread is `pure r`, the postcondition holds for `r`. -/
+theorem wpi_tp_elim H (Ms : ListPerm ((ITree E R → PROP) → PROP)) M Φ (r : R) :
     (∀ P, M P ={∅}=∗ P (pure r : ITree E R)) -∗
-    WPi_tp Ms @> H {{ Φ }} -∗
+    WPi_tp ({M} ⊎ Ms) @> H {{ Φ }} -∗
     |={∅}=> <absorb> Φ r :=
-  fun Hlook => wpi_tp_elim' i H Ms M Φ (pure r) r Hlook rfl
+  wpi_tp_elim' H Ms M Φ (pure r) r rfl
 
 end wpi_tp_section
 
@@ -216,15 +211,15 @@ variable (H : IHandler PROP E) (EH : EHandler E E R σ)
 variable [A : EHandlerAdequate H EH]
 
 theorem wpi_adequate_ind (Φ : R → PROP)
-    (t : ITree E R) (s : σ) (Ms Mss : List (((ITree E R → PROP) → PROP)))
+    (t : ITree E R) (s : σ) (Ms Mss : ListPerm ((ITree E R → PROP) → PROP))
     (M : (ITree E R → PROP) → PROP) (C : ITree E R → σ → Prop)
-    (Hexec : exec EH t s C) (HMs : Ms.Perm (M :: Mss)) :
+    (Hexec : exec EH t s C) (HMs : Ms = {M} ⊎ Mss) :
     WPi_tp Ms @> H {{ Φ }} -∗
     A.inv s Mss -∗
     (∀ P, M P ={∅}=∗ P t) -∗
     |={∅}=> ∃ t' s' Ms' M', <affine> ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
       (∀ P, M' P ={∅}=∗ P t') ∗
-      WPi_tp (M' :: Ms') @> H {{ Φ }} := by
+      WPi_tp ({M'} ⊎ Ms') @> H {{ Φ }} := by
   unfold wpi_tp; iintro Htp
   irevert %t %s %M %Mss %C %Hexec %HMs; irevert Htp; irevert %Ms
   iapply lfp_tp_ind (wpiConstF H Φ)
@@ -234,50 +229,46 @@ theorem wpi_adequate_ind (Φ : R → PROP)
   | stop _ _ _ HC =>
     imodintro; iexists t, s, Mss, M
     isplitr; itrivial; iframe Hinv Ht
-    iapply lfp_tp_unfold; iapply lfp_tpF_perm _ Ms _ _ _ HMs $$ IH
-    iintro %Ns1 %Ns2 %Hperm ⟨-, Htp⟩
-    iapply lfp_tp_perm _ _ _ Hperm $$ [$]
+    rw [← HMs]
+    iapply lfp_tp_unfold
+    iapply lfp_tpF_mono $$ [] %Ms IH
+    iintro !> %Ns ⟨-, $⟩
   | tau t _ _ Hexec =>
-    ihave IH := lfp_tpF_perm_close _ _ _ _ HMs $$ IH
-    unfold lfp_tpF; ispecialize IH $$ %0 %M %(by simp)
+    unfold lfp_tpF; ispecialize IH $$ %M %Mss %HMs
     ihave IH := bi_mono0_mono_l M (fun P => iprop(|={∅}=> P t.tau)) $$ IH [Ht]
     · iframe
     imod bi_mono0_elim $$ IH [] with ⟨%G, Hwpi, Hc⟩
     · iintro %Q %Q' Hwand >HQ'; imodintro; iapply Hwand $$ [$]
     simp [wpiConstF]; imod Hwpi
-    ispecialize Hc $$ %([fun P => P t]) [Hwpi]
-    · simp only [Algebra.BigOpL.bigOpL_cons, Algebra.BigOpL.bigOpL_nil]; iframe
-    icases Hc with ⟨%Ns, %Hperm, ⟨Hadequate, -⟩⟩
-    iapply Hadequate $$ %t %s %(fun P => P t) %Mss %C %Hexec %Hperm.symm Hinv
+    icases Hc $$ %({fun P => P t}) [Hwpi] with ⟨Hadequate, -⟩
+    · iapply (BigSepMS.bigSepMS_singleton (Φ := fun M => M G) (x := fun P => P t)).mpr $$ Hwpi
+    iapply Hadequate $$ %t %s %(fun P => P t) %Mss %C %Hexec %rfl Hinv
     iintro %_ $
     itrivial
   | step i k _ _ Hhandle =>
-    ihave IH := lfp_tpF_perm_close _ _ _ _ HMs $$ IH
-    unfold lfp_tpF; ispecialize IH $$ %0 %M %(by simp)
+    unfold lfp_tpF; ispecialize IH $$ %M %Mss %HMs
     ihave IH := bi_mono0_mono_l M (fun P => iprop(|={∅}=> P (.vis i k))) $$ IH [Ht]
     · iframe
     imod bi_mono0_elim $$ IH [] with ⟨%G, Hwpi, Hc⟩
     · iintro %Q %Q' Hwand >HQ'; imodintro; iapply Hwand $$ [$]
     simp [wpiConstF]; imod Hwpi
     imod A.adequate _ _ _ Mss _ _ Hhandle $$ Hwpi Hinv with
-      ⟨%t', %s', %M', %Ms', %Msn, %HC, %HpermA, Hspawn, Hinv, Hmod⟩
-    ispecialize Hc $$ %Msn Hspawn
-    icases Hc with ⟨%Ns, %HpermClose, ⟨Hadequate, -⟩⟩
-    iapply Hadequate $$ %t' %s' %M' %Ms' %C %HC [] Hinv Hmod
-    ipureintro; exact HpermA.trans HpermClose |>.symm
+      ⟨%t', %s', %M', %Ms', %Msn, %HC, %Hpool, Hspawn, Hinv, Hmod⟩
+    icases Hc $$ %Msn Hspawn with ⟨Hadequate, -⟩
+    iapply Hadequate $$ %t' %s' %M' %Ms' %C %HC %Hpool.symm Hinv Hmod
 
 theorem wpi_adequate (Φ : R → PROP)
     (t : ITree E R) (s : σ) (C : ITree E R → σ → Prop) (m : CoPset)
     (Hexec : exec EH t s C) :
     ⊢ WPi t @> H;m {{ Φ }} -∗
-      A.inv s [] -∗
+      A.inv s ∅ -∗
       |={m, ∅}=> ∃ t' s' Ms' M', <affine> ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
       (∀ P, M' P ={∅}=∗ P t') ∗
-      WPi_tp M' :: Ms' @> H {{ v, |={∅,m}=> Φ v}} := by
+      WPi_tp ({M'} ⊎ Ms') @> H {{ v, |={∅,m}=> Φ v}} := by
   iintro >Hwpi Hinv
   ihave Hwpi := wpi_fupd_empty $$ Hwpi
-  iapply wpi_adequate_ind _ _ _ t s [fun P => P t] []
-    (fun P => P t) C Hexec (by simp) $$ [Hwpi] Hinv []
+  iapply wpi_adequate_ind _ _ _ t s {fun P => P t} ∅
+    (fun P => P t) C Hexec disjUnion_empty_right.symm $$ [Hwpi] Hinv []
   iapply wpi_tp_intro $$ Hwpi
   iintro %_ $
   itrivial
@@ -296,10 +287,10 @@ theorem wpi_adequate_pure (hlc : HasLC) (n : Nat) (m : CoPset)
     exec EH t s C →
     (∀ (_ : InvGS_gen hlc GF), £ n ={⊤,m}=∗
       ∃ (H : IHandler (IProp GF) E) (A : EHandlerAdequate H EH) (Φ : R → IProp GF),
-        WPi t @> H;m {{ Φ }} ∗ A.inv s [] ∗
+        WPi t @> H;m {{ Φ }} ∗ A.inv s ∅ ∗
         (∀ t' s' Ms' M', <affine> ⌜C t' s'⌝ -∗ A.inv s' Ms' -∗
           (∀ P, M' P ={∅}=∗ P t') ∗
-            (WPi_tp M' :: Ms' @> H {{ v, |={∅,m}=> Φ v }})={∅}=∗ ⌜Ψ⌝)) →
+            (WPi_tp ({M'} ⊎ Ms') @> H {{ v, |={∅,m}=> Φ v }})={∅}=∗ ⌜Ψ⌝)) →
     Ψ := by
   intro Hexec Hwp
   apply pure_soundness (PROP := IProp GF)

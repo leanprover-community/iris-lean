@@ -14,7 +14,7 @@ public import IrisITree.HeapLang.ProgramLogic
 
 namespace IrisITree
 
-open Iris BI Iris.HeapLang ITree ITree.Effects ITree.Exec
+open Iris BI Iris.Std Iris.HeapLang ITree ITree.Effects ITree.Exec
 
 variable {GF : BundledGFunctors} [InvGS GF] [heaplangHGS GF]
 local bi (IProp GF)
@@ -30,15 +30,17 @@ instance heaplangEH_partial_adequate :
 
 theorem heaplangEH_partial_adequate_inv_eq :
   (heaplangEH_partial_adequate (GF := GF) (GE := heaplangE) (GR := Val)).inv s Ms ⊣⊢
-    <affine> ⌜Ms.Perm <| List.filterMap (fun t => Option.map (fun t P => iprop(|={⊤,∅}=> P t)) t) s.tp.pool⌝ ∗
+    ⌜Ms = ListPerm.ofList (s.tp.pool.filterMap
+      (Option.map fun t P => iprop(|={⊤,∅}=> P t)))⌝ ∗
         stateInterp_heap s.heap ∗ £ s.steps_left := by
-  simp [EHandlerAdequate.inv.eq_def, heaplangEH_partial_adequate, inferInstance, isoEH_adequate, id, sumEEH_adequate, concEH_adequate, EH_of_SEH_adequate, SEHandlerAdequate.inv.eq_def, sumSEH_adequate, heapEH_adequate, failEH_adequate, demonicEH_adequate, stepEH_later_adequate]
+  simp [EHandlerAdequate.inv.eq_def, heaplangEH_partial_adequate, inferInstance, isoEH_adequate, id,
+    sumEEH_adequate, concEH_adequate, EH_of_SEH_adequate, SEHandlerAdequate.inv.eq_def,
+    sumSEH_adequate, heapEH_adequate, failEH_adequate, demonicEH_adequate, stepEH_later_adequate]
   isplit
   · iintro ⟨%Ms1, %Ms2, %hp, %h1, %rfl, $, -, -, $⟩
-    ipureintro
-    grind
+    ipureintro; grind
   · iintro ⟨%hp, $, $⟩
-    itrivial
+    ipureintro; grind
 
 /-- Total-correctness interpretation. -/
 instance heaplangEH_total_adequate :
@@ -49,35 +51,35 @@ instance heaplangEH_total_adequate :
 
 theorem heaplangEH_total_adequate_inv_eq :
   (heaplangEH_total_adequate (GF := GF) (GE := heaplangE) (GR := Val)).inv s Ms ⊣⊢
-    <affine> ⌜Ms.Perm <| List.filterMap (fun t => Option.map (fun t P => iprop(|={⊤,∅}=> P t)) t) s.tp.pool⌝ ∗
+    ⌜Ms = ListPerm.ofList (s.tp.pool.filterMap
+      (Option.map fun t P => iprop(|={⊤,∅}=> P t)))⌝ ∗
         stateInterp_heap s.heap := by
-  simp [EHandlerAdequate.inv.eq_def, heaplangEH_total_adequate, inferInstance, isoEH_adequate, id, sumEEH_adequate, concEH_adequate, EH_of_SEH_adequate, SEHandlerAdequate.inv.eq_def, sumSEH_adequate, heapEH_adequate, failEH_adequate, demonicEH_adequate, stepEH_id_adequate]
+  simp [EHandlerAdequate.inv.eq_def, heaplangEH_total_adequate, inferInstance, isoEH_adequate, id,
+    sumEEH_adequate, concEH_adequate, EH_of_SEH_adequate, SEHandlerAdequate.inv.eq_def,
+    sumSEH_adequate, heapEH_adequate, failEH_adequate, demonicEH_adequate, stepEH_id_adequate]
   isplit
   · iintro ⟨%Ms1, %Ms2, %hp, %h1, %rfl, $, -, -⟩
-    ipureintro
-    grind
+    ipureintro; grind
   · iintro ⟨%hp, $⟩
-    itrivial
+    ipureintro; grind
 
 /-- Initialize the partial execution invariant from the heap state and credits. -/
 private theorem heaplangEH_partial_init (σ : heapF Loc (Option Val)) (n : Nat) :
     stateInterp_heap σ ∗ £ n -∗
     (heaplangEH_partial_adequate (GF := GF) (GE := heaplangE) (GR := Val)).inv
-      ⟨ConcState.new, σ, 0, n⟩ [] := by
+      ⟨ConcState.new, σ, 0, n⟩ ∅ := by
   iintro ⟨Hheap, Hcredits⟩
-  simp [heaplangEH_partial_adequate_inv_eq.to_eq, ConcState.new]
+  simp [heaplangEH_partial_adequate_inv_eq.to_eq, ConcState.new, ListPerm.empty_eq]
   iframe
-  itrivial
 
 /-- Initialize the total execution invariant from the heap state. -/
 private theorem heaplangEH_total_init (σ : heapF Loc (Option Val)) :
     stateInterp_heap σ -∗
     (heaplangEH_total_adequate (GF := GF) (GE := heaplangE) (GR := Val)).inv
-      ⟨ConcState.new, σ, 0, 0⟩ [] := by
+      ⟨ConcState.new, σ, 0, 0⟩ ∅ := by
   iintro Hheap
-  simp [heaplangEH_total_adequate_inv_eq.to_eq, ConcState.new]
+  simp [heaplangEH_total_adequate_inv_eq.to_eq, ConcState.new, ListPerm.empty_eq]
   iframe
-  itrivial
 
 end handler
 
@@ -101,7 +103,7 @@ theorem heaplang_partial_adequacy (e : Exp)
   imod wpi_adequate $$ Hwp Hstate with ⟨%t', %s', %Ms', %M, %HC, Heinv, Hcont, Htp⟩; assumption
   by_cases Hret : ∃ v, t' = .ret v
   · obtain ⟨v, rfl⟩ := Hret
-    imod wpi_tp_elim 0 $$ Hcont Htp with > >%Hφ; simp
+    imod wpi_tp_elim $$ Hcont Htp with > >%Hφ
     imod (fupd_mask_subseteq (E2 := ∅)) with Hclose; simp
     ipureintro; refine ⟨ITree.ret v, s', ?_⟩
     simp [HC]; intro v' Heq
@@ -132,7 +134,7 @@ theorem heaplang_total_adequacy (e : Exp)
   imod wpi_adequate $$ Hwp Hstate with ⟨%t', %s', %Ms', %M, %HC, Heinv, Hcont, Htp⟩; assumption
   by_cases Hret : ∃ v, t' = .ret v
   · obtain ⟨v, rfl⟩ := Hret
-    imod wpi_tp_elim 0 $$ Hcont Htp with > >%Hφ; simp
+    imod wpi_tp_elim $$ Hcont Htp with > >%Hφ
     imod (fupd_mask_subseteq (E2 := ∅)) with Hclose; simp
     ipureintro; refine ⟨ITree.ret v, s', ?_⟩
     simp [HC]; intro v' Heq

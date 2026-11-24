@@ -81,6 +81,7 @@ def wpi {E R} (H : IHandler PROP E) (Ms Me : CoPset) (t : ITree E R) (Φ : R →
 instance {R Ms Me} {t : ITree E R} : OFE.NonExpansive (wpi H Ms Me t) := by
   constructor; intro n Φ₁ Φ₂ HΦ
   apply OFE.NonExpansive.ne (f := bi_least_fixpoint (wpiF' H Me))
+  change (DiscreteO.mk Ms, t, Φ₁) ≡{n}≡ (DiscreteO.mk Ms, t, Φ₂)
   exact ⟨rfl, rfl, HΦ⟩
 
 end wp_itree_def
@@ -176,16 +177,18 @@ theorem wpi_pure' {R} (Φ : R → PROP) (r : R) :
   simp [wpiF]
   isplit
   · iintro >$
-  · iintro >_; iapply fupd_mask_intro
-    · simp
-    iintro >Hemp !>; iframe
+  · iintro >_
+    iapply fupd_mask_intro (by simp)
+    iintro >Hemp !>
+    iframe
 
 theorem wpi_pure {R} (M : CoPset) (Φ : R → PROP) (r : R) :
     Φ r ⊢ WPi pure r @> H; M {{ Φ }} := by
   iintro HΦ; iapply wpi_pure'; imodintro; iexact HΦ
 
 theorem wpi_tau {R} (Φ : R → PROP) (t : ITree E R) :
-    (WPi t.tau @> H;Ms,Me {{ Φ }}) ⊣⊢ (WPi t @> H;Ms,Me {{ Φ }}) := (wpi_unfold _ _).trans <| by
+    WPi t.tau @> H;Ms,Me {{ Φ }} ⊣⊢ WPi t @> H;Ms,Me {{ Φ }} := by
+  rw [(wpi_unfold _ _).to_eq]
   simp [wpiF]
   isplit <;> iintro >$ //
 
@@ -202,12 +205,14 @@ theorem wpi_trigger_bind {E' A} [E' -< E] (H' : IHandler PROP E') [InH H' H]
       (fun a => WPi (k a) @> H; ∅,Me {{ Φ }})
       (fun a => WPi (k a) @> H; ∅,Me {{ _x, False }})) -∗
     WPi E'.trigger i >>= k @> H; Ms, Me {{ Φ }} := by
-  iintro >HH; simp [Effect.trigger]
-  iapply wpi_vis; imodintro
-  iapply H.ihandle_mono; rotate_left 2
-  · iapply InH.is_inH $$ HH
+  iintro >HH
+  simp [Effect.trigger]
+  iapply wpi_vis
+  imodintro
+  iapply H.ihandle_mono
   · iintro %r $
   · iintro !> %a $
+  · iapply InH.is_inH $$ HH
 
 theorem wpi_trigger {E'} [E' -< E] (H' : IHandler PROP E') [InH H' H]
     (i : E'.I) (Φ : E'.O i → PROP) :
@@ -215,10 +220,13 @@ theorem wpi_trigger {E'} [E' -< E] (H' : IHandler PROP E') [InH H' H]
       (fun a => iprop(|={∅, Me}=> Φ a))
       (fun _ => iprop(False))) -∗
     WPi E'.trigger i @> H; Ms,Me {{ Φ }} := by
-  iintro HH; unfold Effect.trigger
-  iapply wpi_vis; imod HH; imodintro
+  iintro HH
+  unfold Effect.trigger
+  iapply wpi_vis
+  imod HH; imodintro
   iapply H.ihandle_mono
-  · iintro %r HΦ; iapply wpi_pure'; iexact HΦ
+  · iintro %r HΦ
+    iapply wpi_pure' $$ [$]
   · iintro !> %a ⟨⟩
   · iapply InH.is_inH $$ HH
 
@@ -240,9 +248,8 @@ theorem wpi_ind_mask (G : CoPset → ITree E R → (R → PROP) → PROP)
     cases Ht; simp only [G']; exact OFE.NonExpansive.ne HΦ
   iapply least_fixpoint_ind (wpiF' H Me) G' $$ [] %⟨⟨Ms⟩, t, Φ⟩ Hwp
   iintro !> %p HwpiF
-  obtain ⟨⟨_⟩, _, _⟩ := p
-  simp only [wpiF', G']
   iapply HPre
+  unfold wpiF'
   iapply wpiF_mono $$ [] HwpiF
   iintro !> %_ %_ $
 

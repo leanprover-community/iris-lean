@@ -11,8 +11,6 @@ public import Iris.ProofMode
 public section
 local stepindex Nat
 
-local stepindex Nat
-
 namespace IrisITree
 
 open Iris BI Std OFE
