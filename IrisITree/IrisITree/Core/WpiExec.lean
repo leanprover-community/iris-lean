@@ -119,7 +119,7 @@ meta def wpiTpMacro : Lean.Macro := fun stx => do
 
 section wpi_tp_section
 
-variable {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PROP] [BIAffine PROP]
+variable {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PROP]
 
 theorem wpi_tp_intro (t : ITree E R) (H : IHandler PROP E) (Φ : R → PROP) :
     WPi t @> H; ∅ {{ Φ }} -∗
@@ -175,14 +175,15 @@ theorem wpi_tp_wand (Ms : List ((ITree E R → PROP) → PROP)) H Φ Ψ :
       iintro !> %Ns ⟨Hlfp, -⟩ //
   · iexact Hwp
 
-/-- If thread `i` of the pool has finished with value `r`, the postcondition holds for `r`. -/
+/-- If thread `i` of the pool has finished with value `r`, the postcondition holds for `r`.
+  The <absorb> is necessary to absorb the ownership of the other threads. -/
 theorem wpi_tp_elim' (i : Nat) H (Ms : List ((ITree E R → PROP) → PROP)) M Φ
     (t : ITree E R) (r : R) :
     Ms[i]? = some M →
     t = pure r →
     (∀ P, M P ={∅}=∗ P t) -∗
     WPi_tp Ms @> H {{ Φ }} -∗
-    |={∅}=> Φ r := by
+    |={∅}=> <absorb> Φ r := by
   iintro %Hlook %rfl HM Htp
   unfold wpi_tp
   ihave Htp := lfp_tp_unfold (wpiConstF H Φ) Ms $$ Htp
@@ -193,14 +194,14 @@ theorem wpi_tp_elim' (i : Nat) H (Ms : List ((ITree E R → PROP) → PROP)) M �
   imod bi_mono0_elim $$ Htp [] with ⟨%G, Hwpi, -⟩
   · iintro %Q %Q' Hwand >HQ' !>; iapply Hwand $$ [$]
   simp [wpiConstF]
-  iexact Hwpi
+  imod Hwpi with $
 
 /-- If thread `i` of the pool is `pure r`, the postcondition holds for `r`. -/
 theorem wpi_tp_elim (i : Nat) H (Ms : List ((ITree E R → PROP) → PROP)) M Φ (r : R) :
     Ms[i]? = some M →
     (∀ P, M P ={∅}=∗ P (pure r : ITree E R)) -∗
     WPi_tp Ms @> H {{ Φ }} -∗
-    |={∅}=> Φ r :=
+    |={∅}=> <absorb> Φ r :=
   fun Hlook => wpi_tp_elim' i H Ms M Φ (pure r) r Hlook rfl
 
 end wpi_tp_section

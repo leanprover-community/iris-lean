@@ -25,13 +25,13 @@ def lfp_tpF {PROP : Type _} [BI PROP] {α : Type _}
     (rec_tp : List ((α → PROP) → PROP) → PROP) :
     List ((α → PROP) → PROP) → PROP :=
   fun Ms => iprop%
-    ∀ i M, ⌜Ms[i]? = some M⌝ -∗
+    ∀ i M, <affine> ⌜Ms[i]? = some M⌝ -∗
       bi_mono0 M fun x => iprop%
         ∃ G, F G x ∗ ∀ Ms', ([∗list] M' ∈ Ms', M' G) -∗ rec_tp (Ms' ++ Ms.eraseIdx i)
 
 section lfp_tpF
 
-variable {PROP : Type _} [BI PROP] [BIAffine PROP] {α : Type _}
+variable {PROP : Type _} [BI PROP] {α : Type _}
   (F : (α → PROP) → (α → PROP))
 local bi PROP
 
@@ -96,7 +96,7 @@ private theorem perm_pick_erase {β : Type _} {Ms1 Ms2 : List β} {i : Nat} {M :
 theorem lfp_tpF_perm (Ms1 Ms2 : List ((α → PROP) → PROP))
     (wp1 wp2 : List ((α → PROP) → PROP) → PROP) (h : Ms1.Perm Ms2) :
     lfp_tpF F wp1 Ms1 -∗
-    (∀ Ns1 Ns2, ⌜Ns1.Perm Ns2⌝ -∗ wp1 Ns1 -∗ wp2 Ns2) -∗
+    (∀ Ns1 Ns2, <affine> ⌜Ns1.Perm Ns2⌝ -∗ wp1 Ns1 -∗ wp2 Ns2) -∗
     lfp_tpF F wp2 Ms2 := by
   iintro Htp Hwp; unfold lfp_tpF; iintro %i %M %Hi
   obtain ⟨j, Hj, Herase⟩ := perm_pick_erase h Hi
@@ -112,7 +112,7 @@ theorem lfp_tpF_perm_close (Ms1 Ms2 : List ((α → PROP) → PROP))
     (wp : List ((α → PROP) → PROP) → PROP)
     (h : Ms1.Perm Ms2) :
     lfp_tpF F wp Ms1 -∗
-    lfp_tpF F (fun x => iprop% ∃ x', ⌜x.Perm x'⌝ ∗ wp x') Ms2 := by
+    lfp_tpF F (fun x => iprop% ∃ x', <affine> ⌜x.Perm x'⌝ ∗ wp x') Ms2 := by
   iintro Htp; iapply lfp_tpF_perm $$ Htp
   · exact h
   · iintro %Ns1 %Ns2 %Hperm Hwp
@@ -142,7 +142,7 @@ def lfp_tp {PROP : Type _} [BI PROP] {α : Type _} (F : (α → PROP) → (α �
 
 section lfp_tp_lemmas
 
-variable {PROP : Type _} [BI PROP] [BIAffine PROP] {α : Type _}
+variable {PROP : Type _} [BI PROP] {α : Type _}
   (F : (α → PROP) → (α → PROP))
 
 theorem lfp_tp_unfold (Ms : List ((α → PROP) → PROP)) :

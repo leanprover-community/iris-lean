@@ -101,8 +101,7 @@ theorem heaplang_partial_adequacy (e : Exp)
   imod wpi_adequate $$ Hwp Hstate with ⟨%t', %s', %Ms', %M, %HC, Heinv, Hcont, Htp⟩; assumption
   by_cases Hret : ∃ v, t' = .ret v
   · obtain ⟨v, rfl⟩ := Hret
-    imod wpi_tp_elim 0 $$ Hcont Htp with Hpost; simp
-    imod Hpost with %Hφ
+    imod wpi_tp_elim 0 $$ Hcont Htp with > >%Hφ; simp
     imod (fupd_mask_subseteq (E2 := ∅)) with Hclose; simp
     ipureintro; refine ⟨ITree.ret v, s', ?_⟩
     simp [HC]; intro v' Heq
@@ -133,8 +132,7 @@ theorem heaplang_total_adequacy (e : Exp)
   imod wpi_adequate $$ Hwp Hstate with ⟨%t', %s', %Ms', %M, %HC, Heinv, Hcont, Htp⟩; assumption
   by_cases Hret : ∃ v, t' = .ret v
   · obtain ⟨v, rfl⟩ := Hret
-    imod wpi_tp_elim 0 $$ Hcont Htp with Hpost; simp
-    imod Hpost with %Hφ
+    imod wpi_tp_elim 0 $$ Hcont Htp with > >%Hφ; simp
     imod (fupd_mask_subseteq (E2 := ∅)) with Hclose; simp
     ipureintro; refine ⟨ITree.ret v, s', ?_⟩
     simp [HC]; intro v' Heq
