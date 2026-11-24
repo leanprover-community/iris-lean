@@ -100,6 +100,8 @@ structure Site where
   down : ∀ {a b : SI}, a ≤ b → mem b → mem a
   [dec : ∀ m, Decidable (mem m)]
 
+attribute [instance] Site.dec
+
 namespace Site
 
 variable {P : Site}
