@@ -211,7 +211,7 @@ section wpi_adequate
 open ITree.Exec
 
 variable {E : Effect.{u}} {R : Type u} {σ : Type _}
-variable {PROP} [BI PROP] [BIFUpdate PROP] [BIAffine PROP]
+variable {PROP} [BI PROP] [BIFUpdate PROP]
 variable (H : IHandler PROP E) (EH : EHandler E E R σ)
 variable [A : EHandlerAdequate H EH]
 
@@ -222,7 +222,7 @@ theorem wpi_adequate_ind (Φ : R → PROP)
     WPi_tp Ms @> H {{ Φ }} -∗
     A.inv s Mss -∗
     (∀ P, M P ={∅}=∗ P t) -∗
-    |={∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
+    |={∅}=> ∃ t' s' Ms' M', <affine> ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
       (∀ P, M' P ={∅}=∗ P t') ∗
       WPi_tp (M' :: Ms') @> H {{ Φ }} := by
   unfold wpi_tp; iintro Htp
@@ -250,6 +250,7 @@ theorem wpi_adequate_ind (Φ : R → PROP)
     icases Hc with ⟨%Ns, %Hperm, ⟨Hadequate, -⟩⟩
     iapply Hadequate $$ %t %s %(fun P => P t) %Mss %C %Hexec %Hperm.symm Hinv
     iintro %_ $
+    itrivial
   | step i k _ _ Hhandle =>
     ihave IH := lfp_tpF_perm_close _ _ _ _ HMs $$ IH
     unfold lfp_tpF; ispecialize IH $$ %0 %M %(by simp)
@@ -270,7 +271,7 @@ theorem wpi_adequate (Φ : R → PROP)
     (Hexec : exec EH t s C) :
     ⊢ WPi t @> H;m {{ Φ }} -∗
       A.inv s [] -∗
-      |={m, ∅}=> ∃ t' s' Ms' M', ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
+      |={m, ∅}=> ∃ t' s' Ms' M', <affine> ⌜C t' s'⌝ ∗ A.inv s' Ms' ∗
       (∀ P, M' P ={∅}=∗ P t') ∗
       WPi_tp M' :: Ms' @> H {{ v, |={∅,m}=> Φ v}} := by
   iintro >Hwpi Hinv
@@ -279,6 +280,7 @@ theorem wpi_adequate (Φ : R → PROP)
     (fun P => P t) C Hexec (by simp) $$ [Hwpi] Hinv []
   iapply wpi_tp_intro $$ Hwpi
   iintro %_ $
+  itrivial
 
 end wpi_adequate
 
@@ -295,7 +297,7 @@ theorem wpi_adequate_pure (hlc : HasLC) (n : Nat) (m : CoPset)
     (∀ (_ : InvGS_gen hlc GF), £ n ={⊤,m}=∗
       ∃ (H : IHandler (IProp GF) E) (A : EHandlerAdequate H EH) (Φ : R → IProp GF),
         WPi t @> H;m {{ Φ }} ∗ A.inv s [] ∗
-        (∀ t' s' Ms' M', ⌜C t' s'⌝ -∗ A.inv s' Ms' -∗
+        (∀ t' s' Ms' M', <affine> ⌜C t' s'⌝ -∗ A.inv s' Ms' -∗
           (∀ P, M' P ={∅}=∗ P t') ∗
             (WPi_tp M' :: Ms' @> H {{ v, |={∅,m}=> Φ v }})={∅}=∗ ⌜Ψ⌝)) →
     Ψ := by
