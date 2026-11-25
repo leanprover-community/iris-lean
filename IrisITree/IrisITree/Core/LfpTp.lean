@@ -58,7 +58,6 @@ theorem lfp_tpF_mono (tp1 tp2 : ListPerm ((α → PROP) → PROP) → PROP) :
   iintro %M %Mrest %Heq; ispecialize Htp $$ %M %Mrest %Heq
   iapply bi_mono0_mono $$ Htp
   iintro %x ⟨%G, HF, HMS⟩
-  iexists G
   iframe HF
   iintro %Ms HM'
   iapply Hwand
@@ -71,9 +70,7 @@ theorem lfp_tpF_mono' tp (F G : (α → PROP) → α → PROP) :
   iintro %M %Mrest %Heq
   ispecialize Htp $$ %M %Mrest %Heq
   iapply bi_mono0_mono $$ Htp
-  iintro %x ⟨%Φ, HF, Hcont⟩
-  iexists Φ
-  iframe Hcont
+  iintro %x ⟨%Φ, HF, $⟩
   iapply Hwand $$ HF
 
 /-- Only this abbreviation is built on top of `Discrete0`. -/
@@ -98,16 +95,15 @@ noncomputable def lfp_tp {PROP : Type _} [BI PROP] {α : Type _} (F : (α → PR
 
 section lfp_tp_lemmas
 
-variable {PROP : Type _} [BI PROP] {α : Type _}
-  (F : (α → PROP) → (α → PROP))
+variable {PROP : Type _} [BI PROP] {α : Type _} (F : (α → PROP) → (α → PROP))
 
 theorem lfp_tp_unfold (Ms : ListPerm ((α → PROP) → PROP)) :
     lfp_tp F Ms ⊣⊢ lfp_tpF F (fun Ms => lfp_tp F Ms) Ms :=
   equiv_iff.mp <| least_fixpoint_unfold (lfp_tpF_discrete F)
 
-theorem lfp_tp_empty : ⊢ (lfp_tp F ∅ : PROP) := by
+theorem lfp_tp_empty : ⊢ lfp_tp F ∅ := by
   iapply (lfp_tp_unfold F ∅).mpr
-  simp only [lfp_tpF]
+  unfold lfp_tpF
   iintro %M %Mrest %Heq
   exfalso
   exact (not_mem_empty (a := M) (by rw [Heq]; grind))
@@ -124,22 +120,24 @@ theorem lfp_tp_ind (Φ : ListPerm ((α → PROP) → PROP) → PROP) :
 
 theorem lfp_tp_disjUnion (Ms1 Ms2 : ListPerm ((α → PROP) → PROP)) :
     lfp_tp F Ms1 -∗ lfp_tp F Ms2 -∗ lfp_tp F (Ms1 ⊎ Ms2) := by
-  iintro Hx1 Hx2; irevert %Ms2 Hx2; irevert Hx1; irevert %Ms1
+  iintro Hx1 Hx2
+  irevert %Ms2 Hx2; irevert Hx1; irevert %Ms1
   iapply lfp_tp_ind F
-  iintro !> %Ms1 Hx1 %Ms2 Hx2; irevert %Ms1 Hx1; irevert Hx2; irevert %Ms2
+  iintro !> %Ms1 Hx1 %Ms2 Hx2
+  irevert %Ms1 Hx1; irevert Hx2; irevert %Ms2
   iapply lfp_tp_ind F
   iintro !> %Ms2 Hx2 %Ms1 Hx1
   iapply lfp_tp_unfold
   iunfold lfp_tpF
   iintro %M %Mrest %Heq
-  cases mem_disjUnion_iff (x:=M) (X := Ms1) (Y := Ms2).mp (by grind) with
+  cases mem_disjUnion_iff (x := M) (X := Ms1) (Y := Ms2).mp (by grind) with
   | inl hx =>
     obtain rfl : Mrest = (Ms1 \ {M}) ⊎ Ms2 := by grind [disjUnion_singleton_difference]
     iunfold lfp_tpF at Hx1
     ispecialize Hx1 $$ %M %(Ms1 \ {M}) %(by grind)
     iapply bi_mono0_mono $$ Hx1
     iintro %x ⟨%G, HF, Hcont⟩
-    iexists G; iframe
+    iframe HF
     iintro %new Hnew
     icases Hcont $$ %new Hnew with ⟨Hunion, -⟩
     rw [← disjUnion_assoc]
@@ -153,7 +151,7 @@ theorem lfp_tp_disjUnion (Ms1 Ms2 : ListPerm ((α → PROP) → PROP)) :
     ispecialize Hx2 $$ %M %(Ms2 \ {M}) %(by grind)
     iapply bi_mono0_mono $$ Hx2
     iintro %x ⟨%G, HF, Hcont⟩
-    iexists G; iframe
+    iframe HF
     iintro %new Hnew
     icases Hcont $$ %new Hnew with ⟨Hunion, -⟩
     rw [← disjUnion_assoc, disjUnion_comm (Y := Ms1)]
@@ -167,10 +165,12 @@ theorem lfp_tp_singleton (M : (α → PROP) → PROP) :
   obtain ⟨rfl, rfl⟩ : M' = M ∧ Mrest = ∅ := by
     grind [disjUnion_subset_left, singleton_subset_iff,
       disjUnion_empty_right (X := ({M} : ListPerm _))]
-  iapply bi_mono0_intro _ $$ Hx; iintro %x Hlfp
-  isimp only [(lfp_tp_unfold F {fun P => P x}).to_eq, lfp_tpF] at Hlfp
-  ispecialize Hlfp $$ %(fun P => P x) %∅ %disjUnion_empty_right.symm
-  iapply bi_mono0_elim $$ Hlfp; iintro %Q %Q' Hwand HQ'
+  iapply bi_mono0_intro $$ Hx
+  iintro %x Hlfp
+  rw [(lfp_tp_unfold F {fun P => P x}).to_eq, lfp_tpF]
+  ispecialize Hlfp $$ %_ %∅ %disjUnion_empty_right.symm
+  iapply bi_mono0_elim $$ Hlfp
+  iintro %Q %Q' Hwand HQ'
   iapply Hwand $$ HQ'
 
 variable {α : Type _} [OFE α] [OFE.Discrete α]
@@ -178,20 +178,20 @@ variable {α : Type _} [OFE α] [OFE.Discrete α]
 theorem lfp_tp_intro (G : (α → PROP) → (α → PROP)) (x : α) :
     bi_least_fixpoint G x -∗ lfp_tp G {fun P => P x} := by
   letI := ne_of_discrete fun (x : α) => lfp_tp G {fun P => P x}
-  iintro Hlfp; irevert %x Hlfp
+  iintro Hlfp
+  irevert %x Hlfp
   iapply least_fixpoint_iter
-  clear this
   iintro !> %x HF; iapply lfp_tp_unfold
-  simp only [lfp_tpF]
+  rw [lfp_tpF]
   iintro %M %Mrest %Heq
   obtain ⟨rfl, rfl⟩ : M = (fun P => P x) ∧ Mrest = ∅ := by
     grind [disjUnion_subset_left, singleton_subset_iff,
       disjUnion_empty_right (X := ({fun (P : α → PROP) => P x} : ListPerm _))]
   iapply bi_mono0_intro0
-  iexists (fun x => lfp_tp G {fun P => P x})
+  iexists (fun x => _)
   iframe HF
-  simp only [disjUnion_empty_right]
   iintro %Ms
+  rw [disjUnion_empty_right]
   -- FIXME(#758): iinduction does not work
   induction Ms using multiset_ind with
   | empty => iintro _; iapply lfp_tp_empty
