@@ -39,9 +39,9 @@ theorem wand (P Q : PROP) : m iprop(P -∗ Q) -∗ P -∗ m Q := by
 /-- Interpret a step with the identity modality, giving the *total* logic. -/
 instance stepMod_id : StepMod (PROP := PROP) id where
   mono _ _ := by
-    simp only [id]
+    unfold id
     iintro Hwand HP
-    iapply Hwand $$ [$]
+    iapply Hwand $$ HP
 
 /-- Interpret a step as one later modality, giving the *partial* logic. -/
 instance stepMod_later : StepMod (PROP := PROP) BIBase.later where
@@ -76,9 +76,8 @@ def stepH (m : PROP → PROP) [StepMod m] : IHandler PROP stepE where
 
 instance stepH_sequential {m : PROP → PROP} [StepMod m] : Sequential (stepH m):= by
   constructor
-  iintro %_ %_ %_ H
-  simp only [stepH]
-  iexact H
+  unfold stepH
+  iintro %_ %_ %_ $
 
 /-- An identity step interpretation implies a later step interpretation. -/
 instance stepH_ident_later :
@@ -121,11 +120,11 @@ instance stepEH_id_adequate :
   inv _ := iprop(emp)
   adequate := by
     intro i ⟨st, sl⟩ C Φ₁ Φ₂ Hhandle
-    simp only [stepH, stepEH, id] at *
-    simp only [Nat.zero_le, true_and, Nat.sub_zero] at Hhandle
+    simp [stepEH] at Hhandle
+    unfold stepH id
     iintro HΦ _ !>
     iexists ⟨⟩, (ULift.up (st.down + 1), ULift.up sl.down)
-    iframe; itrivial
+    iframe %Hhandle HΦ
 
 variable [BILaterCredits PROP] [BIFUpdLaterCredits PROP]
 
@@ -135,13 +134,10 @@ instance stepEH_later_adequate :
   inv s := £ s.2.down
   adequate := by
     intro i ⟨st, sl⟩ C Φ₁ Φ₂ ⟨Hcredit, HC⟩
-    simp only [stepH] at *
+    unfold stepH
     iintro HΦ Hlc
-    ihave Hparts : £ 1 ∗ £ (sl.down - 1) $$ [Hlc]
-    · iapply lc_split.mp
-      rw [Nat.add_sub_of_le Hcredit]
-      iexact Hlc
-    icases Hparts with ⟨Hone, Hrest⟩
+    ieval (rewrite [← Nat.add_sub_of_le Hcredit]) at Hlc
+    icases lc_split.mp $$ Hlc with ⟨Hone, Hrest⟩
     imod lc_fupd_elim_later $$ Hone HΦ with HΦ
     imodintro
     iexists ⟨⟩, (ULift.up (st.down + 1), ULift.up (sl.down - 1))

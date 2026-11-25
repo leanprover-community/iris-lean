@@ -25,15 +25,15 @@ def stateH {S : Type _} (stateInterp : S → PROP) : IHandler PROP (stateE S) wh
     iprop(∀ s, stateInterp s ={∅}=∗ stateInterp (i s) ∗ Φ s)
   ihandle_mono := by
     iintro %i %Φ %Φ' %s %s' HΦwand #Hswand HH %st Hst
-    imod HH $$ Hst with ⟨$, _⟩
-    imodintro; iapply HΦwand $$ [$]
+    imod HH $$ Hst with ⟨$, HΦ⟩
+    imodintro
+    iapply HΦwand $$ HΦ
 
 instance {S : Type _} (stateInterp : S → PROP) :
     Sequential (stateH stateInterp) := by
   constructor
   unfold stateH
-  iintro %i %Φ %s HH
-  iexact HH
+  iintro %i %Φ %s $
 
 end handler
 
@@ -88,9 +88,11 @@ instance stateEH_adequate :
   adequate := by
     intro i s C Φ1 Φ2 Hhandle
     simp [stateH, stateEH] at Hhandle ⊢
-    iintro Hs Hinv; imod Hs $$ [$] with ⟨_, _⟩
-    iintro !>; iexists _, _; iframe
-    itrivial
+    iintro Hs Hinv
+    imod Hs $$ [$] with ⟨Hstate, HΦ⟩
+    imodintro
+    iexists _, _
+    iframe %Hhandle Hstate HΦ
 
 end exec
 

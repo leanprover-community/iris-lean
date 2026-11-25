@@ -31,8 +31,7 @@ instance angelicH_sequential {α : Type _} :
     Sequential (angelicH (PROP := PROP) α) := by
   constructor
   unfold angelicH
-  iintro %p %Φ %s H
-  iexact H
+  iintro %p %Φ %s $
 
 end handler
 
@@ -48,10 +47,13 @@ theorem wpi_angelic (M : CoPset) (p : α → Prop) (a : {x // p x}) (Ψ : {x // 
     Ψ a ⊢ WPi (choose_angelic p) @> H; M {{ Ψ }} := by
   iintro HΨ; unfold choose_angelic
   iapply wpi_trigger
-  iapply fupd_mask_intro
-  · simp
-  iintro Hfalse; simp [angelicH]; iexists a
-  imod Hfalse; imodintro; iexact HΨ
+  iapply fupd_mask_intro (by simp)
+  iintro Hclose
+  unfold angelicH
+  iexists a
+  imod Hclose
+  imodintro
+  iframe
 
 end wpi_rules
 
@@ -65,7 +67,10 @@ instance angelicEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] {α : Typ
   adequate := by
     intro i s C Φ1 Φ2 Hhandle
     simp [angelicH, angelicEH] at Hhandle ⊢
-    iintro ⟨%a, HΦ⟩ Hinv !>; iexists a, s; iframe; itrivial
+    iintro ⟨%a, HΦ⟩ Hinv !>
+    iexists a, s
+    iframe
+    itrivial
 
 end exec
 

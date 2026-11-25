@@ -22,11 +22,11 @@ variable {PROP : Type _} [BI PROP]
 
 /-- The canonical handler for the empty event type. -/
 def emptyH : IHandler PROP emptyE where
-  ihandle := by intro i; cases i
+  ihandle i := nomatch i
   ihandle_mono := by iintro %i; cases i
 
 instance emptyH_sequential : Sequential (PROP := PROP) emptyH := by
-  constructor; iintro %i; cases i
+  refine ⟨fun i => nomatch i⟩
 
 end handler
 

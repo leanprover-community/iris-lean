@@ -128,7 +128,7 @@ theorem wpi_denoteYield (e : Exp) (Φ : Val → IProp GF) :
     WPi e.denote @> heaplangH m; ⊤ {{ Φ }} -∗
     WPi (if e.isVal then e.denote else yieldAfter e.denote) @> heaplangH m; ⊤ {{ Φ }} := by
   split
-  · iintro Hwp; iexact Hwp
+  · iintro $
   · rw [ConcE.yieldAfter]
     iintro Hwp; iapply wpi_bind; iapply wpi_wand $$ Hwp
     iintro %v HΦ; iapply wpi_bind; iapply wpi_yield
@@ -163,21 +163,19 @@ theorem wp_bind (K : List ECtxItem) (e : Exp) (Φ : Val → IProp GF) :
     iapply wpi_fupd
     iapply wpi_wand $$ Hwp
     iintro %v Hval
-    iapply wpi_pure' Φ v $$ Hval
+    iapply wpi_pure_fupd Φ v $$ Hval
   | cons Ki K =>
     simp only [wp_unfold]
     rw [denote_bind _ _ (by simp)]
     iapply wpi_bind
     rw [Exp.denoteYield]
-    iapply wpi_denoteYield
-    iexact Hwp
+    iapply wpi_denoteYield $$ Hwp
 
 theorem wp_wand {M : CoPset} (e : Exp) (Φ Ψ : Val → IProp GF) :
     WP e @ stepm; M {{ Φ }} -∗
     (∀ v, Φ v -∗ Ψ v) -∗
-    WP e @ stepm; M {{ Ψ }} := by
-  simp only [wp_unfold]
-  apply wpi_wand
+    WP e @ stepm; M {{ Ψ }} :=
+  wpi_wand _ _
 
 theorem wp_frame_l {M : CoPset} (e : Exp) P (Φ : Val → IProp GF) :
     P ∗ WP e @ stepm; M {{ Φ }} -∗
@@ -198,15 +196,13 @@ theorem wp_atomic E1 E2 (e : Exp) (Φ : Val → IProp GF) :
 
 theorem fupd_wp {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
     (|={M}=> WP e @ stepm; M {{ v, Φ v }}) -∗
-    WP e @ stepm; M {{ Φ }} := by
-  simp only [wp_unfold]
-  iapply (fupd_wpi _).2
+    WP e @ stepm; M {{ Φ }} :=
+  BI.entails_wand (fupd_wpi _).2
 
 theorem wp_fupd {M : CoPset} (e : Exp) (Φ : Val → IProp GF) :
     WP e @ stepm; M {{ v, |={M}=> Φ v }} -∗
-    WP e @ stepm; M {{ Φ }} := by
-  simp only [wp_unfold]
-  iapply (wpi_fupd _).2
+    WP e @ stepm; M {{ Φ }} :=
+  BI.entails_wand (wpi_fupd _).2
 
 theorem wp_val {M : CoPset} (v : Val) (Φ : Val → IProp GF) :
     Φ v -∗

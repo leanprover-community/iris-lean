@@ -70,9 +70,9 @@ def sumH : IHandler PROP (E₁ ⊕ₑ E₂) where
     | .inr i₂ => H₂.ihandle i₂ Φ s
   ihandle_mono := by
     iintro %e %Φ %Φ' %s %s' HΦwand #Hswand HH
-    cases e with
-    | inl e1 => iapply H₁.ihandle_mono $$ HΦwand Hswand HH
-    | inr e2 => iapply H₂.ihandle_mono $$ HΦwand Hswand HH
+    cases e
+    · iapply H₁.ihandle_mono $$ HΦwand Hswand HH
+    · iapply H₂.ihandle_mono $$ HΦwand Hswand HH
 infixr:30 " ⊕ₕ " => sumH
 
 @[simp]
@@ -186,15 +186,18 @@ instance EH_of_SEH_adequate {E GE : Effect} {R σ : Type _}
     EHandlerAdequate H (EH : EHandler E GE R σ) where
   inv s Ms := iprop% <affine> ⌜Ms = ∅⌝ ∗ A.inv s
   adequate := by
-    intro G i s Ms C k H0; simp at H0
+    intro G i s Ms C k Hhandle
+    simp at Hhandle
     iintro Hh ⟨%rfl, Hinv⟩
-    ihave >⟨%a, %s', %HC, _, _⟩ := A.adequate $$ Hh [$]; assumption
-    imodintro; iexists (k a), _, (fun P => P (k a)), ∅, {fun P => P (k a)}
+    imod A.adequate _ _ _ _ _ Hhandle $$ Hh Hinv with ⟨%a, %s', %HC, Hinv, Ha⟩
+    imodintro
+    iexists k a, s', fun P => P (k a), ∅, {fun P => P (k a)}
     rw [BigSepMS.bigSepMS_singleton.to_eq, disjUnion_empty_right]
-    iframe
-    isplit; itrivial
-    isplit; itrivial
-    isplit; itrivial
+    iframe %HC Hinv Ha
+    isplit
+    · itrivial
+    isplit
+    · itrivial
     iintro %_ $ !> //
 
 /-- Independent simple handlers preserve the separating conjunction of their invariants. -/
@@ -210,17 +213,17 @@ instance sumSEH_adequate {E₁ E₂ : Effect} {S₁ S₂ : Type _}
     | inl i =>
       simp only [sumH_inl, sumSEH] at ⊢ Hse
       iintro Hh ⟨Hinv1, Hinv2⟩
-      ihave >⟨%a, %s', %HC, Hinv1, HΦ1⟩ := A₁.adequate $$ Hh [$]; assumption
-      imodintro; iexists a, (s', s2)
-      iframe Hinv1 Hinv2 HΦ1
-      itrivial
+      imod A₁.adequate _ _ _ _ _ Hse $$ Hh Hinv1 with ⟨%a, %s', %HC, Hinv1, HΦ1⟩
+      imodintro
+      iexists a, (s', s2)
+      iframe %HC Hinv1 Hinv2 HΦ1
     | inr i =>
       simp only [sumH_inr, sumSEH] at ⊢ Hse
       iintro Hh ⟨Hinv1, Hinv2⟩
-      ihave >⟨%a, %s', %HC, Hinv2, HΦ2⟩ := A₂.adequate $$ Hh [$]; assumption
-      imodintro; iexists a, (s1, s')
-      iframe Hinv1 Hinv2 HΦ2
-      itrivial
+      imod A₂.adequate _ _ _ _ _ Hse $$ Hh Hinv2 with ⟨%a, %s', %HC, Hinv2, HΦ2⟩
+      imodintro
+      iexists a, (s1, s')
+      iframe %HC Hinv1 Hinv2 HΦ2
 
 /-- Two thread-pool handlers: the pending threads are split between their invariants. -/
 instance sumEEH_adequate {E₁ E₂ GE : Effect} {R S₁ S₂ : Type _}
@@ -234,16 +237,16 @@ instance sumEEH_adequate {E₁ E₂ GE : Effect} {R S₁ S₂ : Type _}
     cases i with
     | inl i =>
       simp only [sumH_inl]; iintro Hh ⟨%Ms1, %Ms2, ⟨%Hsplit, Hinv1, Hinv2⟩⟩
-      ihave >⟨%t', %s', %M', %Ms₁', %Msn, HC, %Hperm, Hspawn, Hinv1, Hclose⟩ :=
-        A₁.adequate $$ Hh Hinv1; exact Heh
+      imod A₁.adequate _ _ _ _ _ _ Heh $$ Hh Hinv1 with
+        ⟨%t', %s', %M', %Ms₁', %Msn, HC, %Hperm, Hspawn, Hinv1, Hclose⟩
       imodintro
       iexists t', (s', s2), M', Ms₁' ⊎ Ms2, Msn
       iframe
       ipureintro; grind
     | inr i =>
       simp only [sumH_inr]; iintro Hh ⟨%Ms1, %Ms2, ⟨%Hsplit, Hinv1, Hinv2⟩⟩
-      ihave >⟨%t', %s', %M', %Ms₂', %Msn, HC, %Hperm, Hspawn, Hinv2, Hclose⟩ :=
-        A₂.adequate $$ Hh Hinv2; exact Heh
+      imod A₂.adequate _ _ _ _ _ _ Heh $$ Hh Hinv2 with
+        ⟨%t', %s', %M', %Ms₂', %Msn, HC, %Hperm, Hspawn, Hinv2, Hclose⟩
       imodintro
       iexists t', (s1, s'), M', Ms1 ⊎ Ms₂', Msn
       iframe
@@ -257,8 +260,8 @@ instance isoEH_adequate {E GE : Effect} {R S₁ S₂ : Type _}
   adequate := by
     intro G i s Ms C k Heh
     iintro Hh Hinv
-    ihave >⟨%t', %s', %M', %Ms', %Msn, HC, Hperm, HMsn, Hinv', Hpre⟩ :=
-      A.adequate $$ Hh Hinv; exact Heh
+    imod A.adequate _ _ _ _ _ _ Heh $$ Hh Hinv with
+      ⟨%t', %s', %M', %Ms', %Msn, HC, Hperm, HMsn, Hinv', Hpre⟩
     imodintro
     iexists t', iso.toFun s', M', Ms', Msn
     simp only [invFun_toFun]

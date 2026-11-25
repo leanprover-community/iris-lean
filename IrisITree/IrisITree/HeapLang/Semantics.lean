@@ -283,8 +283,7 @@ theorem denoteYield_bind_item (Ki : ECtxItem) (e : Exp) :
     (Ki.fill e).denoteYield =
       e.denoteYield >>= fun v => (Ki.fill (.val v)).denoteYield := by
   simp only [denoteYield_fill_item, ConcE.yieldAfter]
-  rw [denote_bind_item]
-  simp only [bind_assoc]
+  rw [denote_bind_item, bind_assoc]
 
 /-- The yielding denotation composes with arbitrary evaluation contexts. -/
 theorem denoteYield_bind (K : List ECtxItem) (e : Exp) :
@@ -297,8 +296,7 @@ theorem denoteYield_bind (K : List ECtxItem) (e : Exp) :
   | cons Ki K IH =>
     simp only [fill_cons, fillItem]
     rw [IH, denoteYield_bind_item, bind_assoc]
-    apply congrArg; funext v
-    exact (IH (Ki.fill (.val v))).symm
+    exact congrArg _ (funext fun v => (IH (Ki.fill (.val v))).symm)
 
 /-- A nonempty context evaluates its hole before continuing with the resulting value. -/
 theorem denote_bind (K : List ECtxItem) (e : Exp) (hK : K ≠ []) :
@@ -309,7 +307,7 @@ theorem denote_bind (K : List ECtxItem) (e : Exp) (hK : K ≠ []) :
   | append_singleton Ks Ki =>
     simp only [fill_append, fill_cons, fill_nil, fillItem]
     rw [denote_bind_item, denoteYield_bind, LawfulMonad.bind_assoc]
-    apply congrArg; funext v
-    exact (denote_bind_item Ki (ProgramLogic.fill Ks (Exp.val v))).symm
+    exact congrArg _ (funext fun v =>
+      (denote_bind_item Ki (ProgramLogic.fill Ks (Exp.val v))).symm)
 
 end Iris.HeapLang

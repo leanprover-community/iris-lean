@@ -69,8 +69,10 @@ private theorem heaplangEH_partial_init (σ : heapF Loc (Option Val)) (n : Nat) 
     (heaplangEH_partial_adequate (GF := GF) (GE := heaplangE) (GR := Val)).inv
       ⟨ConcState.new, σ, 0, n⟩ ∅ := by
   iintro ⟨Hheap, Hcredits⟩
-  simp [heaplangEH_partial_adequate_inv_eq.to_eq, ConcState.new, ListPerm.empty_eq]
+  rw [heaplangEH_partial_adequate_inv_eq.to_eq]
   iframe
+  ipureintro
+  rfl
 
 /-- Initialize the total execution invariant from the heap state. -/
 private theorem heaplangEH_total_init (σ : heapF Loc (Option Val)) :
@@ -78,8 +80,10 @@ private theorem heaplangEH_total_init (σ : heapF Loc (Option Val)) :
     (heaplangEH_total_adequate (GF := GF) (GE := heaplangE) (GR := Val)).inv
       ⟨ConcState.new, σ, 0, 0⟩ ∅ := by
   iintro Hheap
-  simp [heaplangEH_total_adequate_inv_eq.to_eq, ConcState.new, ListPerm.empty_eq]
+  rw [heaplangEH_total_adequate_inv_eq.to_eq]
   iframe
+  ipureintro
+  rfl
 
 end handler
 
@@ -99,21 +103,21 @@ theorem heaplang_partial_adequacy (e : Exp)
   letI G : heaplangHGS GF := ⟨Gmod⟩
   imod Hclose
   ihave Hwp := Hwp $$ Hσ
-  ihave Hstate := heaplangEH_partial_init σ n $$ [Hsσ Hcredits]; iframe
-  imod wpi_adequate $$ Hwp Hstate with ⟨%t', %s', %Ms', %M, %HC, Heinv, Hcont, Htp⟩; assumption
+  imod wpi_adequate (H := heaplangH (GF := GF) BI.later) (Hexec := Hexec) $$ Hwp [Hsσ Hcredits] with
+    ⟨%t', %s', %Ms', %M, %HC, -, Hcont, Htp⟩
+  · iapply heaplangEH_partial_init
+    iframe
   by_cases Hret : ∃ v, t' = .ret v
   · obtain ⟨v, rfl⟩ := Hret
     imod wpi_tp_elim $$ Hcont Htp with > >%Hφ
-    imod (fupd_mask_subseteq (E2 := ∅)) with Hclose; simp
-    ipureintro; refine ⟨ITree.ret v, s', ?_⟩
-    simp [HC]; intro v' Heq
-    cases ITreeF.ret.inj (congrArg ITree.unfold Heq)
+    imod (fupd_mask_subseteq (E2 := ∅) (by simp)) with Hclose
+    ipureintro
+    refine ⟨ITree.ret v, s', HC, fun v' Heq => ?_⟩
+    obtain rfl := ITreeF.ret.inj (congrArg ITree.unfold Heq)
     exact Hφ
-  · iintro !>; ipureintro
-    exists t', s', HC
-    intro v Hv
-    exfalso; apply Hret
-    exists v
+  · imodintro
+    ipureintro
+    exact ⟨t', s', HC, fun v Hv => (Hret ⟨v, Hv⟩).elim⟩
 
 theorem heaplang_total_adequacy (e : Exp)
     (σ : heapF Loc (Option Val)) (φ : Val → Prop)
@@ -130,20 +134,19 @@ theorem heaplang_total_adequacy (e : Exp)
   letI G : heaplangHGS GF := ⟨Gmod⟩
   imod Hclose
   ihave Hwp := Hwp $$ Hσ
-  ihave Hstate := heaplangEH_total_init σ $$ Hsσ
-  imod wpi_adequate $$ Hwp Hstate with ⟨%t', %s', %Ms', %M, %HC, Heinv, Hcont, Htp⟩; assumption
+  imod wpi_adequate (H := heaplangH (GF := GF) id) (Hexec := Hexec) $$ Hwp [Hsσ] with
+    ⟨%t', %s', %Ms', %M, %HC, -, Hcont, Htp⟩
+  · iapply heaplangEH_total_init $$ Hsσ
   by_cases Hret : ∃ v, t' = .ret v
   · obtain ⟨v, rfl⟩ := Hret
     imod wpi_tp_elim $$ Hcont Htp with > >%Hφ
-    imod (fupd_mask_subseteq (E2 := ∅)) with Hclose; simp
-    ipureintro; refine ⟨ITree.ret v, s', ?_⟩
-    simp [HC]; intro v' Heq
-    cases ITreeF.ret.inj (congrArg ITree.unfold Heq)
+    imod (fupd_mask_subseteq (E2 := ∅) (by simp)) with Hclose
+    ipureintro
+    refine ⟨ITree.ret v, s', HC, fun v' Heq => ?_⟩
+    obtain rfl := ITreeF.ret.inj (congrArg ITree.unfold Heq)
     exact Hφ
-  · iintro !>; ipureintro
-    exists t', s', HC
-    intro v Hv
-    exfalso; apply Hret
-    exists v
+  · imodintro
+    ipureintro
+    exact ⟨t', s', HC, fun v Hv => (Hret ⟨v, Hv⟩).elim⟩
 
 end IrisITree

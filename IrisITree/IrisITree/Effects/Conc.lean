@@ -29,10 +29,11 @@ def concH : IHandler PROP concE where
     iintro %i %Φ %Φ' %Φs %Φs' HΦwand #Hswand HH
     cases i <;> dsimp only
     · icases HH with ⟨HΦ, HΦs⟩
-      ihave HΦ' := HΦwand $$ %ForkResult.parent HΦ
-      isplitl [HΦ']
-      · iexact HΦ'
-      · imod HΦs; imodintro; iapply Hswand; iexact HΦs
+      isplitl [HΦwand HΦ]
+      · iapply HΦwand $$ HΦ
+      · imod HΦs
+        imodintro
+        iapply Hswand $$ HΦs
     · imod HH; itrivial
     · imod HH; imodintro; imod HH; imodintro; iapply HΦwand $$ [$]
 
@@ -60,7 +61,7 @@ theorem wpi_fork t M (Φ : PUnit → PROP) :
   iapply fupd_mask_intro (by simp); iintro Hm
   simp [concH]; isplitr [Ht]
   · imod Hm; iapply wpi_pure; iexact HΦ
-  · imod Ht; imodintro; iapply wpi_bind'
+  · imod Ht; imodintro; iapply wpi_bind_strong
     iapply wpi_wand $$ [$]; iintro %_ _
     iapply wpi_kill $$ [$]
 

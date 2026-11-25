@@ -40,12 +40,10 @@ theorem wpi_fail {R} (M : CoPset) (Φ : R → PROP) (s : String) :
     WPi fail s @> H; M {{ Φ }} ={M}=∗ False := by
   iintro Hwp; simp [fail, Effect.trigger]
   let e := @Subeffect.map failE E sub ({ down := s } : failE.I)
-  ihave >Hwp := wpi_vis $$ Hwp
-  have Hfalse : H.ihandle e.fst (fun _ => iprop(False)) (fun _ => iprop(False)) ⊢ iprop(False) :=
-    (Hin.is_inH ({ down := s } : failE.I) (fun _ => iprop(False))
-      (fun _ => iprop(False))).mpr.trans false_elim
-  iapply false_elim
-  iapply Hfalse
+  icases wpi_vis $$ Hwp with >Hwp
+  iapply (show (H.ihandle e.fst (fun _ => iprop% False) (fun _ => iprop% False) ⊢
+    iprop(|={∅, M}=> False)) from (Hin.is_inH (⟨s⟩ : failE.I)
+      (fun _ => iprop% False) (fun _ => iprop% False)).mpr.trans false_elim)
   iapply H.ihandle_mono e.fst $$ [] [] Hwp
   · iintro %a _; cases e.snd a
   · iintro !> %a _; cases e.snd a

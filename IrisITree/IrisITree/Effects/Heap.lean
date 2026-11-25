@@ -121,7 +121,7 @@ theorem wpi_storeOpt' Ms Me (l : Loc) (v v' : Option Val) (Φ : Option Val → I
     (l ↦? v' -∗ |={Ms, Me}=> Φ v) -∗
     WPi (storeOpt l v') @> H; Ms,Me {{ Φ }} := by
   iintro %Hmask Hpt Hwand; unfold pointsto storeOpt
-  iapply wpi_bind' (Ms \ ↑(heapH_inv_name (G := G)))
+  iapply wpi_bind_strong (Ms \ ↑(heapH_inv_name (G := G)))
   iapply wpi_get; unfold stateInterp_heap heap_inv
   iintro %σ ⟨Hauth, #Hinv⟩
   iinv Hinv with >⟨%σinv, HauthInv⟩ Hclose
@@ -130,14 +130,13 @@ theorem wpi_storeOpt' Ms Me (l : Loc) (v v' : Option Val) (Φ : Option Val → I
 
   /- Replace look up and insert operations. -/
   ihave %Hlookup := ghost_map_lookup $$ Hauth Hpt
-  have Hlookup : σ[l]? = some v := by
-    simpa [Iris.Std.get?] using Hlookup
+  change σ[l]? = some v at Hlookup
   have Hinsert : σ.insert l v' = Std.insert  (M := (Std.ExtTreeMap Loc · compare)) σ l v' := by
     apply Std.ExtTreeMap.ext_getElem?; intro k
     simp only [Iris.Std.insert, Std.ExtTreeMap.getElem?_alter, Std.ExtTreeMap.getElem?_insert]
   rw [Hlookup, Hinsert]
 
-  iapply wpi_bind' Ms; iapply wpi_set
+  iapply wpi_bind_strong Ms; iapply wpi_set
   unfold stateInterp_heap heap_inv
   iintro %σ' ⟨HauthState, -⟩
   ihave %Heq := ghost_map_auth_agree $$ Hauth HauthState; subst σ'
@@ -147,7 +146,7 @@ theorem wpi_storeOpt' Ms Me (l : Loc) (v v' : Option Val) (Φ : Option Val → I
   · iframe
   imodintro; isplitl [Hauth]
   · isplit <;> itrivial
-  iapply wpi_pure'; simp only [Option.join_some]
+  iapply wpi_pure_fupd; simp only [Option.join_some]
   iapply Hwand $$ [$]
 
 theorem wpi_storeOpt M (l : Loc) (v v' : Option Val) (Φ : Option Val → IProp GF) :
@@ -187,12 +186,11 @@ theorem wpi_load?' Ms Me (l : Loc) (v : Val) (dq : DFrac) (Φ : Option Val → I
   iintro %σ ⟨Hauth, #Hinv⟩
 
   ihave %Hlookup := ghost_map_lookup $$ Hauth Hpt
-  have Hlookup : σ[l]? = some (some v) := by
-    simpa [Iris.Std.get?] using Hlookup
+  change σ[l]? = some (some v) at Hlookup
   rw [Hlookup]; simp only [Option.join_some]
 
   iframe Hauth Hinv
-  imodintro; iapply wpi_pure'
+  imodintro; iapply wpi_pure_fupd
   iapply Hwand $$ [$]
 
 theorem wpi_load? M (l : Loc) (v : Val) (dq : DFrac) (Φ : Option Val → IProp GF) :
@@ -215,7 +213,7 @@ theorem wpi_store!' Ms Me (l : Loc) (v v' : Val) (Φ : Val → IProp GF) :
     WPi (store! l v') @> H; Ms, Me {{ Φ }} := by
   iintro %Hmask Hpt Hwand; unfold store!
   iapply wpi_bind; iapply wpi_store?' _ _ _ _ _ _ Hmask $$ Hpt
-  iintro Hpt !>; iapply wpi_pure'
+  iintro Hpt !>; iapply wpi_pure_fupd
   iapply Hwand $$ [$]
 
 theorem wpi_store! M (l : Loc) (v v' : Val) (Φ : Val → IProp GF) :
@@ -234,7 +232,7 @@ theorem wpi_load!' Ms Me (l : Loc) (v : Val) (dq : DFrac) (Φ : Val → IProp GF
     WPi (load! l) @> H; Ms,Me {{ Φ }} := by
   iintro %Hmask Hpt Hwand; unfold load!
   iapply wpi_bind; iapply wpi_load?' _ _ _ _ _ _ Hmask $$ Hpt
-  iintro Hpt !>; iapply wpi_pure'
+  iintro Hpt !>; iapply wpi_pure_fupd
   iapply Hwand $$ Hpt
 
 theorem wpi_load! M (l : Loc) (v : Val) (dq : DFrac) (Φ : Val → IProp GF) :
@@ -292,17 +290,14 @@ private theorem loc_add_nat_injective (l : Loc) :
     rw [LawfulLoc.add_nat_inj, ← Hgap, Heq] at Hgt
     simp at Hgt
   intro i j Heq
-  rcases Nat.lt_trichotomy i j with Hlt | Heq' | Hgt
-  · exact False.elim (Hne i j Hlt Heq)
-  · exact Heq'
-  · exact False.elim (Hne j i Hgt Heq.symm)
+  grind [Nat.lt_trichotomy]
 
 theorem wpi_allocN' Ms Me (n : Nat) (v : Val) (Φ : Loc → IProp GF) :
     ↑(heapH_inv_name (G := G)) ⊆ Ms →
     (∀ l : Loc, ([∗list] i ∈ .range n, (l + Int.ofNat i) ↦ v) -∗ |={Ms,Me}=> Φ l) -∗
     WPi (allocN n v) @> H; Ms,Me {{ Φ }} := by
   iintro %Hmask Hwand; unfold allocN
-  iapply wpi_bind' (Ms \ ↑(heapH_inv_name (G := G)))
+  iapply wpi_bind_strong (Ms \ ↑(heapH_inv_name (G := G)))
   iapply wpi_get; unfold stateInterp_heap heap_inv
   iintro %σ ⟨Hauth, #Hinv⟩
   iinv Hinv with >⟨%σinv, HauthInv⟩ Hclose
@@ -310,7 +305,7 @@ theorem wpi_allocN' Ms Me (n : Nat) (v : Val) (Φ : Loc → IProp GF) :
   imodintro; iframe Hauth Hinv
   iapply wpi_bind; iapply wpi_demonic
   iintro %⟨l, Hfree⟩; simp only
-  iapply wpi_bind' Ms; iapply wpi_set
+  iapply wpi_bind_strong Ms; iapply wpi_set
   unfold stateInterp_heap heap_inv
   iintro %σ' ⟨Hauth', -⟩
   ihave %Heq := ghost_map_auth_agree $$ HauthInv Hauth'; subst σ'
@@ -319,7 +314,6 @@ theorem wpi_allocN' Ms Me (n : Nat) (v : Val) (Φ : Loc → IProp GF) :
   -- We do not need to care about the orders
   let entries := (List.range n).map fun m => (l + Int.ofNat m, some v)
   let σnew := Std.PartialMap.ofList (M := (Std.ExtTreeMap Loc · compare)) entries
-  let σsum := Std.PartialMap.union (M := (Std.ExtTreeMap Loc · compare)) σnew σ
 
   -- New added entries do not have duplicated elements and the unioned hold the same elements
   have Hnodup : Std.NoDupKeys entries := by
@@ -327,12 +321,6 @@ theorem wpi_allocN' Ms Me (n : Nat) (v : Val) (Φ : Loc → IProp GF) :
     simp [List.map_map]
     refine List.nodup_map_of_injective
       (loc_add_nat_injective l) List.nodup_range
-  have HinsertMany : σ.insertMany entries = σsum := by
-    simpa only [σnew] using extTreeMap_insertMany_eq_ofList_union σ entries Hnodup
-  have HinsertMany' :
-      σ.insertMany ((List.range n).map fun (i : Nat) => (l + (i : Int), some v)) = σsum := by
-    simpa [entries, σsum] using HinsertMany
-
   imod ghost_map_insert_big σnew $$ Hauth with ⟨⟨HauthInv, HauthState⟩, Hpts⟩
   · -- Prove σnew ##ₘ σ
     unfold Std.PartialMap.disjoint; intro k Hk
@@ -345,11 +333,14 @@ theorem wpi_allocN' Ms Me (n : Nat) (v : Val) (Φ : Loc → IProp GF) :
     apply Hfree i <| List.mem_range.mp Hi
     simpa [Iris.Std.get?] using Hk.2
   imod Hclose $$ [HauthInv] with -
-  · iexists σ.insertMany entries;
-    rw [HinsertMany]; itrivial
+  · iexists Std.PartialMap.union (M := (Std.ExtTreeMap Loc · compare)) σnew σ
+    inext
+    iexact HauthInv
   imodintro; isplitl [HauthState]
-  · rw [HinsertMany']; iframe HauthState Hinv
-  iapply wpi_pure'; iapply Hwand
+  · rw [extTreeMap_insertMany_eq_ofList_union σ
+      ((List.range n).map fun (i : Nat) => (l + (i : Int), some v)) Hnodup]
+    iframe HauthState Hinv
+  iapply wpi_pure_fupd; iapply Hwand
   unfold pointsto
   iapply (equiv_iff.mp (BigSepL.bigSepL_map
     (Φ := fun _ kv => ghost_map_elem _ _ kv.1 kv.2)

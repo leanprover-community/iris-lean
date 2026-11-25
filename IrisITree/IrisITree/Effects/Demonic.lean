@@ -24,14 +24,14 @@ def demonicH (α : Type _) : IHandler PROP (demonicE α) where
   ihandle := fun _ Φ _ => iprop(∀ a, Φ a)
   ihandle_mono := by
     iintro %i %Φ %Φ' %s %s' HΦwand #Hswand H %a
-    iapply HΦwand; iapply H
+    iapply HΦwand
+    iapply H
 
 instance demonicH_sequential {α : Type _} :
     Sequential (PROP := PROP) (demonicH (PROP := PROP) α) := by
   constructor
   unfold demonicH
-  iintro %i %Φ %s H
-  iexact H
+  iintro %i %Φ %s $
 
 end handler
 
@@ -45,10 +45,8 @@ theorem wpi_demonic (M : CoPset) (Φ : α → Prop) [Hdec : DecidablePred Φ]
     [Hi : Inhabited {a // Φ a}] (Ψ : {a // Φ a} → PROP) :
     (∀ a, Ψ a) ⊢ WPi choose Φ @> H;M {{ Ψ }} := by
   iintro HΨ; unfold choose
-  set_option pp.all true in
   iapply wpi_trigger
-  iapply fupd_mask_intro
-  · simp
+  iapply fupd_mask_intro (by simp)
   iintro Hclose; simp [demonicH]; iintro %a
   imod Hclose; imodintro; iapply HΨ
 
@@ -66,9 +64,9 @@ instance demonicEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] {α : Typ
     intro i s C Φ1 Φ2 Hhandle
     simp [demonicH, demonicEH] at Hhandle ⊢
     rcases Hhandle with ⟨a, s', HC⟩
-    iintro HΦ1 Hinv; imodintro
-    iexists ⟨a, s'⟩, s; iframe
-    isplitr; itrivial
+    iintro HΦ1 Hinv !>
+    iexists ⟨a, s'⟩, s
+    iframe %HC Hinv
     iapply HΦ1
 
 end exec
