@@ -192,7 +192,7 @@ theorem lfp_tp_intro (G : (α → PROP) → (α → PROP)) (x : α) :
   iframe HF
   simp only [disjUnion_empty_right]
   iintro %Ms
-  -- FIXME: iinduction does not work
+  -- FIXME(#758): iinduction does not work
   induction Ms using multiset_ind with
   | empty => iintro _; iapply lfp_tp_empty
   | disjUnion_singleton M Ms IHM =>
