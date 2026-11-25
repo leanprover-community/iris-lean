@@ -99,8 +99,8 @@ instance concEH_adequate {GE GR} :
       iintro ⟨_, _⟩ %h !>
       iexists _, _, fun P => P (k .parent), Ms ⊎ {f (k .child)},
         {fun P => P (k .parent)} ⊎ {f (k .child)}
-      isplit; itrivial
-      isplit; ipureintro; grind
+      isplit; · itrivial
+      isplit; · ipureintro; grind
       simp only [BigSepMS.bigSepMS_disjUnion.to_eq, BigSepMS.bigSepMS_singleton.to_eq]
       iframe
       isplitr
@@ -114,9 +114,11 @@ instance concEH_adequate {GE GR} :
       iexists t', .yield s.pool i hi, f t', pending (.yield s.pool i hi), ∅
       simp only [BigSepMS.bigSepMS_empty.to_eq, emp_sep.to_eq]
       iframe %HC
-      isplit; ipureintro; rw [disjUnion_empty_left]
-      exact Quotient.sound (pool_set_perm s.pool i (some t') none hi Hget)
-      isplit; ipureintro; rfl
+      isplit
+      · ipureintro; rw [disjUnion_empty_left]
+        -- TODO: can we prove this without unfolding the definitions using Quotient.sound?
+        exact Quotient.sound (pool_set_perm s.pool i (some t') none hi Hget)
+      isplit; · ipureintro; rfl
       imod Ht; iintro %P $
     · -- Yield case
       iintro >Ht %rfl
@@ -128,10 +130,12 @@ instance concEH_adequate {GE GR} :
       iexists t', .yield tp' i hi', f t', pending (.yield tp' i hi'), {f (k ⟨⟩)}
       rw [BigSepMS.bigSepMS_singleton.to_eq]
       iframe %HC ∗
-      isplit; ipureintro
-      exact Quotient.sound ((pool_set_perm tp' i (some t') none hi' Hget).trans
-        (pool_set_perm s.pool s.curr none (some (k ⟨⟩)) s.curr_in_pool s.curr_is_none))
-      isplit; ipureintro; rfl
+      isplit
+      · ipureintro
+        -- TODO: can we prove this without unfolding the definitions using Quotient.sound?
+        exact Quotient.sound ((pool_set_perm tp' i (some t') none hi' Hget).trans
+          (pool_set_perm s.pool s.curr none (some (k ⟨⟩)) s.curr_in_pool s.curr_is_none))
+      isplit; · ipureintro; rfl
       imod Hemp; iintro %x $
 
 end exec

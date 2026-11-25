@@ -31,9 +31,9 @@ noncomputable def lfp_tpF {PROP : Type _} [BI PROP] {α : Type _}
     (rec_tp : ListPerm ((α → PROP) → PROP) → PROP) :
     ListPerm ((α → PROP) → PROP) → PROP :=
   fun Ms => iprop%
-    ∀ M rest, <affine> ⌜Ms = {M} ⊎ rest⌝ -∗
+    ∀ M Mrest, <affine> ⌜Ms = {M} ⊎ Mrest⌝ -∗
       bi_mono0 M fun x => iprop%
-        ∃ G, F G x ∗ ∀ Ms', ([∗mset] M' ∈ Ms', M' G) -∗ rec_tp (Ms' ⊎ rest)
+        ∃ G, F G x ∗ ∀ Ms', ([∗mset] M' ∈ Ms', M' G) -∗ rec_tp (Ms' ⊎ Mrest)
 
 section lfp_tpF
 
@@ -55,7 +55,7 @@ theorem lfp_tpF_mono (tp1 tp2 : ListPerm ((α → PROP) → PROP) → PROP) :
     □ (∀ Ms, tp1 Ms -∗ tp2 Ms) -∗
     ∀ Ms, lfp_tpF F tp1 Ms -∗ lfp_tpF F tp2 Ms := by
   iintro #Hwand %Ms Htp; unfold lfp_tpF
-  iintro %M %rest %Heq; ispecialize Htp $$ %M %rest %Heq
+  iintro %M %Mrest %Heq; ispecialize Htp $$ %M %Mrest %Heq
   iapply bi_mono0_mono $$ Htp
   iintro %x ⟨%G, HF, HMS⟩
   iexists G
@@ -68,8 +68,8 @@ theorem lfp_tpF_mono' tp (F G : (α → PROP) → α → PROP) :
     □ (∀ Φ x, F Φ x -∗ G Φ x) -∗
     ∀ Ms, lfp_tpF F tp Ms -∗ lfp_tpF G tp Ms := by
   iintro #Hwand %Ms Htp; unfold lfp_tpF
-  iintro %M %rest %Heq
-  ispecialize Htp $$ %M %rest %Heq
+  iintro %M %Mrest %Heq
+  ispecialize Htp $$ %M %Mrest %Heq
   iapply bi_mono0_mono $$ Htp
   iintro %x ⟨%Φ, HF, Hcont⟩
   iexists Φ
@@ -108,7 +108,7 @@ theorem lfp_tp_unfold (Ms : ListPerm ((α → PROP) → PROP)) :
 theorem lfp_tp_empty : ⊢ (lfp_tp F ∅ : PROP) := by
   iapply (lfp_tp_unfold F ∅).mpr
   simp only [lfp_tpF]
-  iintro %M %rest %Heq
+  iintro %M %Mrest %Heq
   exfalso
   exact (not_mem_empty (a := M) (by rw [Heq]; grind))
 
@@ -131,9 +131,10 @@ theorem lfp_tp_disjUnion (Ms1 Ms2 : ListPerm ((α → PROP) → PROP)) :
   iintro !> %Ms2 Hx2 %Ms1 Hx1
   iapply lfp_tp_unfold
   iunfold lfp_tpF
-  iintro %M %rest %Heq
-  rcases mem_disjUnion_iff (x:=M) (X := Ms1) (Y := Ms2).mp (by grind) with hx | hy
-  · obtain rfl : rest = (Ms1 \ {M}) ⊎ Ms2 := by grind [disjUnion_singleton_difference]
+  iintro %M %Mrest %Heq
+  cases mem_disjUnion_iff (x:=M) (X := Ms1) (Y := Ms2).mp (by grind) with
+  | inl hx =>
+    obtain rfl : Mrest = (Ms1 \ {M}) ⊎ Ms2 := by grind [disjUnion_singleton_difference]
     iunfold lfp_tpF at Hx1
     ispecialize Hx1 $$ %M %(Ms1 \ {M}) %(by grind)
     iapply bi_mono0_mono $$ Hx1
@@ -146,7 +147,8 @@ theorem lfp_tp_disjUnion (Ms1 Ms2 : ListPerm ((α → PROP) → PROP)) :
     iapply lfp_tp_unfold
     iapply lfp_tpF_mono F _ _ $$ [] %Ms2 Hx2
     iintro !> %Ms ⟨-, $⟩
-  · obtain rfl : rest = (Ms2 \ {M}) ⊎ Ms1 := by grind [disjUnion_singleton_difference]
+  | inr hy =>
+    obtain rfl : Mrest = (Ms2 \ {M}) ⊎ Ms1 := by grind [disjUnion_singleton_difference]
     iunfold lfp_tpF at Hx2
     ispecialize Hx2 $$ %M %(Ms2 \ {M}) %(by grind)
     iapply bi_mono0_mono $$ Hx2
@@ -161,8 +163,8 @@ theorem lfp_tp_disjUnion (Ms1 Ms2 : ListPerm ((α → PROP) → PROP)) :
 theorem lfp_tp_singleton (M : (α → PROP) → PROP) :
     M (fun x => lfp_tp F {fun P => P x}) -∗ lfp_tp F {M} := by
   iintro Hx; iapply lfp_tp_unfold; simp only [lfp_tpF]
-  iintro %M' %rest %Heq
-  obtain ⟨rfl, rfl⟩ : M' = M ∧ rest = ∅ := by
+  iintro %M' %Mrest %Heq
+  obtain ⟨rfl, rfl⟩ : M' = M ∧ Mrest = ∅ := by
     grind [disjUnion_subset_left, singleton_subset_iff,
       disjUnion_empty_right (X := ({M} : ListPerm _))]
   iapply bi_mono0_intro _ $$ Hx; iintro %x Hlfp
@@ -181,8 +183,8 @@ theorem lfp_tp_intro (G : (α → PROP) → (α → PROP)) (x : α) :
   clear this
   iintro !> %x HF; iapply lfp_tp_unfold
   simp only [lfp_tpF]
-  iintro %M %rest %Heq
-  obtain ⟨rfl, rfl⟩ : M = (fun P => P x) ∧ rest = ∅ := by
+  iintro %M %Mrest %Heq
+  obtain ⟨rfl, rfl⟩ : M = (fun P => P x) ∧ Mrest = ∅ := by
     grind [disjUnion_subset_left, singleton_subset_iff,
       disjUnion_empty_right (X := ({fun (P : α → PROP) => P x} : ListPerm _))]
   iapply bi_mono0_intro0
