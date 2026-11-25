@@ -50,7 +50,7 @@ theorem wpi_halt {R} (Φ : R → PROP) :
 
 theorem wpi_assume [BIAffine PROP] (P : Prop) [Decidable P] (Φ : { _x // P } → PROP) :
     (∀ HP, Φ HP) ⊢ WPi HaltE.assume P @> H; ⊤ {{ Φ }} := by
-  unfold HaltE.assume; by_cases HP : P <;> (simp [HP]; iintro HΦ)
+  unfold HaltE.assume; by_cases HP : P <;> (simp only [HP, ↓reduceDIte]; iintro HΦ)
   · iapply wpi_pure; iapply HΦ
   · iapply wpi_halt
 

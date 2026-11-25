@@ -33,8 +33,9 @@ theorem heaplangEH_partial_adequate_inv_eq :
     ⌜Ms = ListPerm.ofList (s.tp.pool.filterMap
       (Option.map fun t P => iprop(|={⊤,∅}=> P t)))⌝ ∗
         stateInterp_heap s.heap ∗ £ s.steps_left := by
-  simp [EHandlerAdequate.inv.eq_def, heaplangEH_partial_adequate, inferInstance, isoEH_adequate, id,
-    sumEEH_adequate, concEH_adequate, EH_of_SEH_adequate, SEHandlerAdequate.inv.eq_def,
+  simp only [EHandlerAdequate.inv.eq_def, heaplangEH_partial_adequate, id, inferInstance,
+    isoEH_adequate, HeaplangStateIso, sumEEH_adequate, concEH_adequate, Option.map_eq_map,
+    EH_of_SEH_adequate, SEHandlerAdequate.inv.eq_def,
     sumSEH_adequate, heapEH_adequate, failEH_adequate, demonicEH_adequate, stepEH_later_adequate]
   isplit
   · iintro ⟨%Ms1, %Ms2, %hp, %h1, %rfl, $, -, -, $⟩
@@ -54,8 +55,9 @@ theorem heaplangEH_total_adequate_inv_eq :
     ⌜Ms = ListPerm.ofList (s.tp.pool.filterMap
       (Option.map fun t P => iprop(|={⊤,∅}=> P t)))⌝ ∗
         stateInterp_heap s.heap := by
-  simp [EHandlerAdequate.inv.eq_def, heaplangEH_total_adequate, inferInstance, isoEH_adequate, id,
-    sumEEH_adequate, concEH_adequate, EH_of_SEH_adequate, SEHandlerAdequate.inv.eq_def,
+  simp only [EHandlerAdequate.inv.eq_def, heaplangEH_total_adequate, id, inferInstance,
+    isoEH_adequate, HeaplangStateIso, sumEEH_adequate, concEH_adequate, Option.map_eq_map,
+    EH_of_SEH_adequate, SEHandlerAdequate.inv.eq_def,
     sumSEH_adequate, heapEH_adequate, failEH_adequate, demonicEH_adequate, stepEH_id_adequate]
   isplit
   · iintro ⟨%Ms1, %Ms2, %hp, %h1, %rfl, $, -, -⟩

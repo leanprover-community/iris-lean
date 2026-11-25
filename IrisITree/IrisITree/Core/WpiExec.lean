@@ -39,7 +39,8 @@ variable {E : Effect} {R : Type _} {PROP : Type _} [BI PROP] [BIFUpdate PROP]
 
 instance (H : IHandler PROP E) (Φ : R → PROP) : OFE.NonExpansive (wpiConstF H Φ) where
   ne {_ wp1 wp2} Hwp t:= by
-    cases t <;> simp [wpiConstF]
+    cases t <;> simp only [wpiConstF, unfold_pure, unfold_tau, unfold_vis]
+    case ret => rfl
     case tau t' => exact BIFUpdate.ne.ne <| Hwp t'
     case vis i k =>
       apply BIFUpdate.ne.ne
@@ -49,7 +50,7 @@ theorem wpiConstF_mono (H : IHandler PROP E) (Φ : R → PROP) (wp1 wp2 : ITree 
     □ (∀ t, wp1 t -∗ wp2 t) -∗
     ∀ t, wpiConstF H Φ wp1 t -∗ wpiConstF H Φ wp2 t := by
   iintro #Hwand %t
-  cases t <;> simp [wpiConstF]
+  cases t <;> simp only [wpiConstF, unfold_pure, unfold_tau, unfold_vis]
   case ret => iintro $
   case tau t' => iintro >Hwp !>; iapply Hwand $$ Hwp
   case vis i k =>
@@ -62,7 +63,7 @@ theorem wpiConstF_mono' (H : IHandler PROP E) (Φ Ψ : R → PROP) wp :
     □ (∀ r, Φ r -∗ Ψ r) -∗
     ∀ t, wpiConstF H Φ wp t -∗ wpiConstF H Ψ wp t := by
   iintro #Hwand %t Hwp
-  cases t <;> simp [wpiConstF]
+  cases t <;> simp only [wpiConstF, unfold_pure, unfold_tau, unfold_vis]
   case ret =>
     imod Hwp
     imodintro
@@ -72,7 +73,7 @@ theorem wpiConstF_mono' (H : IHandler PROP E) (Φ Ψ : R → PROP) wp :
 theorem wpiConstF_fupd (H : IHandler PROP E) Φ wp :
     wpiConstF H (fun v => iprop% |={∅}=> Φ v) wp t -∗
     wpiConstF H Φ wp t := by
-  cases t <;> simp [wpiConstF]
+  cases t <;> simp only [wpiConstF, unfold_pure, unfold_tau, unfold_vis]
   case ret => iintro >$
   all_goals iintro $
 
@@ -130,7 +131,7 @@ theorem wpi_tp_intro (t : ITree E R) (H : IHandler PROP E) (Φ : R → PROP) :
   iapply wpi_ind G $$ [] Hwpi
   · iintro !> %t %Ψ Hstep #Hpost
     iapply least_fixpoint_unfold_mpr
-    cases t <;> simp [wpiConstF, wpiF]
+    cases t <;> simp only [wpiConstF, wpiF, unfold_pure, unfold_tau, unfold_vis]
     · imod Hstep with >Hstep
       imodintro
       iapply Hpost $$ [$]
@@ -188,7 +189,7 @@ theorem wpi_tp_elim' H (Ms : ListPerm ((ITree E R → PROP) → PROP)) M Φ
   ihave Htp := bi_mono0_mono_l $$ Htp HM
   imod bi_mono0_elim $$ Htp [] with ⟨%G, Hwpi, -⟩
   · iintro %Q %Q' Hwand >HQ' !>; iapply Hwand $$ [$]
-  simp [wpiConstF]
+  simp only [wpiConstF, unfold_pure]
   imod Hwpi with $
 
 /-- If the selected thread is `pure r`, the postcondition holds for `r`. -/
@@ -238,7 +239,8 @@ theorem wpi_adequate_ind (Φ : R → PROP)
     ihave IH := bi_mono0_mono_l M (fun P => iprop% |={∅}=> P t.tau) $$ IH Ht
     imod bi_mono0_elim $$ IH [] with ⟨%G, Hwpi, Hc⟩
     · iintro %Q %Q' Hwand >HQ'; imodintro; iapply Hwand $$ [$]
-    simp [wpiConstF]; imod Hwpi
+    simp only [wpiConstF, unfold_tau]
+    imod Hwpi
     icases Hc $$ %({fun P => P t}) [Hwpi] with ⟨Hadequate, -⟩
     · iapply (BigSepMS.bigSepMS_singleton (Φ := fun M => M G) (x := fun P => P t)).mpr $$ Hwpi
     iapply Hadequate $$ %t %s %(fun P => P t) %Mss %C %Hexec %rfl Hinv
@@ -249,7 +251,8 @@ theorem wpi_adequate_ind (Φ : R → PROP)
     ihave IH := bi_mono0_mono_l M (fun P => iprop% |={∅}=> P (.vis i k)) $$ IH Ht
     imod bi_mono0_elim $$ IH [] with ⟨%G, Hwpi, Hc⟩
     · iintro %Q %Q' Hwand >HQ'; imodintro; iapply Hwand $$ [$]
-    simp [wpiConstF]; imod Hwpi
+    simp only [wpiConstF, unfold_vis]
+    imod Hwpi
     imod A.adequate _ _ _ Mss _ _ Hhandle $$ Hwpi Hinv with
       ⟨%t', %s', %M', %Ms', %Msn, %HC, %Hpool, Hspawn, Hinv, Hmod⟩
     icases Hc $$ %Msn Hspawn with ⟨Hadequate, -⟩

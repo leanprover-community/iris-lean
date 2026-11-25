@@ -24,7 +24,7 @@ instance lawfulLoc_heaplang : LawfulLoc Loc where
   add_zero l := by ext; simp
   add_nat_inj l i j := by ext; simp [Int.add_assoc]
   add_pos_gt l m := by
-    simp [compare, compareOfLessAndEq]
+    simp only [compare, compareOfLessAndEq, loc_add_n]
     grind
 
 abbrev heaplangE := concE ⊕ₑ heapE Loc Val ⊕ₑ failE ⊕ₑ demonicE Loc ⊕ₑ stepE

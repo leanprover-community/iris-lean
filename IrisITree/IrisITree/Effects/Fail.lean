@@ -38,7 +38,7 @@ variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {E : Effect}
 
 theorem wpi_fail {R} (M : CoPset) (Φ : R → PROP) (s : String) :
     WPi fail s @> H; M {{ Φ }} ={M}=∗ False := by
-  iintro Hwp; simp [fail, Effect.trigger]
+  iintro Hwp; simp only [fail, Effect.trigger, vis_bind, pure_bind]
   let e := @Subeffect.map failE E sub ({ down := s } : failE.I)
   icases wpi_vis $$ Hwp with >Hwp
   iapply (show (H.ihandle e.fst (fun _ => iprop% False) (fun _ => iprop% False) ⊢
@@ -53,7 +53,7 @@ theorem wpi_assert {M} (P : Prop) [Decidable P] (Φ : PUnit → PROP) :
     P →
     Φ ⟨⟩ -∗
     WPi FailE.assert P @> H;M {{ Φ }} := by
-  intro hP; unfold FailE.assert; simp [hP]
+  intro hP; unfold FailE.assert; simp only [hP, ↓reduceIte]
   iintro HΦ; iapply wpi_pure $$ [$]
 
 end wpi_rules
@@ -66,7 +66,7 @@ instance failEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] :
     SEHandlerAdequate (failH (PROP := PROP)) failEH where
   inv _ := iprop(True)
   adequate := by
-    intro i s C Φ1 Φ2 Hhandle; simp [failH]
+    intro i s C Φ1 Φ2 Hhandle; unfold failH
     iintro ⟨⟩
 
 end exec

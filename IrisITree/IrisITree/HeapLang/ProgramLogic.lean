@@ -166,7 +166,7 @@ theorem wp_bind (K : List ECtxItem) (e : Exp) (Φ : Val → IProp GF) :
     iapply wpi_pure_fupd Φ v $$ Hval
   | cons Ki K =>
     simp only [wp_unfold]
-    rw [denote_bind _ _ (by simp)]
+    rw [denote_bind _ _ (List.cons_ne_nil _ _)]
     iapply wpi_bind
     rw [Exp.denoteYield]
     iapply wpi_denoteYield $$ Hwp
@@ -379,7 +379,9 @@ theorem wp_alloc (v : Val) (Φ : Val → IProp GF) :
   iapply wp_allocN 1 _ _ (by omega) Hmask
   iapply StepMod.map $$ HΦ
   iintro HΦ %l Hpts; ispecialize HΦ $$ %l
-  iapply HΦ; simp [List.range_one, LawfulLoc.add_zero]
+  iapply HΦ
+  simp only [Int.ofNat_eq_natCast, Int.toNat_one, List.range_one, Algebra.BigOpL.bigOpL_cons,
+    Int.cast_ofNat_Int, LawfulLoc.add_zero, Algebra.BigOpL.bigOpL_nil]
   icases Hpts with ⟨H, -⟩; iframe
 
 theorem wp_load (l : Loc) (v : Val) (dq : DFrac) (Φ : Val → IProp GF) :

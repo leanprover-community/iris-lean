@@ -49,7 +49,7 @@ theorem wpi_kill M (Φ : PUnit → PROP) :
     True -∗ WPi kill @> H; ⊤, M {{Φ}} := by
   iintro Ht; unfold kill
   iapply wpi_trigger_bind
-  simp [concH]
+  unfold concH
   iapply fupd_mask_intro_subseteq (by simp) $$ [$]
 
 theorem wpi_fork t M (Φ : PUnit → PROP) :
@@ -59,7 +59,7 @@ theorem wpi_fork t M (Φ : PUnit → PROP) :
   iintro HΦ Ht; unfold fork
   iapply wpi_trigger_bind
   iapply fupd_mask_intro (by simp); iintro Hm
-  simp [concH]; isplitr [Ht]
+  unfold concH; isplitr [Ht]
   · imod Hm; iapply wpi_pure; iexact HΦ
   · imod Ht; imodintro; iapply wpi_bind_strong
     iapply wpi_wand $$ [$]; iintro %_ _
@@ -69,7 +69,7 @@ theorem wpi_yield (Φ : PUnit → PROP) :
     Φ ⟨⟩ -∗
     WPi yield @> H; ⊤ {{ Φ }} := by
   iintro HΦ; unfold yield
-  iapply wpi_trigger; simp [concH]
+  iapply wpi_trigger; unfold concH
   iapply fupd_mask_intro_subseteq (by simp)
   iapply fupd_mask_intro_subseteq (by simp) $$ [$]
 
@@ -95,7 +95,8 @@ instance concEH_adequate {GE GR} :
           ((new :: xs).filterMap (Option.map f)) := by
       suffices h : List.Perm (xs[i] :: xs.set i new) (new :: xs) from hx ▸ h.filterMap _
       exact List.set_set_perm («as» := new :: xs) (i := 0) (j := i + 1) (by grind) (by grind)
-    cases i <;> simp [concEH, concH] at Hhandle ⊢
+    cases i <;>
+      simp only [concEH, concH, ConcState.next, List.length_set, Option.map_eq_map] at Hhandle ⊢
     · -- Fork case
       iintro ⟨_, _⟩ %h !>
       iexists _, _, fun P => P (k .parent), Ms ⊎ {f (k .child)},

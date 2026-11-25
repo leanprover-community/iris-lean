@@ -50,7 +50,7 @@ theorem wpi_stateE_get Ms Me (Φ : S → PROP) :
   iintro Hw; unfold StateE.get StateE.modify
   iapply wpi_trigger
   iapply fupd_mask_intro (by simp); iintro Hm
-  simp [stateH]; iintro %s Hs; imod Hm
+  simp only [stateH, id_eq]; iintro %s Hs; imod Hm
   imod Hw $$ [$] with ⟨$, $⟩
   iapply fupd_mask_intro (by simp); iintro $
 
@@ -64,7 +64,7 @@ theorem wpi_stateE_set Ms Me s' (Φ : PUnit → PROP) :
   iintro Hw; unfold StateE.set StateE.modify
   iapply wpi_trigger_bind
   iapply fupd_mask_intro (by simp); iintro Hm
-  simp [stateH]; iintro %s Hs; imod Hm
+  simp only [stateH]; iintro %s Hs; imod Hm
   imod Hw $$ [$] with ⟨$, HΦ⟩
   iapply fupd_mask_intro (by simp); iintro >_
   iapply wpi_pure; iexact HΦ
@@ -87,7 +87,7 @@ instance stateEH_adequate :
   inv s := stateInterp s
   adequate := by
     intro i s C Φ1 Φ2 Hhandle
-    simp [stateH, stateEH] at Hhandle ⊢
+    simp only [stateH, stateEH] at Hhandle ⊢
     iintro Hs Hinv
     imod Hs $$ [$] with ⟨Hstate, HΦ⟩
     imodintro

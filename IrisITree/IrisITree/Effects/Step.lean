@@ -120,7 +120,7 @@ instance stepEH_id_adequate :
   inv _ := iprop(emp)
   adequate := by
     intro i ⟨st, sl⟩ C Φ₁ Φ₂ Hhandle
-    simp [stepEH] at Hhandle
+    simp only [stepEH, Nat.zero_le, Nat.sub_zero, _root_.true_and] at Hhandle
     unfold stepH id
     iintro HΦ _ !>
     iexists ⟨⟩, (ULift.up (st.down + 1), ULift.up sl.down)

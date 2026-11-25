@@ -71,9 +71,9 @@ private instance {R Me} : BIMonoPred (wpiF' (R:=R) H Me) where
   mono_pred_ne := by
     -- FIXME: golf
     intro wp Hwp; constructor; intro n ⟨Ms1, t1, Ψ1⟩ ⟨Ms2, t2, Ψ2⟩ ⟨HMs, Ht, HΨ⟩
-    simp at HMs Ht HΨ; subst HMs Ht
+    simp only at HMs Ht HΨ; subst HMs Ht
     unfold wpiF'; apply BIFUpdate.ne.ne
-    cases t1 <;> simp
+    cases t1 <;> simp only [unfold_pure, unfold_tau, unfold_vis]
     case ret r => exact BIFUpdate.ne.ne <| HΨ r
     case tau t' => apply Hwp.ne; exact ⟨.rfl, .rfl, HΨ⟩
     case vis i k =>
@@ -199,7 +199,7 @@ theorem fupd_wpi (Φ : R → PROP) :
 theorem wpi_pure_fupd {R} (Φ : R → PROP) (r : R) :
     WPi (pure r) @> H;Ms,Me {{ Φ }} ⊣⊢ |={Ms, Me}=> Φ r := by
   rw [(wpi_unfold _ _).to_eq]
-  simp [wpiF]
+  simp only [wpiF, unfold_pure]
   isplit
   · iintro >$
   · iintro >_
@@ -217,7 +217,7 @@ theorem wpi_pure {R} (M : CoPset) (Φ : R → PROP) (r : R) :
 theorem wpi_tau {R} (Φ : R → PROP) (t : ITree E R) :
     WPi t.tau @> H;Ms,Me {{ Φ }} ⊣⊢ WPi t @> H;Ms,Me {{ Φ }} := by
   rw [(wpi_unfold _ _).to_eq]
-  simp [wpiF]
+  simp only [wpiF, unfold_tau]
   isplit <;> iintro >$ //
 
 theorem wpi_vis {R} (Φ : R → PROP) (i : E.I) (k : E.O i → ITree E R) :
@@ -234,7 +234,7 @@ theorem wpi_trigger_bind {E' A} [E' -< E] (H' : IHandler PROP E') [InH H' H]
       (fun a => WPi (k a) @> H; ∅,Me {{ _x, False }})) -∗
     WPi (E'.trigger i >>= k) @> H; Ms, Me {{ Φ }} := by
   iintro >HH
-  simp [Effect.trigger]
+  simp only [Effect.trigger, vis_bind, pure_bind]
   iapply wpi_vis
   imodintro
   iapply H.ihandle_mono
@@ -322,7 +322,7 @@ theorem wpi_iter' :
   iapply wpi_iter $$ []
   iintro !> %t %Φ HwpiF
   unfold wpiF
-  cases t <;> simp
+  cases t <;> simp only [unfold_pure, unfold_tau, unfold_vis]
   · iapply HPure
     imod HwpiF with $
   · iapply HTau $$ [$]
@@ -433,14 +433,14 @@ theorem wpi_bind_strong {A} M' t (k : A → ITree E R) (Φ : R → PROP) :
   iintro >Hwp
   iapply wpi_iter' G $$ [] [] [] Hwp
   · iintro !> %Φ %r >Hwpi %Ψ Hwand
-    simp
+    rw [pure_bind]
     iapply Hwand $$ [$]
   · iintro !> %Φ %t >Hwpi %Ψ Hwand
-    simp
+    rw [tau_bind]
     iapply wpi_tau
     iapply Hwpi $$ Hwand
   · iintro !> %Φ %i %k >Hwpi %Ψ Hwand
-    simp
+    rw [vis_bind]
     iapply wpi_vis
     imodintro
     iapply H.ihandle_mono $$ [Hwand] [] Hwpi
@@ -607,10 +607,10 @@ variable {E : Effect} {Ms Me : CoPset}
 theorem wpi_wandH {R} (t : ITree E R) (Φ : R → PROP) :
     WPi t @> H1; Ms, Me {{ Φ }} ⊢ WPi t @> H2; Ms, Me {{ Φ }} := by
   iintro Hwp
-  rw (occs:=[2]) [show (t = t.interp (fun i => E.trigger i)) by simp]
+  rw (occs := [2]) [← interp_trigger_identity t]
   iapply wpi_translation $$ Hwp
   iintro !> %i %k %Ψ Hh
-  simp [Effect.trigger]
+  simp only [Effect.trigger, vis_bind, pure_bind]
   iapply wpi_vis
   imodintro
   iapply Hwand.is_wandH

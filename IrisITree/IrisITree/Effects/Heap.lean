@@ -258,7 +258,7 @@ private theorem extTreeMap_insertMany_eq_ofList_union {K : Type _} {V : Type _}
     m.insertMany entries = Std.PartialMap.union (M := (Std.ExtTreeMap K · compare))
       (Std.PartialMap.ofList (M := (Std.ExtTreeMap K · compare)) entries) m := by
   apply Std.ExtTreeMap.ext_getElem?; intro k
-  simp [Iris.Std.PartialMap.union, Iris.Std.merge]
+  simp only [Iris.Std.PartialMap.union, Iris.Std.merge, Std.ExtTreeMap.getElem?_mergeWith']
   by_cases Hmem : ∃ w, (k, w) ∈ entries
   · rcases Hmem with ⟨w, Hw⟩
     rw [Std.ExtTreeMap.getElem?_insertMany_list_of_mem ?_
@@ -318,7 +318,7 @@ theorem wpi_allocN' Ms Me (n : Nat) (v : Val) (Φ : Loc → IProp GF) :
   -- New added entries do not have duplicated elements and the unioned hold the same elements
   have Hnodup : Std.NoDupKeys entries := by
     unfold Iris.Std.NoDupKeys entries
-    simp [List.map_map]
+    simp only [List.map_map, Int.ofNat_eq_natCast]
     refine List.nodup_map_of_injective
       (loc_add_nat_injective l) List.nodup_range
   imod ghost_map_insert_big σnew $$ Hauth with ⟨⟨HauthInv, HauthState⟩, Hpts⟩
@@ -362,7 +362,10 @@ theorem wpi_alloc' Ms Me (v : Val) (Φ : Loc → IProp GF) :
     WPi (alloc v) @> H; Ms,Me {{ Φ }} := by
   iintro %Hmask Hwand; unfold alloc
   iapply wpi_allocN' Ms Me 1 v Φ Hmask
-  iintro %l Hpts; simp; icases Hpts with ⟨Hpt, -⟩
+  iintro %l Hpts
+  simp only [Int.ofNat_eq_natCast, List.range_one, Algebra.BigOpL.bigOpL_cons,
+    Int.cast_ofNat_Int, Algebra.BigOpL.bigOpL_nil]
+  icases Hpts with ⟨Hpt, -⟩
   rw [LawfulLoc.add_zero l]
   iapply Hwand $$ [$]
 

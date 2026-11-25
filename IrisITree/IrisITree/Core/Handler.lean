@@ -187,7 +187,7 @@ instance EH_of_SEH_adequate {E GE : Effect} {R σ : Type _}
   inv s Ms := iprop% <affine> ⌜Ms = ∅⌝ ∗ A.inv s
   adequate := by
     intro G i s Ms C k Hhandle
-    simp at Hhandle
+    rw [seh_to_ehandler_handle_eq_seh_handle] at Hhandle
     iintro Hh ⟨%rfl, Hinv⟩
     imod A.adequate _ _ _ _ _ Hhandle $$ Hh Hinv with ⟨%a, %s', %HC, Hinv, Ha⟩
     imodintro
