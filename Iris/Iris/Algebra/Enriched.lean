@@ -407,13 +407,13 @@ end InvLim
 
 @[indexed SI]
 class HasTerminal (Obj : Type u) [EnrichedCat Obj] where
-  one : Obj
-  toOne : ∀ a, a ⟶ one
-  toOne_unique : ∀ {a} (f : a ⟶ one), f = toOne a
+  terminal : Obj
+  toTerminal : ∀ a, a ⟶ terminal
+  toTerminal_unique : ∀ {a} (f : a ⟶ terminal), f = toTerminal a
 
 @[indexed SI]
 class HasSeed {Obj : Type u} [EnrichedCat Obj] [HasTerminal Obj] (F : Obj → Obj → Obj) where
-  seed : HasTerminal.one SI ⟶ F (HasTerminal.one SI) (HasTerminal.one SI)
+  seed : HasTerminal.terminal SI ⟶ F (HasTerminal.terminal SI) (HasTerminal.terminal SI)
 
 @[indexed SI]
 class Truncatable {Obj : Type u} [EnrichedCat Obj] (F : Obj → Obj → Obj) where
@@ -576,10 +576,10 @@ variable [HasTerminal Obj] [HasSeed F]
 
 open HasTerminal in
 def zeroTop {γ : SI} (h0 : γ = 0) (f : PartialSol F (Site.below γ)) : Extension f where
-  X := one SI
+  X := terminal SI
   emb {β} h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
   proj {β} h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
-  fold := toOne _
+  fold := toTerminal _
   unfold := HasSeed.seed (F := F)
 
 theorem zeroTop_lawful {γ : SI} (h0 : γ = 0) (f : PartialSol F (Site.below γ)) :
@@ -588,10 +588,10 @@ theorem zeroTop_lawful {γ : SI} (h0 : γ = 0) (f : PartialSol F (Site.below γ)
   emb_comp_proj {β} h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
   emb_comp_emb {_ η} _ h2 := absurd (h0 ▸ h2) (SIdx.not_lt_zero η)
   proj_comp_proj {_ η} _ h2 := absurd (h0 ▸ h2) (SIdx.not_lt_zero η)
-  fold_comp_unfold := (HasTerminal.toOne_unique _).trans (HasTerminal.toOne_unique _).symm
+  fold_comp_unfold := (HasTerminal.toTerminal_unique _).trans (HasTerminal.toTerminal_unique _).symm
   unfold_comp_fold {m} hm := absurd (h0 ▸ hm) (SIdx.not_lt_zero m)
   proj_comp_fold {β} h := absurd (h0 ▸ h) (SIdx.not_lt_zero β)
-  determined g g' _ := (HasTerminal.toOne_unique g).trans (HasTerminal.toOne_unique g').symm
+  determined g g' _ := (HasTerminal.toTerminal_unique g).trans (HasTerminal.toTerminal_unique g').symm
 
 end Zero
 
@@ -905,7 +905,7 @@ theorem closeTop_lawful (α : SI) (f : PartialSol F (Site.below α)) (hf : f.Law
   | .inr (.inr hl) => limitTop_lawful hl f hf
 
 def zeroPoint (f : PartialSol F (Site.below (0 : SI))) (hf : f.Lawful) :
-    HasTerminal.one SI ⟶ (closeTop 0 f hf).X := by
+    HasTerminal.terminal SI ⟶ (closeTop 0 f hf).X := by
   unfold closeTop
   exact match SIdx.case (0 : SI) with
   | .inl _ => EnrichedCat.id _
@@ -998,7 +998,7 @@ theorem Fix.unfold_comp_fold : Fix.unfold F ⊚ Fix.fold F = EnrichedCat.id _ :=
   OFE.eq_dist.mpr fun _ =>
     unfold_comp_limFold Site.univ_isLimit _ _ (fun _ => IsCOFE.conv_compl) trivial
 
-def Fix.point : HasTerminal.one SI ⟶ Fix F :=
+def Fix.point : HasTerminal.terminal SI ⟶ Fix F :=
   InvLim.emb (globalSol_lawful F).tower (n := 0) trivial ⊚
     (ClosedSol.canonical_eq F 0 ▸ zeroPoint _ _ : _ ⟶ (ClosedSol.canonical F 0).1.top.X)
 

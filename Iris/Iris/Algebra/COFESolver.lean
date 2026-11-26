@@ -39,9 +39,9 @@ instance instEnrichedCat : EnrichedCat CofeObj.{v, w} where
   assoc _ _ _ := rfl
 
 instance instHasTerminal : HasTerminal CofeObj.{v, w} where
-  one := ⟨ULift.{max v w} Unit, inferInstance⟩
-  toOne _ := (⟨fun _ => ⟨()⟩, ⟨fun _ _ _ _ => .rfl⟩⟩ : _ -n> ULift.{max v w} Unit)
-  toOne_unique _ := OFE.Hom.ext (funext fun _ => rfl)
+  terminal := ⟨ULift.{max v w} Unit, inferInstance⟩
+  toTerminal _ := (⟨fun _ => ⟨()⟩, ⟨fun _ _ _ _ => .rfl⟩⟩ : _ -n> ULift.{max v w} Unit)
+  toTerminal_unique _ := OFE.Hom.ext (funext fun _ => rfl)
 
 instance {A B : CofeObj.{v, w}} : CoeFun (A ⟶ B) fun _ => A.1 → B.1 :=
   inferInstanceAs (CoeFun (A.1 -n> B.1) _)
@@ -56,7 +56,7 @@ open COFE
 
 theorem Determined.points {K : LimitCut} {Y : CofeObj.{v, w}} (h : Determined K Y) :
     PointsDetermined K Y.1 := fun x y hxy =>
-  Hom.congr_fun (h (⟨fun _ => x, ⟨fun _ _ _ _ => .rfl⟩⟩ : HasTerminal.one SI ⟶ Y)
+  Hom.congr_fun (h (⟨fun _ => x, ⟨fun _ _ _ _ => .rfl⟩⟩ : HasTerminal.terminal SI ⟶ Y)
     ⟨fun _ => y, ⟨fun _ _ _ _ => .rfl⟩⟩ fun m hm _ => hxy m hm) ⟨()⟩
 
 theorem Determined.of_points {K : LimitCut} {Y : CofeObj.{v, w}}
