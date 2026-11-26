@@ -11,19 +11,15 @@ public import ITree.Effects.Halt
 public import IrisITree.Core.Wpi
 
 public section
-
 namespace IrisITree
 
 open Iris Iris.BI ITree ITree.Effects
-
-section handler
-
 variable {PROP : Type _} [BI PROP] [BIFUpdate PROP]
 
 def haltH : IHandler PROP haltE where
-  ihandle := fun _ _ _ => iprop(|={∅, ⊤}=> True)
-  ihandle_mono := by
-    iintro %i %Φ %Φ' %s %s' _ _ HH
+  ihandle _ _ _ := iprop% |={∅, ⊤}=> True
+  ihandle_mono _ _ _ _ _ := by
+    iintro _ _ HH
     iexact HH
 
 instance haltH_sequential : Sequential (PROP := PROP) haltH := by
@@ -31,27 +27,27 @@ instance haltH_sequential : Sequential (PROP := PROP) haltH := by
   unfold haltH
   iintro %i %Φ %s $
 
-end handler
-
 section wpi_rules
 
-variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {E : Effect}
-  {H : IHandler PROP E} [Hsub : haltE -< E] [Hin : InH haltH H]
+variable {E : Effect} {H : IHandler PROP E} [Hsub : haltE -< E] [Hin : InH haltH H]
 
 theorem wpi_halt {R} (Φ : R → PROP) :
     ⊢ WPi HaltE.halt @> H; ⊤ {{ Φ }} := by
-  unfold HaltE.halt; iapply wpi_bind
+  unfold HaltE.halt
+  iapply wpi_bind
   iapply wpi_trigger
   iapply fupd_mask_intro (by simp)
   iintro Hclose
-  unfold haltH
+  simp only [haltH]
   imod Hclose
   itrivial
 
 theorem wpi_assume [BIAffine PROP] (P : Prop) [Decidable P] (Φ : { _x // P } → PROP) :
     (∀ HP, Φ HP) ⊢ WPi HaltE.assume P @> H; ⊤ {{ Φ }} := by
-  unfold HaltE.assume; by_cases HP : P <;> (simp only [HP, ↓reduceDIte]; iintro HΦ)
-  · iapply wpi_pure; iapply HΦ
+  unfold HaltE.assume
+  by_cases HP : P <;> (simp only [HP, ↓reduceDIte]; iintro HΦ)
+  · iapply wpi_pure
+    iapply HΦ
   · iapply wpi_halt
 
 end wpi_rules
@@ -60,12 +56,10 @@ section exec
 
 open ITree.Exec ITree.Effects
 
-instance haltEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] :
+instance haltEH_adequate :
     SEHandlerAdequate (haltH (PROP := PROP)) haltEH where
-  inv _ := iprop(True)
-  adequate := by
-    rintro i s C Φ1 Φ2 ⟨⟩
+  inv _ := iprop% True
+  adequate _ _ _ _ _ := by rintro ⟨⟩
 
 end exec
-
 end IrisITree

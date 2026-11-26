@@ -11,64 +11,53 @@ public import ITree.Effects.Fail
 public import IrisITree.Core.Wpi
 
 public section
-
 namespace IrisITree
 
 open Iris Iris.BI ITree ITree.Effects
-
-section handler
-
 variable {PROP : Type _} [BI PROP]
 
 def failH : IHandler PROP failE where
-  ihandle := fun _ _ _ => iprop(False)
-  ihandle_mono := by
-    iintro %_ %_ %_ %_ %_ _ _ ⟨⟩
+  ihandle := fun _ _ _ => iprop% False
+  ihandle_mono := by iintro %_ %_ %_ %_ %_ _ _ ⟨⟩
 
 instance failH_sequential : Sequential (PROP := PROP) failH := by
   constructor
   iintro %i %Φ %s ⟨⟩
 
-end handler
+variable [BIFUpdate PROP]
 
 section wpi_rules
+variable {E : Effect} {H : IHandler PROP E} [sub : failE -< E]
 
-variable {PROP : Type _} [BI PROP] [BIFUpdate PROP] {E : Effect}
-  {H : IHandler PROP E} [sub : failE -< E] [Hin : InH failH H]
-
-theorem wpi_fail {R} (M : CoPset) (Φ : R → PROP) (s : String) :
+theorem wpi_fail [Hin : InH failH H] {R} (M : CoPset) (Φ : R → PROP) (s : String) :
     WPi fail s @> H; M {{ Φ }} ={M}=∗ False := by
-  iintro Hwp; simp only [fail, Effect.trigger, vis_bind, pure_bind]
-  let e := @Subeffect.map failE E sub ({ down := s } : failE.I)
+  iintro Hwp
+  simp only [fail, Effect.trigger, vis_bind, pure_bind]
   icases wpi_vis $$ Hwp with >Hwp
-  iapply (show (H.ihandle e.fst (fun _ => iprop% False) (fun _ => iprop% False) ⊢
-    iprop(|={∅, M}=> False)) from (Hin.is_inH (⟨s⟩ : failE.I)
-      (fun _ => iprop% False) (fun _ => iprop% False)).mpr.trans false_elim)
-  iapply H.ihandle_mono e.fst $$ [] [] Hwp
-  · iintro %a _; cases e.snd a
-  · iintro !> %a _; cases e.snd a
+  iapply ((Hin.is_inH _ (fun _ => iprop% False) (fun _ => iprop% False)).mpr.trans false_elim)
+  unfold Subeffect.map
+  iapply H.ihandle_mono $$ [] [] Hwp
+  · iintro %a _; cases (sub.map _).snd a
+  · iintro !> %a _; cases (sub.map _).snd a
 
-omit Hin in
 theorem wpi_assert {M} (P : Prop) [Decidable P] (Φ : PUnit → PROP) :
     P →
     Φ ⟨⟩ -∗
     WPi FailE.assert P @> H;M {{ Φ }} := by
-  intro hP; unfold FailE.assert; simp only [hP, ↓reduceIte]
-  iintro HΦ; iapply wpi_pure $$ [$]
+  iintro %hP HΦ
+  simp only [FailE.assert, hP, ↓reduceIte]
+  iapply wpi_pure $$ [$]
 
 end wpi_rules
 
 section exec
-
 open ITree.Exec
 
-instance failEH_adequate {PROP : Type _} [BI PROP] [BIFUpdate PROP] :
+instance failEH_adequate :
     SEHandlerAdequate (failH (PROP := PROP)) failEH where
-  inv _ := iprop(True)
+  inv _ := iprop% True
   adequate := by
-    intro i s C Φ1 Φ2 Hhandle; unfold failH
-    iintro ⟨⟩
+    iintro %_ %_ %_ %_ %_ %_ ⟨⟩
 
 end exec
-
 end IrisITree
