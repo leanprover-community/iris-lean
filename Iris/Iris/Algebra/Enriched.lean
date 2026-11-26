@@ -160,25 +160,25 @@ attribute [simp] EnrichedCat.id_comp EnrichedCat.comp_id EnrichedCat.assoc
 
 export EnrichedCat (Hom)
 
-infixr:80 " ⊚ " => EnrichedCat.comp
+scoped infixr:80 " ⊚ " => EnrichedCat.comp
 
-scoped notation:30 a:31 " ⟶ " b:31 => EnrichedCat.Hom stepindex% a b
+scoped notation:30 a:31 " ⟶ₑ " b:31 => EnrichedCat.Hom stepindex% a b
 
 open Lean PrettyPrinter in
 @[scoped app_unexpander EnrichedCat.Hom]
 meta def unexpandHom : Unexpander
-  | `($_ $_ $a $b) => `($a ⟶ $b)
+  | `($_ $_ $a $b) => `($a ⟶ₑ $b)
   | _ => throw ()
 
 section EnrichedCat
 
 variable {Obj : Type u} [EnrichedCat Obj] {a b c : Obj}
 
-theorem comp_dist_l {n : SI} {g g' : b ⟶ c} (h : g ≡{n}≡ g') (f : a ⟶ b) :
+theorem comp_dist_l {n : SI} {g g' : b ⟶ₑ c} (h : g ≡{n}≡ g') (f : a ⟶ₑ b) :
     g ⊚ f ≡{n}≡ g' ⊚ f :=
   EnrichedCat.comp_ne h .rfl
 
-theorem comp_dist_r {n : SI} (g : b ⟶ c) {f f' : a ⟶ b} (h : f ≡{n}≡ f') :
+theorem comp_dist_r {n : SI} (g : b ⟶ₑ c) {f f' : a ⟶ₑ b} (h : f ≡{n}≡ f') :
     g ⊚ f ≡{n}≡ g ⊚ f' :=
   EnrichedCat.comp_ne .rfl h
 
@@ -186,15 +186,15 @@ end EnrichedCat
 
 @[indexed SI]
 class EFunctor {Obj : Type u} [EnrichedCat Obj] (F : Obj → Obj → Obj) where
-  map : ∀ {a a' b b' : Obj}, a' ⟶ a → b ⟶ b' → F a b ⟶ F a' b'
-  map_contractive : ∀ {a a' b b' : Obj} {n : SI} {f f' : a' ⟶ a} {g g' : b ⟶ b'},
+  map : ∀ {a a' b b' : Obj}, a' ⟶ₑ a → b ⟶ₑ b' → F a b ⟶ₑ F a' b'
+  map_contractive : ∀ {a a' b b' : Obj} {n : SI} {f f' : a' ⟶ₑ a} {g g' : b ⟶ₑ b'},
     OFE.DistLater n (f, g) (f', g') → OFE.Dist n (map f g) (map f' g')
   map_id : ∀ a b, map (EnrichedCat.id a) (EnrichedCat.id b) = EnrichedCat.id (F a b)
-  map_comp : ∀ {a₁ a₂ a₃ b₁ b₂ b₃ : Obj} (f : a₂ ⟶ a₁) (g : a₃ ⟶ a₂) (f' : b₁ ⟶ b₂)
-    (g' : b₂ ⟶ b₃), map (f ⊚ g) (g' ⊚ f') = map g g' ⊚ map f f'
+  map_comp : ∀ {a₁ a₂ a₃ b₁ b₂ b₃ : Obj} (f : a₂ ⟶ₑ a₁) (g : a₃ ⟶ₑ a₂) (f' : b₁ ⟶ₑ b₂)
+    (g' : b₂ ⟶ₑ b₃), map (f ⊚ g) (g' ⊚ f') = map g g' ⊚ map f f'
 
 theorem map_dist {Obj : Type u} [EnrichedCat Obj] (F : Obj → Obj → Obj) [EFunctor F]
-    {a a' b b' : Obj} {n : SI} {f f' : a' ⟶ a} {g g' : b ⟶ b'} (hf : f ≡{n}≡ f')
+    {a a' b b' : Obj} {n : SI} {f f' : a' ⟶ₑ a} {g g' : b ⟶ₑ b'} (hf : f ≡{n}≡ f')
     (hg : g ≡{n}≡ g') : EFunctor.map (F := F) f g ≡{n}≡ EFunctor.map f' g' :=
   EFunctor.map_contractive fun _ hm => ⟨hf.lt hm, hg.lt hm⟩
 
@@ -242,7 +242,7 @@ section Determined
 variable {Obj : Type u} [EnrichedCat Obj]
 
 abbrev Determined (K : LimitCut) (Y : Obj) : Prop :=
-  ∀ {Z : Obj} (g g' : Z ⟶ Y), K.dist g g' → g = g'
+  ∀ {Z : Obj} (g g' : Z ⟶ₑ Y), K.dist g g' → g = g'
 
 theorem Determined.mono {K K' : LimitCut} (h : ∀ m, K.mem m → K'.mem m) {Y : Obj}
     (hY : Determined K Y) : Determined K' Y :=
@@ -257,8 +257,8 @@ variable {Obj : Type u} [EnrichedCat Obj]
 variable (Obj) in
 structure Tower (P : Site) where
   X {β} : P.mem β → Obj
-  emb {β δ} (hβ : P.mem β) (hδ : P.mem δ) : β < δ → X hβ ⟶ X hδ
-  proj {β δ} (hβ : P.mem β) (hδ : P.mem δ) : β < δ → X hδ ⟶ X hβ
+  emb {β δ} (hβ : P.mem β) (hδ : P.mem δ) : β < δ → X hβ ⟶ₑ X hδ
+  proj {β δ} (hβ : P.mem β) (hδ : P.mem δ) : β < δ → X hδ ⟶ₑ X hβ
 
 structure Tower.Lawful {P : Site} (T : Tower Obj P) : Prop where
   proj_comp_emb {β δ} {hβ : P.mem β} {hδ : P.mem δ} (h : β < δ) :
@@ -275,7 +275,7 @@ namespace Tower
 
 variable {P : Site} (T : Tower Obj P)
 
-def hom {β n : SI} (hβ : P.mem β) (hn : P.mem n) : T.X hn ⟶ T.X hβ :=
+def hom {β n : SI} (hβ : P.mem β) (hn : P.mem n) : T.X hn ⟶ₑ T.X hβ :=
   match SIdx.lt_trichotomyT β n with
   | .inl h => T.proj hβ hn h
   | .inr (.inl h) => h ▸ EnrichedCat.id _
@@ -325,17 +325,17 @@ end
 @[indexed SI]
 class HasTowerLimits (Obj : Type u) [EnrichedCat Obj] where
   lim {P : Site} {T : Tower Obj P} : T.Lawful → Obj
-  π {P : Site} {T : Tower Obj P} (hT : T.Lawful) {β} (hβ : P.mem β) : lim hT ⟶ T.X hβ
+  π {P : Site} {T : Tower Obj P} (hT : T.Lawful) {β} (hβ : P.mem β) : lim hT ⟶ₑ T.X hβ
   proj_comp_π {P : Site} {T : Tower Obj P} (hT : T.Lawful) {β δ} {hβ : P.mem β} {hδ : P.mem δ}
     (h : β < δ) : T.proj hβ hδ h ⊚ π hT hδ = π hT hβ
   lift {P : Site} {T : Tower Obj P} (hT : T.Lawful) {Y : Obj}
-    (g : ∀ {β} (hβ : P.mem β), Y ⟶ T.X hβ)
+    (g : ∀ {β} (hβ : P.mem β), Y ⟶ₑ T.X hβ)
     (hg : ∀ {β δ} {hβ : P.mem β} {hδ : P.mem δ} (h : β < δ), T.proj hβ hδ h ⊚ g hδ = g hβ) :
-    Y ⟶ lim hT
+    Y ⟶ₑ lim hT
   π_comp_lift {P : Site} {T : Tower Obj P} (hT : T.Lawful) {Y : Obj}
-    (g : ∀ {β} (hβ : P.mem β), Y ⟶ T.X hβ) hg {β} {hβ : P.mem β} :
+    (g : ∀ {β} (hβ : P.mem β), Y ⟶ₑ T.X hβ) hg {β} {hβ : P.mem β} :
     π hT hβ ⊚ lift hT g hg = g hβ
-  ext_dist {P : Site} {T : Tower Obj P} (hT : T.Lawful) {Y : Obj} {n : SI} {f f' : Y ⟶ lim hT} :
+  ext_dist {P : Site} {T : Tower Obj P} (hT : T.Lawful) {Y : Obj} {n : SI} {f f' : Y ⟶ₑ lim hT} :
     (∀ {β} (hβ : P.mem β), π hT hβ ⊚ f ≡{n}≡ π hT hβ ⊚ f') → f ≡{n}≡ f'
 
 namespace InvLim
@@ -345,7 +345,7 @@ open HasTowerLimits
 variable {Obj : Type u} [EnrichedCat Obj] [HasTowerLimits Obj] {P : Site}
   {T : Tower Obj P} (hT : T.Lawful)
 
-def emb {n : SI} (hn : P.mem n) : T.X hn ⟶ lim hT :=
+def emb {n : SI} (hn : P.mem n) : T.X hn ⟶ₑ lim hT :=
   lift hT (fun hβ => T.hom hβ hn) fun h => Tower.proj_comp_hom hT h
 
 theorem π_comp_emb {β n : SI} {hβ : P.mem β} {hn : P.mem n} :
@@ -355,7 +355,7 @@ theorem π_comp_emb {β n : SI} {hβ : P.mem β} {hn : P.mem n} :
 theorem π_comp_emb_self {n : SI} {hn : P.mem n} : π hT hn ⊚ emb hT hn = EnrichedCat.id _ := by
   rw [π_comp_emb, T.hom_self]
 
-theorem ext {Y : Obj} {g g' : Y ⟶ lim hT}
+theorem ext {Y : Obj} {g g' : Y ⟶ₑ lim hT}
     (h : ∀ {β} (hβ : P.mem β), π hT hβ ⊚ g = π hT hβ ⊚ g') : g = g' :=
   OFE.eq_dist.mpr fun _ => ext_dist hT fun hβ => .of_eq (h hβ)
 
@@ -388,18 +388,18 @@ end InvLim
 @[indexed SI]
 class HasTerminal (Obj : Type u) [EnrichedCat Obj] where
   terminal : Obj
-  toTerminal : ∀ a, a ⟶ terminal
-  toTerminal_unique : ∀ {a} (f : a ⟶ terminal), f = toTerminal a
+  toTerminal : ∀ a, a ⟶ₑ terminal
+  toTerminal_unique : ∀ {a} (f : a ⟶ₑ terminal), f = toTerminal a
 
 @[indexed SI]
 class HasSeed {Obj : Type u} [EnrichedCat Obj] [HasTerminal Obj] (F : Obj → Obj → Obj) where
-  seed : HasTerminal.terminal SI ⟶ F (HasTerminal.terminal SI) (HasTerminal.terminal SI)
+  seed : HasTerminal.terminal SI ⟶ₑ F (HasTerminal.terminal SI) (HasTerminal.terminal SI)
 
 @[indexed SI]
 class ETruncatable {Obj : Type u} [EnrichedCat Obj] (F : Obj → Obj → Obj) where
   trunc {K : LimitCut} {A : Obj} : Determined K A → Obj
-  proj {K A} (hA : Determined K A) : F A A ⟶ trunc hA
-  rep {K A} (hA : Determined K A) : trunc hA ⟶ F A A
+  proj {K A} (hA : Determined K A) : F A A ⟶ₑ trunc hA
+  rep {K A} (hA : Determined K A) : trunc hA ⟶ₑ F A A
   proj_rep {K A} (hA : Determined K A) : proj hA ⊚ rep hA = EnrichedCat.id _
   rep_proj {K A} (hA : Determined K A) {m} : K.mem m → rep hA ⊚ proj hA ≡{m}≡ EnrichedCat.id _
   determined {K A} (hA : Determined K A) : Determined K (trunc hA)
@@ -420,8 +420,8 @@ variable {F : Obj → Obj → Obj} [EFunctor F]
 
 variable (F) in
 structure PartialSol (P : Site) extends Tower Obj P where
-  fold {β} (hβ : P.mem β) : F (X hβ) (X hβ) ⟶ X hβ
-  unfold {β} (hβ : P.mem β) : X hβ ⟶ F (X hβ) (X hβ)
+  fold {β} (hβ : P.mem β) : F (X hβ) (X hβ) ⟶ₑ X hβ
+  unfold {β} (hβ : P.mem β) : X hβ ⟶ₑ F (X hβ) (X hβ)
 
 def PartialSol.restrict {P Q : Site} (f : PartialSol F P) (h : Q ≤ P) : PartialSol F Q where
   X hβ := f.X (h _ hβ)
@@ -432,10 +432,10 @@ def PartialSol.restrict {P Q : Site} (f : PartialSol F P) (h : Q ≤ P) : Partia
 
 structure Extension {γ : SI} (f : PartialSol F (Site.below γ)) where
   X : Obj
-  emb {β} (h : β < γ) : f.X h ⟶ X
-  proj {β} (h : β < γ) : X ⟶ f.X h
-  fold : F X X ⟶ X
-  unfold : X ⟶ F X X
+  emb {β} (h : β < γ) : f.X h ⟶ₑ X
+  proj {β} (h : β < γ) : X ⟶ₑ f.X h
+  fold : F X X ⟶ₑ X
+  unfold : X ⟶ₑ F X X
 
 structure Extension.Lawful {γ : SI} {f : PartialSol F (Site.below γ)} (S : Extension f) :
     Prop where
@@ -592,10 +592,10 @@ variable {f : PartialSol F (Site.below γ)} (hf : f.Lawful)
 
 abbrev succStage : Obj := trunc (F := F) (hf.determined (lt_of_eq_succ hm))
 
-def succEmb : f.X (lt_of_eq_succ hm) ⟶ succStage hm hf :=
+def succEmb : f.X (lt_of_eq_succ hm) ⟶ₑ succStage hm hf :=
   proj (F := F) (hf.determined _) ⊚ f.unfold (lt_of_eq_succ hm)
 
-def succProj : succStage hm hf ⟶ f.X (lt_of_eq_succ hm) :=
+def succProj : succStage hm hf ⟶ₑ f.X (lt_of_eq_succ hm) :=
   f.fold (lt_of_eq_succ hm) ⊚ rep (F := F) (hf.determined _)
 
 def succTop : Extension f where
@@ -693,7 +693,7 @@ theorem limFold_compatible {β δ} {hβ : P.mem β} {hδ : P.mem δ} (h : β < �
   rw [← EnrichedCat.assoc, hf.proj_comp_fold, EnrichedCat.assoc, ← EFunctor.map_comp,
     InvLim.emb_comp_emb, proj_comp_π]
 
-def limFold : F (limObj f hf) (limObj f hf) ⟶ limObj f hf :=
+def limFold : F (limObj f hf) (limObj f hf) ⟶ₑ limObj f hf :=
   lift hf.tower (fun hc => f.fold hc ⊚ EFunctor.map (InvLim.emb hf.tower hc) (π hf.tower hc))
     (limFold_compatible f hf)
 
@@ -701,7 +701,7 @@ theorem π_comp_limFold {c : SI} {hc : P.mem c} : π hf.tower hc ⊚ limFold f h
     f.fold hc ⊚ EFunctor.map (InvLim.emb hf.tower hc) (π hf.tower hc) :=
   π_comp_lift hf.tower _ _
 
-def chainAt {c : SI} (hc : P.mem c) : limObj f hf ⟶ F (limObj f hf) (limObj f hf) :=
+def chainAt {c : SI} (hc : P.mem c) : limObj f hf ⟶ₑ F (limObj f hf) (limObj f hf) :=
   EFunctor.map (π hf.tower hc) (InvLim.emb hf.tower hc) ⊚ f.unfold hc ⊚ π hf.tower hc
 
 theorem chainAt_dist {c c' : SI} {hc : P.mem c} {hc' : P.mem c'} (h : c ≤ c') {m} (hm : m < c) :
@@ -744,11 +744,11 @@ theorem lim_determined {K : LimitCut} (hK : ∀ c, P.mem c → ∀ n, (seg c).me
   InvLim.ext hf.tower fun hc =>
     hf.determined hc _ _ fun n hn => comp_dist_r _ (h n (hK _ hc n hn))
 
-def limChain : Site.Chain (limObj f hf ⟶ F (limObj f hf) (limObj f hf)) P where
+def limChain : Site.Chain (limObj f hf ⟶ₑ F (limObj f hf) (limObj f hf)) P where
   val _ hk := chainAt f hf (hP.succ_mem hk)
   cauchy {m _} _ _ h := chainAt_dist f hf (SIdx.succ_le_mono.mp h) (SIdx.lt_succ_self m)
 
-variable {u : limObj f hf ⟶ F (limObj f hf) (limObj f hf)}
+variable {u : limObj f hf ⟶ₑ F (limObj f hf) (limObj f hf)}
   (hu : ∀ {k} (hk : P.mem k), u ≡{k}≡ chainAt f hf (hP.succ_mem hk))
 
 include hu in
@@ -837,8 +837,8 @@ theorem coherent_of_restrict : Coherent (P := Site.below γ) IH := fun {β β'} 
 
 def gluedTop : Extension (glue (P := Site.below γ) IH (coherent_of_restrict IH T hT)) where
   X := T.top.X
-  emb h := (hT _ h ▸ T.top.emb h : (IH _ h).top.X ⟶ _)
-  proj h := (hT _ h ▸ T.top.proj h : _ ⟶ (IH _ h).top.X)
+  emb h := (hT _ h ▸ T.top.emb h : (IH _ h).top.X ⟶ₑ _)
+  proj h := (hT _ h ▸ T.top.proj h : _ ⟶ₑ (IH _ h).top.X)
   fold := T.top.fold
   unfold := T.top.unfold
 
@@ -885,7 +885,7 @@ theorem closeTop_lawful (α : SI) (f : PartialSol F (Site.below α)) (hf : f.Law
   | .inr (.inr hl) => limitTop_lawful hl f hf
 
 def zeroPoint (f : PartialSol F (Site.below (0 : SI))) (hf : f.Lawful) :
-    HasTerminal.terminal SI ⟶ (closeTop 0 f hf).X := by
+    HasTerminal.terminal SI ⟶ₑ (closeTop 0 f hf).X := by
   unfold closeTop
   exact match SIdx.case (0 : SI) with
   | .inl _ => EnrichedCat.id _
@@ -965,9 +965,9 @@ theorem globalSol_lawful : (globalSol F).Lawful :=
 
 abbrev Fix : Obj := limObj (globalSol F) (globalSol_lawful F)
 
-def Fix.fold : F (Fix F) (Fix F) ⟶ Fix F := limFold (globalSol F) (globalSol_lawful F)
+def Fix.fold : F (Fix F) (Fix F) ⟶ₑ Fix F := limFold (globalSol F) (globalSol_lawful F)
 
-def Fix.unfold : Fix F ⟶ F (Fix F) (Fix F) :=
+def Fix.unfold : Fix F ⟶ₑ F (Fix F) (Fix F) :=
   let c := limChain Site.univ_isLimit (globalSol F) (globalSol_lawful F)
   IsCOFE.compl ⟨fun n => c.val n trivial, fun h => c.cauchy _ _ h⟩
 
@@ -978,9 +978,9 @@ theorem Fix.unfold_comp_fold : Fix.unfold F ⊚ Fix.fold F = EnrichedCat.id _ :=
   OFE.eq_dist.mpr fun _ =>
     unfold_comp_limFold Site.univ_isLimit _ _ (fun _ => IsCOFE.conv_compl) trivial
 
-def Fix.point : HasTerminal.terminal SI ⟶ Fix F :=
+def Fix.point : HasTerminal.terminal SI ⟶ₑ Fix F :=
   InvLim.emb (globalSol_lawful F).tower (n := 0) trivial ⊚
-    (ClosedSol.canonical_eq F 0 ▸ zeroPoint _ _ : _ ⟶ (ClosedSol.canonical F 0).1.top.X)
+    (ClosedSol.canonical_eq F 0 ▸ zeroPoint _ _ : _ ⟶ₑ (ClosedSol.canonical F 0).1.top.X)
 
 end Recursion
 

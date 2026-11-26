@@ -48,10 +48,10 @@ instance instHasTerminal : HasTerminal CofeObj.{v, w} where
   toTerminal _ := (⟨fun _ => ⟨()⟩, ⟨fun _ _ _ _ => .rfl⟩⟩ : _ -n> ULift.{max v w} Unit)
   toTerminal_unique _ := OFE.Hom.ext (funext fun _ => rfl)
 
-instance {A B : CofeObj.{v, w}} : CoeFun (A ⟶ B) fun _ => A.1 → B.1 :=
+instance {A B : CofeObj.{v, w}} : CoeFun (A ⟶ₑ B) fun _ => A.1 → B.1 :=
   inferInstanceAs (CoeFun (A.1 -n> B.1) _)
 
-theorem Hom.congr_fun {A B : CofeObj.{v, w}} {f g : A ⟶ B} (h : f = g) (x : A.1) :
+theorem Hom.congr_fun {A B : CofeObj.{v, w}} {f g : A ⟶ₑ B} (h : f = g) (x : A.1) :
     f x = g x :=
   h ▸ rfl
 
@@ -61,7 +61,7 @@ open COFE
 
 theorem Determined.points {K : LimitCut} {Y : CofeObj.{v, w}} (h : Determined K Y) :
     PointsDetermined K Y.1 := fun x y hxy =>
-  Hom.congr_fun (h (⟨fun _ => x, ⟨fun _ _ _ _ => .rfl⟩⟩ : HasTerminal.terminal SI ⟶ Y)
+  Hom.congr_fun (h (⟨fun _ => x, ⟨fun _ _ _ _ => .rfl⟩⟩ : HasTerminal.terminal SI ⟶ₑ Y)
     ⟨fun _ => y, ⟨fun _ _ _ _ => .rfl⟩⟩ fun m hm _ => hxy m hm) ⟨()⟩
 
 theorem Determined.of_points {K : LimitCut} {Y : CofeObj.{v, w}}
@@ -164,9 +164,9 @@ instance : IsCOFE (TowerLimit T hT) where
 
 def TowerLimit.cofeObj : CofeObj.{v, w} := ⟨TowerLimit T hT, inferInstance⟩
 
-def TowerLimit.lift {Y : CofeObj.{v, w}} (g : ∀ {β} (hβ : P.mem β), Y ⟶ T.X hβ)
+def TowerLimit.lift {Y : CofeObj.{v, w}} (g : ∀ {β} (hβ : P.mem β), Y ⟶ₑ T.X hβ)
     (hg : ∀ {β δ} {hβ : P.mem β} {hδ : P.mem δ} (h : β < δ), T.proj hβ hδ h ⊚ g hδ = g hβ) :
-    Y ⟶ TowerLimit.cofeObj T hT :=
+    Y ⟶ₑ TowerLimit.cofeObj T hT :=
   (⟨fun y => ⟨fun _ hβ => g hβ y, fun h => Hom.congr_fun (hg h) y⟩,
     ⟨fun _ _ _ h _ hβ => (g hβ).ne.ne h⟩⟩ : Y.1 -n> TowerLimit T hT)
 
