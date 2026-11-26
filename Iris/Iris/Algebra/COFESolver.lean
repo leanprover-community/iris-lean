@@ -8,6 +8,14 @@ module
 public import Iris.Algebra.Enriched
 public meta import Iris.Std.RocqPorting
 
+/-!
+For a given locally contractive functor with e : F(1, 1), the solver can be called:
+- unconditionally classically under classical truncations;
+- conditionally constructively if the functor is truncatable;
+- unconditionally constructively under finite step-index types.
+See `Iris.Examples.Fix` for concrete examples.
+-/
+
 @[expose] public section
 
 universe v w
@@ -20,9 +28,6 @@ variable {SI : Type w} [SIdx SI]
 local stepindex SI
 
 namespace COFE
-
-def PointsDetermined (K : LimitCut) (A : Type _) [OFE A] : Prop :=
-  ∀ x y : A, K.dist x y → x = y
 
 abbrev CofeObj := (A : Type (max v w)) × COFE A
 
@@ -175,72 +180,6 @@ instance instHasTowerLimits : HasTowerLimits CofeObj.{v, w} where
   π_comp_lift _ := fun _ _ => rfl
   ext_dist _ := fun h y _ hβ => h hβ y
 
-structure Truncation (K : LimitCut) (A : Type _) [OFE A] where
-  truncate : A -n> A
-  conv : ∀ x m, K.mem m → truncate x ≡{m}≡ x
-  truncated : ∀ x y, K.dist x y → truncate x = truncate y
-
-namespace Truncation
-
-variable {K : LimitCut} {A : Type _} [COFE A] (t : Truncation K A)
-
-theorem truncate_truncate (x : A) : t.truncate (t.truncate x) = t.truncate x :=
-  t.truncated _ _ fun m hm => t.conv x m hm
-
-def Fixed : Type _ := {x : A // t.truncate x = x}
-
-instance : OFE t.Fixed := inferInstanceAs (OFE {x : A // t.truncate x = x})
-
-def Fixed.proj : A -n> t.Fixed :=
-  ⟨fun x => ⟨t.truncate x, t.truncate_truncate x⟩, ⟨fun _ _ _ h => t.truncate.ne.ne h⟩⟩
-
-def Fixed.inclusion : t.Fixed -n> A := ⟨Subtype.val, ⟨fun _ _ _ h => h⟩⟩
-
-instance : IsCOFE t.Fixed where
-  compl c := Fixed.proj t (COFE.compl (c.map (Fixed.inclusion t)))
-  conv_compl {n c} := by
-    change t.truncate (COFE.compl (c.map (Fixed.inclusion t))) ≡{n}≡ (c n).val
-    rw [← (c n).2]
-    exact (Fixed.proj t).ne.ne (COFE.conv_compl (c := c.map (Fixed.inclusion t)))
-  lbcompl hl c := Fixed.proj t (IsCOFE.lbcompl hl (c.map (Fixed.inclusion t)))
-  conv_lbcompl hl c m hm := by
-    change t.truncate (IsCOFE.lbcompl hl (c.map (Fixed.inclusion t))) ≡{m}≡ (c.bchain m hm).val
-    rw [← (c.bchain m hm).2]
-    exact (Fixed.proj t).ne.ne (IsCOFE.conv_lbcompl hl (c.map (Fixed.inclusion t)) hm)
-  lbcompl_ne hl _ _ _ hc :=
-    (Fixed.proj t).ne.ne (IsCOFE.lbcompl_ne hl _ _ fun p hp => hc p hp)
-
-theorem Fixed.determined : PointsDetermined K t.Fixed := fun x y h =>
-  Subtype.ext (x.2 ▸ y.2 ▸ t.truncated _ _ h)
-
-end Truncation
-
-section Classical
-
-variable (K : LimitCut) {A : Type _} [COFE A]
-
-noncomputable def classicalRep (x : A) : A := @Classical.epsilon A ⟨x⟩ fun y => K.dist x y
-
-theorem classicalRep_spec (x : A) : K.dist x (classicalRep K x) :=
-  @Classical.epsilon_spec A (fun y => K.dist x y) ⟨x, fun _ _ => .rfl⟩
-
-theorem classicalRep_congr {x y : A} (h : K.dist x y) : classicalRep K x = classicalRep K y := by
-  unfold classicalRep
-  congr 1
-  exact funext fun _ => propext ⟨fun hz n hn => (h n hn).symm.trans (hz n hn),
-    fun hz n hn => (h n hn).trans (hz n hn)⟩
-
-noncomputable def classicalTruncation : Truncation K A where
-  truncate := ⟨classicalRep K, ⟨fun m x y h => by
-    by_cases hm : K.mem m
-    · exact (classicalRep_spec K x m hm).symm.trans (h.trans (classicalRep_spec K y m hm))
-    · exact .of_eq (classicalRep_congr K fun n hn =>
-        h.le ((SIdx.le_total (n := n) (m := m)).resolve_right fun h' => hm (K.down h' hn)))⟩⟩
-  conv x m hm := (classicalRep_spec K x m hm).symm
-  truncated _ _ h := classicalRep_congr K h
-
-end Classical
-
 section Solution
 
 variable (F : ∀ (α β : Type (max v w)) [COFE α] [COFE β], Type (max v w))
@@ -256,7 +195,7 @@ instance instEFunctor : EFunctor (oFunctorObj F) where
 
 @[reducible] def truncatableOfTruncations
     (t : ∀ (K : LimitCut) (A : CofeObj.{v, w}), Determined K A → Truncation K (F A.1 A.1)) :
-    Truncatable (oFunctorObj F) where
+    ETruncatable (oFunctorObj F) where
   trunc hA := ⟨(t _ _ hA).Fixed, inferInstance⟩
   proj hA := Truncation.Fixed.proj (t _ _ hA)
   rep hA := Truncation.Fixed.inclusion (t _ _ hA)
@@ -264,11 +203,9 @@ instance instEFunctor : EFunctor (oFunctorObj F) where
   rep_proj hA := fun hm x => (t _ _ hA).conv x _ hm
   determined _ := Determined.of_points (Truncation.Fixed.determined _)
 
-/-- Truncations by choice for every functor. Not an instance, so that using choice is explicit:
-enable it with `attribute [local instance] classicalOFunctorTruncatable`. -/
-@[reducible] noncomputable def classicalOFunctorTruncatable :
-    Truncatable (oFunctorObj F) :=
-  truncatableOfTruncations F fun K _ _ => classicalTruncation K
+instance (priority := low) instETruncatable [OFunctorTruncatable F] :
+    ETruncatable (oFunctorObj F) :=
+  truncatableOfTruncations F fun _ _ hA => OFunctorTruncatable.truncation hA.points
 
 instance instHasSeed [Inhabited (F (ULift.{max v w} Unit) (ULift.{max v w} Unit))] :
     HasSeed (oFunctorObj F) where
@@ -290,7 +227,7 @@ local stepindex SI
 variable (F : ∀ (α β : Type (max v w)) [COFE α] [COFE β], Type (max v w)) [OFunctorContractive F]
   [∀ (α β : Type (max v w)) [COFE α] [COFE β], IsCOFE (F α β)]
   [Inhabited (F (ULift.{max v w} Unit) (ULift.{max v w} Unit))]
-  [Truncatable (oFunctorObj F)]
+  [ETruncatable (oFunctorObj F)]
 
 #rocq_ignore solution "Use OFE.Iso + Inhabited + COFE"
 #rocq_ignore solver.A' "Internal to Rocq's ℕ-indexed construction; see Enriched.lean"
@@ -333,11 +270,11 @@ instance : Inhabited (Fix F) := ⟨(Enriched.Fix.point (oFunctorObj F)) ⟨()⟩
 
 variable {F}
 
-def Fix.iso : OFE.Iso (F (Fix F) (Fix F)) (Fix F) where
+opaque Fix.iso : OFE.Iso (F (Fix F) (Fix F)) (Fix F) := {
   hom := Enriched.Fix.fold (oFunctorObj F)
   inv := Enriched.Fix.unfold (oFunctorObj F)
   hom_inv := Hom.congr_fun (Enriched.Fix.fold_comp_unfold (oFunctorObj F)) _
-  inv_hom := Hom.congr_fun (Enriched.Fix.unfold_comp_fold (oFunctorObj F)) _
+  inv_hom := Hom.congr_fun (Enriched.Fix.unfold_comp_fold (oFunctorObj F)) _ }
 
 @[rocq_alias solver.fold]
 def Fix.fold : F (Fix F) (Fix F) -n> Fix F := Fix.iso.hom
@@ -351,6 +288,6 @@ theorem Fix.fold_unfold (X : Fix F) : Fix.fold (Fix.unfold X) = X := Fix.iso.hom
 
 theorem Fix.unfold_fold (X : F (Fix F) (Fix F)) : Fix.unfold (Fix.fold X) = X := Fix.iso.inv_hom
 
-attribute [irreducible] Fix instCOFEFix Fix.fold Fix.unfold Fix.iso
+attribute [irreducible] Fix instCOFEFix Fix.fold Fix.unfold
 
 end Iris.COFE.OFunctor

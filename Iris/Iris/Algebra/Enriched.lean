@@ -198,26 +198,6 @@ theorem map_dist {Obj : Type u} [EnrichedCat Obj] (F : Obj → Obj → Obj) [EFu
     (hg : g ≡{n}≡ g') : EFunctor.map (F := F) f g ≡{n}≡ EFunctor.map f' g' :=
   EFunctor.map_contractive fun _ hm => ⟨hf.lt hm, hg.lt hm⟩
 
-structure LimitCut where
-  mem : SI → Prop
-  zero : mem 0
-  unbounded : ∀ {n}, mem n → ∃ m, n < m ∧ mem m
-  down : ∀ {a b : SI}, a ≤ b → mem b → mem a
-
-namespace LimitCut
-
-def dist (K : LimitCut) {A : Type _} [OFE A] (x y : A) : Prop := ∀ m, K.mem m → x ≡{m}≡ y
-
-theorem mem_of_finite [SIdxFinite SI] (K : LimitCut) (n : SI) : K.mem n := by
-  induction n using (SIdx.lt_wf (I := SI)).induction with
-  | _ n ih =>
-    rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
-    · exact K.zero
-    · obtain ⟨k, hmk, hk⟩ := K.unbounded (ih m (SIdx.lt_succ_self m))
-      exact K.down (SIdx.succ_le_of_lt hmk) hk
-
-end LimitCut
-
 def seg (c : SI) : LimitCut where
   mem n := ¬ ∃ l, SIdx.Limit l ∧ c < l ∧ l ≤ n
   zero := fun ⟨l, hl, _, h⟩ => SIdx.limit_0 (SIdx.le_0_r.mp h ▸ hl)
@@ -237,7 +217,7 @@ theorem lt_of_mem_seg {n a m : SI} (hl : SIdx.Limit n) (ha : a < n) (hm : (seg a
     m < n :=
   (SIdx.lt_ge_cases n m).resolve_right fun h => hm ⟨n, hl, ha, h⟩
 
-theorem LimitCut.mem_of_mem_seg (K : LimitCut) {c : SI} (hc : K.mem c) :
+theorem _root_.Iris.LimitCut.mem_of_mem_seg (K : LimitCut) {c : SI} (hc : K.mem c) :
     ∀ m, (seg c).mem m → K.mem m := by
   intro m
   induction m using SIdx.lt_wf.induction with
@@ -416,7 +396,7 @@ class HasSeed {Obj : Type u} [EnrichedCat Obj] [HasTerminal Obj] (F : Obj → Ob
   seed : HasTerminal.terminal SI ⟶ F (HasTerminal.terminal SI) (HasTerminal.terminal SI)
 
 @[indexed SI]
-class Truncatable {Obj : Type u} [EnrichedCat Obj] (F : Obj → Obj → Obj) where
+class ETruncatable {Obj : Type u} [EnrichedCat Obj] (F : Obj → Obj → Obj) where
   trunc {K : LimitCut} {A : Obj} : Determined K A → Obj
   proj {K A} (hA : Determined K A) : F A A ⟶ trunc hA
   rep {K A} (hA : Determined K A) : trunc hA ⟶ F A A
@@ -425,7 +405,7 @@ class Truncatable {Obj : Type u} [EnrichedCat Obj] (F : Obj → Obj → Obj) whe
   determined {K A} (hA : Determined K A) : Determined K (trunc hA)
 
 instance finiteTruncatable [SIdxFinite SI] {Obj : Type u} [EnrichedCat Obj]
-    (F : Obj → Obj → Obj) : Truncatable F where
+    (F : Obj → Obj → Obj) : ETruncatable F where
   trunc {_ A} _ := F A A
   proj _ := EnrichedCat.id _
   rep _ := EnrichedCat.id _
@@ -597,8 +577,8 @@ end Zero
 
 section Succ
 
-variable [Truncatable F]
-open Truncatable
+variable [ETruncatable F]
+open ETruncatable
 
 variable {γ m : SI} (hm : γ = succᵢ m)
 
@@ -888,7 +868,7 @@ theorem glue_lawful {P : Site} (fam : ∀ γ, P.mem γ → ClosedSol F γ) (hcoh
 
 section Recursion
 
-variable [HasTerminal Obj] [HasSeed F] [Truncatable F] [HasTowerLimits Obj]
+variable [HasTerminal Obj] [HasSeed F] [ETruncatable F] [HasTowerLimits Obj]
 
 def closeTop (α : SI) (f : PartialSol F (Site.below α)) (hf : f.Lawful) : Extension f :=
   match SIdx.case α with

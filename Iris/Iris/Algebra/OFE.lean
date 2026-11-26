@@ -1503,6 +1503,132 @@ attribute [reducible, instance] OFunctor.ofe
 
 end COFE
 
+section Truncation
+
+namespace LimitCut
+
+def dist (K : LimitCut) {A : Type _} [OFE A] (x y : A) : Prop := ∀ m, K.mem m → x ≡{m}≡ y
+
+end LimitCut
+
+namespace COFE
+
+def PointsDetermined (K : LimitCut) (A : Type _) [OFE A] : Prop :=
+  ∀ x y : A, K.dist x y → x = y
+
+structure Truncation (K : LimitCut) (A : Type _) [OFE A] where
+  truncate : A -n> A
+  conv : ∀ x m, K.mem m → truncate x ≡{m}≡ x
+  truncated : ∀ x y, K.dist x y → truncate x = truncate y
+
+namespace Truncation
+
+section
+
+variable {K : LimitCut} {A : Type _} [OFE A]
+
+def ofDetermined (h : PointsDetermined K A) : Truncation K A where
+  truncate := Hom.id
+  conv _ _ _ := .rfl
+  truncated := h
+
+def ofDiscrete [Discrete A] : Truncation K A :=
+  ofDetermined fun _ _ h => discrete (h 0 K.zero)
+
+def transfer {B : Type _} [OFE B] (t : Truncation K B) (p : A -n> B) (i : B -n> A)
+    (h : ∀ x m, K.mem m → i (p x) ≡{m}≡ x) : Truncation K A where
+  truncate := i.comp (t.truncate.comp p)
+  conv x m hm := (i.ne.ne (t.conv (p x) m hm)).trans (h x m hm)
+  truncated _ _ hxy := congrArg i (t.truncated _ _ fun m hm => p.ne.ne (hxy m hm))
+
+end
+
+variable {K : LimitCut} {A : Type _} [COFE A] (t : Truncation K A)
+
+theorem truncate_truncate (x : A) : t.truncate (t.truncate x) = t.truncate x :=
+  t.truncated _ _ fun m hm => t.conv x m hm
+
+def Fixed : Type _ := {x : A // t.truncate x = x}
+
+instance : OFE t.Fixed := inferInstanceAs (OFE {x : A // t.truncate x = x})
+
+def Fixed.proj : A -n> t.Fixed :=
+  ⟨fun x => ⟨t.truncate x, t.truncate_truncate x⟩, ⟨fun _ _ _ h => t.truncate.ne.ne h⟩⟩
+
+def Fixed.inclusion : t.Fixed -n> A := ⟨Subtype.val, ⟨fun _ _ _ h => h⟩⟩
+
+instance : IsCOFE t.Fixed where
+  compl c := Fixed.proj t (COFE.compl (c.map (Fixed.inclusion t)))
+  conv_compl {n c} := by
+    change t.truncate (COFE.compl (c.map (Fixed.inclusion t))) ≡{n}≡ (c n).val
+    rw [← (c n).2]
+    exact (Fixed.proj t).ne.ne (COFE.conv_compl (c := c.map (Fixed.inclusion t)))
+  lbcompl hl c := Fixed.proj t (IsCOFE.lbcompl hl (c.map (Fixed.inclusion t)))
+  conv_lbcompl hl c m hm := by
+    change t.truncate (IsCOFE.lbcompl hl (c.map (Fixed.inclusion t))) ≡{m}≡ (c.bchain m hm).val
+    rw [← (c.bchain m hm).2]
+    exact (Fixed.proj t).ne.ne (IsCOFE.conv_lbcompl hl (c.map (Fixed.inclusion t)) hm)
+  lbcompl_ne hl _ _ _ hc :=
+    (Fixed.proj t).ne.ne (IsCOFE.lbcompl_ne hl _ _ fun p hp => hc p hp)
+
+theorem Fixed.determined : PointsDetermined K t.Fixed := fun x y h =>
+  Subtype.ext (x.2 ▸ y.2 ▸ t.truncated _ _ h)
+
+end Truncation
+
+section Classical
+
+variable (K : LimitCut) {A : Type _} [OFE A]
+
+noncomputable def classicalRep (x : A) : A := @Classical.epsilon A ⟨x⟩ fun y => K.dist x y
+
+theorem classicalRep_spec (x : A) : K.dist x (classicalRep K x) :=
+  @Classical.epsilon_spec A (fun y => K.dist x y) ⟨x, fun _ _ => .rfl⟩
+
+theorem classicalRep_congr {x y : A} (h : K.dist x y) : classicalRep K x = classicalRep K y := by
+  unfold classicalRep
+  congr 1
+  exact funext fun _ => propext ⟨fun hz n hn => (h n hn).symm.trans (hz n hn),
+    fun hz n hn => (h n hn).trans (hz n hn)⟩
+
+noncomputable def classicalTruncation : Truncation K A where
+  truncate := ⟨classicalRep K, ⟨fun m x y h => by
+    by_cases hm : K.mem m
+    · exact (classicalRep_spec K x m hm).symm.trans (h.trans (classicalRep_spec K y m hm))
+    · exact .of_eq (classicalRep_congr K fun n hn =>
+        h.le ((SIdx.le_total (n := n) (m := m)).resolve_right fun h' => hm (K.down h' hn)))⟩⟩
+  conv x m hm := (classicalRep_spec K x m hm).symm
+  truncated _ _ h := classicalRep_congr K h
+
+end Classical
+
+@[indexed SI]
+class Truncatable (A : Type _) [OFE A] where
+  truncation (K : LimitCut) : Truncation K A
+
+variable (SI) in
+abbrev Truncatableᵢ (A : Type _) [OFE A] := Truncatable A
+
+instance instTruncatableOfDiscrete [OFE A] [Discrete A] : Truncatable A where
+  truncation _ := .ofDiscrete
+
+instance instTruncatableOfFinite [SIdxFinite SI] [OFE A] : Truncatable A where
+  truncation K := .ofDetermined fun _ _ h => eq_dist.mpr fun n => h n (K.mem_of_finite n)
+
+@[indexed SI]
+class OFunctorTruncatable (F : OFunctorPre) [OFunctor F] where
+  truncation {K : LimitCut} {A : Type _} [COFE A] : PointsDetermined K A → Truncation K (F A A)
+
+variable (SI) in
+abbrev OFunctorTruncatableᵢ (F : OFunctorPre) [OFunctor F] := OFunctorTruncatable F
+
+instance instOFunctorTruncatableOfFinite [SIdxFinite SI] [OFunctor F] : OFunctorTruncatable F where
+  truncation _ := Truncatable.truncation _
+
+end COFE
+
+end Truncation
+
 /- Discrete OFE structure on a type -/
 @[ext] structure DiscreteO (α : Type _) where
   car : α
@@ -1572,6 +1698,19 @@ instance oFunctor_composeOF_contractive_left [OFunctorContractive F₁] :
       (fun m hm _ => (map_ne (F := F₂)).ne (h m hm).2 (h m hm).1 _)
       (fun m hm _ => (map_ne (F := F₂)).ne (h m hm).1 (h m hm).2 _) x⟩
 
+open OFunctor OFunctorTruncatable in
+instance oFunctor_composeOF_truncatable [OFunctor F₁] [OFunctorTruncatable F₁]
+    [OFunctorTruncatable F₂] : OFunctorTruncatable (ComposeOF F₁ F₂) where
+  truncation hA :=
+    let t := truncation (F := F₂) hA
+    let p := Truncation.Fixed.proj t
+    let i := Truncation.Fixed.inclusion t
+    (truncation (F := F₁) (Truncation.Fixed.determined t)).transfer
+      (map (F := F₁) i p) (map (F := F₁) p i) fun x m hm =>
+        have h : i.comp p ≡{m}≡ Hom.id := fun y => t.conv y m hm
+        (Dist.of_eq (map_comp (F := F₁) i p p i x).symm).trans <|
+          ((map_ne (F := F₁)).ne h h x).trans (.of_eq (map_id (F := F₁) x))
+
 end ComposeOF
 
 section ComposeOFContractive
@@ -1609,6 +1748,20 @@ instance oFunctor_discreteFunOF {C} (F : C → OFunctorPre) [∀ c, OFunctor (F 
 instance oFunctor_discreteFunOF_contractive {C} (F : C → OFunctorPre)
     [∀ c, OFunctorContractive (F c)] : OFunctorContractive (DiscreteFunOF F) where
   map_contractive.1 h _ _ := OFunctorContractive.map_contractive.distLater_dist h _
+
+def COFE.Truncation.pi {β : α → Type _} [∀ x, OFE (β x)] {K : LimitCut}
+    (t : ∀ x, Truncation K (β x)) : Truncation K ((x : α) → β x) where
+  truncate := mapCodHom fun x => (t x).truncate
+  conv f m hm x := (t x).conv (f x) m hm
+  truncated _ _ h := funext fun x => (t x).truncated _ _ fun m hm => h m hm x
+
+instance instTruncatablePi {β : α → Type _} [∀ x, OFE (β x)] [∀ x, Truncatable (β x)] :
+    Truncatable ((x : α) → β x) where
+  truncation K := .pi fun _ => Truncatable.truncation K
+
+instance oFunctor_discreteFunOF_truncatable {C} (F : C → OFunctorPre) [∀ c, OFunctor (F c)]
+    [∀ c, OFunctorTruncatable (F c)] : OFunctorTruncatable (DiscreteFunOF F) where
+  truncation hA := .pi fun c => OFunctorTruncatable.truncation (F := F c) hA
 
 end DiscreteFunOF
 
@@ -1732,6 +1885,25 @@ instance [OFunctorContractive F] : OFunctorContractive (OptionOF F) where
     have := (OFunctorContractive.map_contractive (F := F)).distLater_dist H
     cases z <;> simp_all [optionMap, Dist, HasDist.dist, Option.Forall₂, Function.uncurry, OFunctor.map]
 
+def COFE.Truncation.option [OFE α] {K : LimitCut} (t : Truncation K α) :
+    Truncation K (Option α) where
+  truncate := optionMap t.truncate
+  conv x m hm := match x with
+    | none => .rfl
+    | some a => t.conv a m hm
+  truncated x y h := match x, y with
+    | none, none => rfl
+    | some a, some b => congrArg some (t.truncated a b fun m hm => h m hm)
+    | none, some _ => (h 0 K.zero).elim
+    | some _, none => (h 0 K.zero).elim
+
+instance instTruncatableOption [OFE α] [Truncatable α] : Truncatable (Option α) where
+  truncation K := .option (Truncatable.truncation K)
+
+instance instOFunctorTruncatableOptionOF [OFunctor F] [OFunctorTruncatable F] :
+    OFunctorTruncatable (OptionOF F) where
+  truncation hA := (OFunctorTruncatable.truncation (F := F) hA).option
+
 end OptionOF
 
 section ProdOF
@@ -1785,6 +1957,21 @@ instance instOFunctorContractiveProdOF [OFunctorContractive F1] [OFunctorContrac
     OFunctorContractive (ProdOF F1 F2) where
   map_contractive.1 H _ :=
    Prod.map_ne (fun _ => map_contractive.1 H _) (fun _ => map_contractive.1 H _)
+
+def COFE.Truncation.prod {K : LimitCut} (t : Truncation K A) (t' : Truncation K B) :
+    Truncation K (A × B) where
+  truncate := Prod.mapO t.truncate t'.truncate
+  conv x m hm := ⟨t.conv x.1 m hm, t'.conv x.2 m hm⟩
+  truncated _ _ h := Prod.ext (t.truncated _ _ fun m hm => (h m hm).1)
+    (t'.truncated _ _ fun m hm => (h m hm).2)
+
+instance instTruncatableProd [Truncatable A] [Truncatable B] : Truncatable (A × B) where
+  truncation K := .prod (Truncatable.truncation K) (Truncatable.truncation K)
+
+instance instOFunctorTruncatableProdOF [OFunctor F1] [OFunctor F2] [OFunctorTruncatable F1]
+    [OFunctorTruncatable F2] : OFunctorTruncatable (ProdOF F1 F2) where
+  truncation hA :=
+    (OFunctorTruncatable.truncation (F := F1) hA).prod (OFunctorTruncatable.truncation (F := F2) hA)
 
 end ProdOF
 
@@ -1846,6 +2033,26 @@ instance instOFunctorContractiveSumOF [OFunctorContractive F1] [OFunctorContract
   map_contractive.1 H _ :=
     Sum.map_ne (fun _ => map_contractive.1 H _) (fun _ => map_contractive.1 H _)
 
+def COFE.Truncation.sum {K : LimitCut} (t : Truncation K A) (t' : Truncation K B) :
+    Truncation K (A ⊕ B) where
+  truncate := Sum.mapO t.truncate t'.truncate
+  conv x m hm := match x with
+    | .inl a => dist_inl (t.conv a m hm)
+    | .inr b => dist_inr (t'.conv b m hm)
+  truncated x y h := match x, y with
+    | .inl a, .inl a' => congrArg Sum.inl (t.truncated a a' fun m hm => h m hm)
+    | .inr b, .inr b' => congrArg Sum.inr (t'.truncated b b' fun m hm => h m hm)
+    | .inl _, .inr _ => (h 0 K.zero).elim
+    | .inr _, .inl _ => (h 0 K.zero).elim
+
+instance instTruncatableSum [Truncatable A] [Truncatable B] : Truncatable (A ⊕ B) where
+  truncation K := .sum (Truncatable.truncation K) (Truncatable.truncation K)
+
+instance instOFunctorTruncatableSumOF [OFunctor F1] [OFunctor F2] [OFunctorTruncatable F1]
+    [OFunctorTruncatable F2] : OFunctorTruncatable (SumOF F1 F2) where
+  truncation hA :=
+    (OFunctorTruncatable.truncation (F := F1) hA).sum (OFunctorTruncatable.truncation (F := F2) hA)
+
 end SumOF
 
 section SigmaOF
@@ -1878,6 +2085,26 @@ instance instOFunctorContractiveSigmaOF [∀ a, OFunctorContractive (F a)] :
     OFunctorContractive (SigmaOF F) where
   map_contractive.1 H := Sigma.mapO.ne.ne (fun _ => map_contractive.1 H)
 
+def COFE.Truncation.sigma {P : A → Type _} [∀ a, OFE (P a)] {K : LimitCut}
+    (t : ∀ a, Truncation K (P a)) : Truncation K (Sigma P) where
+  truncate := Sigma.mapO fun a => (t a).truncate
+  conv x m hm := ⟨rfl, (t x.1).conv x.2 m hm⟩
+  truncated x y h := by
+    obtain ⟨a, x⟩ := x
+    obtain ⟨b, y⟩ := y
+    obtain ⟨heq, -⟩ := h 0 K.zero
+    simp only at heq
+    subst heq
+    exact congrArg (Sigma.mk a) ((t a).truncated x y fun m hm => (h m hm).2)
+
+instance instTruncatableSigma {P : A → Type _} [∀ a, OFE (P a)] [∀ a, Truncatable (P a)] :
+    Truncatable (Sigma P) where
+  truncation K := .sigma fun _ => Truncatable.truncation K
+
+instance instOFunctorTruncatableSigmaOF [∀ a, OFunctor (F a)] [∀ a, OFunctorTruncatable (F a)] :
+    OFunctorTruncatable (SigmaOF F) where
+  truncation hA := .sigma fun a => OFunctorTruncatable.truncation (F := F a) hA
+
 end SigmaOF
 
 section constOF
@@ -1898,6 +2125,10 @@ instance oFunctorConstOF [COFE B] : OFunctor (constOF B) where
 instance OFunctor.constOF_contractive [COFE B] : OFunctorContractive (constOF B) where
   map_contractive.1 := by simp [OFunctor.map]
 
+instance instOFunctorTruncatableConstOF [COFE B] [Truncatable B] :
+    OFunctorTruncatable (constOF B) where
+  truncation _ := Truncatable.truncation _
+
 end constOF
 
 section IdOF
@@ -1914,6 +2145,9 @@ instance : OFunctor IdOF where
   map_ne.ne _ _ _ _ _ _ Hy := Hy
   map_id _ := rfl
   map_comp _ _ _ _ _ := rfl
+
+instance instOFunctorTruncatableIdOF : OFunctorTruncatable IdOF where
+  truncation hA := .ofDetermined hA
 
 end IdOF
 
@@ -1960,6 +2194,18 @@ instance instOFunctorContractiveHomOF [OFunctorContractive F1] [OFunctorContract
       refine NonExpansive₂.ne (f := Hom.map) ?_ ?_
       · exact (map_contractive (F := F1)).1 h'
       · exact (map_contractive (F := F2)).1 h
+
+def COFE.Truncation.hom {K : LimitCut} (t : Truncation K B) : Truncation K (A -n> B) where
+  truncate := Hom.map Hom.id t.truncate
+  conv f m hm x := t.conv (f x) m hm
+  truncated _ _ h := Hom.ext (funext fun x => t.truncated _ _ fun m hm => h m hm x)
+
+instance instTruncatableHom [Truncatable B] : Truncatable (A -n> B) where
+  truncation K := .hom (Truncatable.truncation K)
+
+instance instOFunctorTruncatableHomOF [OFunctor F1] [OFunctor F2] [OFunctorTruncatable F2] :
+    OFunctorTruncatable (HomOF F1 F2) where
+  truncation hA := (OFunctorTruncatable.truncation (F := F2) hA).hom
 
 end HomOF
 
@@ -2507,6 +2753,21 @@ instance instOFunctorContractiveLater [OFunctor F] : OFunctorContractive (LaterO
   map_contractive.1 H _ _ hlt :=
     OFunctor.map_ne.ne (DistLater.dist_lt H hlt).1 (DistLater.dist_lt H hlt).2 _
 
+def COFE.Truncation.later [OFE A] {K : LimitCut} (t : Truncation K A) :
+    Truncation K (Later A) where
+  truncate := laterMap t.truncate
+  conv x _ hm _ hk := t.conv x.car _ (K.down (SIdx.lt_le_incl hk) hm)
+  truncated _ _ h := congrArg Later.next <| t.truncated _ _ fun m hm =>
+    let ⟨_, hlt, hm'⟩ := K.unbounded hm
+    h _ hm' m hlt
+
+instance instTruncatableLater [OFE A] [Truncatable A] : Truncatable (Later A) where
+  truncation K := .later (Truncatable.truncation K)
+
+instance instOFunctorTruncatableLater [OFunctor F] [OFunctorTruncatable F] :
+    OFunctorTruncatable (LaterOF F) where
+  truncation hA := (OFunctorTruncatable.truncation (F := F) hA).later
+
 end LaterOF
 
 section IsoCofe
@@ -2617,3 +2878,19 @@ theorem OFE.cast_dist {n} [Iα : OFE α] [Iβ : OFE β] {x y : α}
   subst Ht; subst HIt; exact H
 
 end Iris
+
+namespace Classical
+
+variable {SI : Type _} [Iris.SIdx SI]
+local stepindex SI
+
+open Iris COFE
+
+noncomputable scoped instance (priority := low) truncatable [OFE A] : Truncatable A where
+  truncation K := classicalTruncation K
+
+noncomputable scoped instance (priority := low) oFunctorTruncatable (F : OFunctorPre)
+    [OFunctor F] : OFunctorTruncatable F where
+  truncation _ := classicalTruncation _
+
+end Classical
