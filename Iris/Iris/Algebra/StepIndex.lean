@@ -391,4 +391,28 @@ theorem rec_lim {P : I → Sort v} (s : P 0) (f : ∀ n, P n → P (succᵢ n))
 
 end SIdx
 
+section
+
+variable {SI : Type _} [SIdx SI]
+
+structure LimitCut where
+  mem : SI → Prop
+  zero : mem 0
+  unbounded : ∀ {n}, mem n → ∃ m, n < m ∧ mem m
+  down : ∀ {a b : SI}, a ≤ b → mem b → mem a
+
+namespace LimitCut
+
+theorem mem_of_finite [SIdxFinite SI] (K : LimitCut) (n : SI) : K.mem n := by
+  induction n using (SIdx.lt_wf (I := SI)).induction with
+  | _ n ih =>
+    rcases SIdxFinite.finite_index n with rfl | ⟨m, rfl⟩
+    · exact K.zero
+    · obtain ⟨k, hmk, hk⟩ := K.unbounded (ih m (SIdx.lt_succ_self m))
+      exact K.down (SIdx.succ_le_of_lt hmk) hk
+
+end LimitCut
+
+end
+
 end Iris
