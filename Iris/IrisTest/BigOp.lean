@@ -286,7 +286,7 @@ example (Φ : A → PROP) (X Y : MS) :
   iintro ⟨H1, H2⟩
   iframe
 
-/- Tests that `frame_here` has a higher priority than `Frame` instances for big operators. -/
+/- Tests that `frame_here` is tried before the `Frame` instances for big operators. -/
 example (Φ : Nat → A → PROP) (x : A) (l : List A) (P : PROP) :
     ([∗list] k ↦ y ∈ x :: l, Φ k y) ∗ P ⊢ ([∗list] k ↦ y ∈ x :: l, Φ k y) ∗ P := by
   iintro ⟨H1, H2⟩

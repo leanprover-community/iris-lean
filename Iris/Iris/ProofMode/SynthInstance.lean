@@ -118,6 +118,9 @@ partial def synthInstanceMainCore (mvar : Expr) : MetaM (Option Unit) := do
           m!"{tac.name} did not find an instance, continue to other instances"
         continue
 
+    -- A tactic that returned `.continue` does not affect the instances below, even if it has
+    -- assigned metavariables.
+    setMCtx mctx
     let instances ← SynthInstance.getInstances mvarType
     let mctx ← getMCtx
     for inst in instances.reverse do
@@ -163,6 +166,14 @@ def synthInstanceRecursive (type : Expr) : MetaM (Option Expr) := do
      return mvar
    setMCtx mctx
    return none
+
+/--
+  Returns `true` if `inst` is the only instance that is a candidate for the goal `type`, i.e. the
+  only instance that the synthesis would try on `type`.
+-/
+def isOnlyCandidateInstance (type : Expr) (inst : Name) : MetaM Bool := do
+  let insts ← SynthInstance.getInstances (← instantiateMVars type)
+  return insts.size == 1 && insts[0]!.val.isConstOf inst
 
 /--
   This function should only be directly used by IPM tactic instances to initiate recursive
